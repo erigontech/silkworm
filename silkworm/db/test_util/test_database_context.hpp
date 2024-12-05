@@ -22,7 +22,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/blocks/schema_config.hpp>
 #include <silkworm/db/data_store.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/state/schema_config.hpp>
 #include <silkworm/infra/common/directories.hpp>
 
@@ -39,11 +39,11 @@ class TestDatabaseContext {
     explicit TestDatabaseContext(const TemporaryDirectory& tmp_dir);
     virtual ~TestDatabaseContext() = default;
 
-    virtual sw_mdbx::ROAccess chaindata() const {
-        return sw_mdbx::ROAccess{*env_};
+    virtual datastore::kvdb::ROAccess chaindata() const {
+        return datastore::kvdb::ROAccess{*env_};
     }
-    virtual sw_mdbx::RWAccess chaindata_rw() const {
-        return sw_mdbx::RWAccess{*env_};
+    virtual datastore::kvdb::RWAccess chaindata_rw() const {
+        return datastore::kvdb::RWAccess{*env_};
     }
 
     silkworm::ChainConfig get_chain_config() const;
@@ -76,10 +76,10 @@ class TestDataStore : public TestDatabaseContext {
     db::DataStore& operator*() { return data_store_; }
     db::DataStore* operator->() { return &data_store_; }
 
-    sw_mdbx::ROAccess chaindata() const override {
+    datastore::kvdb::ROAccess chaindata() const override {
         return data_store_.chaindata();
     }
-    sw_mdbx::RWAccess chaindata_rw() const override {
+    datastore::kvdb::RWAccess chaindata_rw() const override {
         return data_store_.chaindata_rw();
     }
 

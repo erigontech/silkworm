@@ -16,11 +16,11 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/db/datastore/mdbx/memory_mutation_cursor.hpp>
+#include <silkworm/db/datastore/kvdb/memory_mutation_cursor.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
-namespace silkworm::sw_mdbx {
+namespace silkworm::datastore::kvdb {
 
 using namespace silkworm::db;
 
@@ -1370,4 +1370,4 @@ TEST_CASE("MemoryMutationCursor: update value w/ different one", "[silkworm][nod
 
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkworm::sw_mdbx
+}  // namespace silkworm::datastore::kvdb

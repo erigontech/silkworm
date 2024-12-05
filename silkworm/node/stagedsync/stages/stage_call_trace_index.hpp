@@ -19,7 +19,7 @@
 #include <stdexcept>
 
 #include <silkworm/db/datastore/etl/collector_settings.hpp>
-#include <silkworm/db/datastore/mdbx/bitmap.hpp>
+#include <silkworm/db/datastore/kvdb/bitmap.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stage.hpp>
 
@@ -29,7 +29,7 @@ class CallTraceIndex : public Stage {
   public:
     CallTraceIndex(SyncContext* sync_context,
                    size_t batch_size,
-                   etl::CollectorSettings etl_settings,
+                   datastore::etl::CollectorSettings etl_settings,
                    db::BlockAmount prune_mode);
     CallTraceIndex(const CallTraceIndex&) = delete;  // not copyable
     CallTraceIndex(CallTraceIndex&&) = delete;       // nor movable
@@ -60,12 +60,12 @@ class CallTraceIndex : public Stage {
     void reset_log_progress();  // Clears out all logging vars
 
     size_t batch_size_;
-    etl::CollectorSettings etl_settings_;
+    datastore::etl::CollectorSettings etl_settings_;
     db::BlockAmount prune_mode_;
 
-    std::unique_ptr<sw_mdbx::Collector> call_from_collector_;
-    std::unique_ptr<sw_mdbx::Collector> call_to_collector_;
-    std::unique_ptr<sw_mdbx::bitmap::IndexLoader> index_loader_;
+    std::unique_ptr<datastore::kvdb::Collector> call_from_collector_;
+    std::unique_ptr<datastore::kvdb::Collector> call_to_collector_;
+    std::unique_ptr<datastore::kvdb::bitmap::IndexLoader> index_loader_;
 
     //! Flag indicating if we're in ETL loading phase (for logging purposes)
     std::atomic_bool loading_{false};

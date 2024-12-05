@@ -27,7 +27,7 @@
 
 namespace silkworm::db::test_util {
 
-using namespace sw_mdbx;
+using namespace silkworm::datastore::kvdb;
 
 std::filesystem::path get_tests_dir() {
     auto working_dir = std::filesystem::current_path();
@@ -79,7 +79,7 @@ InMemoryState populate_genesis(RWTxn& txn, const std::filesystem::path& tests_di
 
     const uint8_t genesis_null_receipts[] = {0xf6};  // <- cbor encoded
     open_cursor(txn, table::kBlockReceipts)
-        .upsert(sw_mdbx::to_slice(block_hash_key).safe_middle(0, 8), sw_mdbx::to_slice(Bytes(genesis_null_receipts, 1)));
+        .upsert(datastore::kvdb::to_slice(block_hash_key).safe_middle(0, 8), datastore::kvdb::to_slice(Bytes(genesis_null_receipts, 1)));
 
     // Write Chain Settings
     auto config_data{genesis_json["config"].dump()};

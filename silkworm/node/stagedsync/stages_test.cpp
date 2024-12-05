@@ -39,7 +39,7 @@
 
 using namespace silkworm;
 using namespace silkworm::db;
-using namespace silkworm::sw_mdbx;
+using namespace silkworm::datastore::kvdb;
 using namespace evmc::literals;
 
 static ethash::hash256 keccak256(const evmc::address& address) {

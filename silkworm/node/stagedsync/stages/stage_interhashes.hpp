@@ -31,7 +31,7 @@ class InterHashes final : public Stage {
     InterHashes(
         SyncContext* sync_context,
         db::DataModelFactory data_model_factory,
-        etl::CollectorSettings etl_settings)
+        datastore::etl::CollectorSettings etl_settings)
         : Stage(sync_context, db::stages::kIntermediateHashesKey),
           data_model_factory_(std::move(data_model_factory)),
           etl_settings_(std::move(etl_settings)) {}
@@ -119,11 +119,11 @@ class InterHashes final : public Stage {
 
     db::DataModelFactory data_model_factory_;
 
-    etl::CollectorSettings etl_settings_;
+    datastore::etl::CollectorSettings etl_settings_;
 
-    std::unique_ptr<sw_mdbx::Collector> account_collector_;  // To accumulate new records for kTrieOfAccounts
-    std::unique_ptr<sw_mdbx::Collector> storage_collector_;  // To accumulate new records for kTrieOfStorage
-    std::unique_ptr<sw_mdbx::Collector> loading_collector_;  // Effectively the current collector undergoing load (for log)
+    std::unique_ptr<datastore::kvdb::Collector> account_collector_;  // To accumulate new records for kTrieOfAccounts
+    std::unique_ptr<datastore::kvdb::Collector> storage_collector_;  // To accumulate new records for kTrieOfStorage
+    std::unique_ptr<datastore::kvdb::Collector> loading_collector_;  // Effectively the current collector undergoing load (for log)
 
     // Logger info
     std::mutex log_mtx_{};                 // Guards async logging

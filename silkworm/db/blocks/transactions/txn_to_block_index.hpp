@@ -100,7 +100,7 @@ class TransactionToBlockIndex {
             .key_factory = std::make_unique<TransactionKeyFactory>(first_tx_id),
             .base_data_id = first_block_num,
             .double_enum_index = false,
-            .etl_buffer_size = etl::kOptimalBufferSize / 2,
+            .etl_buffer_size = datastore::etl::kOptimalBufferSize / 2,
         };
     }
 };

@@ -27,8 +27,8 @@
 
 namespace silkworm::db {
 
-using sw_mdbx::from_slice;
-using sw_mdbx::to_slice;
+using datastore::kvdb::from_slice;
+using datastore::kvdb::to_slice;
 
 Bytes storage_prefix(ByteView address, uint64_t incarnation) {
     SILKWORM_ASSERT(address.length() == kAddressLength || address.length() == kHashLength);
@@ -173,7 +173,7 @@ std::pair<Bytes, Bytes> changeset_to_plainstate_format(const ByteView key, ByteV
     throw std::runtime_error("Invalid key length " + std::to_string(key.length()) + " in " + std::string(__FUNCTION__));
 }
 
-std::optional<ByteView> find_value_suffix(sw_mdbx::ROCursorDupSort& table, ByteView key, ByteView value_prefix) {
+std::optional<ByteView> find_value_suffix(datastore::kvdb::ROCursorDupSort& table, ByteView key, ByteView value_prefix) {
     auto value_prefix_slice{to_slice(value_prefix)};
     auto data{table.lower_bound_multivalue(to_slice(key), value_prefix_slice, /*throw_notfound=*/false)};
     if (!data || !data.value.starts_with(value_prefix_slice)) {
@@ -185,7 +185,7 @@ std::optional<ByteView> find_value_suffix(sw_mdbx::ROCursorDupSort& table, ByteV
     return res;
 }
 
-void upsert_storage_value(sw_mdbx::RWCursorDupSort& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value) {
+void upsert_storage_value(datastore::kvdb::RWCursorDupSort& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value) {
     if (find_value_suffix(state_cursor, storage_prefix, location)) {
         state_cursor.erase();
     }

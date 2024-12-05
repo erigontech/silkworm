@@ -38,7 +38,7 @@
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/data_store.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/datastore/stage_scheduler.hpp>
 #include <silkworm/db/freezer.hpp>
 #include <silkworm/db/genesis.hpp>
@@ -59,7 +59,7 @@
 namespace fs = std::filesystem;
 using namespace silkworm;
 using namespace silkworm::db;
-using namespace silkworm::sw_mdbx;
+using namespace silkworm::datastore::kvdb;
 
 class Progress {
   public:

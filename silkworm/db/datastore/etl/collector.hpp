@@ -35,7 +35,7 @@
 // ETL : Extract, Transform, Load
 // https://en.wikipedia.org/wiki/Extract,_transform,_load
 
-namespace silkworm::etl {
+namespace silkworm::datastore::etl {
 
 inline constexpr size_t kOptimalBufferSize = 256_Mebi;
 
@@ -128,4 +128,4 @@ class Collector {
     std::string loading_key_{};                                  // Actual load key (for log purposes)
 };
 
-}  // namespace silkworm::etl
+}  // namespace silkworm::datastore::etl

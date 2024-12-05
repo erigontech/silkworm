@@ -18,16 +18,16 @@
 
 #include <gmock/gmock.h>
 
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 
 namespace silkworm::db::test_util {
 
-class MockROCursor : public sw_mdbx::ROCursor {
+class MockROCursor : public datastore::kvdb::ROCursor {
   public:
-    using CursorResult = sw_mdbx::CursorResult;
-    using Slice = sw_mdbx::Slice;
+    using CursorResult = datastore::kvdb::CursorResult;
+    using Slice = datastore::kvdb::Slice;
 
-    MOCK_METHOD((void), bind, (sw_mdbx::ROTxn&, const sw_mdbx::MapConfig&), (override));
+    MOCK_METHOD((void), bind, (datastore::kvdb::ROTxn&, const datastore::kvdb::MapConfig&), (override));
     MOCK_METHOD((size_t), size, (), (const, override));
     MOCK_METHOD((bool), empty, (), (const));
     MOCK_METHOD((bool), is_multi_value, (), (const, override));
@@ -47,8 +47,8 @@ class MockROCursor : public sw_mdbx::ROCursor {
     MOCK_METHOD((CursorResult), find, (const Slice&, bool), (override));
     MOCK_METHOD((CursorResult), lower_bound, (const Slice&), (override));
     MOCK_METHOD((CursorResult), lower_bound, (const Slice&, bool), (override));
-    MOCK_METHOD((sw_mdbx::MoveResult), move, (sw_mdbx::MoveOperation, bool), (override));
-    MOCK_METHOD((sw_mdbx::MoveResult), move, (sw_mdbx::MoveOperation, const Slice&, bool), (override));
+    MOCK_METHOD((datastore::kvdb::MoveResult), move, (datastore::kvdb::MoveOperation, bool), (override));
+    MOCK_METHOD((datastore::kvdb::MoveResult), move, (datastore::kvdb::MoveOperation, const Slice&, bool), (override));
     MOCK_METHOD((bool), seek, (const Slice&), (override));
     MOCK_METHOD((bool), eof, (), (const, override));
     MOCK_METHOD((bool), on_first, (), (const, override));

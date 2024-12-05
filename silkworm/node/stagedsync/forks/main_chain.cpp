@@ -32,7 +32,7 @@ namespace {
 //! @brief Handles the transaction lifecycle for long-standing and per-request transactions
 class TransactionHandler {
   public:
-    TransactionHandler(silkworm::sw_mdbx::RWTxnManaged& txn, silkworm::sw_mdbx::RWAccess& db_access, bool keep_db_txn_open = true)
+    TransactionHandler(silkworm::datastore::kvdb::RWTxnManaged& txn, silkworm::datastore::kvdb::RWAccess& db_access, bool keep_db_txn_open = true)
         : txn_{txn}, db_access_{db_access}, keep_db_txn_open_{keep_db_txn_open} {
         if (!keep_db_txn_open_) {
             if (request_count_ == 0 && !txn_.is_open()) {
@@ -55,8 +55,8 @@ class TransactionHandler {
     }
 
   private:
-    silkworm::sw_mdbx::RWTxnManaged& txn_;
-    silkworm::sw_mdbx::RWAccess& db_access_;
+    silkworm::datastore::kvdb::RWTxnManaged& txn_;
+    silkworm::datastore::kvdb::RWAccess& db_access_;
     bool keep_db_txn_open_{true};
     static inline SILKWORM_THREAD_LOCAL int request_count_;
 };
@@ -78,7 +78,7 @@ MainChain::MainChain(
     db::DataModelFactory data_model_factory,
     std::optional<TimerFactory> log_timer_factory,
     StageContainerFactory stages_factory,
-    sw_mdbx::RWAccess dba)
+    datastore::kvdb::RWAccess dba)
     : executor_{std::move(executor)},
       node_settings_{ns},
       data_model_factory_{std::move(data_model_factory)},

@@ -118,7 +118,7 @@ TEST_CASE("Database genesis initialization") {
         SECTION("Without genesis block") {
             // Nothing should happen
             update_chain_config(txn, kMainnetConfig);
-            sw_mdbx::PooledCursor config(txn, table::kConfig);
+            datastore::kvdb::PooledCursor config(txn, table::kConfig);
             REQUIRE(config.empty());
         }
 

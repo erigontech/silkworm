@@ -30,9 +30,9 @@
 namespace silkworm::stagedsync {
 
 using namespace silkworm::db;
-using silkworm::etl::Entry;
-using sw_mdbx::from_slice;
-using sw_mdbx::to_slice;
+using datastore::kvdb::from_slice;
+using datastore::kvdb::to_slice;
+using silkworm::datastore::etl::Entry;
 
 Stage::Result HashState::forward(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
@@ -65,7 +65,7 @@ Stage::Result HashState::forward(RWTxn& txn) {
         }
 
         reset_log_progress();
-        collector_ = std::make_unique<sw_mdbx::Collector>(etl_settings_);
+        collector_ = std::make_unique<datastore::kvdb::Collector>(etl_settings_);
 
         if (!previous_progress || segment_width > stages::kLargeBlockSegmentWorthRegen) {
             // Clear any previous contents
@@ -291,10 +291,10 @@ Stage::Result HashState::hash_from_plainstate(RWTxn& txn) {
                 throw std::runtime_error(std::string(table::kHashedStorage.name) + " should be empty");
 
             // ETL key contains hashed location; for DB put we need to move it from key to value
-            const sw_mdbx::LoadFunc load_func = [&storage_target](
-                                                    const Entry& entry,
-                                                    sw_mdbx::RWCursorDupSort& target,
-                                                    MDBX_put_flags_t) -> void {
+            const datastore::kvdb::LoadFunc load_func = [&storage_target](
+                                                            const Entry& entry,
+                                                            datastore::kvdb::RWCursorDupSort& target,
+                                                            MDBX_put_flags_t) -> void {
                 if (entry.value.empty()) {
                     return;
                 }

@@ -34,9 +34,9 @@
 namespace silkworm::stagedsync {
 
 using namespace silkworm::db;
-using sw_mdbx::Collector;
-using sw_mdbx::from_slice;
-using sw_mdbx::to_slice;
+using datastore::kvdb::Collector;
+using datastore::kvdb::from_slice;
+using datastore::kvdb::to_slice;
 
 Stage::Result InterHashes::forward(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};

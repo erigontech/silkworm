@@ -18,14 +18,14 @@
 
 #include <optional>
 
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/util.hpp>
 
 /// Part of the compatibility layer with the Erigon DB format.
 
 namespace silkworm::db::table {
 
-using sw_mdbx::MapConfig;
+using datastore::kvdb::MapConfig;
 
 //! Database schema version for compatibility w/ Erigon
 //! 5.0 - BlockTransaction table has canonical IDs (txs of non-canonical blocks moved to NonCanonicalTransaction table)
@@ -416,7 +416,7 @@ inline constexpr MapConfig kChainDataTables[]{
 };
 
 //! \brief Ensures all defined tables are present in db with consistent flags. Should a table not exist it gets created
-void check_or_create_chaindata_tables(sw_mdbx::RWTxn& txn);
+void check_or_create_chaindata_tables(datastore::kvdb::RWTxn& txn);
 
 //! \brief Get the table config associated to the table name (if any)
 std::optional<MapConfig> get_map_config(const std::string& map_name);

@@ -73,7 +73,7 @@ void SubNode::parse(ByteView k, ByteView v) {
     deleted = false;
 }
 
-TrieCursor::TrieCursor(sw_mdbx::ROCursor& db_cursor, PrefixSet* changed, etl::Collector* collector)
+TrieCursor::TrieCursor(datastore::kvdb::ROCursor& db_cursor, PrefixSet* changed, datastore::etl::Collector* collector)
     : db_cursor_(db_cursor), changed_list_{changed}, collector_{collector} {
     curr_key_.reserve(64);
     prev_key_.reserve(64);
@@ -223,21 +223,21 @@ TrieCursor::MoveOperationResult TrieCursor::to_next() {
 
 bool TrieCursor::db_seek(ByteView seek_key) {
     buffer_.assign(prefix_).append(seek_key);
-    const auto buffer_slice = sw_mdbx::to_slice(buffer_);
+    const auto buffer_slice = datastore::kvdb::to_slice(buffer_);
     auto data{buffer_.empty() ? db_cursor_.to_first(false) : db_cursor_.lower_bound(buffer_slice, false)};
     if (!data || !data.key.starts_with(buffer_slice)) {
         return false;
     }
 
-    ByteView db_cursor_key = sw_mdbx::from_slice(data.key);  // Save db_cursor_ key ...
-    db_cursor_key.remove_prefix(prefix_.length());           // ... and remove prefix_ so we have node key
+    ByteView db_cursor_key = datastore::kvdb::from_slice(data.key);  // Save db_cursor_ key ...
+    db_cursor_key.remove_prefix(prefix_.length());                   // ... and remove prefix_ so we have node key
     if (seek_key.empty() && !db_cursor_key.empty()) {
         // Note ! an empty seek_key means we're looking for a root node with empty key which does not exist
         return false;
     }
 
-    ByteView db_cursor_val = sw_mdbx::from_slice(data.value);  // Save db_cursor_ value
-    level_ += seek_key.empty() ? 0 : 1u;                       // Down one level for child node. Stay at zero for root node
+    ByteView db_cursor_val = datastore::kvdb::from_slice(data.value);  // Save db_cursor_ value
+    level_ += seek_key.empty() ? 0 : 1u;                               // Down one level for child node. Stay at zero for root node
     auto& new_node{sub_nodes_[level_]};
     new_node.parse(db_cursor_key, db_cursor_val);
     return true;

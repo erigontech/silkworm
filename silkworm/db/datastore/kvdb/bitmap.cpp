@@ -26,7 +26,7 @@
 
 #include "etl_mdbx_collector.hpp"
 
-namespace silkworm::sw_mdbx::bitmap {
+namespace silkworm::datastore::kvdb::bitmap {
 
 template <typename BlockUpperBound>
 Bytes upper_bound_suffix(BlockUpperBound value) {
@@ -89,7 +89,7 @@ RoaringMap cut_left_impl(RoaringMap& bm, uint64_t size_limit) {
 }
 
 template <typename RoaringMap, typename BlockUpperBound>
-void IndexLoader::merge_bitmaps_impl(RWTxn& txn, size_t key_size, sw_mdbx::Collector* bitmaps_collector) {
+void IndexLoader::merge_bitmaps_impl(RWTxn& txn, size_t key_size, datastore::kvdb::Collector* bitmaps_collector) {
     // Cannot use block_key because we need block number serialized in sizeof(BlockUpperBound) bytes
     Bytes last_shard_suffix{upper_bound_suffix(std::numeric_limits<BlockUpperBound>::max())};
 
@@ -97,10 +97,10 @@ void IndexLoader::merge_bitmaps_impl(RWTxn& txn, size_t key_size, sw_mdbx::Colle
         max_value_size_for_leaf_page(*txn, key_size + /*shard upper_bound*/ sizeof(BlockUpperBound))};
 
     PooledCursor target(txn, index_config_);
-    sw_mdbx::LoadFunc load_func{[&last_shard_suffix, &optimal_shard_size](
-                                    const etl::Entry& entry,
-                                    RWCursorDupSort& index_cursor,
-                                    MDBX_put_flags_t put_flags) -> void {
+    datastore::kvdb::LoadFunc load_func{[&last_shard_suffix, &optimal_shard_size](
+                                            const datastore::etl::Entry& entry,
+                                            RWCursorDupSort& index_cursor,
+                                            MDBX_put_flags_t put_flags) -> void {
         auto new_bitmap{parse_impl<RoaringMap>(entry.value)};  // Bitmap being merged
 
         // Check whether we have any previous shard to merge with
@@ -196,11 +196,11 @@ void IndexLoader::unwind_bitmaps_impl(RWTxn& txn, BlockNum to, const std::map<By
     current_key_.clear();
 }
 
-void IndexLoader::merge_bitmaps32(RWTxn& txn, size_t key_size, sw_mdbx::Collector* bitmaps_collector) {
+void IndexLoader::merge_bitmaps32(RWTxn& txn, size_t key_size, datastore::kvdb::Collector* bitmaps_collector) {
     merge_bitmaps_impl<roaring::Roaring, uint32_t>(txn, key_size, bitmaps_collector);
 }
 
-void IndexLoader::merge_bitmaps(RWTxn& txn, size_t key_size, sw_mdbx::Collector* bitmaps_collector) {
+void IndexLoader::merge_bitmaps(RWTxn& txn, size_t key_size, datastore::kvdb::Collector* bitmaps_collector) {
     merge_bitmaps_impl<roaring::Roaring64Map, uint64_t>(txn, key_size, bitmaps_collector);
 }
 
@@ -272,7 +272,7 @@ void IndexLoader::prune_bitmaps(RWTxn& txn, BlockNum threshold) {
 }
 
 template <typename RoaringMap>
-void flush_bitmaps_impl(absl::btree_map<Bytes, RoaringMap>& bitmaps, etl::Collector* collector, uint16_t flush_count) {
+void flush_bitmaps_impl(absl::btree_map<Bytes, RoaringMap>& bitmaps, datastore::etl::Collector* collector, uint16_t flush_count) {
     for (auto& [key, bitmap] : bitmaps) {
         Bytes etl_key(key.size() + sizeof(uint16_t), '\0');
         std::memcpy(&etl_key[0], key.data(), key.size());
@@ -283,12 +283,12 @@ void flush_bitmaps_impl(absl::btree_map<Bytes, RoaringMap>& bitmaps, etl::Collec
 }
 
 void IndexLoader::flush_bitmaps_to_etl(absl::btree_map<Bytes, roaring::Roaring64Map>& bitmaps,
-                                       etl::Collector* collector, uint16_t flush_count) {
+                                       datastore::etl::Collector* collector, uint16_t flush_count) {
     flush_bitmaps_impl(bitmaps, collector, flush_count);
 }
 
 void IndexLoader::flush_bitmaps_to_etl(absl::btree_map<Bytes, roaring::Roaring>& bitmaps,
-                                       etl::Collector* collector, uint16_t flush_count) {
+                                       datastore::etl::Collector* collector, uint16_t flush_count) {
     flush_bitmaps_impl(bitmaps, collector, flush_count);
 }
 
@@ -338,4 +338,4 @@ roaring::Roaring parse32(const mdbx::slice& data) {
     return parse_impl<roaring::Roaring>(data);
 }
 
-}  // namespace silkworm::sw_mdbx::bitmap
+}  // namespace silkworm::datastore::kvdb::bitmap

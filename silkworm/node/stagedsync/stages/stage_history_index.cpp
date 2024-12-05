@@ -24,10 +24,10 @@
 namespace silkworm::stagedsync {
 
 using namespace silkworm::db;
-using silkworm::sw_mdbx::from_slice;
-using silkworm::sw_mdbx::to_slice;
+using silkworm::datastore::kvdb::from_slice;
+using silkworm::datastore::kvdb::to_slice;
 namespace bitmap {
-    using namespace silkworm::sw_mdbx::bitmap;
+    using namespace silkworm::datastore::kvdb::bitmap;
 }
 
 Stage::Result HistoryIndex::forward(RWTxn& txn) {
@@ -72,7 +72,7 @@ Stage::Result HistoryIndex::forward(RWTxn& txn) {
                 previous_progress_storage = prune_mode_history_.value_from_head(target_progress);
         }
 
-        collector_ = std::make_unique<sw_mdbx::Collector>(etl_settings_);
+        collector_ = std::make_unique<datastore::kvdb::Collector>(etl_settings_);
         if (previous_progress_accounts < target_progress) {
             success_or_throw(forward_impl(txn, previous_progress_accounts, target_progress, false));
             txn.commit_and_renew();

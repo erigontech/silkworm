@@ -63,7 +63,7 @@ class ExecutionEngine : public execution::api::ExecutionEngine, public Stoppable
         db::DataModelFactory data_model_factory,
         std::optional<TimerFactory> log_timer_factory,
         StageContainerFactory stages_factory,
-        sw_mdbx::RWAccess dba);
+        datastore::kvdb::RWAccess dba);
     ~ExecutionEngine() override = default;
 
     // needed to circumvent mdbx threading model limitations

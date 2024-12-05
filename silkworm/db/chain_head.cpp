@@ -24,7 +24,7 @@
 
 namespace silkworm::db {
 
-using namespace sw_mdbx;
+using namespace silkworm::datastore::kvdb;
 
 ChainHead read_chain_head(ROTxn& txn) {
     ChainHead chain_head;
@@ -50,7 +50,7 @@ ChainHead read_chain_head(ROTxn& txn) {
     return chain_head;
 }
 
-ChainHead read_chain_head(sw_mdbx::ROAccess db_access) {
+ChainHead read_chain_head(datastore::kvdb::ROAccess db_access) {
     auto txn = db_access.start_ro_tx();
     [[maybe_unused]] auto _ = gsl::finally([&txn] { txn.abort(); });
 

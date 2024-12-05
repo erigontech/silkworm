@@ -20,7 +20,7 @@
 #include <vector>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/infra/grpc/server/server.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 
@@ -32,7 +32,7 @@ class KvServer : public virtual rpc::Server {
   public:
     KvServer(
         const rpc::ServerSettings& settings,
-        sw_mdbx::ROAccess chaindata,
+        datastore::kvdb::ROAccess chaindata,
         StateChangeCollection* state_change_source);
 
     KvServer(const KvServer&) = delete;
@@ -50,7 +50,7 @@ class KvServer : public virtual rpc::Server {
     remote::KV::AsyncService kv_async_service_;
 
     //! The chain database environment
-    sw_mdbx::ROAccess chaindata_;
+    datastore::kvdb::ROAccess chaindata_;
 
     //! The collector of state changes acting as source of state change notifications
     StateChangeCollection* state_change_source_;

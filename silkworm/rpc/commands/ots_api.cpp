@@ -23,7 +23,7 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/datastore/mdbx/bitmap.hpp>
+#include <silkworm/db/datastore/kvdb/bitmap.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
@@ -43,7 +43,7 @@ namespace silkworm::rpc::commands {
 using namespace silkworm::db;
 using db::kv::StateReader;
 namespace bitmap {
-    using namespace silkworm::sw_mdbx::bitmap;
+    using namespace silkworm::datastore::kvdb::bitmap;
 }
 
 static constexpr int kCurrentApiLevel{8};

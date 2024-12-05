@@ -39,7 +39,7 @@ TEST_CASE("BodiesStage - data model") {
     context.add_genesis_data();
     context.commit_txn();
 
-    sw_mdbx::RWAccess chaindata = context.chaindata_rw();
+    datastore::kvdb::RWAccess chaindata = context.chaindata_rw();
     auto data_model_factory = context.data_model_factory();
 
     auto& chain_config = context.chain_config();

@@ -29,8 +29,8 @@ using execution::api::ValidationError;
 using execution::api::ValidChain;
 using execution::api::VerificationResult;
 
-static sw_mdbx::MemoryOverlay create_memory_db(const std::filesystem::path& base_path, db::ROTxn& main_tx) {
-    sw_mdbx::MemoryOverlay memory_overlay{
+static datastore::kvdb::MemoryOverlay create_memory_db(const std::filesystem::path& base_path, db::ROTxn& main_tx) {
+    datastore::kvdb::MemoryOverlay memory_overlay{
         TemporaryDirectory::get_unique_temporary_path(base_path),
         &main_tx,
         db::table::get_map_config,
@@ -39,7 +39,7 @@ static sw_mdbx::MemoryOverlay create_memory_db(const std::filesystem::path& base
 
     // Create predefined tables for chaindata schema
     auto txn = memory_overlay.start_rw_txn();
-    sw_mdbx::RWTxnUnmanaged txn_ref{txn};
+    datastore::kvdb::RWTxnUnmanaged txn_ref{txn};
     db::table::check_or_create_chaindata_tables(txn_ref);
     txn.commit();
 
@@ -48,7 +48,7 @@ static sw_mdbx::MemoryOverlay create_memory_db(const std::filesystem::path& base
 
 Fork::Fork(
     BlockId forking_point,
-    sw_mdbx::ROTxnManaged main_tx,
+    datastore::kvdb::ROTxnManaged main_tx,
     db::DataModelFactory data_model_factory,
     std::optional<TimerFactory> log_timer_factory,
     const StageContainerFactory& stages_factory,

@@ -47,7 +47,7 @@ set(SILKWORM_NODE_PRIVATE_LIBS
     evmone
     magic_enum::magic_enum
     Microsoft.GSL::GSL
-    silkworm_etl
+    silkworm_datastore_etl
     silkworm_execution
     silkworm_interfaces
     silkworm_stages

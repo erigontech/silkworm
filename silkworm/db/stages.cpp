@@ -22,7 +22,7 @@
 
 namespace silkworm::db::stages {
 
-using namespace sw_mdbx;
+using namespace silkworm::datastore::kvdb;
 
 static BlockNum get_stage_data(ROTxn& txn, const char* stage_name, const MapConfig& domain,
                                const char* key_prefix = nullptr) {
@@ -65,7 +65,7 @@ static void set_stage_data(RWTxn& txn, const char* stage_name, uint64_t block_nu
         endian::store_big_u64(stage_progress.data(), block_num);
         auto target = txn.rw_cursor(domain);
         mdbx::slice key(item_key.c_str());
-        mdbx::slice value = sw_mdbx::to_slice(stage_progress);
+        mdbx::slice value = datastore::kvdb::to_slice(stage_progress);
         target->upsert(key, value);
     } catch (const mdbx::exception& ex) {
         std::string what("Error in " + std::string(__FUNCTION__) + " " + std::string(ex.what()));

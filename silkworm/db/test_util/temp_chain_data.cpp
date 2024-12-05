@@ -24,7 +24,7 @@
 
 namespace silkworm::db::test_util {
 
-using namespace sw_mdbx;
+using namespace silkworm::datastore::kvdb;
 
 TempChainData::TempChainData(bool with_create_tables, bool in_memory)
     : data_dir_(tmp_dir_.path(), /*create=*/true),

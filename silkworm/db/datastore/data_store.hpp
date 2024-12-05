@@ -20,7 +20,7 @@
 #include <memory>
 
 #include "common/entity_name.hpp"
-#include "mdbx/mdbx.hpp"
+#include "kvdb/mdbx.hpp"
 #include "schema.hpp"
 #include "snapshots/snapshot_repository.hpp"
 
@@ -43,8 +43,8 @@ class DataStore {
     }
 
     const Schema& schema() const { return schema_; }
-    sw_mdbx::ROAccess chaindata() const { return sw_mdbx::ROAccess{chaindata_env_}; }
-    sw_mdbx::RWAccess chaindata_rw() const { return sw_mdbx::RWAccess{chaindata_env_}; }
+    datastore::kvdb::ROAccess chaindata() const { return datastore::kvdb::ROAccess{chaindata_env_}; }
+    datastore::kvdb::RWAccess chaindata_rw() const { return datastore::kvdb::RWAccess{chaindata_env_}; }
 
     snapshots::SnapshotRepository& repository(const EntityName& name) const { return *repositories_.at(name); }
 

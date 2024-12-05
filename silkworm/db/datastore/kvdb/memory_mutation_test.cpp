@@ -20,7 +20,7 @@
 
 #include <silkworm/infra/common/directories.hpp>
 
-namespace silkworm::sw_mdbx {
+namespace silkworm::datastore::kvdb {
 
 static const MapConfig kTestMap{"TestTable"};
 static const MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
@@ -289,4 +289,4 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
     }
 }
 
-}  // namespace silkworm::sw_mdbx
+}  // namespace silkworm::datastore::kvdb

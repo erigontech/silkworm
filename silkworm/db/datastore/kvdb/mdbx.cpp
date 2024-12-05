@@ -20,7 +20,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm::sw_mdbx {
+namespace silkworm::datastore::kvdb {
 
 namespace detail {
     std::string dump_mdbx_result(const CursorResult& result) {
@@ -649,4 +649,4 @@ size_t cursor_erase(RWCursor& cursor, const ByteView set_key, const CursorMoveDi
     return ret;
 }
 
-}  // namespace silkworm::sw_mdbx
+}  // namespace silkworm::datastore::kvdb

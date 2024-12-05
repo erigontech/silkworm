@@ -21,11 +21,11 @@
 namespace silkworm::stagedsync {
 
 using namespace silkworm::db;
-using namespace silkworm::sw_mdbx;
+using namespace silkworm::datastore::kvdb;
 
 CallTraceIndex::CallTraceIndex(SyncContext* sync_context,
                                size_t batch_size,
-                               etl::CollectorSettings etl_settings,
+                               datastore::etl::CollectorSettings etl_settings,
                                BlockAmount prune_mode)
     : Stage(sync_context, stages::kCallTracesKey),
       batch_size_{batch_size},

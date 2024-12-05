@@ -36,7 +36,7 @@ ExecutionEngine::ExecutionEngine(
     db::DataModelFactory data_model_factory,
     std::optional<TimerFactory> log_timer_factory,
     StageContainerFactory stages_factory,
-    sw_mdbx::RWAccess dba)
+    datastore::kvdb::RWAccess dba)
     : context_pool_{executor ? std::unique_ptr<concurrency::ContextPool<>>{} : std::make_unique<concurrency::ContextPool<>>(1)},
       executor_{executor ? std::move(*executor) : context_pool_->any_executor()},
       node_settings_{ns},

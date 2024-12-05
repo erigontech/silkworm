@@ -24,7 +24,7 @@ namespace silkworm::db {
 
 // Return (block-num, hash) of the header with the biggest total difficulty skipping bad headers
 // see Erigon's HeadersUnwind method for the implementation
-std::tuple<BlockNum, Hash> header_with_biggest_td(sw_mdbx::ROTxn& txn, const std::set<Hash>* bad_headers) {
+std::tuple<BlockNum, Hash> header_with_biggest_td(datastore::kvdb::ROTxn& txn, const std::set<Hash>* bad_headers) {
     BlockNum max_block_num = 0;
     Hash max_hash;
     intx::uint256 max_td = 0;
@@ -53,7 +53,7 @@ std::tuple<BlockNum, Hash> header_with_biggest_td(sw_mdbx::ROTxn& txn, const std
         // TODO: check if we really need to parse all the table
     };
 
-    sw_mdbx::cursor_for_each(*td_cursor, find_max, sw_mdbx::CursorMoveDirection::kReverse);
+    datastore::kvdb::cursor_for_each(*td_cursor, find_max, datastore::kvdb::CursorMoveDirection::kReverse);
 
     return {max_block_num, max_hash};
 }

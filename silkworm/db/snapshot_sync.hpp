@@ -33,7 +33,7 @@
 
 #include "access_layer.hpp"
 #include "data_store.hpp"
-#include "datastore/mdbx/mdbx.hpp"
+#include "datastore/kvdb/mdbx.hpp"
 #include "datastore/snapshot_merger.hpp"
 #include "datastore/snapshots/bittorrent/client.hpp"
 #include "datastore/snapshots/common/snapshot_path.hpp"

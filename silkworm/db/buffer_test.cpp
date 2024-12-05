@@ -239,7 +239,7 @@ TEST_CASE("Buffer storage", "[silkworm][db][buffer]") {
 }
 
 TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
-    using sw_mdbx::from_slice;
+    using datastore::kvdb::from_slice;
     db::test_util::TempChainData context;
     auto& txn{context.rw_txn()};
 

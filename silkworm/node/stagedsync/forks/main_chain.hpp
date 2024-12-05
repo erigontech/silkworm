@@ -28,7 +28,7 @@
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/datastore/mdbx/memory_mutation.hpp>
+#include <silkworm/db/datastore/kvdb/memory_mutation.hpp>
 #include <silkworm/db/datastore/stage_scheduler.hpp>
 #include <silkworm/db/stage.hpp>
 #include <silkworm/execution/api/endpoint/validation.hpp>
@@ -50,7 +50,7 @@ class MainChain {
         db::DataModelFactory data_model_factory,
         std::optional<TimerFactory> log_timer_factory,
         StageContainerFactory stages_factory,
-        sw_mdbx::RWAccess dba);
+        datastore::kvdb::RWAccess dba);
 
     void open();  // needed to circumvent mdbx threading model limitations
     void close();
@@ -119,8 +119,8 @@ class MainChain {
     db::DataModelFactory data_model_factory_;
     std::optional<TimerFactory> log_timer_factory_;
     StageContainerFactory stages_factory_;
-    mutable sw_mdbx::RWAccess db_access_;
-    mutable sw_mdbx::RWTxnManaged tx_;
+    mutable datastore::kvdb::RWAccess db_access_;
+    mutable datastore::kvdb::RWTxnManaged tx_;
     bool is_first_sync_{true};
 
     ExecutionPipeline pipeline_;

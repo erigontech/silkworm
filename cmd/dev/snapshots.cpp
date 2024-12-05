@@ -1019,7 +1019,7 @@ void sync(const SnapshotSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
     TemporaryDirectory tmp_dir;
-    sw_mdbx::EnvConfig chaindata_env_config{tmp_dir.path()};
+    datastore::kvdb::EnvConfig chaindata_env_config{tmp_dir.path()};
 
     db::DataStore data_store{
         chaindata_env_config,

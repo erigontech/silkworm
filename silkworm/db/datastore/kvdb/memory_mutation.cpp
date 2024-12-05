@@ -23,7 +23,7 @@
 
 #include "memory_mutation_cursor.hpp"
 
-namespace silkworm::sw_mdbx {
+namespace silkworm::datastore::kvdb {
 
 MemoryDatabase::MemoryDatabase(const std::filesystem::path& tmp_dir) {
     DataDirectory data_dir{tmp_dir};
@@ -119,7 +119,7 @@ bool MemoryMutation::is_dup_deleted(const std::string& table, const Slice& key, 
 }
 
 bool MemoryMutation::has_map(const std::string& bucket_name) const {
-    return sw_mdbx::has_map(*overlay_.external_txn(), bucket_name.c_str());
+    return datastore::kvdb::has_map(*overlay_.external_txn(), bucket_name.c_str());
 }
 
 void MemoryMutation::update_txn(ROTxn* txn) {
@@ -250,4 +250,4 @@ std::unique_ptr<MemoryMutationCursor> MemoryMutation::make_cursor(const MapConfi
     return std::make_unique<MemoryMutationCursor>(*this, config);
 }
 
-}  // namespace silkworm::sw_mdbx
+}  // namespace silkworm::datastore::kvdb

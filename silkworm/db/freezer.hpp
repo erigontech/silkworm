@@ -17,7 +17,7 @@
 #pragma once
 
 #include "datastore/data_migration.hpp"
-#include "datastore/mdbx/mdbx.hpp"
+#include "datastore/kvdb/mdbx.hpp"
 #include "datastore/snapshots/snapshot_repository.hpp"
 #include "datastore/stage_scheduler.hpp"
 
@@ -29,7 +29,7 @@ class Freezer : public datastore::DataMigration {
     using DataMigrationResult = datastore::DataMigrationResult;
 
     Freezer(
-        sw_mdbx::ROAccess db_access,
+        datastore::kvdb::ROAccess db_access,
         snapshots::SnapshotRepository& snapshots,
         datastore::StageScheduler& stage_scheduler,
         std::filesystem::path tmp_dir_path,
@@ -50,9 +50,9 @@ class Freezer : public datastore::DataMigration {
     void commit(std::shared_ptr<DataMigrationResult> result) override;
     Task<void> cleanup() override;
     BlockNumRange cleanup_range();
-    void prune_collations(sw_mdbx::RWTxn& db_tx, BlockNumRange range) const;
+    void prune_collations(datastore::kvdb::RWTxn& db_tx, BlockNumRange range) const;
 
-    sw_mdbx::ROAccess db_access_;
+    datastore::kvdb::ROAccess db_access_;
     snapshots::SnapshotRepository& snapshots_;
     datastore::StageScheduler& stage_scheduler_;
     std::filesystem::path tmp_dir_path_;

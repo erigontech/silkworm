@@ -27,7 +27,7 @@
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/data_store.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 
 namespace silkworm::execution {
 
@@ -92,7 +92,7 @@ class LocalState : public State {
 
   private:
     BlockNum block_num_;
-    mutable sw_mdbx::ROTxnManaged txn_;
+    mutable datastore::kvdb::ROTxnManaged txn_;
     db::DataModel data_model_;
 };
 

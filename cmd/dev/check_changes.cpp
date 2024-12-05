@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
 
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
         data_dir.deploy();
-        sw_mdbx::EnvConfig db_config{data_dir.chaindata().path().string()};
+        datastore::kvdb::EnvConfig db_config{data_dir.chaindata().path().string()};
 
         db::DataStore data_store{
             db_config,

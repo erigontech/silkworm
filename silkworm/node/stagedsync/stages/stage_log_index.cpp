@@ -26,9 +26,9 @@
 namespace silkworm::stagedsync {
 
 using namespace silkworm::db;
-using silkworm::sw_mdbx::to_slice;
+using silkworm::datastore::kvdb::to_slice;
 namespace bitmap {
-    using namespace silkworm::sw_mdbx::bitmap;
+    using namespace silkworm::datastore::kvdb::bitmap;
 }
 
 namespace {
@@ -260,7 +260,7 @@ Stage::Result LogIndex::prune(RWTxn& txn) {
 }
 
 void LogIndex::forward_impl(RWTxn& txn, const BlockNum from, const BlockNum to) {
-    using sw_mdbx::Collector;
+    using datastore::kvdb::Collector;
 
     const MapConfig source_config{table::kLogs};
 

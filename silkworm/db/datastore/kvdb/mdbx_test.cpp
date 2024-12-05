@@ -21,7 +21,7 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
-namespace silkworm::sw_mdbx {
+namespace silkworm::datastore::kvdb {
 
 TEST_CASE("open_env") {
     // Empty dir
@@ -67,4 +67,4 @@ TEST_CASE("open_env") {
     env.close();
 }
 
-}  // namespace silkworm::sw_mdbx
+}  // namespace silkworm::datastore::kvdb

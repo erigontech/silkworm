@@ -56,7 +56,7 @@ class Senders final : public Stage {
         db::DataModelFactory data_model_factory,
         const ChainConfig& chain_config,
         size_t batch_size,
-        etl::CollectorSettings etl_settings,
+        datastore::etl::CollectorSettings etl_settings,
         db::BlockAmount prune_mode_senders);
     ~Senders() override = default;
 
@@ -96,8 +96,8 @@ class Senders final : public Stage {
     uint64_t collected_senders_{0};
 
     //! ETL collector writing recovered senders in bulk
-    etl::CollectorSettings etl_settings_;
-    std::unique_ptr<sw_mdbx::Collector> collector_;
+    datastore::etl::CollectorSettings etl_settings_;
+    std::unique_ptr<datastore::kvdb::Collector> collector_;
 
     // Stats
     std::mutex mutex_{};

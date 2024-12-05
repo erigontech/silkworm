@@ -30,7 +30,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/empty_hashes.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/os.hpp>
@@ -181,11 +181,11 @@ class MockSentryClient
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
 const std::string kTestAddressUri{"localhost:12345"};
 
-const silkworm::sw_mdbx::MapConfig kTestMap{"TestTable"};
-const silkworm::sw_mdbx::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
+const silkworm::datastore::kvdb::MapConfig kTestMap{"TestTable"};
+const silkworm::datastore::kvdb::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 using namespace silkworm;
-using namespace silkworm::sw_mdbx;
+using namespace silkworm::datastore::kvdb;
 
 using StateChangeTokenObserver = std::function<void(std::optional<StateChangeToken>)>;
 
@@ -209,7 +209,7 @@ class TestableStateChangeCollection : public StateChangeCollection {
 
 class TestableEthereumBackEnd : public EthereumBackEnd {
   public:
-    TestableEthereumBackEnd(const NodeSettings& node_settings, sw_mdbx::ROAccess chaindata)
+    TestableEthereumBackEnd(const NodeSettings& node_settings, datastore::kvdb::ROAccess chaindata)
         : EthereumBackEnd{
               node_settings,
               std::move(chaindata),
@@ -248,7 +248,7 @@ struct BackEndE2ETest {
         open_map(rw_txn, kTestMultiMap);
         rw_txn.commit();
 
-        backend = std::make_unique<TestableEthereumBackEnd>(options, sw_mdbx::ROAccess{database_env});
+        backend = std::make_unique<TestableEthereumBackEnd>(options, datastore::kvdb::ROAccess{database_env});
         server = std::make_unique<BackEndServer>(srv_config, *backend);
         server->build_and_start();
     }
@@ -310,7 +310,7 @@ TEST_CASE("BackEndServer", "[silkworm][node][rpc]") {
     db_config.in_memory = true;
     auto chaindata_env = open_env(db_config);
     NodeSettings node_settings;
-    TestableEthereumBackEnd backend{node_settings, sw_mdbx::ROAccess{chaindata_env}};
+    TestableEthereumBackEnd backend{node_settings, datastore::kvdb::ROAccess{chaindata_env}};
 
     SECTION("BackEndServer::BackEndServer OK: create/destroy server") {
         BackEndServer server{srv_config, backend};

@@ -18,11 +18,11 @@
 
 #include <filesystem>
 
-namespace silkworm::etl {
+namespace silkworm::datastore::etl {
 
 struct CollectorSettings {
     std::filesystem::path work_path;
     size_t buffer_size{};
 };
 
-}  // namespace silkworm::etl
+}  // namespace silkworm::datastore::etl

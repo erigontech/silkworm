@@ -90,7 +90,7 @@ class LocalTransaction : public BaseTransaction {
 
     DataStoreRef data_store_;
     uint32_t last_cursor_id_{0};
-    sw_mdbx::ROTxnManaged txn_;
+    datastore::kvdb::ROTxnManaged txn_;
     uint64_t tx_id_{++next_tx_id_};
 };
 

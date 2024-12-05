@@ -22,7 +22,7 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/node/settings.hpp>
 

@@ -62,10 +62,10 @@ TEST_CASE("higher_version_ignoring_patch", "[silkworm][rpc][kv_calls]") {
     }
 }
 
-static const sw_mdbx::MapConfig kTestMap{"TestTable"};
+static const datastore::kvdb::MapConfig kTestMap{"TestTable"};
 
 TEST_CASE("dump_mdbx_result", "[silkworm][rpc][kv_calls]") {
-    using namespace sw_mdbx;
+    using namespace silkworm::datastore::kvdb;
 
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
@@ -85,7 +85,7 @@ TEST_CASE("dump_mdbx_result", "[silkworm][rpc][kv_calls]") {
     auto ro_txn = database_env.start_read();
     PooledCursor cursor{ro_txn, kTestMap};
     CursorResult result = cursor.to_first(/*throw_notfound=*/false);
-    const auto result_dump = sw_mdbx::detail::dump_mdbx_result(result);
+    const auto result_dump = datastore::kvdb::detail::dump_mdbx_result(result);
     CHECK(result_dump.find(std::to_string(result.done)) != std::string::npos);
     CHECK(result_dump.find(std::to_string(static_cast<bool>(result.key))) != std::string::npos);
     CHECK(result_dump.find(std::to_string(static_cast<bool>(result.value))) != std::string::npos);

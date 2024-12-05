@@ -23,7 +23,7 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/test_util.hpp>
-#include <silkworm/db/datastore/mdbx/bitmap.hpp>
+#include <silkworm/db/datastore/kvdb/bitmap.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
@@ -114,8 +114,8 @@ static BlockBody block_body_17035047() {
 
 namespace silkworm::db {
 
-using namespace sw_mdbx;
-using sw_mdbx::to_slice;
+using namespace silkworm::datastore::kvdb;
+using datastore::kvdb::to_slice;
 
 TEST_CASE("Methods cursor_for_each/cursor_for_count", "[db][access_layer]") {
     test_util::TempChainData context;

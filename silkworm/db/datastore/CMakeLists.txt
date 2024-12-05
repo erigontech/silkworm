@@ -18,7 +18,7 @@ include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 add_subdirectory(common)
 add_subdirectory(etl)
-add_subdirectory(mdbx)
+add_subdirectory(kvdb)
 add_subdirectory(snapshots)
 
 find_package(Boost REQUIRED COMPONENTS headers)
@@ -29,7 +29,7 @@ set(LIBS_PUBLIC
     silkworm_core
     silkworm_infra
     silkworm_datastore_common
-    silkworm_mdbx
+    silkworm_datastore_kvdb
     silkworm_snapshots
 )
 # cmake-format: on

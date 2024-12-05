@@ -23,7 +23,7 @@
 
 #include "mdbx.hpp"
 
-namespace silkworm::sw_mdbx {
+namespace silkworm::datastore::kvdb {
 
 class MemoryDatabase {
   public:
@@ -109,4 +109,4 @@ class MemoryMutation : public RWTxnManaged {
     std::map<std::string, bool> cleared_tables_;
 };
 
-}  // namespace silkworm::sw_mdbx
+}  // namespace silkworm::datastore::kvdb

@@ -25,7 +25,7 @@ class HashState final : public Stage {
   public:
     HashState(
         SyncContext* sync_context,
-        etl::CollectorSettings etl_settings)
+        datastore::etl::CollectorSettings etl_settings)
         : Stage(sync_context, db::stages::kHashStateKey),
           etl_settings_(std::move(etl_settings)) {}
     HashState(const HashState&) = delete;  // not copyable
@@ -92,8 +92,8 @@ class HashState final : public Stage {
     std::string current_key_;
 
     // Collector (used only in !incremental_)
-    etl::CollectorSettings etl_settings_;
-    std::unique_ptr<sw_mdbx::Collector> collector_;
+    datastore::etl::CollectorSettings etl_settings_;
+    std::unique_ptr<datastore::kvdb::Collector> collector_;
 };
 
 }  // namespace silkworm::stagedsync

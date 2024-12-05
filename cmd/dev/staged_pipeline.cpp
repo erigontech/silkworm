@@ -37,7 +37,7 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/chain_data_init.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/stages.hpp>
@@ -58,7 +58,7 @@
 
 namespace fs = std::filesystem;
 using namespace silkworm;
-using namespace silkworm::sw_mdbx;
+using namespace silkworm::datastore::kvdb;
 
 class Progress {
   public:
@@ -120,11 +120,11 @@ class Progress {
     uint32_t printed_bar_len_{0};
 };
 
-void cursor_for_each(::mdbx::cursor& cursor, sw_mdbx::WalkFuncRef walker) {
+void cursor_for_each(::mdbx::cursor& cursor, datastore::kvdb::WalkFuncRef walker) {
     const bool throw_notfound{false};
     auto data = cursor.eof() ? cursor.to_first(throw_notfound) : cursor.current(throw_notfound);
     while (data) {
-        walker(sw_mdbx::from_slice(data.key), sw_mdbx::from_slice(data.value));
+        walker(datastore::kvdb::from_slice(data.key), datastore::kvdb::from_slice(data.value));
         data = cursor.move(mdbx::cursor::move_operation::next, throw_notfound);
     }
 }
@@ -173,11 +173,11 @@ struct StageOrderCompare {
     }
 };
 
-void list_stages(sw_mdbx::EnvConfig& config) {
+void list_stages(datastore::kvdb::EnvConfig& config) {
     static constexpr char kTableHeaderFormat[] = " %-26s %10s ";
     static constexpr char kTableRowFormat[] = " %-26s %10u %-8s";
 
-    auto env = silkworm::sw_mdbx::open_env(config);
+    auto env = silkworm::datastore::kvdb::open_env(config);
     auto txn = env.start_read();
     if (!has_map(txn, db::table::kSyncStageProgress.name)) {
         throw std::runtime_error("Either not a Silkworm db or table " +
@@ -220,14 +220,14 @@ void list_stages(sw_mdbx::EnvConfig& config) {
     env.close(config.shared);
 }
 
-void set_stage_progress(sw_mdbx::EnvConfig& config, const std::string& stage_name, uint32_t new_height, bool dry) {
+void set_stage_progress(datastore::kvdb::EnvConfig& config, const std::string& stage_name, uint32_t new_height, bool dry) {
     config.readonly = false;
 
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
-    auto env{silkworm::sw_mdbx::open_env(config)};
+    auto env{silkworm::datastore::kvdb::open_env(config)};
     RWTxnManaged txn{env};
     if (!db::stages::is_known_stage(stage_name.c_str())) {
         throw std::runtime_error("Stage name " + stage_name + " is not known");
@@ -268,7 +268,7 @@ static stagedsync::StageContainerFactory make_stages_factory(
     });
 }
 
-void debug_unwind(sw_mdbx::EnvConfig& config, BlockNum height, uint32_t step, const bool dry, const bool force,
+void debug_unwind(datastore::kvdb::EnvConfig& config, BlockNum height, uint32_t step, const bool dry, const bool force,
                   const std::string& start_at_stage, const std::string& stop_before_stage) {
     ensure(config.exclusive, "Function requires exclusive access to database");
     ensure(height > 0, "Function requires non-zero height block");
@@ -282,9 +282,9 @@ void debug_unwind(sw_mdbx::EnvConfig& config, BlockNum height, uint32_t step, co
     Environment::set_start_at_stage(start_at_stage);
     Environment::set_stop_before_stage(stop_before_stage);
 
-    auto env = silkworm::sw_mdbx::open_env(config);
+    auto env = silkworm::datastore::kvdb::open_env(config);
 
-    sw_mdbx::ROTxnManaged ro_txn{env};
+    datastore::kvdb::ROTxnManaged ro_txn{env};
     const auto chain_config = db::read_chain_config(ro_txn);
     ensure(chain_config.has_value(), "Uninitialized Silkworm db or unknown/custom chain");
     ro_txn.abort();
@@ -292,7 +292,7 @@ void debug_unwind(sw_mdbx::EnvConfig& config, BlockNum height, uint32_t step, co
     auto data_directory = std::make_unique<DataDirectory>(datadir_path);
     auto blocks_repository = db::blocks::make_blocks_repository(data_directory->snapshots().path(), /*open=*/false);
     auto state_repository = db::state::make_state_repository(data_directory->snapshots().path(), /*open=*/false);
-    db::DataStoreRef data_store{sw_mdbx::RWAccess{env}, blocks_repository, state_repository};
+    db::DataStoreRef data_store{datastore::kvdb::RWAccess{env}, blocks_repository, state_repository};
     db::DataModelFactory data_model_factory{data_store};
 
     // We need full snapshot sync to take place to have database tables properly updated
@@ -382,12 +382,12 @@ void debug_unwind(sw_mdbx::EnvConfig& config, BlockNum height, uint32_t step, co
     txn.commit_and_stop();
 }
 
-void unwind(sw_mdbx::EnvConfig& config, BlockNum unwind_point, const bool remove_blocks, const bool dry) {
+void unwind(datastore::kvdb::EnvConfig& config, BlockNum unwind_point, const bool remove_blocks, const bool dry) {
     ensure(config.exclusive, "Function requires exclusive access to database");
 
     config.readonly = false;
 
-    auto env{silkworm::sw_mdbx::open_env(config)};
+    auto env{silkworm::datastore::kvdb::open_env(config)};
     RWTxnManaged txn{env};
 
     // Commit is enabled by default in RWTxn(Managed), so we need to check here
@@ -406,7 +406,7 @@ void unwind(sw_mdbx::EnvConfig& config, BlockNum unwind_point, const bool remove
     auto data_directory = std::make_unique<DataDirectory>();
     auto blocks_repository = db::blocks::make_blocks_repository(data_directory->snapshots().path(), /*open=*/true);
     auto state_repository = db::state::make_state_repository(data_directory->path(), /*open=*/true);
-    db::DataStoreRef data_store{sw_mdbx::RWAccess{env}, blocks_repository, state_repository};
+    db::DataStoreRef data_store{datastore::kvdb::RWAccess{env}, blocks_repository, state_repository};
     db::DataModelFactory data_model_factory{data_store};
 
     boost::asio::io_context io_context;
@@ -449,7 +449,7 @@ void unwind(sw_mdbx::EnvConfig& config, BlockNum unwind_point, const bool remove
         const auto body_cursor{txn.rw_cursor(db::table::kBlockBodies)};
         const auto start_key{db::block_key(unwind_point)};
         std::size_t erased_bodies{0};
-        auto body_data{body_cursor->lower_bound(sw_mdbx::to_slice(start_key), /*throw_notfound=*/false)};
+        auto body_data{body_cursor->lower_bound(datastore::kvdb::to_slice(start_key), /*throw_notfound=*/false)};
         while (body_data) {
             body_cursor->erase();
             ++erased_bodies;
@@ -460,7 +460,7 @@ void unwind(sw_mdbx::EnvConfig& config, BlockNum unwind_point, const bool remove
         // Remove the block headers up to the unwind point
         const auto header_cursor{txn.rw_cursor(db::table::kHeaders)};
         std::size_t erased_headers{0};
-        auto header_data{header_cursor->lower_bound(sw_mdbx::to_slice(start_key), /*throw_notfound=*/false)};
+        auto header_data{header_cursor->lower_bound(datastore::kvdb::to_slice(start_key), /*throw_notfound=*/false)};
         while (header_data) {
             header_cursor->erase();
             ++erased_headers;
@@ -471,7 +471,7 @@ void unwind(sw_mdbx::EnvConfig& config, BlockNum unwind_point, const bool remove
         // Remove the canonical hashes up to the unwind point
         const auto canonical_cursor{txn.rw_cursor(db::table::kCanonicalHashes)};
         std::size_t erased_hashes{0};
-        auto hash_data{canonical_cursor->lower_bound(sw_mdbx::to_slice(start_key), /*throw_notfound=*/false)};
+        auto hash_data{canonical_cursor->lower_bound(datastore::kvdb::to_slice(start_key), /*throw_notfound=*/false)};
         while (hash_data) {
             canonical_cursor->erase();
             ++erased_hashes;
@@ -483,7 +483,7 @@ void unwind(sw_mdbx::EnvConfig& config, BlockNum unwind_point, const bool remove
     }
 }
 
-void forward(sw_mdbx::EnvConfig& config, BlockNum forward_point, const bool dry,
+void forward(datastore::kvdb::EnvConfig& config, BlockNum forward_point, const bool dry,
              const std::string& start_at_stage, const std::string& stop_before_stage) {
     ensure(config.exclusive, "Function requires exclusive access to database");
 
@@ -492,7 +492,7 @@ void forward(sw_mdbx::EnvConfig& config, BlockNum forward_point, const bool dry,
     Environment::set_start_at_stage(start_at_stage);
     Environment::set_stop_before_stage(stop_before_stage);
 
-    auto env = silkworm::sw_mdbx::open_env(config);
+    auto env = silkworm::datastore::kvdb::open_env(config);
     RWTxnManaged txn{env};
 
     // Commit is enabled by default in RWTxn(Managed), so we need to check here
@@ -514,7 +514,7 @@ void forward(sw_mdbx::EnvConfig& config, BlockNum forward_point, const bool dry,
     auto data_directory = std::make_unique<DataDirectory>();
     auto blocks_repository = db::blocks::make_blocks_repository(data_directory->snapshots().path(), /*open=*/true);
     auto state_repository = db::state::make_state_repository(data_directory->path(), /*open=*/true);
-    db::DataStoreRef data_store{sw_mdbx::RWAccess{env}, blocks_repository, state_repository};
+    db::DataStoreRef data_store{datastore::kvdb::RWAccess{env}, blocks_repository, state_repository};
     db::DataModelFactory data_model_factory{data_store};
 
     boost::asio::io_context io_context;
@@ -550,7 +550,7 @@ void forward(sw_mdbx::EnvConfig& config, BlockNum forward_point, const bool dry,
     std::cout << "\n Staged pipeline forward up to block: " << forward_point << " completed\n";
 }
 
-void bisect_pipeline(sw_mdbx::EnvConfig& config, BlockNum start, BlockNum end, const bool dry,
+void bisect_pipeline(datastore::kvdb::EnvConfig& config, BlockNum start, BlockNum end, const bool dry,
                      const std::string& start_at_stage, const std::string& stop_before_stage) {
     ensure(config.exclusive, "Function requires exclusive access to database");
     ensure(start > 0, "Function requires non-zero start block");
@@ -562,7 +562,7 @@ void bisect_pipeline(sw_mdbx::EnvConfig& config, BlockNum start, BlockNum end, c
     Environment::set_start_at_stage(start_at_stage);
     Environment::set_stop_before_stage(stop_before_stage);
 
-    auto env = silkworm::sw_mdbx::open_env(config);
+    auto env = silkworm::datastore::kvdb::open_env(config);
     RWTxnManaged txn{env};
 
     // Commit is enabled by default in RWTxn(Managed), so we need to check here
@@ -584,7 +584,7 @@ void bisect_pipeline(sw_mdbx::EnvConfig& config, BlockNum start, BlockNum end, c
     auto data_directory = std::make_unique<DataDirectory>();
     auto blocks_repository = db::blocks::make_blocks_repository(data_directory->snapshots().path(), /*open=*/true);
     auto state_repository = db::state::make_state_repository(data_directory->path(), /*open=*/true);
-    db::DataStoreRef data_store{sw_mdbx::RWAccess{env}, blocks_repository, state_repository};
+    db::DataStoreRef data_store{datastore::kvdb::RWAccess{env}, blocks_repository, state_repository};
     db::DataModelFactory data_model_factory{data_store};
 
     boost::asio::io_context io_context;
@@ -651,7 +651,7 @@ void bisect_pipeline(sw_mdbx::EnvConfig& config, BlockNum start, BlockNum end, c
     }
 }
 
-void reset_to_download(sw_mdbx::EnvConfig& config, const bool keep_senders, const bool force) {
+void reset_to_download(datastore::kvdb::EnvConfig& config, const bool keep_senders, const bool force) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
@@ -661,7 +661,7 @@ void reset_to_download(sw_mdbx::EnvConfig& config, const bool keep_senders, cons
         return;
     }
 
-    auto env{silkworm::sw_mdbx::open_env(config)};
+    auto env{silkworm::datastore::kvdb::open_env(config)};
     RWTxnManaged txn(env);
 
     StopWatch sw(/*auto_start=*/true);
@@ -817,14 +817,14 @@ void reset_to_download(sw_mdbx::EnvConfig& config, const bool keep_senders, cons
     SILK_INFO_M("All done", {"in", StopWatch::format(duration)});
 }
 
-void trie_account_analysis(sw_mdbx::EnvConfig& config) {
+void trie_account_analysis(datastore::kvdb::EnvConfig& config) {
     static std::string fmt_hdr{" %-24s %=50s "};
 
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
-    auto env{sw_mdbx::open_env(config)};
+    auto env{datastore::kvdb::open_env(config)};
     auto txn{env.start_read()};
 
     std::cout << "\n"
@@ -864,7 +864,7 @@ void trie_account_analysis(sw_mdbx::EnvConfig& config) {
     std::cout << "\n\n";
 }
 
-void trie_scan(sw_mdbx::EnvConfig& config, bool del) {
+void trie_scan(datastore::kvdb::EnvConfig& config, bool del) {
     auto env{open_env(config)};
     auto txn{env.start_write()};
     std::vector<db::MapConfig> tables{db::table::kTrieOfAccounts, db::table::kTrieOfStorage};
@@ -874,12 +874,12 @@ void trie_scan(sw_mdbx::EnvConfig& config, bool del) {
         if (SignalHandler::signalled()) {
             break;
         }
-        sw_mdbx::PooledCursor cursor(txn, map_config);
+        datastore::kvdb::PooledCursor cursor(txn, map_config);
         std::cout << " Scanning " << map_config.name << "\n";
         auto data{cursor.to_first(false)};
         while (data) {
             if (data.value.empty()) {
-                std::cout << "Empty value at key " << to_hex(sw_mdbx::from_slice(data.key), true) << "\n";
+                std::cout << "Empty value at key " << to_hex(datastore::kvdb::from_slice(data.key), true) << "\n";
                 if (del) {
                     cursor.erase();
                 }
@@ -899,7 +899,7 @@ void trie_scan(sw_mdbx::EnvConfig& config, bool del) {
     std::cout << "\n\n";
 }
 
-void trie_integrity(sw_mdbx::EnvConfig& config, bool with_state_coverage, bool continue_scan, bool sanitize) {
+void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage, bool continue_scan, bool sanitize) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
@@ -936,8 +936,8 @@ void trie_integrity(sw_mdbx::EnvConfig& config, bool with_state_coverage, bool c
         auto data1{trie_cursor1.to_first(false)};
 
         while (data1) {
-            auto data1_k{sw_mdbx::from_slice(data1.key)};
-            auto data1_v{sw_mdbx::from_slice(data1.value)};
+            auto data1_k{datastore::kvdb::from_slice(data1.key)};
+            auto data1_v{datastore::kvdb::from_slice(data1.value)};
             auto node_k{data1_k.substr(prefix_len)};
 
             // Only unmarshal relevant data without copy on read
@@ -1031,14 +1031,14 @@ void trie_integrity(sw_mdbx::EnvConfig& config, bool with_state_coverage, bool c
                         continue;
                     }
                     buffer.back() = static_cast<uint8_t>(i);
-                    auto data2{trie_cursor2.lower_bound(sw_mdbx::to_slice(buffer), false)};
+                    auto data2{trie_cursor2.lower_bound(datastore::kvdb::to_slice(buffer), false)};
                     if (!data2) {
                         throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
                                                  std::bitset<16>(node_tree_mask).to_string() +
                                                  " but there is no child " + std::to_string(i) +
                                                  " in db. LTE found is : null");
                     }
-                    auto data2_k{sw_mdbx::from_slice(data2.key)};
+                    auto data2_k{datastore::kvdb::from_slice(data2.key)};
                     if (!data2_k.starts_with(buffer)) {
                         throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
                                                  std::bitset<16>(node_tree_mask).to_string() +
@@ -1062,12 +1062,12 @@ void trie_integrity(sw_mdbx::EnvConfig& config, bool with_state_coverage, bool c
 
                 for (size_t i{data1_k.size() - 1}; i >= prefix_len && !found; --i) {
                     auto parent_seek_key{data1_k.substr(0, i)};
-                    auto data2{trie_cursor2.find(sw_mdbx::to_slice(parent_seek_key), false)};
+                    auto data2{trie_cursor2.find(datastore::kvdb::to_slice(parent_seek_key), false)};
                     if (!data2) {
                         continue;
                     }
                     found = true;
-                    const auto data2_v{sw_mdbx::from_slice(data2.value)};
+                    const auto data2_v{datastore::kvdb::from_slice(data2.value)};
                     const auto parent_tree_mask{endian::load_big_u16(&data2_v[2])};
                     const auto parent_child_id{static_cast<int>(data1_k[i])};
                     const auto parent_has_tree_bit{(parent_tree_mask & (1 << parent_child_id)) != 0};
@@ -1146,9 +1146,9 @@ void trie_integrity(sw_mdbx::EnvConfig& config, bool with_state_coverage, bool c
 
                     // On first loop we search HashedAccounts (which is not dup-sorted)
                     if (!loop_id) {
-                        auto data3{state_cursor.lower_bound(sw_mdbx::to_slice(seek), false)};
+                        auto data3{state_cursor.lower_bound(datastore::kvdb::to_slice(seek), false)};
                         if (data3) {
-                            auto data3_k{sw_mdbx::from_slice(data3.key)};
+                            auto data3_k{datastore::kvdb::from_slice(data3.key)};
                             if (data3_k.length() >= fixed_bytes) {
                                 found = (bits_to_match == 0 ||
                                          ((data3_k.substr(0, fixed_bytes - 1) == seek.substr(0, fixed_bytes - 1)) &&
@@ -1160,17 +1160,17 @@ void trie_integrity(sw_mdbx::EnvConfig& config, bool with_state_coverage, bool c
                                              std::bitset<16>(node_state_mask).to_string() + " but there is no child " +
                                              std::to_string(i) + "," + to_hex(seek, true) + " in hashed state"};
                             if (data3) {
-                                auto data3_k{sw_mdbx::from_slice(data3.key)};
+                                auto data3_k{datastore::kvdb::from_slice(data3.key)};
                                 what.append(" found instead " + to_hex(data3_k, true));
                             }
                             throw std::runtime_error(what);
                         }
                     } else {
                         // On second loop we search HashedStorage (which is dup-sorted)
-                        auto data3{state_cursor.lower_bound_multivalue(sw_mdbx::to_slice(data1_k.substr(0, prefix_len)),
-                                                                       sw_mdbx::to_slice(seek), false)};
+                        auto data3{state_cursor.lower_bound_multivalue(datastore::kvdb::to_slice(data1_k.substr(0, prefix_len)),
+                                                                       datastore::kvdb::to_slice(seek), false)};
                         if (data3) {
-                            auto data3_v{sw_mdbx::from_slice(data3.value)};
+                            auto data3_v{datastore::kvdb::from_slice(data3.value)};
                             if (data3_v.length() >= fixed_bytes) {
                                 found = (bits_to_match == 0 ||
                                          ((data3_v.substr(0, fixed_bytes - 1) == seek.substr(0, fixed_bytes - 1)) &&
@@ -1182,8 +1182,8 @@ void trie_integrity(sw_mdbx::EnvConfig& config, bool with_state_coverage, bool c
                                              std::bitset<16>(node_state_mask).to_string() + " but there is no child " +
                                              std::to_string(i) + "," + to_hex(seek, true) + " in state"};
                             if (data3) {
-                                auto data3_k{sw_mdbx::from_slice(data3.key)};
-                                auto data3_v{sw_mdbx::from_slice(data3.value)};
+                                auto data3_k{datastore::kvdb::from_slice(data3.key)};
+                                auto data3_v{datastore::kvdb::from_slice(data3.value)};
                                 what.append(" found instead " + to_hex(data3_k, true) + to_hex(data3_v, false));
                             }
                             throw std::runtime_error(what);
@@ -1214,7 +1214,7 @@ void trie_integrity(sw_mdbx::EnvConfig& config, bool with_state_coverage, bool c
     env.close();
 }
 
-void trie_reset(sw_mdbx::EnvConfig& config, bool always_yes) {
+void trie_reset(datastore::kvdb::EnvConfig& config, bool always_yes) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
@@ -1239,13 +1239,13 @@ void trie_reset(sw_mdbx::EnvConfig& config, bool always_yes) {
     env.close();
 }
 
-void trie_root(sw_mdbx::EnvConfig& config) {
+void trie_root(datastore::kvdb::EnvConfig& config) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
     auto env{open_env(config)};
-    sw_mdbx::ROTxnManaged txn{env};
+    datastore::kvdb::ROTxnManaged txn{env};
     PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
 
     // Retrieve expected state root
@@ -1417,7 +1417,7 @@ int main(int argc, char* argv[]) {
         log::init(log_settings);
 
         DataDirectory data_dir{data_dir_factory()};
-        sw_mdbx::EnvConfig chaindata_env_config{data_dir.chaindata().path().string()};
+        datastore::kvdb::EnvConfig chaindata_env_config{data_dir.chaindata().path().string()};
         chaindata_env_config.shared = shared_opt->as<bool>();
         chaindata_env_config.exclusive = exclusive_opt->as<bool>();
 
@@ -1429,10 +1429,10 @@ int main(int argc, char* argv[]) {
                 .init_if_empty = true,
             });
         }
-        const auto mdbx_path{sw_mdbx::get_datafile_path(data_dir.chaindata().path())};
+        const auto mdbx_path{datastore::kvdb::get_datafile_path(data_dir.chaindata().path())};
         if (!fs::exists(mdbx_path) || !fs::is_regular_file(mdbx_path)) {
             std::cerr << "\n Directory " << data_dir.chaindata().path().string() << " does not contain "
-                      << sw_mdbx::kDbDataFileName << "\n";
+                      << datastore::kvdb::kDbDataFileName << "\n";
             return -1;
         }
 

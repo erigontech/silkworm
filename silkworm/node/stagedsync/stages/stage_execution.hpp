@@ -74,12 +74,12 @@ class Execution final : public Stage {
                                 BlockNum prune_call_traces_threshold);
 
     //! \brief For given changeset cursor/bucket it reverts the changes on states buckets
-    static void unwind_state_from_changeset(sw_mdbx::ROCursor& source_changeset, sw_mdbx::RWCursorDupSort& plain_state_table,
-                                            sw_mdbx::RWCursor& plain_code_table, BlockNum unwind_to);
+    static void unwind_state_from_changeset(datastore::kvdb::ROCursor& source_changeset, datastore::kvdb::RWCursorDupSort& plain_state_table,
+                                            datastore::kvdb::RWCursor& plain_code_table, BlockNum unwind_to);
 
     //! \brief Revert State for given address/storage location
-    static void revert_state(ByteView key, ByteView value, sw_mdbx::RWCursorDupSort& plain_state_table,
-                             sw_mdbx::RWCursor& plain_code_table);
+    static void revert_state(ByteView key, ByteView value, datastore::kvdb::RWCursorDupSort& plain_state_table,
+                             datastore::kvdb::RWCursor& plain_code_table);
 
     // Stats
     std::mutex progress_mtx_;  // Synchronizes access to progress stats

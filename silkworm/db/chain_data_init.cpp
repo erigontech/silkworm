@@ -40,13 +40,13 @@ ChainConfig chain_data_init(const ChainDataInitSettings& node_settings) {
         });
 
     auto chaindata_env_config = node_settings.chaindata_env_config;
-    chaindata_env_config.create = !std::filesystem::exists(sw_mdbx::get_datafile_path(chaindata_env_config.path));
+    chaindata_env_config.create = !std::filesystem::exists(datastore::kvdb::get_datafile_path(chaindata_env_config.path));
     chaindata_env_config.exclusive = true;
 
     // Open chaindata environment and check tables are consistent
     log::Info("Opening database", {"path", chaindata_env_config.path});
     mdbx::env_managed chaindata_env = open_env(chaindata_env_config);
-    sw_mdbx::RWTxnManaged tx(chaindata_env);
+    datastore::kvdb::RWTxnManaged tx(chaindata_env);
 
     // Ensures all tables are present
     table::check_or_create_chaindata_tables(tx);

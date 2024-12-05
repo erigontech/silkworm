@@ -23,7 +23,7 @@
 #include "buffer.hpp"
 #include "util.hpp"
 
-namespace silkworm::etl {
+namespace silkworm::datastore::etl {
 
 /**
  * Provides an abstraction to flush data to disk
@@ -48,4 +48,4 @@ class FileProvider {
     size_t file_size_{0};    // Actual size of written data
 };
 
-}  // namespace silkworm::etl
+}  // namespace silkworm::datastore::etl

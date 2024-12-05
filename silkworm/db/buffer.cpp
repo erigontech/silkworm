@@ -31,7 +31,7 @@
 
 namespace silkworm::db {
 
-using sw_mdbx::to_slice;
+using datastore::kvdb::to_slice;
 
 template <class TFlatHashMap>
 size_t flat_hash_map_memory_size(size_t capacity) {

@@ -18,7 +18,7 @@
 
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 
 namespace silkworm::db {
 

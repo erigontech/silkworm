@@ -21,7 +21,7 @@
 
 #include <silkworm/core/common/bytes.hpp>
 
-namespace silkworm::etl {
+namespace silkworm::datastore::etl {
 
 class EtlError : public std::runtime_error {
   public:
@@ -58,4 +58,4 @@ inline bool operator<(const Entry& a, const Entry& b) {
     return diff < 0;
 }
 
-}  // namespace silkworm::etl
+}  // namespace silkworm::datastore::etl

@@ -40,15 +40,15 @@
 
 #include "mdbx.hpp"
 
-namespace silkworm::etl {
+namespace silkworm::datastore::etl {
 class Collector;
 }
 
-namespace silkworm::sw_mdbx {
+namespace silkworm::datastore::kvdb {
 class Collector;
 }
 
-namespace silkworm::sw_mdbx::bitmap {
+namespace silkworm::datastore::kvdb::bitmap {
 
 class IndexLoader {
   public:
@@ -58,9 +58,9 @@ class IndexLoader {
     //! all bitmaps are properly sharded and that last bitmap is marked with an UINT64_MAX upper bound
     //! \param txn [in] : An MDBX transaction holder
     //! \param key_size [in] : The actual length of key in the list of bitmap shards (the index)
-    //! \param bitmaps_collector [in] : A pointer to the etl::collector holding the bitmaps to be merged
-    void merge_bitmaps(RWTxn& txn, size_t key_size, sw_mdbx::Collector* bitmaps_collector);
-    void merge_bitmaps32(RWTxn& txn, size_t key_size, sw_mdbx::Collector* bitmaps_collector);
+    //! \param bitmaps_collector [in] : A pointer to the datastore::etl::collector holding the bitmaps to be merged
+    void merge_bitmaps(RWTxn& txn, size_t key_size, datastore::kvdb::Collector* bitmaps_collector);
+    void merge_bitmaps32(RWTxn& txn, size_t key_size, datastore::kvdb::Collector* bitmaps_collector);
 
     //! \brief Provided a list of keys for which the unwind should be applied this removes right values from shards
     //! \param txn [in] : An MDBX transaction holder
@@ -81,7 +81,7 @@ class IndexLoader {
         return current_key_;
     }
 
-    //! \brief Flushes a collected map of Bitmaps into an etl::Collector taking care of proper keys sorting for subsequent load
+    //! \brief Flushes a collected map of Bitmaps into an datastore::etl::Collector taking care of proper keys sorting for subsequent load
     //! \param bitmaps [in] : A map of keys and related bitmaps
     //! \param collector [in] : The collector to flush to
     //! \param flush_count [in]
@@ -89,13 +89,13 @@ class IndexLoader {
     //! we add flush_count as suffix of key, so we ensure for same account we process entries in the order
     //! they've been collected. uint16_t maxes 65K flushes
     static void flush_bitmaps_to_etl(absl::btree_map<Bytes, roaring::Roaring64Map>& bitmaps,
-                                     etl::Collector* collector, uint16_t flush_count);
+                                     datastore::etl::Collector* collector, uint16_t flush_count);
     static void flush_bitmaps_to_etl(absl::btree_map<Bytes, roaring::Roaring>& bitmaps,
-                                     etl::Collector* collector, uint16_t flush_count);
+                                     datastore::etl::Collector* collector, uint16_t flush_count);
 
   private:
     template <typename RoaringMap, typename BlockUpperBound>
-    void merge_bitmaps_impl(RWTxn& txn, size_t key_size, sw_mdbx::Collector* bitmaps_collector);
+    void merge_bitmaps_impl(RWTxn& txn, size_t key_size, datastore::kvdb::Collector* bitmaps_collector);
 
     template <typename RoaringMap, typename BlockUpperBound>
     void unwind_bitmaps_impl(RWTxn& txn, BlockNum to, const std::map<Bytes, bool>& keys);
@@ -134,4 +134,4 @@ roaring::Roaring64Map parse(ByteView data);
 //! \brief Parse 32-bit roaring bitmap from MDBX slice
 roaring::Roaring parse32(const mdbx::slice& data);
 
-}  // namespace silkworm::sw_mdbx::bitmap
+}  // namespace silkworm::datastore::kvdb::bitmap

@@ -39,7 +39,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/os.hpp>
 
-namespace silkworm::sw_mdbx {
+namespace silkworm::datastore::kvdb {
 
 inline constexpr std::string_view kDbDataFileName{"mdbx.dat"};
 
@@ -597,4 +597,4 @@ inline ByteView from_slice(const Slice slice) {
     return {static_cast<const uint8_t*>(slice.data()), slice.length()};
 }
 
-}  // namespace silkworm::sw_mdbx
+}  // namespace silkworm::datastore::kvdb

@@ -26,7 +26,7 @@
 #include <silkworm/db/blocks/bodies/body_queries.hpp>
 #include <silkworm/db/blocks/headers/header_queries.hpp>
 #include <silkworm/db/blocks/transactions/txn_queries.hpp>
-#include <silkworm/db/datastore/mdbx/bitmap.hpp>
+#include <silkworm/db/datastore/kvdb/bitmap.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/receipt_cbor.hpp>
 #include <silkworm/db/tables.hpp>
@@ -35,9 +35,9 @@
 
 namespace silkworm::db {
 
-using namespace sw_mdbx;
+using namespace silkworm::datastore::kvdb;
 using namespace snapshots;
-using sw_mdbx::to_slice;
+using datastore::kvdb::to_slice;
 
 std::optional<VersionBase> read_schema_version(ROTxn& txn) {
     auto cursor = txn.ro_cursor(table::kDatabaseInfo);

@@ -23,8 +23,8 @@ namespace silkworm::db {
 class HeaderSegmentCollation : public datastore::SegmentCollation {
   public:
     ~HeaderSegmentCollation() override = default;
-    void copy(sw_mdbx::ROTxn& txn, const datastore::SegmentCollationCommand& command, snapshots::segment::SegmentFileWriter& file_writer) const override;
-    void prune(sw_mdbx::RWTxn& txn, BlockNumRange range) const override;
+    void copy(datastore::kvdb::ROTxn& txn, const datastore::SegmentCollationCommand& command, snapshots::segment::SegmentFileWriter& file_writer) const override;
+    void prune(datastore::kvdb::RWTxn& txn, BlockNumRange range) const override;
 };
 
 }  // namespace silkworm::db

@@ -35,7 +35,7 @@
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/db/data_store.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/util.hpp>
 
 namespace silkworm::snapshots {
@@ -44,8 +44,8 @@ class SnapshotRepository;
 
 namespace silkworm::db {
 
-using sw_mdbx::ROTxn;
-using sw_mdbx::RWTxn;
+using datastore::kvdb::ROTxn;
+using datastore::kvdb::RWTxn;
 
 //! \brief Pulls database schema version
 std::optional<VersionBase> read_schema_version(ROTxn& txn);
@@ -187,7 +187,7 @@ void write_receipts(RWTxn& txn, const std::vector<silkworm::Receipt>& receipts, 
 
 // See Erigon ReadTransactions
 void read_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
-void read_transactions(sw_mdbx::ROCursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
+void read_transactions(datastore::kvdb::ROCursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
 
 bool read_rlp_transactions(ROTxn& txn, BlockNum block_num, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs);
 

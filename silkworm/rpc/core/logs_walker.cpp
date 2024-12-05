@@ -219,7 +219,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start,
         }
 
         SILK_DEBUG << "Got transaction: block_num: " << block_num
-                 << ", txn_index: " << txn_index;
+                   << ", txn_index: " << txn_index;
 
         const auto& receipt = receipts.at(silkworm::to_hex(transaction.value().hash(), false));
 

@@ -29,6 +29,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
+#include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/ethdb/bitmap.hpp>
 #include <silkworm/rpc/ethdb/cbor.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
@@ -95,11 +96,17 @@ db::kv::api::PaginatedStream<db::kv::api::Timestamp> create_range_stream(db::kv:
     return std::make_unique<RangePaginatedIterator>(from, to);
 }
 
-Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
+struct BlockInfo {
+    BlockNum block_num{0};
+    BlockDetails details;
+};
+
+Task<void> LogsWalker::get_logs(std::uint64_t start,
+                                std::uint64_t end,
                                 const FilterAddresses& addresses,
                                 const FilterTopics& topics,
-                                const LogFilterOptions& /*options*/,
-                                bool /*desc_order*/,
+                                const LogFilterOptions& options,
+                                bool desc_order,
                                 std::vector<Log>& logs) {
     SILK_DEBUG << "start block: " << start << " end block: " << end;
 
@@ -130,7 +137,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
                                                   .key = db::account_domain_key(*it),
                                                   .from_timestamp = from_timestamp,
                                                   .to_timestamp = to_timestamp,
-                                                  .ascending_order = true};
+                                                  .ascending_order = desc_order};
             auto paginated_result = co_await tx_.index_range(std::move(query));
             union_itr = db::kv::api::set_union(std::move(union_itr), co_await paginated_result.begin());
         }
@@ -144,7 +151,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
                                                   .key = db::account_domain_key(*it),
                                                   .from_timestamp = from_timestamp,
                                                   .to_timestamp = to_timestamp,
-                                                  .ascending_order = true};
+                                                  .ascending_order = desc_order};
             auto paginated_result = co_await tx_.index_range(std::move(query));
             union_itr = db::kv::api::set_union(std::move(union_itr), co_await paginated_result.begin());
         }
@@ -152,6 +159,15 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
     if (!union_itr) {
         union_itr = db::kv::api::set_union(std::move(union_itr), create_range_stream(from_timestamp, to_timestamp));
     }
+
+    std::map<std::string, Receipt> receipts;
+    std::optional<BlockInfo> block_info;
+
+    uint64_t log_count{0};
+//    Logs chunk_logs;
+    Logs filtered_chunk_logs;
+//    Logs filtered_block_logs;
+
     while (const auto value = co_await union_itr->next()) {
         const auto txn_id = static_cast<TxnId>(*value);
         const auto block_num_opt = co_await db::txn::block_num_from_tx_num(tx_, txn_id, provider);
@@ -164,10 +180,106 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
         const auto min_txn_id = co_await db::txn::min_tx_num(tx_, block_num, provider);
         const auto txn_index = txn_id - min_txn_id - 1;
 
-        SILK_LOG << "txNum: " << txn_id
-                 << ", blockNum: " << block_num
-                 << ", txIndex: " << txn_index
-                 << ", final txn: " << (txn_id == max_txn_id);
+        SILK_LOG
+            << "txn_id: " << txn_id
+            << " block_num: " << block_num
+            << ", txn_index: " << txn_index
+            << ", max_txn_id: " << max_txn_id
+            << ", min_txn_id: " << min_txn_id
+            << ", final txn: " << (txn_id == max_txn_id);
+
+        if (txn_id == max_txn_id) {
+            continue;
+        }
+
+        if (block_info && (block_info->block_num != block_num)) {
+            block_info.reset();
+            receipts.clear();
+        }
+        if (!block_info) {
+            const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, *chain_storage, block_num);
+            if (!block_with_hash) {
+                SILK_DEBUG << "Not found block no.  " << block_num;
+                break;
+            }
+            auto rr = co_await core::get_receipts(tx_, *block_with_hash, *chain_storage, workers_);
+            SILK_DEBUG << "Read #" << rr.size() << " receipts from block " << block_num;
+
+            std::for_each(rr.begin(), rr.end(), [&receipts](const auto& item) {
+                receipts[silkworm::to_hex(item.tx_hash, false)] = std::move(item);
+            });
+
+            const Block extended_block{block_with_hash, false};
+            const auto block_size = extended_block.get_block_size();
+            const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header,
+                                             block_with_hash->block.transactions.size(), block_with_hash->block.ommers,
+                                             block_with_hash->block.withdrawals};
+            block_info = BlockInfo{block_with_hash->block.header.number, block_details};
+        }
+        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_num, txn_index);
+        if (!transaction) {
+            SILK_DEBUG << "No transaction found in block " << block_num << " for index " << txn_index;
+            break;
+        }
+
+        SILK_LOG
+            << "Got transaction: block_num: " << block_num
+            << ", txn_index: " << txn_index;
+
+        const auto& receipt = receipts.at(silkworm::to_hex(transaction.value().hash(), false));
+
+        SILK_LOG << "#rawLogs: " << receipt.logs.size();
+        filtered_chunk_logs.clear();
+        filter_logs(std::move(receipt.logs), addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
+
+        log_count += filtered_chunk_logs.size();
+        SILK_TRACE << "log_count: " << log_count;
+//        filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunk_logs.rbegin(), filtered_chunk_logs.rend());
+
+        SILK_LOG << "filtered #logs: " << filtered_chunk_logs.size();
+
+        logs.insert(logs.end(), filtered_chunk_logs.begin(), filtered_chunk_logs.end());
+
+//        db::kv::api::GetAsOfQuery get_ss_of_query{
+//                .table = db::table::kReceiptDomain,
+//                .key = Bytes{0x0}, // CumulativeGasUsedInBlockKey
+//                .timestamp = static_cast<db::kv::api::Timestamp>(min_tx_num + txn_index + 1),
+//        };
+//
+//        auto result = co_await tx_.get_as_of(std::move(get_ss_of_query));
+//        if (!result.success || result.value.empty()) {
+//            break; // TODO error?
+//        }
+//        auto cumulative_gas_used = value.value();
+//
+//        get_ss_of_query = db::kv::api::GetAsOfQuery{
+//                .table = db::table::kReceiptDomain,
+//                .key = Bytes{0x1}, // CumulativeBlobGasUsedInBlockKey
+//                .timestamp = static_cast<db::kv::api::Timestamp>(min_tx_num + txn_index + 1),
+//        };
+//
+//        result = co_await tx_.get_as_of(std::move(get_ss_of_query));
+//        if (!result.success || result.value.empty()) {
+//            break; // TODO error?
+//        }
+//        auto cumulative_blob_gas_used = value.value();
+//
+//        get_ss_of_query = db::kv::api::GetAsOfQuery{
+//                .table = db::table::kReceiptDomain,
+//                .key = Bytes{0x2}, // FirstLogIndexKey
+//                .timestamp = static_cast<db::kv::api::Timestamp>(min_tx_num + txn_index + 1),
+//        };
+//
+//        result = co_await tx_.get_as_of(std::move(get_ss_of_query));
+//        if (!result.success || result.value.empty()) {
+//            break; // TODO error?
+//        }
+//        auto first_log_index_within_block = value.value();
+//
+//        SILK_LOG
+//            << "cumulative_gas_used: " << cumulative_gas_used
+//            << ", cumulative_blob_gas_used: " << cumulative_blob_gas_used
+//            << ", first_log_index_within_block: " << first_log_index_within_block;
     }
     //    if (!topics.empty()) {
     //        auto topics_bitmap = co_await ethdb::bitmap::from_topics(tx_, db::table::kLogTopicIndexName, topics, start, end);

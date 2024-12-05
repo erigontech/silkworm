@@ -217,11 +217,10 @@ TEST_CASE("get_block_num_by_tag", "[rpc][core][blocks]") {
     }
 
     SECTION("kLatestExecutedBlockId") {
-        static const std::string kLatestBlockId = kLatestExecutedBlockId;
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("1234567890123456")};
         }));
-        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num_by_tag(kLatest), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, block_reader.get_block_num_by_tag(kLatestExecuted), boost::asio::use_future);
         auto block_num = result.get();
         CHECK(block_num == 0x1234567890123456);
     }

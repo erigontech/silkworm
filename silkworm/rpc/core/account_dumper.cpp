@@ -35,8 +35,6 @@
 
 namespace silkworm::rpc::core {
 
-using db::kv::StateReader;
-
 Task<DumpAccounts> AccountDumper::dump_accounts(
     BlockCache& cache,
     const BlockNumOrHash& block_num_or_hash,
@@ -111,7 +109,6 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
 
 Task<void> AccountDumper::load_storage(BlockNum block_num, DumpAccounts& dump_accounts) {
     SILK_TRACE << "block_number " << block_num << " START";
-    StorageWalker storage_walker{transaction_};
     const auto txn_number = co_await transaction_.first_txn_num_in_block(block_num);
 
     for (auto& [address, account] : dump_accounts.accounts) {

@@ -30,7 +30,7 @@ enum class ReceiptsDomainKey : uint8_t {
 };
 
 struct ReceiptsDomainKeyDecoder : public snapshots::Decoder {
-    ReceiptsDomainKey value;
+    ReceiptsDomainKey value{};
     ~ReceiptsDomainKeyDecoder() override = default;
     void decode_word(ByteView word) override {
         if (word.empty())
@@ -42,7 +42,7 @@ struct ReceiptsDomainKeyDecoder : public snapshots::Decoder {
 static_assert(snapshots::DecoderConcept<ReceiptsDomainKeyDecoder>);
 
 struct VarintDecoder : public snapshots::Decoder {
-    uint64_t value;
+    uint64_t value{};
     ~VarintDecoder() override = default;
     void decode_word(ByteView word) override {
         auto value_opt = snapshots::seg::varint::decode(word);

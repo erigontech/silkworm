@@ -235,8 +235,7 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "range stream", "[db][kv][api][paginated
         {/*from, to=*/{0, 0}, /*expected_sequence=*/{}},
         {/*from, to=*/{0, 1}, /*expected_sequence=*/{0}},
         {/*from, tot=*/{0, 2}, /*expected_sequence=*/{0, 1}},
-        {/*from, tot=*/{2, 0}, /*expected_sequence=*/{}}
-    };
+        {/*from, tot=*/{2, 0}, /*expected_sequence=*/{}}};
     int i = 0;
     for (const auto& [pair, expected_sequence] : fixtures) {
         SECTION("test range: " + std::to_string(++i)) {

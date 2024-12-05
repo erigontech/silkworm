@@ -386,17 +386,17 @@ class RangePaginatedIterator : public PaginatedIterator<V> {
     using value_type = V;
 
     RangePaginatedIterator(V from, V to)
-      : current_(from), to_(to) {}
+        : current_(from), to_(to) {}
 
     Task<bool> has_next() override {
-      co_return current_ < to_;
+        co_return current_ < to_;
     }
 
     Task<std::optional<value_type>> next() override {
-      if (current_ >= to_) {
-        co_return std::nullopt;
-      }
-      co_return current_++;
+        if (current_ >= to_) {
+            co_return std::nullopt;
+        }
+        co_return current_++;
     }
 
   private:
@@ -406,6 +406,6 @@ class RangePaginatedIterator : public PaginatedIterator<V> {
 
 template <Value V>
 PaginatedStream<V> make_range_stream(V from, V to) {
-  return std::make_unique<RangePaginatedIterator<V>>(from, to);
+    return std::make_unique<RangePaginatedIterator<V>>(from, to);
 }
 }  // namespace silkworm::db::kv::api

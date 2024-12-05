@@ -33,8 +33,9 @@ namespace silkworm::execution {
 
 class LocalState : public State {
   public:
-    explicit LocalState(BlockNum block_num, db::DataStoreRef data_store)
+    explicit LocalState(std::optional<BlockNum> block_num, std::optional<TxnId> txn_id, db::DataStoreRef data_store)
         : block_num_{block_num},
+          txnid_{txn_id},
           txn_{data_store.chaindata.start_ro_tx()},
           data_model_{txn_, data_store.blocks_repository} {}
 
@@ -91,7 +92,8 @@ class LocalState : public State {
     void unwind_state_changes(BlockNum /*block_num*/) override {}
 
   private:
-    BlockNum block_num_;
+    std::optional<BlockNum> block_num_;
+    std::optional<TxnId> txnid_;
     mutable datastore::kvdb::ROTxnManaged txn_;
     db::DataModel data_model_;
 };

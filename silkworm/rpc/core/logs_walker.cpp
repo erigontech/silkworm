@@ -98,8 +98,9 @@ db::kv::api::PaginatedStream<db::kv::api::Timestamp> create_range_stream(db::kv:
 Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
                                 const FilterAddresses& addresses,
                                 const FilterTopics& topics,
-                                const LogFilterOptions& options,
-                                bool desc_order, std::vector<Log>& logs) {
+                                const LogFilterOptions& /*options*/,
+                                bool /*desc_order*/,
+                                std::vector<Log>& logs) {
     SILK_DEBUG << "start block: " << start << " end block: " << end;
 
     auto provider = ethdb::kv::canonical_body_for_storage_provider(&backend_);
@@ -116,8 +117,8 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
     const auto to_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num);
 
     const auto chain_storage{tx_.create_storage()};
-    roaring::Roaring block_nums;
-    block_nums.addRange(start, end + 1);  // [min, max)
+//    roaring::Roaring block_nums;
+//    block_nums.addRange(start, end + 1);  // [min, max)
 
     db::kv::api::PaginatedStream<db::kv::api::Timestamp> union_itr;
     if (!topics.empty()) {
@@ -188,88 +189,88 @@ Task<void> LogsWalker::get_logs(std::uint64_t start, std::uint64_t end,
     //    SILK_DEBUG << "block_nums.cardinality(): " << block_nums.cardinality();
     //    SILK_TRACE << "block_nums: " << block_nums.toString();
 
-    if (block_nums.cardinality() == 0) {
-        co_return;
-    }
+//    if (block_nums.cardinality() == 0) {
+//        co_return;
+//    }
 
-    std::vector<BlockNum> matching_block_nums;
-    matching_block_nums.reserve(block_nums.cardinality());
-    for (const auto& block_to_match : block_nums) {
-        matching_block_nums.push_back(block_to_match);
-    }
-    if (desc_order) {
-        std::reverse(matching_block_nums.begin(), matching_block_nums.end());
-    }
+//    std::vector<BlockNum> matching_block_nums;
+//    matching_block_nums.reserve(block_nums.cardinality());
+//    for (const auto& block_to_match : block_nums) {
+//        matching_block_nums.push_back(block_to_match);
+//    }
+//    if (desc_order) {
+//        std::reverse(matching_block_nums.begin(), matching_block_nums.end());
+//    }
 
-    std::uint64_t log_count{0};
-    std::uint64_t block_count{0};
-
-    Logs chunk_logs;
-    Logs filtered_chunk_logs;
-    Logs filtered_block_logs;
-    chunk_logs.reserve(512);
-    filtered_chunk_logs.reserve(64);
-    filtered_block_logs.reserve(256);
-
-    for (const auto& block_to_match : matching_block_nums) {
-        uint32_t log_index{0};
-
-        filtered_block_logs.clear();
-        const auto block_key = silkworm::db::block_key(block_to_match);
-        SILK_DEBUG << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key);
-        co_await ethdb::for_prefix(tx_, db::table::kLogsName, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
-            chunk_logs.clear();
-            const bool decoding_ok{cbor_decode(v, chunk_logs)};
-            if (!decoding_ok) {
-                return false;
-            }
-            for (auto& log : chunk_logs) {
-                log.index = log_index++;
-            }
-            SILK_DEBUG << "chunk_logs.size(): " << chunk_logs.size();
-
-            filtered_chunk_logs.clear();
-            filter_logs(std::move(chunk_logs), addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
-
-            if (!filtered_chunk_logs.empty()) {
-                const auto tx_index = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
-                SILK_TRACE << "Transaction index: " << tx_index;
-                for (auto& log : filtered_chunk_logs) {
-                    log.tx_index = tx_index;
-                }
-                log_count += filtered_chunk_logs.size();
-                SILK_TRACE << "log_count: " << log_count;
-                filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunk_logs.rbegin(), filtered_chunk_logs.rend());
-            }
-            return options.log_count == 0 || options.log_count > log_count;
-        });
-        SILK_DEBUG << "filtered_block_logs.size(): " << filtered_block_logs.size();
-
-        if (!filtered_block_logs.empty()) {
-            const auto block_with_hash = co_await core::read_block_by_number(block_cache_, *chain_storage, block_to_match);
-            if (!block_with_hash) {
-                throw std::invalid_argument("read_block_by_number: block not found " + std::to_string(block_to_match));
-            }
-            SILK_TRACE << "assigning block_hash: " << silkworm::to_hex(block_with_hash->hash);
-            for (auto& log : filtered_block_logs) {
-                const auto tx_hash{block_with_hash->block.transactions[log.tx_index].hash()};
-                log.block_num = block_to_match;
-                log.block_hash = block_with_hash->hash;
-                log.tx_hash = silkworm::to_bytes32({tx_hash.bytes, silkworm::kHashLength});
-                if (options.add_timestamp) {
-                    log.timestamp = block_with_hash->block.header.timestamp;
-                }
-            }
-            logs.insert(logs.end(), filtered_block_logs.begin(), filtered_block_logs.end());
-        }
-        ++block_count;
-        if (options.log_count != 0 && options.log_count <= log_count) {
-            break;
-        }
-        if (options.block_count != 0 && options.block_count == block_count) {
-            break;
-        }
-    }
+//    std::uint64_t log_count{0};
+//    std::uint64_t block_count{0};
+//
+//    Logs chunk_logs;
+//    Logs filtered_chunk_logs;
+//    Logs filtered_block_logs;
+//    chunk_logs.reserve(512);
+//    filtered_chunk_logs.reserve(64);
+//    filtered_block_logs.reserve(256);
+//
+//    for (const auto& block_to_match : matching_block_nums) {
+//        uint32_t log_index{0};
+//
+//        filtered_block_logs.clear();
+//        const auto block_key = silkworm::db::block_key(block_to_match);
+//        SILK_DEBUG << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key);
+//        co_await ethdb::for_prefix(tx_, db::table::kLogsName, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
+//            chunk_logs.clear();
+//            const bool decoding_ok{cbor_decode(v, chunk_logs)};
+//            if (!decoding_ok) {
+//                return false;
+//            }
+//            for (auto& log : chunk_logs) {
+//                log.index = log_index++;
+//            }
+//            SILK_DEBUG << "chunk_logs.size(): " << chunk_logs.size();
+//
+//            filtered_chunk_logs.clear();
+//            filter_logs(std::move(chunk_logs), addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
+//
+//            if (!filtered_chunk_logs.empty()) {
+//                const auto tx_index = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
+//                SILK_TRACE << "Transaction index: " << tx_index;
+//                for (auto& log : filtered_chunk_logs) {
+//                    log.tx_index = tx_index;
+//                }
+//                log_count += filtered_chunk_logs.size();
+//                SILK_TRACE << "log_count: " << log_count;
+//                filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunk_logs.rbegin(), filtered_chunk_logs.rend());
+//            }
+//            return options.log_count == 0 || options.log_count > log_count;
+//        });
+//        SILK_DEBUG << "filtered_block_logs.size(): " << filtered_block_logs.size();
+//
+//        if (!filtered_block_logs.empty()) {
+//            const auto block_with_hash = co_await core::read_block_by_number(block_cache_, *chain_storage, block_to_match);
+//            if (!block_with_hash) {
+//                throw std::invalid_argument("read_block_by_number: block not found " + std::to_string(block_to_match));
+//            }
+//            SILK_TRACE << "assigning block_hash: " << silkworm::to_hex(block_with_hash->hash);
+//            for (auto& log : filtered_block_logs) {
+//                const auto tx_hash{block_with_hash->block.transactions[log.tx_index].hash()};
+//                log.block_num = block_to_match;
+//                log.block_hash = block_with_hash->hash;
+//                log.tx_hash = silkworm::to_bytes32({tx_hash.bytes, silkworm::kHashLength});
+//                if (options.add_timestamp) {
+//                    log.timestamp = block_with_hash->block.header.timestamp;
+//                }
+//            }
+//            logs.insert(logs.end(), filtered_block_logs.begin(), filtered_block_logs.end());
+//        }
+//        ++block_count;
+//        if (options.log_count != 0 && options.log_count <= log_count) {
+//            break;
+//        }
+//        if (options.block_count != 0 && options.block_count == block_count) {
+//            break;
+//        }
+//    }
     SILK_DEBUG << "resulting logs size: " << logs.size();
 
     co_return;

@@ -34,6 +34,11 @@ struct StateFactory {
         boost::asio::any_io_executor& executor,
         const db::chain::ChainStorage& storage,
         BlockNum block_num);
+
+    std::shared_ptr<State> create_state_txn(
+        boost::asio::any_io_executor& executor,
+        const db::chain::ChainStorage& storage,
+        TxnId txn_id);
 };
 
 }  // namespace silkworm::execution

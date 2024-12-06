@@ -1466,9 +1466,9 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 }
 
 Task<TraceCallResult> TraceCallExecutor::trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config) {
-    // to make trace_call: it is necessary executes at the end of the current block
+    // trace_call semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number
     rpc::Transaction transaction{call.to_transaction()};
-    auto result = co_await execute(block.header.number, block, transaction, -1, config, true);  // TODO  to be debug
+    auto result = co_await execute(block.header.number, block, transaction, /*index=*/-1, config, /*gas_bailout=*/true);
     co_return result;
 }
 
@@ -1485,7 +1485,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
         silkworm::IntraBlockState initial_ibs{*state};
         StateAddresses state_addresses(initial_ibs);
 
-        auto curr_state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, block_num);  // TODO to be debug
+        auto curr_state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, block_num);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         std::shared_ptr<silkworm::EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
@@ -1569,14 +1569,14 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
 }
 
 Task<TraceCallResult> TraceCallExecutor::trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config) {
-    // to make trace_transaction: it is necessary executes the new tx indexed by transaction_index from the state after last tx of previos block
-    return execute(block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config, false);
+    // trace_transaction semantics: we must execute the txn from the state at the end of the previous block, so we pass block.header.number - 1
+    return execute(block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config, /*gas_bailout=*/false);
 }
 
 Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction, bool gas_bailout) {
     std::vector<Trace> traces;
 
-    // to make trace_transaction: it is necessary executes the new tx indexed by transaction_index from the state after last tx of previos block
+    // trace_transaction semantics: we must execute the txn from the state at the end of the previous block, so we pass block.header.number - 1
     const auto result = co_await execute(block_with_hash.block.header.number - 1, block_with_hash.block, transaction,
                                          gsl::narrow<int32_t>(transaction.transaction_index), {false, true, false}, gas_bailout);
     const auto& trace_result = result.traces.trace;
@@ -1786,11 +1786,14 @@ Task<TraceCallResult> TraceCallExecutor::execute(
     std::shared_ptr<State> state{};
     std::shared_ptr<State> curr_state{};
     if (index == -1) {
+        // We must do the execution at the state after the block identified by the given block_num
         state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, block_num);
         curr_state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, block_num);
     } else {
-        // the block provided is the requested block + 1 because the txnIndex is calculated as first tx of block, +1 is related system tx
-        auto txn_id = co_await tx_.first_txn_num_in_block(block_num + 1) + 1 + static_cast<uint64_t>(index);
+        // We must do the execution at the state after the txn identified by the given index within the given block
+        // at the state after the block identified by the given block_num, i.e. at the start of the next block (block_num + 1)
+        const auto first_txn_num_in_next_block = co_await tx_.first_txn_num_in_block(block_num + 1);
+        const auto txn_id = first_txn_num_in_next_block + 1 + static_cast<uint64_t>(index);  // + 1 for system txn in the beginning of block
         state = execution::StateFactory{tx_}.create_state_txn(current_executor, chain_storage_, txn_id);
         curr_state = execution::StateFactory{tx_}.create_state_txn(current_executor, chain_storage_, txn_id);
     }

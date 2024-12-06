@@ -18,7 +18,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/infra/common/directories.hpp>
 

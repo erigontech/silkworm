@@ -1603,9 +1603,12 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
 
     const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
-    const auto first_txn_num_in_next_block = co_await tx_.first_txn_num_in_block(block_num);
+
+    // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
+    // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
+    const auto first_txn_num_in_block = co_await tx_.first_txn_num_in_block(block_num);
     const auto trace_result = co_await async_task(workers_.executor(), [&]() -> TraceEntriesResult {
-        const auto txn_id = first_txn_num_in_next_block + 1 + static_cast<uint64_t>(transaction_with_block.transaction.transaction_index);  // + 1 for system txn in the beginning of block
+        const auto txn_id = first_txn_num_in_block + 1 + static_cast<uint64_t>(transaction_with_block.transaction.transaction_index);  // + 1 for system txn in the beginning of block
 
         auto state = execution::StateFactory{tx_}.create_state_txn(current_executor, chain_storage_, txn_id);
         silkworm::IntraBlockState initial_ibs{*state};
@@ -1629,9 +1632,12 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
 
     const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
-    const auto first_txn_num_in_next_block = co_await tx_.first_txn_num_in_block(block_num);
+
+    // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
+    // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
+    const auto first_txn_num_in_block = co_await tx_.first_txn_num_in_block(block_num);
     const auto trace_error = co_await async_task(workers_.executor(), [&]() -> std::string {
-        const auto txn_id = first_txn_num_in_next_block + 1 + static_cast<uint64_t>(transaction_with_block.transaction.transaction_index);  // + 1 for system txn in the beginning of block
+        const auto txn_id = first_txn_num_in_block + 1 + static_cast<uint64_t>(transaction_with_block.transaction.transaction_index);  // + 1 for system txn in the beginning of block
 
         auto state = execution::StateFactory{tx_}.create_state_txn(current_executor, chain_storage_, txn_id);
         silkworm::IntraBlockState initial_ibs{*state};
@@ -1659,9 +1665,12 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
 
     const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
-    const auto first_txn_num_in_next_block = co_await tx_.first_txn_num_in_block(block_num);
+
+    // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
+    // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
+    const auto first_txn_num_in_block = co_await tx_.first_txn_num_in_block(block_num);
     const auto trace_op_result = co_await async_task(workers_.executor(), [&]() -> TraceOperationsResult {
-        const auto txn_id = first_txn_num_in_next_block + 1 + static_cast<uint64_t>(transaction_with_block.transaction.transaction_index);  // + 1 for system txn in the beginning of block
+        const auto txn_id = first_txn_num_in_block + 1 + static_cast<uint64_t>(transaction_with_block.transaction.transaction_index);  // + 1 for system txn in the beginning of block
 
         auto state = execution::StateFactory{tx_}.create_state_txn(current_executor, chain_storage_, txn_id);
         silkworm::IntraBlockState initial_ibs{*state};

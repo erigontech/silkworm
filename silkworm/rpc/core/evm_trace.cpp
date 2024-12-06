@@ -1466,8 +1466,9 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 }
 
 Task<TraceCallResult> TraceCallExecutor::trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config) {
+    // to make trace_call: it is necessary executes at the end of the current block
     rpc::Transaction transaction{call.to_transaction()};
-    auto result = co_await execute(block.header.number + 1, block, transaction, -1, config, true);  // TODO  to be debug
+    auto result = co_await execute(block.header.number, block, transaction, -1, config, true);  // TODO  to be debug
     co_return result;
 }
 
@@ -1568,13 +1569,15 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
 }
 
 Task<TraceCallResult> TraceCallExecutor::trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config) {
-    return execute(block.header.number, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config, false);
+    // to make trace_transaction: it is necessary executes the new tx indexed by transaction_index from the state after last tx of previos block
+    return execute(block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config, false);
 }
 
 Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction, bool gas_bailout) {
     std::vector<Trace> traces;
 
-    const auto result = co_await execute(block_with_hash.block.header.number, block_with_hash.block, transaction,
+    // to make trace_transaction: it is necessary executes the new tx indexed by transaction_index from the state after last tx of previos block
+    const auto result = co_await execute(block_with_hash.block.header.number - 1, block_with_hash.block, transaction,
                                          gsl::narrow<int32_t>(transaction.transaction_index), {false, true, false}, gas_bailout);
     const auto& trace_result = result.traces.trace;
 
@@ -1783,10 +1786,11 @@ Task<TraceCallResult> TraceCallExecutor::execute(
     std::shared_ptr<State> state{};
     std::shared_ptr<State> curr_state{};
     if (index == -1) {
-        state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, block_num - 1);
-        curr_state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, block_num - 1);
+        state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, block_num);
+        curr_state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, block_num);
     } else {
-        auto txn_id = co_await tx_.first_txn_num_in_block(block_num) + 1 + static_cast<uint64_t>(index);
+        // the block provided is the requested block + 1 because the txnIndex is calculated as first tx of block, +1 is related system tx
+        auto txn_id = co_await tx_.first_txn_num_in_block(block_num + 1) + 1 + static_cast<uint64_t>(index);
         state = execution::StateFactory{tx_}.create_state_txn(current_executor, chain_storage_, txn_id);
         curr_state = execution::StateFactory{tx_}.create_state_txn(current_executor, chain_storage_, txn_id);
     }

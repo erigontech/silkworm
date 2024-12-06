@@ -103,7 +103,7 @@ class EVMExecutor {
           workers_{workers},
           state_{std::move(state)},
           rule_set_{protocol::rule_set_factory(config)},
-          execution_processor_{block, *rule_set_, *state_, config} {
+          execution_processor_{block, *rule_set_, *state_, config, false} {
         SILKWORM_ASSERT(rule_set_);
         if (!has_service<AnalysisCacheService>(workers_)) {
             make_service<AnalysisCacheService>(workers_);

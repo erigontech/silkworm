@@ -105,8 +105,8 @@ namespace {
 }  // namespace
 
 ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::RuleSet& rule_set, State& state,
-                                       const ChainConfig& config)
-    : state_{state}, rule_set_{rule_set}, evm_{block, state_, config} {
+                                       const ChainConfig& config, bool evm1_v2)
+    : state_{state}, rule_set_{rule_set}, evm_{block, state_, config}, evm1_v2_{evm1_v2} {
     evm_.beneficiary = rule_set.get_beneficiary(block.header);
     evm_.transfer = rule_set.transfer_func();
 

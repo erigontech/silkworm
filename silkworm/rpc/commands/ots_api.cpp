@@ -72,7 +72,8 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
     auto tx = co_await database_->begin();
 
     try {
-        rpc::BlockReader block_reader{*tx->create_storage(), *tx};
+        const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
 
         // Check if target block is the latest one: use local state cache (if any) for target transaction
         const bool is_latest_block = co_await block_reader.is_latest_block_num(BlockNumOrHash{block_id});

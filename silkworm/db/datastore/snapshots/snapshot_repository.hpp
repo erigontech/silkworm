@@ -74,7 +74,7 @@ class SnapshotRepository {
     Timestamp max_timestamp_available() const;
 
     std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
-    void remove_stale_indexes() const;
+    size_t remove_stale_indexes() const;
     void build_indexes(const SnapshotBundlePaths& bundle) const;
 
     using Bundles = std::map<Step, std::shared_ptr<SnapshotBundle>>;

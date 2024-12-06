@@ -132,7 +132,9 @@ Task<void> SnapshotSync::setup() {
     // Snapshot sync - download chain from peers using snapshot files
     co_await download_snapshots_if_needed();
 
-    blocks_repository().remove_stale_indexes();
+    const auto removed_count = blocks_repository().remove_stale_indexes();
+    SILK_INFO << "SnapshotSync: removed stale indexes: " << removed_count;
+
     co_await build_missing_indexes();
 
     blocks_repository().reopen_folder();

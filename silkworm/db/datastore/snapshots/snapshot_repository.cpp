@@ -109,15 +109,15 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes()
     // TODO: reimplement for state repository
     SnapshotBundlePaths some_bundle_paths{schema_, path(), {Step{0}, Step{1}}};
     auto segment_file_ext = some_bundle_paths.segment_paths().begin()->second.extension();
-    SnapshotPathList segment_files = get_files(segment_file_ext);
-    SILK_INFO << "num segment files: " << segment_files.size();
+    const SnapshotPathList segment_files = get_files(segment_file_ext);
     auto index_builders = index_builders_factory_->index_builders(segment_files);
-    SILK_INFO << "num index builders: " << index_builders.size();
-
+    const auto num_indexes = index_builders.size();
+    // Do not count existing index files in the missing indexes
     std::erase_if(index_builders, [&](const auto& builder) {
         return builder->path().exists();
     });
-    SILK_INFO << "num missing index builders: " << index_builders.size();
+    SILK_INFO << "Segments: " << segment_files.size() << " indexes: " << num_indexes
+              << " missing indexes: " << index_builders.size();
     return index_builders;
 }
 
@@ -158,8 +158,7 @@ void SnapshotRepository::reopen_folder() {
     bundles_ = bundles;
     lock.unlock();
 
-    SILK_INFO << "Total reopened bundles: " << bundles_count()
-              << " max block available: " << max_block_available();
+    SILK_INFO << "Total reopened bundles: " << bundles_count() << " max block available: " << max_block_available();
 }
 
 std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(Step step) const {
@@ -256,11 +255,13 @@ SnapshotPathList SnapshotRepository::stale_index_paths() const {
     return results;
 }
 
-void SnapshotRepository::remove_stale_indexes() const {
-    for (auto& path : stale_index_paths()) {
+size_t SnapshotRepository::remove_stale_indexes() const {
+    const auto stale_paths = stale_index_paths();
+    for (auto& path : stale_paths) {
         const bool removed = fs::remove(path.path());
         ensure(removed, [&]() { return "SnapshotRepository::remove_stale_indexes: cannot remove index file " + path.path().string(); });
     }
+    return stale_paths.size();
 }
 
 void SnapshotRepository::build_indexes(const SnapshotBundlePaths& bundle) const {

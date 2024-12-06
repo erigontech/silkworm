@@ -18,7 +18,6 @@
 
 #include <memory>
 
-
 #include <silkworm/db/data_store.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>

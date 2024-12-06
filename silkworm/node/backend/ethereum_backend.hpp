@@ -19,6 +19,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+
 #include <silkworm/db/kv/grpc/server/state_change_collection.hpp>
 #include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/sentry/api/common/sentry_client.hpp>

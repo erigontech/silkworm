@@ -55,12 +55,27 @@ static const fs::path kBlockchainDir{"BlockchainTests"};
 
 static const fs::path kTransactionDir{"TransactionTests"};
 
-static const std::vector<fs::path> kSlowTests{
+static const std::array kSlowTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
     kBlockchainDir / "GeneralStateTests" / "VMTests" / "vmPerformance",
 };
 
-static const std::vector<fs::path> kFailingTests{};
+static const std::array kFailingTests{
+    // Tests related to create address collision. Silkworm and evmone implement this scenario
+    // differently:
+    // Silkworm follows the older EIP-684 and clears the created account storage if not empty,
+    // evmone tries to follow the newer EIP-7610 to revert the creation, however Silkworm
+    // is not able to provide enough information to evmone to identify non-empty storage,
+    // in the result the non-empty storage remains unchanged.
+    // This scenarion don't happen in real networks. The desired behavior for implementations
+    // is still being discussed.
+    kBlockchainDir / "GeneralStateTests" / "stCreate2" / "RevertInCreateInInitCreate2.json",
+    kBlockchainDir / "GeneralStateTests" / "stCreate2" / "RevertInCreateInInitCreate2Paris.json",
+    kBlockchainDir / "GeneralStateTests" / "stRevertTest" / "RevertInCreateInInit.json",
+    kBlockchainDir / "GeneralStateTests" / "stRevertTest" / "RevertInCreateInInit_Paris.json",
+    kBlockchainDir / "GeneralStateTests" / "stSStoreTest" / "InitCollision.json",
+    kBlockchainDir / "GeneralStateTests" / "stSStoreTest" / "InitCollisionParis.json",
+};
 
 static constexpr size_t kColumnWidth{80};
 

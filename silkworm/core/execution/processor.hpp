@@ -19,6 +19,8 @@
 #include <cstdint>
 #include <vector>
 
+#include <evmone/test/state/block.hpp>
+
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/state/state.hpp>
@@ -83,6 +85,7 @@ class ExecutionProcessor {
     IntraBlockState state_;
     protocol::RuleSet& rule_set_;
     EVM evm_;
+    evmone::state::BlockInfo evm1_block_;
 };
 
 }  // namespace silkworm

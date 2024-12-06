@@ -25,7 +25,6 @@
 #include <silkworm/core/test_util/null_stream.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm {
 

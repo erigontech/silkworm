@@ -23,7 +23,6 @@
 #include <map>
 #include <string>
 
-#include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>

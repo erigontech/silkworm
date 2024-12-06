@@ -35,7 +35,6 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
-#include <silkworm/rpc/common/util.hpp>
 
 namespace silkworm::rpc::http {
 

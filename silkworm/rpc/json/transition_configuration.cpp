@@ -16,8 +16,6 @@
 
 #include "transition_configuration.hpp"
 
-#include <silkworm/core/common/util.hpp>
-
 #include "types.hpp"
 
 namespace silkworm::rpc {

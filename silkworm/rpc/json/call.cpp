@@ -23,8 +23,6 @@
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
-#include "types.hpp"
-
 namespace silkworm::rpc {
 
 void from_json(const nlohmann::json& json, Call& call) {

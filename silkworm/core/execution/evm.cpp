@@ -67,7 +67,9 @@ EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) 
       state_{state},
       config_{config} {}
 
-EVM::~EVM() = default;
+EVM::~EVM() {
+    vm_impl().remove_tracers();
+}
 
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
     SILKWORM_ASSERT(txn.sender());  // sender must be valid

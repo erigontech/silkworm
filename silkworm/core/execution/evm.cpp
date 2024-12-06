@@ -59,12 +59,13 @@ class DelegatingTracer : public evmone::Tracer {
     IntraBlockState& intra_block_state_;
 };
 
+evmc::VM EVM::evm1_{evmc_create_evmone()};
+
 EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept
     : beneficiary{block.header.beneficiary},
       block_{block},
       state_{state},
-      config_{config},
-      evm1_{evmc_create_evmone()} {}
+      config_{config} {}
 
 EVM::~EVM() = default;
 

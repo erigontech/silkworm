@@ -49,8 +49,11 @@
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/execution/block/block_executor.hpp>
+#include <silkworm/rpc/ethbackend/remote_backend.hpp>
+#include <silkworm/rpc/ethdb/kv/remote_database.hpp>
 
 #include "common.hpp"
 #include "instance.hpp"
@@ -727,6 +730,89 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         SILK_ERROR << "unknown exception";
         return SILKWORM_UNKNOWN_ERROR;
     }
+}
+
+//todo: add available gas, add txn, add block header
+SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, uint64_t block_num, uint64_t tx_index, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT {
+    if (!handle) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+
+    if (!txn) {
+        return SILKWORM_INVALID_MDBX_TXN;
+    }
+
+    if (block_num == 0) {
+        return SILKWORM_INVALID_BLOCK;
+    }
+
+    if (tx_index == 0) {
+        return SILKWORM_INVALID_BLOCK;
+    }
+
+    if (gas_used) {
+        *gas_used = 1;
+    }
+
+    if (blob_gas_used) {
+        *blob_gas_used = 1;
+    }
+
+    // const auto chain_info = kKnownChainConfigs.find(chain_id);
+    const auto chain_info = kKnownChainConfigs.find(1337);
+    if (!chain_info) {
+        return SILKWORM_UNKNOWN_CHAIN_ID;
+    }
+
+    const auto chain_config = *chain_info;
+
+    //
+    grpc::ChannelArguments channel_args;
+    // Allow to receive messages up to specified max size
+    channel_args.SetMaxReceiveMessageSize(64 * 1024 * 1024);
+    // Allow each client to open its own TCP connection to server (sharing one single connection becomes a bottleneck under high load)
+    channel_args.SetInt(GRPC_ARG_USE_LOCAL_SUBCHANNEL_POOL, 1);
+    auto grpc_channel = grpc::CreateCustomChannel("localhost:9090", grpc::InsecureChannelCredentials(), channel_args);
+
+    silkworm::rpc::ClientContextPool context_pool{1};
+
+    auto& context = context_pool.next_context();
+    auto& ioc = *context.ioc();
+    auto& grpc_context{*context.grpc_context()};
+
+    auto state_cache{std::make_unique<db::kv::api::CoherentStateCache>(db::kv::api::CoherentCacheConfig{})};
+
+    auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(ioc, grpc_channel, grpc_context)};
+    auto database = std::make_unique<rpc::ethdb::kv::RemoteDatabase>(backend.get(), state_cache.get(), grpc_context, grpc_channel);
+
+    context_pool.start();
+    auto _ = gsl::finally([&context_pool] {
+        context_pool.stop();
+        context_pool.join();
+    });
+
+    Block block{}; //todo: get block header
+
+    auto state = concurrency::spawn_future_and_wait(ioc, [&]() -> Task<std::shared_ptr<State>> {
+        auto kv_transaction = co_await database->begin();
+        auto chain_storage = kv_transaction->create_storage();
+        auto this_executor = co_await boost::asio::this_coro::executor;
+        co_return kv_transaction->create_state(this_executor, *chain_storage, block.header.number);
+    });
+
+    auto protocol_rule_set_{protocol::rule_set_factory(*chain_config)};
+    ExecutionProcessor processor{block, *protocol_rule_set_, *state, *chain_config};
+    //add analysis cache, check block exec for more
+
+    silkworm::Transaction transaction{}; //todo: get txn
+    silkworm::Receipt receipt{};
+    const ValidationResult err{protocol::validate_transaction(transaction, processor.intra_block_state(), processor.available_gas())};
+    if (err != ValidationResult::kOk) {
+        return SILKWORM_INVALID_BLOCK;
+    }
+    processor.execute_transaction(transaction, receipt);
+
+    return SILKWORM_OK;
 }
 
 SILKWORM_EXPORT int silkworm_fini(SilkwormHandle handle) SILKWORM_NOEXCEPT {

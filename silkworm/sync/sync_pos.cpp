@@ -351,7 +351,7 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
             co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalidStr, fcu_result.latest_valid_head, "invalid fork choice update"}};
         }
 
-        std::optional<uint64_t> buildProcessId;
+        std::optional<uint64_t> build_process_id;
         if (attributes) {
             // payload build process
             if (attributes->timestamp <= head_header->timestamp) {
@@ -359,10 +359,10 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
                 // in this case spec states that forkchoiceState update MUST NOT be rolled back
             }
 
-            // buildProcessId = exec_engine_.build_payload(head_header_hash, attributes);
+            // build_process_id = exec_engine_.build_payload(head_header_hash, attributes);
         }
 
-        co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kValidStr, state.head_block_hash}, buildProcessId};
+        co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kValidStr, state.head_block_hash}, build_process_id};
 
     } catch (const concurrency::TimeoutExpiredError& tee) {
         SILK_INFO << "PoSSync: new_payload timeout expired: " << tee.what();

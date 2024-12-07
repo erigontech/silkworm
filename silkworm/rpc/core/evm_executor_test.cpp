@@ -27,9 +27,9 @@
 
 #include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
-#include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/db/test_util/mock_cursor.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
+#include <silkworm/execution/remote_state.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -57,7 +57,7 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     const uint64_t chain_id{11155111};
     const ChainConfig* chain_config_ptr{lookup_chain_config(chain_id)};
     BlockNum block_num{6'000'000};
-    std::shared_ptr<State> state{std::make_shared<db::state::RemoteState>(io_executor, transaction, storage, block_num)};
+    std::shared_ptr<State> state{std::make_shared<execution::RemoteState>(io_executor, transaction, storage, block_num)};
 };
 
 #ifndef SILKWORM_SANITIZE
@@ -83,6 +83,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         block.header.base_fee_per_gas = 0x7;
         block.header.number = block_num;
         silkworm::Transaction txn{};
+        txn.gas_limit = 100'000;
         txn.max_fee_per_gas = 0x2;
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
 
@@ -97,6 +98,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         block.header.base_fee_per_gas = 0x1;
         block.header.number = block_num;
         silkworm::Transaction txn{};
+        txn.gas_limit = 100'000;
         txn.max_fee_per_gas = 0x2;
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
         txn.max_priority_fee_per_gas = 0x18;

@@ -22,7 +22,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/blocks/schema_config.hpp>
 #include <silkworm/db/data_store.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/state/schema_config.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -47,13 +47,13 @@ class TempChainData {
 
     const DataDirectory& dir() const { return data_dir_; }
 
-    const db::EnvConfig& chaindata_env_config() const { return chaindata_env_config_; }
+    const datastore::kvdb::EnvConfig& chaindata_env_config() const { return chaindata_env_config_; }
 
-    virtual db::ROAccess chaindata() const {
-        return db::ROAccess{*env_};
+    virtual datastore::kvdb::ROAccess chaindata() const {
+        return datastore::kvdb::ROAccess{*env_};
     }
-    virtual db::RWAccess chaindata_rw() const {
-        return db::RWAccess{*env_};
+    virtual datastore::kvdb::RWAccess chaindata_rw() const {
+        return datastore::kvdb::RWAccess{*env_};
     }
 
     mdbx::txn& txn() const { return *txn_; }
@@ -77,7 +77,7 @@ class TempChainData {
     TemporaryDirectory tmp_dir_;
     DataDirectory data_dir_;
     ChainConfig chain_config_;
-    db::EnvConfig chaindata_env_config_;
+    datastore::kvdb::EnvConfig chaindata_env_config_;
     std::unique_ptr<mdbx::env_managed> env_;
     std::unique_ptr<db::RWTxn> txn_;
     db::PruneMode prune_mode_;
@@ -101,10 +101,10 @@ class TempChainDataStore : public TempChainData {
     db::DataStore& operator*() { return data_store_; }
     db::DataStore* operator->() { return &data_store_; }
 
-    db::ROAccess chaindata() const override {
+    datastore::kvdb::ROAccess chaindata() const override {
         return data_store_.chaindata();
     }
-    db::RWAccess chaindata_rw() const override {
+    datastore::kvdb::RWAccess chaindata_rw() const override {
         return data_store_.chaindata_rw();
     }
 

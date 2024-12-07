@@ -22,7 +22,7 @@
 #include <vector>
 
 #include <silkworm/db/data_store.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/kv/api/client.hpp>
 #include <silkworm/db/kv/state_changes_stream.hpp>

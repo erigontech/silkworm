@@ -16,13 +16,10 @@
 
 #pragma once
 
-#include <vector>
-
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <evmc/evmc.hpp>
 
-#include <silkworm/core/common/util.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/types/block.hpp>

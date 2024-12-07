@@ -23,6 +23,9 @@
 
 namespace silkworm::db {
 
+using datastore::kvdb::from_slice;
+using datastore::kvdb::to_slice;
+
 //! \brief Retrieves the proper BlockAmount prune threshold for given key
 static BlockAmount read_block_amount_for_key(mdbx::cursor& source, const char* key) {
     std::string key_str{key};
@@ -139,7 +142,7 @@ std::string PruneMode::to_string() const {
 }
 
 PruneMode read_prune_mode(mdbx::txn& txn) {
-    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
+    auto src = datastore::kvdb::open_cursor(txn, table::kDatabaseInfo);
 
     auto history{read_block_amount_for_key(src, kPruneModeHistoryKey)};
     auto receipts{read_block_amount_for_key(src, kPruneModeReceiptsKey)};
@@ -150,7 +153,7 @@ PruneMode read_prune_mode(mdbx::txn& txn) {
 }
 
 void write_prune_mode(mdbx::txn& txn, const PruneMode& value) {
-    auto target{db::open_cursor(txn, table::kDatabaseInfo)};
+    auto target = datastore::kvdb::open_cursor(txn, table::kDatabaseInfo);
     write_block_amount_for_key(target, kPruneModeHistoryKey, value.history());
     write_block_amount_for_key(target, kPruneModeReceiptsKey, value.receipts());
     write_block_amount_for_key(target, kPruneModeSendersKey, value.senders());
@@ -158,12 +161,12 @@ void write_prune_mode(mdbx::txn& txn, const PruneMode& value) {
     write_block_amount_for_key(target, kPruneModeCallTracesKey, value.call_traces());
 }
 
-PruneMode parse_prune_mode(const std::string& mode, const PruneDistance& olderHistory,
-                           const PruneDistance& olderReceipts, const PruneDistance& olderSenders,
-                           const PruneDistance& olderTxIndex, const PruneDistance& olderCallTraces,
-                           const PruneThreshold& beforeHistory, const PruneThreshold& beforeReceipts,
-                           const PruneThreshold& beforeSenders, const PruneThreshold& beforeTxIndex,
-                           const PruneThreshold& beforeCallTraces) {
+PruneMode parse_prune_mode(const std::string& mode, const PruneDistance& older_history,
+                           const PruneDistance& older_receipts, const PruneDistance& older_senders,
+                           const PruneDistance& older_tx_index, const PruneDistance& older_call_traces,
+                           const PruneThreshold& before_history, const PruneThreshold& before_receipts,
+                           const PruneThreshold& before_senders, const PruneThreshold& before_tx_index,
+                           const PruneThreshold& before_call_traces) {
     std::optional<BlockAmount> history, receipts, senders, tx_index, call_traces;
 
     if (!mode.empty() && !(iequals(mode, "default") || iequals(mode, "disabled"))) {
@@ -191,18 +194,18 @@ PruneMode parse_prune_mode(const std::string& mode, const PruneDistance& olderHi
     }
 
     // Apply discrete values for 'older' if provided
-    if (olderHistory.has_value()) history = BlockAmount(BlockAmount::Type::kOlder, *olderHistory);
-    if (olderReceipts.has_value()) receipts = BlockAmount(BlockAmount::Type::kOlder, *olderReceipts);
-    if (olderSenders.has_value()) senders = BlockAmount(BlockAmount::Type::kOlder, *olderSenders);
-    if (olderTxIndex.has_value()) tx_index = BlockAmount(BlockAmount::Type::kOlder, *olderTxIndex);
-    if (olderCallTraces.has_value()) call_traces = BlockAmount(BlockAmount::Type::kOlder, *olderCallTraces);
+    if (older_history) history = BlockAmount(BlockAmount::Type::kOlder, *older_history);
+    if (older_receipts) receipts = BlockAmount(BlockAmount::Type::kOlder, *older_receipts);
+    if (older_senders) senders = BlockAmount(BlockAmount::Type::kOlder, *older_senders);
+    if (older_tx_index) tx_index = BlockAmount(BlockAmount::Type::kOlder, *older_tx_index);
+    if (older_call_traces) call_traces = BlockAmount(BlockAmount::Type::kOlder, *older_call_traces);
 
     // Apply discrete values for 'before' if provided
-    if (beforeHistory.has_value()) history = BlockAmount(BlockAmount::Type::kBefore, *beforeHistory);
-    if (beforeReceipts.has_value()) receipts = BlockAmount(BlockAmount::Type::kBefore, *beforeReceipts);
-    if (beforeSenders.has_value()) senders = BlockAmount(BlockAmount::Type::kBefore, *beforeSenders);
-    if (beforeTxIndex.has_value()) tx_index = BlockAmount(BlockAmount::Type::kBefore, *beforeTxIndex);
-    if (beforeCallTraces.has_value()) call_traces = BlockAmount(BlockAmount::Type::kBefore, *beforeCallTraces);
+    if (before_history) history = BlockAmount(BlockAmount::Type::kBefore, *before_history);
+    if (before_receipts) receipts = BlockAmount(BlockAmount::Type::kBefore, *before_receipts);
+    if (before_senders) senders = BlockAmount(BlockAmount::Type::kBefore, *before_senders);
+    if (before_tx_index) tx_index = BlockAmount(BlockAmount::Type::kBefore, *before_tx_index);
+    if (before_call_traces) call_traces = BlockAmount(BlockAmount::Type::kBefore, *before_call_traces);
 
     if (!history) history = BlockAmount();
     if (!receipts) receipts = BlockAmount();

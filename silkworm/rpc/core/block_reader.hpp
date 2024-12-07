@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <optional>
-
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <evmc/evmc.hpp>
@@ -36,6 +34,13 @@ using BalanceChanges = std::map<evmc::address, intx::uint256>;
 
 void to_json(nlohmann::json& json, const BalanceChanges& balance_changes);
 
+inline constexpr const char* kEarliestBlockId{"earliest"};
+inline constexpr const char* kLatestBlockId{"latest"};
+inline constexpr const char* kPendingBlockId{"pending"};
+inline constexpr const char* kFinalizedBlockId{"finalized"};
+inline constexpr const char* kSafeBlockId{"safe"};
+inline constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
+
 class BlockReader {
   public:
     explicit BlockReader(const db::chain::ChainStorage& chain_storage, db::kv::api::Transaction& transaction)
@@ -46,6 +51,32 @@ class BlockReader {
 
     Task<void> read_balance_changes(BlockCache& cache, const BlockNumOrHash& block_num_or_hash, BalanceChanges& balance_changes) const;
 
+    Task<bool> is_latest_block_num(BlockNum block_num);
+
+    Task<BlockNum> get_block_num_by_tag(const std::string& block_id);
+
+    Task<std::pair<BlockNum, bool>> get_block_num(const std::string& block_id, bool latest_required);
+
+    Task<BlockNum> get_block_num(const std::string& block_id);
+
+    Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumOrHash& block_num_or_hash);
+
+    Task<BlockNum> get_current_block_num();
+
+    Task<BlockNum> get_max_block_num();
+
+    Task<BlockNum> get_latest_block_num();
+
+    Task<BlockNum> get_latest_executed_block_num();
+
+    Task<BlockNum> get_forkchoice_finalized_block_num();
+
+    Task<BlockNum> get_forkchoice_safe_block_num();
+
+    Task<bool> is_latest_block_num(const BlockNumOrHash& block_num_or_hash);
+
+  private:
+    Task<BlockNum> get_forkchoice_block_num(const char* block_hash_tag);
     const db::chain::ChainStorage& chain_storage_;
     db::kv::api::Transaction& transaction_;
 };

@@ -26,7 +26,7 @@
 #include "snapshots/snapshot_repository.hpp"
 #include "snapshots/snapshot_size.hpp"
 
-namespace silkworm::db {
+namespace silkworm::datastore {
 
 class SnapshotMerger : public DataMigration {
   public:
@@ -54,4 +54,4 @@ class SnapshotMerger : public DataMigration {
     boost::signals2::signal<void(snapshots::StepRange)> on_snapshot_merged_signal_;
 };
 
-}  // namespace silkworm::db
+}  // namespace silkworm::datastore

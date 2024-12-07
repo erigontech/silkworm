@@ -43,6 +43,10 @@ using StageContainerFactory = std::function<StageContainer(SyncContext&)>;
 
 class ExecutionPipeline : public Stoppable {
   public:
+    using StageNames = std::vector<const char*>;
+    static StageNames stages_forward_order();
+    static StageNames stages_unwind_order();
+
     ExecutionPipeline(
         db::DataModelFactory data_model_factory,
         std::optional<TimerFactory> log_timer_factory,
@@ -60,7 +64,7 @@ class ExecutionPipeline : public Stoppable {
 
     bool stop() override;
 
-    StageScheduler& stage_scheduler() const;
+    datastore::StageScheduler& stage_scheduler() const;
 
   private:
     db::DataModelFactory data_model_factory_;
@@ -70,7 +74,6 @@ class ExecutionPipeline : public Stoppable {
     StageContainer stages_;
     StageContainer::iterator current_stage_;
 
-    using StageNames = std::vector<std::string_view>;
     StageNames stages_forward_order_;
     StageNames stages_unwind_order_;
     std::atomic<size_t> current_stages_count_{0};

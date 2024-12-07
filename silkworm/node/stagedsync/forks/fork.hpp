@@ -25,7 +25,7 @@
 
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/datastore/mdbx/memory_mutation.hpp>
+#include <silkworm/db/datastore/kvdb/memory_mutation.hpp>
 #include <silkworm/execution/api/endpoint/validation.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
@@ -40,7 +40,7 @@ class Fork {
   public:
     explicit Fork(
         BlockId forking_point,
-        db::ROTxnManaged main_tx,
+        datastore::kvdb::ROTxnManaged main_tx,
         db::DataModelFactory data_model_factory,
         std::optional<TimerFactory> log_timer_factory,
         const StageContainerFactory& stages_factory,
@@ -84,9 +84,9 @@ class Fork {
 
     std::set<Hash> collect_bad_headers(execution::api::InvalidChain& invalid_chain);
 
-    db::ROTxnManaged main_tx_;
-    db::MemoryOverlay memory_db_;
-    mutable db::MemoryMutation memory_tx_;
+    datastore::kvdb::ROTxnManaged main_tx_;
+    datastore::kvdb::MemoryOverlay memory_db_;
+    mutable datastore::kvdb::MemoryMutation memory_tx_;
     db::DataModelFactory data_model_factory_;
 
     ExecutionPipeline pipeline_;

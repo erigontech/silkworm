@@ -24,7 +24,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
-#include <silkworm/db/datastore/mdbx/bitmap.hpp>
+#include <silkworm/db/datastore/kvdb/bitmap.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -34,6 +34,7 @@ namespace silkworm {
 
 using namespace evmc::literals;
 using namespace silkworm::db;
+using namespace silkworm::datastore::kvdb;
 using db::test_util::TempChainData;
 
 stagedsync::HistoryIndex make_stage_history_index(
@@ -43,7 +44,7 @@ stagedsync::HistoryIndex make_stage_history_index(
     return stagedsync::HistoryIndex{
         sync_context,
         kBatchSize,
-        etl::CollectorSettings{
+        datastore::etl::CollectorSettings{
             .work_path = chain_data.dir().temp().path(),
             .buffer_size = 256_Mebi},
         chain_data.prune_mode().history(),
@@ -226,12 +227,12 @@ TEST_CASE("Stage History Index") {
         SECTION("Prune") {
             // Prune from second block, so we delete block 1
             // Alter node settings pruning
-            PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
-            PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
-            beforeHistory.emplace(2);  // Will delete any history before block 2
+            PruneDistance older_history, older_receipts, older_senders, older_tx_index, older_call_traces;
+            PruneThreshold before_history, before_receipts, before_senders, before_tx_index, before_call_traces;
+            before_history.emplace(2);  // Will delete any history before block 2
             context.set_prune_mode(
-                parse_prune_mode("h", olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                                 beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces));
+                parse_prune_mode("h", older_history, older_receipts, older_senders, older_tx_index, older_call_traces,
+                                 before_history, before_receipts, before_senders, before_tx_index, before_call_traces));
 
             REQUIRE(context.prune_mode().history().enabled());
 
@@ -411,12 +412,12 @@ TEST_CASE("Stage History Index") {
 
         // Prune from block 3590
         // Alter node settings pruning
-        PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
-        PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
-        beforeHistory.emplace(3590);  // Will delete any history before block 2
+        PruneDistance older_history, older_receipts, older_senders, older_tx_index, older_call_traces;
+        PruneThreshold before_history, before_receipts, before_senders, before_tx_index, before_call_traces;
+        before_history.emplace(3590);  // Will delete any history before block 2
         context.set_prune_mode(
-            parse_prune_mode("h", olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                             beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces));
+            parse_prune_mode("h", older_history, older_receipts, older_senders, older_tx_index, older_call_traces,
+                             before_history, before_receipts, before_senders, before_tx_index, before_call_traces));
         REQUIRE(context.prune_mode().history().enabled());
 
         // Recreate the stage with enabled pruning

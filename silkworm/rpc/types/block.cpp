@@ -26,7 +26,7 @@
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
+#include <silkworm/rpc/core/block_reader.hpp>
 
 namespace silkworm::rpc {
 
@@ -85,12 +85,12 @@ std::ostream& operator<<(std::ostream& out, const BlockNumOrHash& block_num_or_h
 
 void BlockNumOrHash::build(const std::string& block_num_or_hash) {
     value_ = uint64_t{0};
-    if (block_num_or_hash == core::kEarliestBlockId) {
+    if (block_num_or_hash == kEarliestBlockId) {
         value_ = kEarliestBlockNum;
-    } else if (block_num_or_hash == core::kLatestBlockId ||
-               block_num_or_hash == core::kPendingBlockId ||
-               block_num_or_hash == core::kFinalizedBlockId ||
-               block_num_or_hash == core::kSafeBlockId) {
+    } else if (block_num_or_hash == kLatestBlockId ||
+               block_num_or_hash == kPendingBlockId ||
+               block_num_or_hash == kFinalizedBlockId ||
+               block_num_or_hash == kSafeBlockId) {
         value_ = block_num_or_hash;
     } else if (absl::StartsWithIgnoreCase(block_num_or_hash, "0x")) {
         if (block_num_or_hash.length() == 66) {

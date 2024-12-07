@@ -26,7 +26,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
@@ -41,7 +41,7 @@ class MockExecutionEngine : public stagedsync::ExecutionEngine {
         };
     };
 
-    MockExecutionEngine(boost::asio::any_io_executor executor, NodeSettings& ns, db::RWAccess dba)
+    MockExecutionEngine(boost::asio::any_io_executor executor, NodeSettings& ns, datastore::kvdb::RWAccess dba)
         : ExecutionEngine{
               std::move(executor),
               ns,

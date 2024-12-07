@@ -33,13 +33,15 @@ namespace silkworm::stagedsync {
 
 using namespace std::chrono_literals;
 using namespace silkworm::db;
+using silkworm::datastore::kvdb::from_slice;
+using silkworm::datastore::kvdb::to_slice;
 
 Senders::Senders(
     SyncContext* sync_context,
     DataModelFactory data_model_factory,
     const ChainConfig& chain_config,
     size_t batch_size,
-    etl::CollectorSettings etl_settings,
+    datastore::etl::CollectorSettings etl_settings,
     BlockAmount prune_mode_senders)
     : Stage(sync_context, stages::kSendersKey),
       data_model_factory_(std::move(data_model_factory)),
@@ -59,7 +61,7 @@ Stage::Result Senders::forward(RWTxn& txn) {
     total_collected_transactions_ = 0;
     log_lock.unlock();
 
-    collector_ = std::make_unique<etl_mdbx::Collector>(etl_settings_);
+    collector_ = std::make_unique<datastore::kvdb::Collector>(etl_settings_);
 
     const auto res{parallel_recover(txn)};
     if (res == Stage::Result::kSuccess) {

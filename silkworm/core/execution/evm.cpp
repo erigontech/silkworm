@@ -64,10 +64,9 @@ EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) 
       block_{block},
       state_{state},
       config_{config},
-      evm1_{static_cast<evmone::VM*>(evmc_create_evmone())}  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
-{}
+      evm1_{evmc_create_evmone()} {}
 
-EVM::~EVM() { evm1_->destroy(evm1_); }
+EVM::~EVM() = default;
 
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
     SILKWORM_ASSERT(txn.sender());  // sender must be valid
@@ -298,7 +297,7 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
     }
 
     EvmHost host{*this};
-    evmc_result res{evmone::baseline::execute(*evm1_, EvmHost::get_interface(), host.to_context(), rev, message, *analysis)};
+    evmc_result res{evmone::baseline::execute(vm_impl(), EvmHost::get_interface(), host.to_context(), rev, message, *analysis)};
     return res;
 }
 
@@ -307,12 +306,12 @@ evmc_revision EVM::revision() const noexcept {
 }
 
 void EVM::add_tracer(EvmTracer& tracer) noexcept {
-    evm1_->add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
+    vm_impl().add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
     tracers_.push_back(std::ref(tracer));
 }
 
 void EVM::remove_tracers() noexcept {
-    evm1_->remove_tracers();
+    vm_impl().remove_tracers();
     tracers_.clear();
 }
 
@@ -479,17 +478,17 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
     return context;
 }
 
-evmc::bytes32 EvmHost::get_block_hash(int64_t block_num) const noexcept {
+evmc::bytes32 EVM::get_block_hash(int64_t block_num) noexcept {
     SILKWORM_ASSERT(block_num >= 0);
-    const uint64_t current_block_num{evm_.block_.header.number};
+    const uint64_t current_block_num{block_.header.number};
     SILKWORM_ASSERT(static_cast<uint64_t>(block_num) < current_block_num);
     const uint64_t new_size_u64{current_block_num - static_cast<uint64_t>(block_num)};
     SILKWORM_ASSERT(std::in_range<size_t>(new_size_u64));
     const size_t new_size{static_cast<size_t>(new_size_u64)};
 
-    std::vector<evmc::bytes32>& hashes{evm_.block_hashes_};
+    std::vector<evmc::bytes32>& hashes{block_hashes_};
     if (hashes.empty()) {
-        hashes.push_back(evm_.block_.header.parent_hash);
+        hashes.push_back(block_.header.parent_hash);
     }
 
     const size_t old_size{hashes.size()};
@@ -498,7 +497,7 @@ evmc::bytes32 EvmHost::get_block_hash(int64_t block_num) const noexcept {
     }
 
     for (size_t i{old_size}; i < new_size; ++i) {
-        std::optional<BlockHeader> header{evm_.state().db().read_header(current_block_num - i, hashes[i - 1])};
+        std::optional<BlockHeader> header{state().db().read_header(current_block_num - i, hashes[i - 1])};
         if (!header) {
             break;
         }
@@ -506,6 +505,10 @@ evmc::bytes32 EvmHost::get_block_hash(int64_t block_num) const noexcept {
     }
 
     return hashes[new_size - 1];
+}
+
+evmc::bytes32 EvmHost::get_block_hash(int64_t block_num) const noexcept {
+    return evm_.get_block_hash(block_num);
 }
 
 void EvmHost::emit_log(const evmc::address& address, const uint8_t* data, size_t data_size,

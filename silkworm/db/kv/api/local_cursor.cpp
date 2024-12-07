@@ -17,13 +17,14 @@
 #include "local_cursor.hpp"
 
 #include <silkworm/core/common/bytes_to_string.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::db::kv::api {
 
-using detail::slice_as_hex;
+using namespace silkworm::datastore::kvdb;
+using datastore::kvdb::detail::slice_as_hex;
 
 Task<void> LocalCursor::open_cursor(const std::string& table_name, bool is_dup_sorted) {
     const auto start_time = clock_time::now();

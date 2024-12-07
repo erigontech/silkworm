@@ -49,9 +49,20 @@ add_library(
   evmone/lib/evmone_precompiles/ripemd160.cpp
   evmone/lib/evmone_precompiles/sha256.cpp
   evmone/lib/evmone_precompiles/kzg.cpp
+  evmone/lib/evmone_precompiles/bn254.cpp
+  evmone/lib/evmone_precompiles/secp256k1.cpp
+  evmone/lib/evmone_precompiles/bls.cpp
+  evmone/test/state/host.cpp
+  evmone/test/state/precompiles.cpp
+  evmone/test/state/state.cpp
 )
-set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.12.0")
-target_include_directories(evmone PUBLIC evmone/include evmone/lib)
+set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.11.0")
+target_include_directories(
+  evmone
+  PUBLIC evmone/include evmone/lib
+  INTERFACE .
+  PRIVATE ../..
+)
 target_link_libraries(
   evmone
   PUBLIC evmc intx::intx blst::blst
@@ -69,4 +80,11 @@ else()
             $<$<CXX_COMPILER_ID:GNU>:-Wno-attributes>
             $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-unknown-attributes>
   )
+endif()
+
+if(SILKWORM_CORE_USE_ABSEIL)
+  # Propagate SILKWORM_CORE_USE_ABSEIL to allow using Silkworm's preferred FlatHashMap.
+  find_package(absl REQUIRED)
+  target_compile_definitions(evmone PRIVATE SILKWORM_CORE_USE_ABSEIL)
+  target_link_libraries(evmone PRIVATE absl::flat_hash_map)
 endif()

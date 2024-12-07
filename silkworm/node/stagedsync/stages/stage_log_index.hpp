@@ -19,7 +19,7 @@
 #include <stdexcept>
 
 #include <silkworm/db/datastore/etl/collector_settings.hpp>
-#include <silkworm/db/datastore/mdbx/bitmap.hpp>
+#include <silkworm/db/datastore/kvdb/bitmap.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stage.hpp>
 
@@ -30,7 +30,7 @@ class LogIndex : public Stage {
     LogIndex(
         SyncContext* sync_context,
         size_t batch_size,
-        db::etl::CollectorSettings etl_settings,
+        datastore::etl::CollectorSettings etl_settings,
         db::BlockAmount prune_mode_history)
         : Stage(sync_context, db::stages::kLogIndexKey),
           batch_size_(batch_size),
@@ -47,12 +47,12 @@ class LogIndex : public Stage {
 
   private:
     size_t batch_size_;
-    db::etl::CollectorSettings etl_settings_;
+    datastore::etl::CollectorSettings etl_settings_;
     db::BlockAmount prune_mode_history_;
 
-    std::unique_ptr<db::etl_mdbx::Collector> topics_collector_;
-    std::unique_ptr<db::etl_mdbx::Collector> addresses_collector_;
-    std::unique_ptr<db::bitmap::IndexLoader> index_loader_;
+    std::unique_ptr<datastore::kvdb::Collector> topics_collector_;
+    std::unique_ptr<datastore::kvdb::Collector> addresses_collector_;
+    std::unique_ptr<datastore::kvdb::bitmap::IndexLoader> index_loader_;
 
     std::atomic_bool loading_{false};  // Whether we're in ETL loading phase
     std::string current_source_;       // Current source of data

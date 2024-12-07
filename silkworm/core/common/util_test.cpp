@@ -192,11 +192,11 @@ TEST_CASE("human_size") {
 }
 
 TEST_CASE("intx::uint256 from scientific notation string") {
-    const intx::uint256 kMainnetTTD{intx::from_string<intx::uint256>("58750000000000000000000")};
+    static constexpr intx::uint256 kMainnetTTD{intx::from_string<intx::uint256>("58750000000000000000000")};
     CHECK(from_string_sci<intx::uint256>("5.875e+22") == kMainnetTTD);
     CHECK(from_string_sci<intx::uint256>("58750000000000000000000") == kMainnetTTD);
 
-    const intx::uint256 kSepoliaTTD{intx::from_string<intx::uint256>("17000000000000000")};
+    static constexpr intx::uint256 kSepoliaTTD{intx::from_string<intx::uint256>("17000000000000000")};
     CHECK(from_string_sci<intx::uint256>("1.7e+16") == kSepoliaTTD);
     CHECK(from_string_sci<intx::uint256>("17000000000000000") == kSepoliaTTD);
 
@@ -211,9 +211,9 @@ TEST_CASE("intx::uint256 from scientific notation string") {
     CHECK(from_string_sci<intx::uint256>("18.1e+2") == intx::from_string<intx::uint256>("1810"));
     CHECK(from_string_sci<intx::uint256>("18.12e+2") == intx::from_string<intx::uint256>("1812"));
 
-    const char* kMaxFixedDecimalNotation{"115792089237316195423570985008687907853269984665640564039457584007913129639935"};
+    static constexpr char kMaxFixedDecimalNotation[] = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
     CHECK(from_string_sci<intx::uint256>(kMaxFixedDecimalNotation) == std::numeric_limits<intx::uint256>::max());
-    const char* kMaxScientificNotation{"1.15792089237316195423570985008687907853269984665640564039457584007913129639935e+77"};
+    static constexpr char kMaxScientificNotation[] = "1.15792089237316195423570985008687907853269984665640564039457584007913129639935e+77";
     CHECK(from_string_sci<intx::uint256>(kMaxScientificNotation) == std::numeric_limits<intx::uint256>::max());
 }
 

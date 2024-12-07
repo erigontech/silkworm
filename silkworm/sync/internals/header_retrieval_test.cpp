@@ -28,7 +28,7 @@ TEST_CASE("HeaderRetrieval") {
     context.add_genesis_data();
     context.commit_txn();
 
-    db::ROTxnManaged tx = context->chaindata().start_ro_tx();
+    datastore::kvdb::ROTxnManaged tx = context->chaindata().start_ro_tx();
     db::DataModel data_model = context.data_model_factory()(tx);
 
     HeaderRetrieval header_retrieval{data_model};

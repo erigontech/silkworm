@@ -34,7 +34,9 @@
 namespace silkworm::stagedsync {
 
 using namespace silkworm::db;
-using etl_mdbx::Collector;
+using datastore::kvdb::Collector;
+using datastore::kvdb::from_slice;
+using datastore::kvdb::to_slice;
 
 Stage::Result InterHashes::forward(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
@@ -268,7 +270,7 @@ trie::PrefixSet InterHashes::collect_account_changes(RWTxn& txn, BlockNum from, 
             if (auto item{plainstate_accounts.get(address)}; item != nullptr) {
                 plainstate_account = *item;
             } else {
-                auto ps_data{plain_state->find(to_slice(address), false)};
+                auto ps_data{plain_state->find(db::to_slice(address), false)};
                 if (ps_data && !ps_data.value.empty()) {
                     const auto account{Account::from_encoded_storage(from_slice(ps_data.value))};
                     success_or_throw(account);

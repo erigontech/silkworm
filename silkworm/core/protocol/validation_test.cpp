@@ -22,6 +22,8 @@
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 
+#include "silkworm/core/crypto/secp256k1n.hpp"
+
 namespace silkworm::protocol {
 
 TEST_CASE("Validate transaction types") {
@@ -68,6 +70,9 @@ TEST_CASE("Validate max_fee_per_gas") {
 
     Transaction txn;
     txn.type = TransactionType::kDynamicFee;
+    txn.gas_limit = 100'000;
+    txn.r = kSecp256k1n - 1;
+    txn.s = kSecp256k1Halfn - 1;
 
     txn.max_priority_fee_per_gas = 500'000'000;
     txn.max_fee_per_gas = 700'000'000;

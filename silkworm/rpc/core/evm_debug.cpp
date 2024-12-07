@@ -25,6 +25,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -434,7 +435,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
     const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() -> void {
-        auto state = tx_.create_state(current_executor, storage, block_num - 1);
+        auto state = execution::StateFactory{tx_}.create_state(current_executor, storage, block_num - 1);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         for (std::uint64_t idx = 0; idx < transactions.size(); ++idx) {
@@ -492,7 +493,7 @@ Task<void> DebugExecutor::execute(
     const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() {
-        auto state = tx_.create_state(current_executor, storage, block_num);
+        auto state = execution::StateFactory{tx_}.create_state(current_executor, storage, block_num);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         for (auto idx{0}; idx < index; ++idx) {
@@ -543,7 +544,7 @@ Task<void> DebugExecutor::execute(
     const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     co_await async_task(workers_.executor(), [&]() {
-        auto state = tx_.create_state(current_executor, storage, block.header.number);
+        auto state = execution::StateFactory{tx_}.create_state(current_executor, storage, block.header.number);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         for (auto idx{0}; idx < transaction_index; ++idx) {
@@ -555,24 +556,24 @@ Task<void> DebugExecutor::execute(
         for (const auto& bundle : bundles) {
             const auto& block_override = bundle.block_override;
 
-            rpc::Block blockContext{{block_with_hash}};
+            rpc::Block block_context{{block_with_hash}};
             if (block_override.block_num) {
-                blockContext.block_with_hash->block.header.number = block_override.block_num.value();
+                block_context.block_with_hash->block.header.number = block_override.block_num.value();
             }
             if (block_override.coin_base) {
-                blockContext.block_with_hash->block.header.beneficiary = block_override.coin_base.value();
+                block_context.block_with_hash->block.header.beneficiary = block_override.coin_base.value();
             }
             if (block_override.timestamp) {
-                blockContext.block_with_hash->block.header.timestamp = block_override.timestamp.value();
+                block_context.block_with_hash->block.header.timestamp = block_override.timestamp.value();
             }
             if (block_override.difficulty) {
-                blockContext.block_with_hash->block.header.difficulty = block_override.difficulty.value();
+                block_context.block_with_hash->block.header.difficulty = block_override.difficulty.value();
             }
             if (block_override.gas_limit) {
-                blockContext.block_with_hash->block.header.gas_limit = block_override.gas_limit.value();
+                block_context.block_with_hash->block.header.gas_limit = block_override.gas_limit.value();
             }
             if (block_override.base_fee) {
-                blockContext.block_with_hash->block.header.base_fee_per_gas = block_override.base_fee;
+                block_context.block_with_hash->block.header.base_fee_per_gas = block_override.base_fee;
             }
 
             stream.open_array();
@@ -587,7 +588,7 @@ Task<void> DebugExecutor::execute(
                 auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
                 Tracers tracers{debug_tracer};
 
-                const auto execution_result = executor.call(blockContext.block_with_hash->block, txn, tracers, /* refund */ false, /* gasBailout */ false);
+                const auto execution_result = executor.call(block_context.block_with_hash->block, txn, tracers, /* refund */ false, /* gasBailout */ false);
 
                 debug_tracer->flush_logs();
                 stream.close_array();

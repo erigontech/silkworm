@@ -20,7 +20,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/datastore/mdbx/bitmap.hpp>
+#include <silkworm/db/datastore/kvdb/bitmap.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -54,11 +54,12 @@ Task<void> StorageWalker::storage_range_at(
     auto paginated_result = co_await transaction_.range_as_of(std::move(query));
     auto it = co_await paginated_result.begin();
 
-    while (const auto value = co_await it.next()) {
+    while (const auto value = co_await it->next()) {
         if (value->second.empty())
             continue;
 
-        const auto key = value->first.substr(20);
+        SILKWORM_ASSERT(value->first.size() >= kAddressLength);
+        const auto key = value->first.substr(kAddressLength);
         auto hash = hash_of(key);
         const auto sec_key = ByteView{hash.bytes};
         if (!collector(key, sec_key, value->second))

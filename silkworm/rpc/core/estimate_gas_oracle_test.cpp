@@ -50,21 +50,21 @@ using testing::Return;
 
 TEST_CASE("EstimateGasException") {
     SECTION("EstimateGasException(int64_t, std::string const&)") {
-        const char* kErrorMessage{"insufficient funds for transfer"};
-        const int64_t kErrorCode{-1};
+        static constexpr char kErrorMessage[] = "insufficient funds for transfer";
+        constexpr int64_t kErrorCode = -1;
         EstimateGasException ex{kErrorCode, kErrorMessage};
         CHECK(ex.error_code() == kErrorCode);
         CHECK(ex.message() == kErrorMessage);
         CHECK(std::strcmp(ex.what(), kErrorMessage) == 0);
     }
     SECTION("EstimateGasException(int64_t, std::string const&, silkworm::Bytes const&)") {
-        const char* kErrorMessage{"execution failed"};
-        const int64_t kErrorCode{3};
-        const silkworm::Bytes kData{*silkworm::from_hex("0x00")};
-        EstimateGasException ex{kErrorCode, kErrorMessage, kData};
+        static constexpr char kErrorMessage[] = "execution failed";
+        constexpr int64_t kErrorCode = 3;
+        const silkworm::Bytes data{*silkworm::from_hex("0x00")};
+        EstimateGasException ex{kErrorCode, kErrorMessage, data};
         CHECK(ex.error_code() == kErrorCode);
         CHECK(ex.message() == kErrorMessage);
-        CHECK(ex.data() == kData);
+        CHECK(ex.data() == data);
         CHECK(std::strcmp(ex.what(), kErrorMessage) == 0);
     }
 }
@@ -73,19 +73,19 @@ TEST_CASE("estimate gas") {
     WorkerPool pool{1};
     WorkerPool workers{1};
 
-    intx::uint256 kBalance{1'000'000'000};
+    intx::uint256 balance{1'000'000'000};
 
-    silkworm::BlockHeader kBlockHeader;
-    kBlockHeader.gas_limit = kTxGas * 2;
+    silkworm::BlockHeader block_header;
+    block_header.gas_limit = kTxGas * 2;
 
-    silkworm::Account kAccount{0, kBalance};
+    silkworm::Account account{0, balance};
 
-    BlockHeaderProvider block_header_provider = [&kBlockHeader](BlockNum /*block_num*/) -> Task<std::optional<BlockHeader>> {
-        co_return kBlockHeader;
+    BlockHeaderProvider block_header_provider = [&block_header](BlockNum /*block_num*/) -> Task<std::optional<BlockHeader>> {
+        co_return block_header;
     };
 
-    AccountReader account_reader = [&kAccount](const evmc::address& /*address*/, BlockNum /*block_num*/) -> Task<std::optional<silkworm::Account>> {
-        co_return kAccount;
+    AccountReader account_reader = [&account](const evmc::address& /*address*/, BlockNum /*block_num*/) -> Task<std::optional<silkworm::Account>> {
+        co_return account;
     };
 
     Call call;

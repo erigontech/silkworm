@@ -23,18 +23,18 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
-#include <silkworm/db/state/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
+#include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 
 namespace silkworm::rpc::commands {
 
-using db::state::StateReader;
+using db::kv::StateReader;
 
 Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
@@ -51,7 +51,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         auto value = params[2].get<std::string>();
         offset = silkworm::from_hex(value);
     }
-    std::string block_id = core::kLatestBlockId;
+    std::string block_id = kLatestBlockId;
     if (params.size() >= 4) {
         block_id = params[3].get<std::string>();
     }
@@ -63,7 +63,10 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
     auto tx = co_await database_->begin();
 
     try {
-        const auto block_num = co_await core::get_block_num(block_id, *tx);
+        const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+
+        const auto block_num = co_await block_reader.get_block_num(block_id);
         SILK_DEBUG << "read account with address: " << address << " block number: " << block_num;
         StateReader state_reader{*tx, block_num};
         std::optional<Account> account = co_await state_reader.read_account(address);
@@ -90,8 +93,9 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         auto it = co_await paginated_result.begin();
 
         std::vector<std::string> keys;
-        while (const auto value = co_await it.next()) {
-            const auto key = value->first.substr(20);
+        while (const auto value = co_await it->next()) {
+            SILKWORM_ASSERT(value->first.size() >= kAddressLength);
+            const auto key = value->first.substr(kAddressLength);
             keys.push_back(silkworm::to_hex(key, /*with_prefix=*/true));
         }
         reply = make_json_content(request, keys);

@@ -18,6 +18,7 @@ include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 find_package(asio-grpc REQUIRED)
 find_package(gRPC REQUIRED)
+find_package(GTest REQUIRED)
 
 # cmake-format: off
 set(LIBS_PRIVATE
@@ -31,6 +32,7 @@ set(LIBS_PUBLIC
     asio-grpc::asio-grpc
     silkworm_core
     silkworm_infra
+    silkworm_db
 )
 # cmake-format: on
 
@@ -39,3 +41,5 @@ silkworm_library(
   PUBLIC ${LIBS_PUBLIC}
   PRIVATE ${LIBS_PRIVATE}
 )
+
+target_link_libraries(silkworm_execution_test PRIVATE GTest::gmock silkworm_infra_test_util)

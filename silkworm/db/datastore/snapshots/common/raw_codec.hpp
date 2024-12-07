@@ -35,4 +35,16 @@ struct RawDecoder : public Decoder {
 static_assert(DecoderConcept<RawDecoder<Bytes>>);
 static_assert(DecoderConcept<RawDecoder<ByteView>>);
 
+template <BytesOrByteView TBytes>
+struct RawEncoder : public Encoder {
+    TBytes value;
+    ~RawEncoder() override = default;
+    ByteView encode_word() override {
+        return value;
+    }
+};
+
+static_assert(EncoderConcept<RawEncoder<Bytes>>);
+static_assert(EncoderConcept<RawEncoder<ByteView>>);
+
 }  // namespace silkworm::snapshots

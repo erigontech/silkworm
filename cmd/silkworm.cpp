@@ -152,7 +152,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], node::Se
         throw std::invalid_argument("--chaindata.pagesize is not a power of 2");
     }
 
-    const size_t mdbx_max_size_hard_limit = chaindata_page_size * db::kMdbxMaxPages;
+    const size_t mdbx_max_size_hard_limit = chaindata_page_size * datastore::kvdb::kMdbxMaxPages;
     if (node_settings.chaindata_env_config.max_size > mdbx_max_size_hard_limit) {
         throw std::invalid_argument("--chaindata.maxsize exceeds max allowed size by page size i.e" +
                                     human_size(mdbx_max_size_hard_limit));
@@ -166,24 +166,24 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], node::Se
     node_settings.chaindata_env_config.path = node_settings.data_directory->chaindata().path().string();
 
     // Parse prune mode
-    db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
-    if (cli["--prune.h.older"]->count()) olderHistory.emplace(cli["--prune.h.older"]->as<BlockNum>());
-    if (cli["--prune.r.older"]->count()) olderReceipts.emplace(cli["--prune.r.older"]->as<BlockNum>());
-    if (cli["--prune.s.older"]->count()) olderSenders.emplace(cli["--prune.s.older"]->as<BlockNum>());
-    if (cli["--prune.t.older"]->count()) olderTxIndex.emplace(cli["--prune.t.older"]->as<BlockNum>());
-    if (cli["--prune.c.older"]->count()) olderCallTraces.emplace(cli["--prune.c.older"]->as<BlockNum>());
+    db::PruneDistance older_history, older_receipts, older_senders, older_tx_index, older_call_traces;
+    if (cli["--prune.h.older"]->count()) older_history.emplace(cli["--prune.h.older"]->as<BlockNum>());
+    if (cli["--prune.r.older"]->count()) older_receipts.emplace(cli["--prune.r.older"]->as<BlockNum>());
+    if (cli["--prune.s.older"]->count()) older_senders.emplace(cli["--prune.s.older"]->as<BlockNum>());
+    if (cli["--prune.t.older"]->count()) older_tx_index.emplace(cli["--prune.t.older"]->as<BlockNum>());
+    if (cli["--prune.c.older"]->count()) older_call_traces.emplace(cli["--prune.c.older"]->as<BlockNum>());
 
-    db::PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
-    if (cli["--prune.h.before"]->count()) beforeHistory.emplace(cli["--prune.h.before"]->as<BlockNum>());
-    if (cli["--prune.r.before"]->count()) beforeReceipts.emplace(cli["--prune.r.before"]->as<BlockNum>());
-    if (cli["--prune.s.before"]->count()) beforeSenders.emplace(cli["--prune.s.before"]->as<BlockNum>());
-    if (cli["--prune.t.before"]->count()) beforeTxIndex.emplace(cli["--prune.t.before"]->as<BlockNum>());
-    if (cli["--prune.c.before"]->count()) beforeCallTraces.emplace(cli["--prune.c.before"]->as<BlockNum>());
+    db::PruneThreshold before_history, before_receipts, before_senders, before_tx_index, before_call_traces;
+    if (cli["--prune.h.before"]->count()) before_history.emplace(cli["--prune.h.before"]->as<BlockNum>());
+    if (cli["--prune.r.before"]->count()) before_receipts.emplace(cli["--prune.r.before"]->as<BlockNum>());
+    if (cli["--prune.s.before"]->count()) before_senders.emplace(cli["--prune.s.before"]->as<BlockNum>());
+    if (cli["--prune.t.before"]->count()) before_tx_index.emplace(cli["--prune.t.before"]->as<BlockNum>());
+    if (cli["--prune.c.before"]->count()) before_call_traces.emplace(cli["--prune.c.before"]->as<BlockNum>());
 
     node_settings.prune_mode = db::parse_prune_mode(
         prune_mode,
-        olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-        beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+        older_history, older_receipts, older_senders, older_tx_index, older_call_traces,
+        before_history, before_receipts, before_senders, before_tx_index, before_call_traces);
 
     // snapshots::SnapshotSettings
     auto& snapshot_settings = settings.snapshot_settings;

@@ -79,9 +79,9 @@ int main(int argc, char* argv[]) {
         options.datadir = data_dir.chaindata().path().string();
 
         // Set database parameters
-        db::EnvConfig db_config{options.datadir};
-        auto env{db::open_env(db_config)};
-        db::ROTxnManaged txn{env};
+        datastore::kvdb::EnvConfig db_config{options.datadir};
+        auto env{datastore::kvdb::open_env(db_config)};
+        datastore::kvdb::ROTxnManaged txn{env};
 
         auto config{db::read_chain_config(txn)};
         if (!config.has_value()) {
@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
         SILK_INFO << "Initializing Light Cache for DAG epoch " << epoch_num;
         auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_num))};
 
-        auto canonical_hashes{db::open_cursor(txn, db::table::kCanonicalHashes)};
+        auto canonical_hashes = datastore::kvdb::open_cursor(txn, db::table::kCanonicalHashes);
 
         // Loop blocks
         StopWatch sw;
@@ -113,12 +113,12 @@ int main(int argc, char* argv[]) {
             }
 
             auto block_key{db::block_key(block_num)};
-            auto data{canonical_hashes.find(db::to_slice(block_key), /*throw_notfound*/ false)};
+            auto data{canonical_hashes.find(datastore::kvdb::to_slice(block_key), /*throw_notfound*/ false)};
             if (!data) {
                 throw std::runtime_error("Can't retrieve canonical hash for block " + std::to_string(block_num));
             }
 
-            auto header_key{to_bytes32(db::from_slice(data.value))};
+            auto header_key{to_bytes32(datastore::kvdb::from_slice(data.value))};
             auto header{db::read_header(txn, block_num, header_key.bytes)};
             if (!header.has_value()) {
                 throw std::runtime_error("Can't retrieve header for block " + std::to_string(block_num));

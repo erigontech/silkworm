@@ -53,7 +53,8 @@ class LocalTransaction : public BaseTransaction {
 
     Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override;
 
-    std::shared_ptr<State> create_state(boost::asio::any_io_executor& executor, const chain::ChainStorage& storage, BlockNum block_num) override;
+    bool is_local() const override { return true; }
+    DataStoreRef data_store() const { return data_store_; }
 
     std::shared_ptr<chain::ChainStorage> create_storage() override;
 
@@ -89,7 +90,7 @@ class LocalTransaction : public BaseTransaction {
 
     DataStoreRef data_store_;
     uint32_t last_cursor_id_{0};
-    ROTxnManaged txn_;
+    datastore::kvdb::ROTxnManaged txn_;
     uint64_t tx_id_{++next_tx_id_};
 };
 

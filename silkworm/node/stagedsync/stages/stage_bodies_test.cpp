@@ -39,7 +39,7 @@ TEST_CASE("BodiesStage - data model") {
     context.add_genesis_data();
     context.commit_txn();
 
-    db::RWAccess chaindata = context.chaindata_rw();
+    datastore::kvdb::RWAccess chaindata = context.chaindata_rw();
     auto data_model_factory = context.data_model_factory();
 
     auto& chain_config = context.chain_config();
@@ -50,7 +50,7 @@ TEST_CASE("BodiesStage - data model") {
      *         h0 <----- h1
      */
     SECTION("one invalid body after the genesis") {
-        db::RWTxnManaged tx = chaindata.start_rw_tx();
+        auto tx = chaindata.start_rw_tx();
         db::DataModel data_model = data_model_factory(tx);
 
         auto header0_hash = db::read_canonical_header_hash(tx, 0);
@@ -91,7 +91,7 @@ TEST_CASE("BodiesStage - data model") {
     }
 
     SECTION("one valid body after the genesis") {
-        db::RWTxnManaged tx = chaindata.start_rw_tx();
+        auto tx = chaindata.start_rw_tx();
         db::DataModel data_model = data_model_factory(tx);
 
         auto header0_hash = db::read_canonical_header_hash(tx, 0);

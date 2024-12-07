@@ -22,15 +22,16 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/random_number.hpp>
-#include <silkworm/db/datastore/mdbx/etl_mdbx_collector.hpp>
+#include <silkworm/db/datastore/kvdb/etl_mdbx_collector.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
-namespace silkworm::db::etl {
+namespace silkworm::datastore::kvdb {
 
 namespace fs = std::filesystem;
+using silkworm::datastore::etl::Entry;
 
 static std::vector<Entry> generate_entry_set(size_t size) {
     std::vector<Entry> pairs;
@@ -57,7 +58,7 @@ static std::vector<Entry> generate_entry_set(size_t size) {
     return pairs;
 }
 
-void run_collector_test(const etl_mdbx::LoadFunc& load_func, bool do_copy = true) {
+void run_collector_test(const datastore::kvdb::LoadFunc& load_func, bool do_copy = true) {
     db::test_util::TempChainData context;
 
     // Generate Test Entries
@@ -68,7 +69,7 @@ void run_collector_test(const etl_mdbx::LoadFunc& load_func, bool do_copy = true
     }
 
     // expect 10 files
-    etl_mdbx::Collector collector{context.dir().temp().path(), generated_size / 10};
+    datastore::kvdb::Collector collector{context.dir().temp().path(), generated_size / 10};
 
     // Collection
     for (auto&& entry : set) {
@@ -91,7 +92,7 @@ void run_collector_test(const etl_mdbx::LoadFunc& load_func, bool do_copy = true
         }
     });
 
-    db::PooledCursor to{context.rw_txn(), db::table::kHeaderNumbers};
+    datastore::kvdb::PooledCursor to{context.rw_txn(), db::table::kHeaderNumbers};
     collector.load(to, load_func);
     // Check whether temporary files were cleaned
     CHECK(std::distance(fs::directory_iterator{context.dir().temp().path()}, fs::directory_iterator{}) == 0);
@@ -110,8 +111,8 @@ TEST_CASE("collect_and_load") {
     run_collector_test([](const Entry& entry, auto& table, MDBX_put_flags_t) {
         Bytes key{entry.key};
         key.at(0) = 1;
-        table.upsert(db::to_slice(key), db::to_slice(entry.value));
+        table.upsert(datastore::kvdb::to_slice(key), datastore::kvdb::to_slice(entry.value));
     });
 }
 
-}  // namespace silkworm::db::etl
+}  // namespace silkworm::datastore::kvdb

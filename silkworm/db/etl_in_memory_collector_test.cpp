@@ -21,23 +21,23 @@
 
 #include <silkworm/core/common/random_number.hpp>
 #include <silkworm/db/datastore/etl/in_memory_collector.hpp>
-#include <silkworm/db/datastore/mdbx/mdbx.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
 #include "util.hpp"
 
-namespace silkworm::db::etl_mdbx {
+namespace silkworm::datastore::kvdb {
 
 // Function pointer to process Load on before Load data into tables
 using KVLoadFunc = std::function<void(const Bytes& key, const Bytes& value,
                                       RWCursorDupSort&, MDBX_put_flags_t)>;
 
-template <typename CollectorStorage = etl::MapStorage>
-class InMemoryCollector : public etl::InMemoryCollector<CollectorStorage> {
+template <typename CollectorStorage = datastore::etl::MapStorage>
+class InMemoryCollector : public datastore::etl::InMemoryCollector<CollectorStorage> {
   public:
-    using etl::InMemoryCollector<CollectorStorage>::InMemoryCollector;
+    using datastore::etl::InMemoryCollector<CollectorStorage>::InMemoryCollector;
 
     //! \brief Loads and optionally transforms collected entries into db
     //! \param [in] target : a cursor opened on target table and owned by caller (can be empty)
@@ -47,7 +47,7 @@ class InMemoryCollector : public etl::InMemoryCollector<CollectorStorage> {
         RWCursorDupSort& target,
         const KVLoadFunc& load_func = {},
         MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT) {
-        etl::KVLoadFunc base_load_func = [&](const Bytes& key, const Bytes& value) {
+        datastore::etl::KVLoadFunc base_load_func = [&](const Bytes& key, const Bytes& value) {
             if (load_func) {
                 load_func(key, value, target, flags);
             } else {
@@ -61,13 +61,13 @@ class InMemoryCollector : public etl::InMemoryCollector<CollectorStorage> {
             }
         };
 
-        this->etl::InMemoryCollector<CollectorStorage>::load(base_load_func);
+        this->datastore::etl::InMemoryCollector<CollectorStorage>::load(base_load_func);
     }
 };
 
-using etl::Entry;
-using etl::MapStorage;
-using etl::VectorStorage;
+using datastore::etl::Entry;
+using datastore::etl::MapStorage;
+using datastore::etl::VectorStorage;
 
 static std::vector<Entry> generate_entry_set(size_t size) {
     std::vector<Entry> pairs;
@@ -96,7 +96,7 @@ static std::vector<Entry> generate_entry_set(size_t size) {
 
 template <typename COLLECTOR>
 void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
-    test_util::TempChainData context;
+    db::test_util::TempChainData context;
 
     // Generate Test Entries
     auto set{generate_entry_set(1000)};  // 1000 entries in total
@@ -130,12 +130,12 @@ void run_collector_test(const KVLoadFunc& load_func, bool do_copy = true) {
     });
 
     // Load data
-    PooledCursor to{context.rw_txn(), table::kHeaderNumbers};
+    PooledCursor to{context.rw_txn(), db::table::kHeaderNumbers};
     collector.load(to, load_func);
 
     if (load_func) {
         size_t found_items{0};
-        PooledCursor from{context.rw_txn(), table::kHeaderNumbers};
+        PooledCursor from{context.rw_txn(), db::table::kHeaderNumbers};
         auto data = from.to_first();
         while (data) {
             auto key = from_slice(data.key);
@@ -185,4 +185,4 @@ TEST_CASE("collect_and_load_in_memory_vector") {
     });
 }
 
-}  // namespace silkworm::db::etl_mdbx
+}  // namespace silkworm::datastore::kvdb

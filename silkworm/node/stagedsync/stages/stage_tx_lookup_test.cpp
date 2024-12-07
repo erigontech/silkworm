@@ -26,6 +26,7 @@
 namespace silkworm {
 
 using namespace silkworm::db;
+using namespace silkworm::datastore::kvdb;
 using namespace evmc::literals;
 using db::test_util::TempChainDataStore;
 
@@ -35,7 +36,7 @@ stagedsync::TxLookup make_tx_lookup_stage(
     return stagedsync::TxLookup{
         sync_context,
         chain_data.data_model_factory(),
-        etl::CollectorSettings{chain_data.dir().temp().path(), 256_Mebi},
+        datastore::etl::CollectorSettings{chain_data.dir().temp().path(), 256_Mebi},
         chain_data.prune_mode().tx_index(),
     };
 }
@@ -126,12 +127,12 @@ TEST_CASE("Stage Transaction Lookups") {
     SECTION("Prune") {
         // Prune from second block, so we delete block 1
         // Alter node settings pruning
-        PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
-        PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
-        beforeTxIndex.emplace(2);  // Will delete any transaction before block 2
+        PruneDistance older_history, older_receipts, older_senders, older_tx_index, older_call_traces;
+        PruneThreshold before_history, before_receipts, before_senders, before_tx_index, before_call_traces;
+        before_tx_index.emplace(2);  // Will delete any transaction before block 2
         context.set_prune_mode(
-            parse_prune_mode("t", olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces,
-                             beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces));
+            parse_prune_mode("t", older_history, older_receipts, older_senders, older_tx_index, older_call_traces,
+                             before_history, before_receipts, before_senders, before_tx_index, before_call_traces));
 
         REQUIRE(context.prune_mode().tx_index().enabled());
         REQUIRE(context.prune_mode().tx_index().value_from_head(2) == 1);

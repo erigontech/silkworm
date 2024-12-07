@@ -182,13 +182,13 @@ inline uint64_t select64(uint64_t x, uint64_t k) {
     s = s - ((s & 0xA * kOnesStep4) >> 1);
     s = (s & 0x3 * kOnesStep4) + ((s >> 2) & 0x3 * kOnesStep4);
     s = (s + (s >> 4)) & 0xF * kOnesStep8;
-    uint64_t byteSums = s * kOnesStep8;
+    uint64_t byte_sums = s * kOnesStep8;
 
-    uint64_t kStep8 = k * kOnesStep8;
-    uint64_t geqKStep8 = (((kStep8 | kLAMBDAsStep8) - byteSums) & kLAMBDAsStep8);
-    uint64_t place = nu(geqKStep8) * 8;
-    uint64_t byteRank = k - (((byteSums << 8) >> place) & uint64_t{0xFF});
-    return place + kSelectInByte[((x >> place) & 0xFF) | (byteRank << 8)];
+    uint64_t k_step8 = k * kOnesStep8;
+    uint64_t geq_k_step8 = (((k_step8 | kLAMBDAsStep8) - byte_sums) & kLAMBDAsStep8);
+    uint64_t place = nu(geq_k_step8) * 8;
+    uint64_t byte_rank = k - (((byte_sums << 8) >> place) & uint64_t{0xFF});
+    return place + kSelectInByte[((x >> place) & 0xFF) | (byte_rank << 8)];
 #elif defined(__GNUC__) || defined(__clang__)
     // GCC and Clang won't inline the intrinsics.
     uint64_t result = uint64_t{1} << k;

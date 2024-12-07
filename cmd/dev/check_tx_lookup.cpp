@@ -46,15 +46,15 @@ int main(int argc, char* argv[]) {
 
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
     data_dir.deploy();
-    db::EnvConfig db_config{data_dir.chaindata().path().string()};
-    db::etl::Collector collector(data_dir.temp().path().string().c_str(), /* flush size */ 512 * kMebi);
+    datastore::kvdb::EnvConfig db_config{data_dir.chaindata().path().string()};
+    datastore::etl::Collector collector(data_dir.temp().path().string().c_str(), /* flush size */ 512 * kMebi);
 
-    auto env{db::open_env(db_config)};
+    auto env{datastore::kvdb::open_env(db_config)};
     auto txn{env.start_read()};
 
-    auto bodies_table{db::open_cursor(txn, db::table::kBlockBodies)};
-    auto tx_lookup_table{db::open_cursor(txn, db::table::kTxLookup)};
-    auto transactions_table{db::open_cursor(txn, db::table::kBlockTransactions)};
+    auto bodies_table = datastore::kvdb::open_cursor(txn, db::table::kBlockBodies);
+    auto tx_lookup_table = datastore::kvdb::open_cursor(txn, db::table::kTxLookup);
+    auto transactions_table = datastore::kvdb::open_cursor(txn, db::table::kBlockTransactions);
 
     uint64_t expected_block_num{0};
 
@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
         auto bodies_data{bodies_table.to_first(false)};
         while (bodies_data) {
             auto block_num(endian::load_big_u64(static_cast<uint8_t*>(bodies_data.key.data())));
-            auto body_rlp{db::from_slice(bodies_data.value)};
+            auto body_rlp{datastore::kvdb::from_slice(bodies_data.value)};
             auto body{unwrap_or_throw(decode_stored_block_body(body_rlp))};
 
             if (body.txn_count > 0) {
@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
                 endian::store_big_u64(transaction_key.data(), body.base_txn_id);
 
                 uint64_t i{0};
-                auto transaction_data{transactions_table.find(db::to_slice(transaction_key), false)};
+                auto transaction_data{transactions_table.find(datastore::kvdb::to_slice(transaction_key), false)};
                 for (; i < body.txn_count && transaction_data.done;
                      ++i, transaction_data = transactions_table.to_next(false)) {
                     if (!transaction_data) {
@@ -81,10 +81,10 @@ int main(int argc, char* argv[]) {
                         continue;
                     }
 
-                    ByteView transaction_rlp{db::from_slice(transaction_data.value)};
+                    ByteView transaction_rlp{datastore::kvdb::from_slice(transaction_data.value)};
                     auto transaction_hash{keccak256(transaction_rlp)};
                     ByteView transaction_view{transaction_hash.bytes};
-                    auto lookup_data{tx_lookup_table.find(db::to_slice(transaction_view), false)};
+                    auto lookup_data{tx_lookup_table.find(datastore::kvdb::to_slice(transaction_view), false)};
                     if (!lookup_data) {
                         SILK_ERROR << "Block " << block_num << " transaction " << i << " with hash "
                                    << to_hex(transaction_view) << " not found in " << db::table::kTxLookup.name
@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
                     }
 
                     // Erigon stores block_num as compact (no leading zeroes)
-                    auto lookup_block_value{db::from_slice(lookup_data.value)};
+                    auto lookup_block_value{datastore::kvdb::from_slice(lookup_data.value)};
                     uint64_t actual_block_num{0};
                     if (!endian::from_big_compact(lookup_block_value, actual_block_num)) {
                         SILK_ERROR << "Failed to read expected block number from: " << to_hex(lookup_block_value);

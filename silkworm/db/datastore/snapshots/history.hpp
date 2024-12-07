@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "history_accessor_index.hpp"
 #include "inverted_index.hpp"
 #include "rec_split/accessor_index.hpp"
 #include "segment/segment_reader.hpp"
@@ -26,6 +27,11 @@ struct History {
     const segment::SegmentFileReader& segment;
     const rec_split::AccessorIndex& accessor_index;
     InvertedIndex inverted_index;
+
+    template <EncoderConcept TIIKeyEncoder>
+    static HistoryAccessorIndexKeyEncoder<TIIKeyEncoder> make_accessor_index_key_encoder() {
+        return HistoryAccessorIndexKeyEncoder<TIIKeyEncoder>{};
+    }
 };
 
 }  // namespace silkworm::snapshots

@@ -22,7 +22,7 @@
 
 #include "data_migration_command.hpp"
 
-namespace silkworm::db {
+namespace silkworm::datastore {
 
 struct DataMigrationResult {
     virtual ~DataMigrationResult() = default;
@@ -43,4 +43,4 @@ struct DataMigration {
     virtual Task<void> cleanup() = 0;
 };
 
-}  // namespace silkworm::db
+}  // namespace silkworm::datastore

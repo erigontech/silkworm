@@ -32,7 +32,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/core/account_dumper.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
+#include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_debug.hpp>
 #include <silkworm/rpc/core/storage_walker.hpp>
@@ -122,10 +122,12 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohm
     SILK_DEBUG << "start_block_id: " << start_block_id << " end_block_id: " << end_block_id;
 
     auto tx = co_await database_->begin();
+    const auto chain_storage = tx->create_storage();
 
     try {
-        const auto start_block_num = co_await core::get_block_num(start_block_id, *tx);
-        const auto end_block_num = co_await core::get_block_num(end_block_id, *tx);
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+        const auto start_block_num = co_await block_reader.get_block_num(start_block_id);
+        const auto end_block_num = co_await block_reader.get_block_num(end_block_id);
 
         if (end_block_num < start_block_num) {
             std::stringstream msg;
@@ -133,7 +135,9 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohm
             throw std::invalid_argument(msg.str());
         }
 
-        const auto addresses = co_await get_modified_accounts(*tx, start_block_num, end_block_num + 1);
+        const auto latest_block_num = co_await block_reader.get_block_num(kLatestBlockId);
+
+        const auto addresses = co_await get_modified_accounts(*tx, start_block_num, end_block_num + 1, latest_block_num);
         reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -170,6 +174,7 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
 
     try {
         const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
 
         const auto start_block_num = co_await chain_storage->read_block_num(start_hash);
         if (!start_block_num) {
@@ -179,7 +184,10 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
         if (!end_block_num) {
             throw std::invalid_argument("end block " + silkworm::to_hex(end_hash) + " not found");
         }
-        const auto addresses = co_await get_modified_accounts(*tx, *start_block_num, *end_block_num + 1);
+
+        const auto latest_block_num = co_await block_reader.get_block_num(kLatestBlockId);
+
+        const auto addresses = co_await get_modified_accounts(*tx, *start_block_num, *end_block_num + 1, latest_block_num);
 
         reply = make_json_content(request, addresses);
     } catch (const std::invalid_argument& e) {
@@ -446,8 +454,9 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
 
     try {
         const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
 
-        const bool is_latest_block = co_await core::is_latest_block_num(block_num_or_hash, *tx);
+        const bool is_latest_block = co_await block_reader.is_latest_block_num(block_num_or_hash);
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
         debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
@@ -637,9 +646,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
     co_await tx->close();  // RAII not (yet) available with coroutines
 }
 
-Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx, BlockNum start_block_num, BlockNum end_block_num) {
-    const auto latest_block_num = co_await core::get_block_num(core::kLatestBlockId, tx);
-
+Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx, BlockNum start_block_num, BlockNum end_block_num, BlockNum latest_block_num) {
     SILK_DEBUG << "latest: " << latest_block_num << " start: " << start_block_num << " end: " << end_block_num;
 
     if (start_block_num > latest_block_num) {
@@ -667,7 +674,7 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
     auto it = co_await paginated_result.begin();
 
     std::set<evmc::address> addresses;
-    while (const auto value = co_await it.next()) {
+    while (const auto value = co_await it->next()) {
         addresses.insert(bytes_to_address(value->first));
     }
 
@@ -690,7 +697,8 @@ Task<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request
 
     try {
         const auto chain_storage = tx->create_storage();
-        const auto block_num = co_await core::get_block_num(block_id, *tx);
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+        const auto block_num = co_await block_reader.get_block_num(block_id);
         silkworm::Block block;
         if (!(co_await chain_storage->read_canonical_block(block_num, block))) {
             throw std::invalid_argument("block not found");
@@ -727,7 +735,8 @@ Task<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& reques
 
     try {
         const auto chain_storage = tx->create_storage();
-        const auto block_num = co_await core::get_block_num(block_id, *tx);
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+        const auto block_num = co_await block_reader.get_block_num(block_id);
         const auto block_hash = co_await chain_storage->read_canonical_header_hash(block_num);
         const auto header = co_await chain_storage->read_header(block_num, block_hash->bytes);
         if (!header) {

@@ -30,7 +30,7 @@ set(LIBS_PUBLIC
     silkworm_block_execution
     silkworm_core
     silkworm_db
-    silkworm_db_etl
+    silkworm_datastore_etl
     silkworm_infra
 )
 

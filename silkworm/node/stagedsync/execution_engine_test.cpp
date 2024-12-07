@@ -70,7 +70,7 @@ TEST_CASE("ExecutionEngine Integration Test", "[node][execution][execution_engin
         .keep_db_txn_open = true,
     };
 
-    RWAccess db_access = db_context.chaindata_rw();
+    auto db_access = db_context.chaindata_rw();
 
     ExecutionEngineForTest exec_engine{
         runner.executor(),

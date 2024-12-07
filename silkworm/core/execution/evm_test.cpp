@@ -87,7 +87,7 @@ TEST_CASE("Destruct and recreate", "[core][execution]") {
         REQUIRE(db.state_root_hash() == 0xc2d663880f143c9bdd3c7bd2c282dc8d24e2bccf81bc779c058d18685a4a7386_bytes32);
     }
 
-    {
+    SECTION("destruct_send-funds_recreate_same_block") {
         IntraBlockState state{db};
 
         // Then, in another block, destruct it
@@ -112,8 +112,51 @@ TEST_CASE("Destruct and recreate", "[core][execution]") {
         CHECK(state.get_current_storage(to, {}) == evmc::bytes32{});
         state.finalize_transaction(EVMC_SHANGHAI);
         state.write_to_db(2);
-        CHECK(db.state_root_hash() == 0x8e723de3b34ef0632b5421f0f8ad8dfa6c981e99009141b5b7130c790f0d38c6_bytes32);
     }
+
+    SECTION("destruct_send-funds_recreate_separate_block") {
+        {
+            IntraBlockState state{db};
+
+            // Then, in another block, destruct it
+            state.clear_journal_and_substate();
+            REQUIRE(state.get_original_storage(to, {}) == evmc::bytes32{1});
+            REQUIRE(state.get_current_storage(to, {}) == evmc::bytes32{1});
+            REQUIRE(state.record_suicide(to));
+            state.destruct_suicides();
+            REQUIRE(state.get_current_storage(to, {}) == evmc::bytes32{});
+            state.finalize_transaction(EVMC_SHANGHAI);
+
+            // Add some balance to it
+            state.clear_journal_and_substate();
+            state.add_to_balance(to, 1);
+            state.finalize_transaction(EVMC_SHANGHAI);
+            CHECK(state.get_current_storage(to, {}) == evmc::bytes32{});
+            state.write_to_db(2);
+            CHECK(state.get_current_storage(to, {}) == evmc::bytes32{});
+            CHECK(db.state_root_hash() == 0x8e723de3b34ef0632b5421f0f8ad8dfa6c981e99009141b5b7130c790f0d38c6_bytes32);
+        }
+        {
+            IntraBlockState state{db};
+
+            // Finally, in the last block, recreate it: the storage location previously set to non-zero must be zeroed
+            state.clear_journal_and_substate();
+            CHECK(state.get_original_storage(to, {}) == evmc::bytes32{});
+            CHECK(state.get_current_storage(to, {}) == evmc::bytes32{});
+            state.create_contract(to);
+            CHECK(state.get_original_storage(to, {}) == evmc::bytes32{});
+            CHECK(state.get_current_storage(to, {}) == evmc::bytes32{});
+            state.finalize_transaction(EVMC_SHANGHAI);
+            state.write_to_db(3);
+        }
+    }
+
+    // Post-conditions: account must have incarnation == 2 and storage location zeroed
+    const auto contract_address = db.read_account(to);
+    REQUIRE(contract_address);
+    CHECK(contract_address->incarnation == 2);
+    CHECK(db.read_storage(to, contract_address->incarnation, {}) == evmc::bytes32{0});
+    CHECK(db.state_root_hash() == 0x8e723de3b34ef0632b5421f0f8ad8dfa6c981e99009141b5b7130c790f0d38c6_bytes32);
 }
 
 TEST_CASE("Create contract, destruct and then recreate", "[core][execution]") {

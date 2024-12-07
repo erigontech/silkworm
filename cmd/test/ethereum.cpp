@@ -31,7 +31,6 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/test_util.hpp>
-#include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/protocol/blockchain.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
@@ -42,7 +41,8 @@
 #include <silkworm/infra/common/terminal.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 
-// See https://ethereum-tests.readthedocs.io
+// See EEST: https://ethereum.github.io/execution-spec-tests.
+// See legacy tests: https://ethereum-tests.readthedocs.io.
 
 using namespace silkworm;
 using namespace silkworm::protocol;
@@ -55,12 +55,27 @@ static const fs::path kBlockchainDir{"BlockchainTests"};
 
 static const fs::path kTransactionDir{"TransactionTests"};
 
-static const std::vector<fs::path> kSlowTests{
+static const std::array kSlowTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
     kBlockchainDir / "GeneralStateTests" / "VMTests" / "vmPerformance",
 };
 
-static const std::vector<fs::path> kFailingTests{};
+static const std::array kFailingTests{
+    // Tests related to create address collision. Silkworm and evmone implement this scenario
+    // differently:
+    // Silkworm follows the older EIP-684 and clears the created account storage if not empty,
+    // evmone tries to follow the newer EIP-7610 to revert the creation, however Silkworm
+    // is not able to provide enough information to evmone to identify non-empty storage,
+    // in the result the non-empty storage remains unchanged.
+    // This scenarion don't happen in real networks. The desired behavior for implementations
+    // is still being discussed.
+    kBlockchainDir / "GeneralStateTests" / "stCreate2" / "RevertInCreateInInitCreate2.json",
+    kBlockchainDir / "GeneralStateTests" / "stCreate2" / "RevertInCreateInInitCreate2Paris.json",
+    kBlockchainDir / "GeneralStateTests" / "stRevertTest" / "RevertInCreateInInit.json",
+    kBlockchainDir / "GeneralStateTests" / "stRevertTest" / "RevertInCreateInInit_Paris.json",
+    kBlockchainDir / "GeneralStateTests" / "stSStoreTest" / "InitCollision.json",
+    kBlockchainDir / "GeneralStateTests" / "stSStoreTest" / "InitCollisionParis.json",
+};
 
 static constexpr size_t kColumnWidth{80};
 
@@ -271,7 +286,7 @@ std::atomic<size_t> total_skipped{0};
 
 using RunnerFunc = RunResults (*)(const nlohmann::json&);
 
-void run_test_file(const fs::path& file_path, RunnerFunc runner) {
+void run_test_file(const fs::path& file_path, RunnerFunc runner, std::string_view filter) {
     std::ifstream in{file_path.string()};
     nlohmann::json json;
 
@@ -287,7 +302,10 @@ void run_test_file(const fs::path& file_path, RunnerFunc runner) {
     RunResults total;
 
     for (const auto& test : json.items()) {
-        const RunResults r{runner(test.value())};
+        if (!filter.empty() && test.key().find(filter) == std::string::npos) {
+            continue;
+        }
+        const RunResults r = runner(test.value());
         total += r;
         if (r.failed || r.skipped) {
             print_test_status(test.key(), r);
@@ -435,18 +453,21 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"Run Ethereum EL tests"};
 
-    std::string evm_path{};
+    std::string evm_path;
     app.add_option("--evm", evm_path, "Path to EVMC-compliant VM");
     std::string tests_path{SILKWORM_ETHEREUM_TESTS_DIR};
     app.add_option("--tests", tests_path, "Path to Ethereum EL tests")
         ->capture_default_str()
         ->check(CLI::ExistingDirectory);
+    std::string test_name_filter;
+    app.add_option("--filter", test_name_filter, "Inclusion filter matching the test names to be executed")
+        ->capture_default_str();
     unsigned num_threads{std::thread::hardware_concurrency()};
     app.add_option("--threads", num_threads, "Number of parallel threads")->capture_default_str();
     bool include_slow_tests{false};
     app.add_flag("--slow", include_slow_tests, "Run slow tests");
 
-    CLI11_PARSE(app, argc, argv);
+    CLI11_PARSE(app, argc, argv)
     init_terminal();
 
     if (!evm_path.empty()) {
@@ -486,7 +507,7 @@ int main(int argc, char* argv[]) {
                 i.disable_recursion_pending();
             } else if (fs::is_regular_file(i->path()) && i->path().extension() == ".json") {
                 const fs::path path{*i};
-                thread_pool.push_task([=]() { run_test_file(path, runner); });
+                thread_pool.push_task([=]() { run_test_file(path, runner, test_name_filter); });
             }
         }
     }

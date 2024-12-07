@@ -306,8 +306,8 @@ using BodyCounters = std::pair<int, uint64_t>;
 BodyCounters count_bodies_in_one(const SnapshotSubcommandSettings& settings, const SegmentFileReader& body_segment) {
     int num_bodies = 0;
     uint64_t num_txns = 0;
-    const int kFirstItems = 3;
-    const int kStepItems = 50'000;
+    constexpr int kFirstItems = 3;
+    constexpr int kStepItems = 50'000;
     if (settings.verbose) {
         SILK_INFO << "Printing first " << kFirstItems << " bodies, then every " << kStepItems;
     }
@@ -358,8 +358,8 @@ void count_bodies(const SnapshotSubcommandSettings& settings, int repetitions) {
 
 int count_headers_in_one(const SnapshotSubcommandSettings& settings, const SegmentFileReader& header_segment) {
     int num_headers = 0;
-    const int kFirstItems = 3;
-    const int kStepItems = 50'000;
+    constexpr int kFirstItems = 3;
+    constexpr int kStepItems = 50'000;
     if (settings.verbose) {
         SILK_INFO << "Printing first " << kFirstItems << " headers, then every " << kStepItems;
     }
@@ -1001,13 +1001,13 @@ void lookup_transaction(const SnapshotSubcommandSettings& settings) {
 void merge(const SnapshotSettings& settings) {
     auto repository = make_repository(settings);
     TemporaryDirectory tmp_dir;
-    db::SnapshotMerger merger{repository, tmp_dir.path()};
+    datastore::SnapshotMerger merger{repository, tmp_dir.path()};
     test_util::TaskRunner runner;
     runner.run(merger.exec());
 }
 
 void sync(const SnapshotSettings& settings) {
-    class NoopStageSchedulerAdapter : public stagedsync::StageScheduler {
+    class NoopStageSchedulerAdapter : public datastore::StageScheduler {
       public:
         explicit NoopStageSchedulerAdapter() = default;
         ~NoopStageSchedulerAdapter() override = default;
@@ -1019,7 +1019,7 @@ void sync(const SnapshotSettings& settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
     TemporaryDirectory tmp_dir;
-    db::EnvConfig chaindata_env_config{tmp_dir.path()};
+    datastore::kvdb::EnvConfig chaindata_env_config{tmp_dir.path()};
 
     db::DataStore data_store{
         chaindata_env_config,

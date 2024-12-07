@@ -28,7 +28,6 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
-#include <silkworm/db/state/remote_state.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -54,7 +53,6 @@ struct TraceCallExecutorTest : public test_util::ServiceContextTestBase {
 };
 
 #ifndef SILKWORM_SANITIZE
-using silkworm::db::state::RemoteState;
 using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
@@ -65,29 +63,24 @@ static const Bytes kConfigKey{kZeroHeaderHash.bytes, kHashLength};
 static const Bytes kConfigValue{string_view_to_byte_view(kSepoliaConfig.to_json().dump())};  // NOLINT(cppcoreguidelines-interfaces-global-init)
 
 TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompiled") {
-    static Bytes kAccountHistoryKey1{*silkworm::from_hex("0a6bb546b9208cfab9e8fa2b9b2c042b18df7030")};
-    static Bytes kAccountHistoryKey2{*silkworm::from_hex("0000000000000000000000000000000000000009")};
-    static Bytes kAccountHistoryKey3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
+    static Bytes account_history_key1{*silkworm::from_hex("0a6bb546b9208cfab9e8fa2b9b2c042b18df7030")};
+    static Bytes account_history_key2{*silkworm::from_hex("0000000000000000000000000000000000000009")};
+    static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
 
     SECTION("precompiled contract failure") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
@@ -174,18 +167,13 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
 }
 
 TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
-    static Bytes kAccountHistoryKey1{*silkworm::from_hex("e0a2bd4258d2768837baa26a28fe71dc079f84c7")};
-    static Bytes kAccountHistoryValue1{*silkworm::from_hex("0203430b141e903194951083c424fd0000")};
+    static Bytes account_history_key1{*silkworm::from_hex("e0a2bd4258d2768837baa26a28fe71dc079f84c7")};
+    static Bytes account_history_value1{*silkworm::from_hex("0203430b141e903194951083c424fd0000")};
 
-    static Bytes kAccountHistoryKey2{*silkworm::from_hex("52728289eba496b6080d57d0250a90663a07e556")};
+    static Bytes account_history_key2{*silkworm::from_hex("52728289eba496b6080d57d0250a90663a07e556")};
 
-    static Bytes kAccountHistoryKey3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
-    static Bytes kAccountHistoryValue3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
+    static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
+    static Bytes account_history_value3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
 
     SECTION("Call: failed with intrinsic gas too low") {
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
@@ -218,17 +206,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     SECTION("Call: full output") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
 
@@ -246,7 +234,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -258,7 +246,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -407,17 +395,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     SECTION("Call: no vmTrace") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
 
@@ -435,7 +423,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -447,7 +435,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -533,17 +521,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     SECTION("Call: no trace") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
 
@@ -561,7 +549,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -573,7 +561,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -705,17 +693,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     SECTION("Call: no stateDiff") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
 
@@ -733,7 +721,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -745,7 +733,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -855,17 +843,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     SECTION("Call: no vmTrace, trace and stateDiff") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
 
@@ -883,7 +871,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -895,7 +883,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -924,33 +912,28 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 }
 
 TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
-    static Bytes kAccountHistoryKey1{*silkworm::from_hex("8ced5ad0d8da4ec211c17355ed3dbfec4cf0e5b9")};
-    static Bytes kAccountHistoryValue1{*silkworm::from_hex("03038c330a01a098914888dc0516d20000")};
+    static Bytes account_history_key1{*silkworm::from_hex("8ced5ad0d8da4ec211c17355ed3dbfec4cf0e5b9")};
+    static Bytes account_history_value1{*silkworm::from_hex("03038c330a01a098914888dc0516d20000")};
 
-    static Bytes kAccountHistoryKey2{*silkworm::from_hex("5e1f0c9ddbe3cb57b80c933fab5151627d7966fa")};
-    static Bytes kAccountHistoryValue2{*silkworm::from_hex("010408014219564ff26a000000")};
+    static Bytes account_history_key2{*silkworm::from_hex("5e1f0c9ddbe3cb57b80c933fab5151627d7966fa")};
+    static Bytes account_history_value2{*silkworm::from_hex("010408014219564ff26a000000")};
 
-    static Bytes kAccountHistoryKey3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
+    static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
 
     SECTION("Call: TO present") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
@@ -967,13 +950,13 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue2};
+                .value = account_history_value2};
             co_return response;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -1072,33 +1055,28 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
 }
 
 TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with error") {
-    static Bytes kAccountHistoryKey1{*silkworm::from_hex("578f0a154b23be77fc2033197fbc775637648ad4")};
-    static Bytes kAccountHistoryValue1{*silkworm::from_hex("012f090207fbc719f215d7050000")};
+    static Bytes account_history_key1{*silkworm::from_hex("578f0a154b23be77fc2033197fbc775637648ad4")};
+    static Bytes account_history_value1{*silkworm::from_hex("012f090207fbc719f215d7050000")};
 
-    static Bytes kAccountHistoryKey2{*silkworm::from_hex("6951c35e335fa18c97cb207119133cd8009580cd")};
-    static Bytes kAccountHistoryValue2{*silkworm::from_hex("00000000")};
+    static Bytes account_history_key2{*silkworm::from_hex("6951c35e335fa18c97cb207119133cd8009580cd")};
+    static Bytes account_history_value2{*silkworm::from_hex("00000000")};
 
-    static Bytes kAccountHistoryKey3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
-    static Bytes kAccountHistoryValue3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
+    static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
+    static Bytes account_history_value3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
 
     db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+        .key = db::account_domain_key(bytes_to_address(account_history_key1)),
         .timestamp = 244087591818873,
     };
     db::kv::api::GetAsOfQuery query2{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+        .key = db::account_domain_key(bytes_to_address(account_history_key2)),
         .timestamp = 244087591818873,
     };
     db::kv::api::GetAsOfQuery query3{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+        .key = db::account_domain_key(bytes_to_address(account_history_key3)),
         .timestamp = 244087591818873,
     };
     EXPECT_CALL(backend, get_block_hash_from_block_num(_))
@@ -1115,19 +1093,19 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
     EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
         db::kv::api::GetAsOfResult response{
             .success = true,
-            .value = kAccountHistoryValue1};
+            .value = account_history_value1};
         co_return response;
     }));
     EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
         db::kv::api::GetAsOfResult response{
             .success = true,
-            .value = kAccountHistoryValue2};
+            .value = account_history_value2};
         co_return response;
     }));
     EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
         db::kv::api::GetAsOfResult response{
             .success = true,
-            .value = kAccountHistoryValue3};
+            .value = account_history_value3};
         co_return response;
     }));
 
@@ -1231,18 +1209,13 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
 }
 
 TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
-    static Bytes kAccountHistoryKey1{*silkworm::from_hex("e0a2bd4258d2768837baa26a28fe71dc079f84c700000000005279a8")};
-    static Bytes kAccountHistoryValue1{*silkworm::from_hex("0203430b141e903194951083c424fd0000")};
+    static Bytes account_history_key1{*silkworm::from_hex("e0a2bd4258d2768837baa26a28fe71dc079f84c700000000005279a8")};
+    static Bytes account_history_value1{*silkworm::from_hex("0203430b141e903194951083c424fd0000")};
 
-    static Bytes kAccountHistoryKey2{*silkworm::from_hex("52728289eba496b6080d57d0250a90663a07e55600000000005279a8")};
+    static Bytes account_history_key2{*silkworm::from_hex("52728289eba496b6080d57d0250a90663a07e55600000000005279a8")};
 
-    static Bytes kAccountHistoryKey3{*silkworm::from_hex("000000000000000000000000000000000000000000000000005279a8")};
-    static Bytes kAccountHistoryValue3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
+    static Bytes account_history_key3{*silkworm::from_hex("000000000000000000000000000000000000000000000000005279a8")};
+    static Bytes account_history_value3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
 
     SECTION("callMany: failed with intrinsic gas too low") {
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
@@ -1279,17 +1252,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
     SECTION("Call: full output") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818873,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+            .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818873,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
@@ -1306,7 +1279,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -1318,7 +1291,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
         EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -1472,32 +1445,27 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
 
 TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transactions") {
     // TransactionDatabase::get: TABLE AccountHistory
-    static Bytes kAccountHistoryKey1{*silkworm::from_hex("daae090d53f9ed9e2e1fd25258c01bac4dd6d1c5")};
-    static Bytes kAccountHistoryValue1{*silkworm::from_hex("0127080334e1d62a9e34400000")};
+    static Bytes account_history_key1{*silkworm::from_hex("daae090d53f9ed9e2e1fd25258c01bac4dd6d1c5")};
+    static Bytes account_history_value1{*silkworm::from_hex("0127080334e1d62a9e34400000")};
 
-    static Bytes kAccountHistoryKey2{*silkworm::from_hex("a85b4c37cd8f447848d49851a1bb06d10d410c13")};
+    static Bytes account_history_key2{*silkworm::from_hex("a85b4c37cd8f447848d49851a1bb06d10d410c13")};
 
-    static Bytes kAccountHistoryKey3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
-    static Bytes kAccountHistoryValue3{*silkworm::from_hex("0008028ded68c33d14010000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
+    static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
+    static Bytes account_history_value3{*silkworm::from_hex("0008028ded68c33d14010000")};
 
     db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+        .key = db::account_domain_key(bytes_to_address(account_history_key1)),
         .timestamp = 244087591818873,
     };
     db::kv::api::GetAsOfQuery query2{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+        .key = db::account_domain_key(bytes_to_address(account_history_key2)),
         .timestamp = 244087591818873,
     };
     db::kv::api::GetAsOfQuery query3{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+        .key = db::account_domain_key(bytes_to_address(account_history_key3)),
         .timestamp = 244087591818873,
     };
     EXPECT_CALL(backend, get_block_hash_from_block_num(_))
@@ -1514,7 +1482,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
     EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
         db::kv::api::GetAsOfResult response{
             .success = true,
-            .value = kAccountHistoryValue1};
+            .value = account_history_value1};
         co_return response;
     }));
     EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -1526,7 +1494,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
     EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
         db::kv::api::GetAsOfResult response{
             .success = true,
-            .value = kAccountHistoryValue3};
+            .value = account_history_value3};
         co_return response;
     }));
 
@@ -1927,34 +1895,29 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
 }
 
 TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
-    static Bytes kAccountHistoryKey1{*silkworm::from_hex("a85b4c37cd8f447848d49851a1bb06d10d410c13")};
+    static Bytes account_history_key1{*silkworm::from_hex("a85b4c37cd8f447848d49851a1bb06d10d410c13")};
 
-    static Bytes kAccountHistoryKey2{*silkworm::from_hex("0000000000000000000000000000000000000000")};
-    static Bytes kAccountHistoryValue2{*silkworm::from_hex("0008028ded68c33d14010000")};
+    static Bytes account_history_key2{*silkworm::from_hex("0000000000000000000000000000000000000000")};
+    static Bytes account_history_value2{*silkworm::from_hex("0008028ded68c33d14010000")};
 
-    static Bytes kAccountHistoryKey3{*silkworm::from_hex("daae090d53f9ed9e2e1fd25258c01bac4dd6d1c5")};
-    static Bytes kAccountHistoryValue3{*silkworm::from_hex("0127080334e1d62a9e34400000")};
-
-    auto& tx = transaction;
+    static Bytes account_history_key3{*silkworm::from_hex("daae090d53f9ed9e2e1fd25258c01bac4dd6d1c5")};
+    static Bytes account_history_value3{*silkworm::from_hex("0127080334e1d62a9e34400000")};
 
     db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
+        .key = db::account_domain_key(bytes_to_address(account_history_key1)),
         .timestamp = 244087591818873,
     };
     db::kv::api::GetAsOfQuery query2{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
+        .key = db::account_domain_key(bytes_to_address(account_history_key2)),
         .timestamp = 244087591818873,
     };
     db::kv::api::GetAsOfQuery query3{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
+        .key = db::account_domain_key(bytes_to_address(account_history_key3)),
         .timestamp = 244087591818873,
     };
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
     EXPECT_CALL(backend, get_block_hash_from_block_num(_))
         .Times(2)
         .WillRepeatedly(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -1976,13 +1939,13 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
         db::kv::api::GetAsOfResult response{
             .success = true,
-            .value = kAccountHistoryValue2};
+            .value = account_history_value2};
         co_return response;
     }));
     EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
         db::kv::api::GetAsOfResult response{
             .success = true,
-            .value = kAccountHistoryValue3};
+            .value = account_history_value3};
         co_return response;
     }));
 
@@ -2039,33 +2002,28 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
 }
 
 TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransaction") {
-    static Bytes kAccountHistoryKey1{*silkworm::from_hex("daae090d53f9ed9e2e1fd25258c01bac4dd6d1c5")};
-    static Bytes kAccountHistoryValue1{*silkworm::from_hex("0127080334e1d62a9e34400000")};
+    static Bytes account_history_key1{*silkworm::from_hex("daae090d53f9ed9e2e1fd25258c01bac4dd6d1c5")};
+    static Bytes account_history_value1{*silkworm::from_hex("0127080334e1d62a9e34400000")};
 
-    static Bytes kAccountHistoryKey2{*silkworm::from_hex("a85b4c37cd8f447848d49851a1bb06d10d410c13")};
+    static Bytes account_history_key2{*silkworm::from_hex("a85b4c37cd8f447848d49851a1bb06d10d410c13")};
 
-    static Bytes kAccountHistoryKey3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
-    static Bytes kAccountHistoryValue3{*silkworm::from_hex("0008028ded68c33d14010000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
+    static Bytes account_history_key3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
+    static Bytes account_history_value3{*silkworm::from_hex("0008028ded68c33d14010000")};
 
     db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
-        .timestamp = 244087591818873,
+        .key = db::account_domain_key(bytes_to_address(account_history_key1)),
+        .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfQuery query2{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
-        .timestamp = 244087591818873,
+        .key = db::account_domain_key(bytes_to_address(account_history_key2)),
+        .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfQuery query3{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
-        .timestamp = 244087591818873,
+        .key = db::account_domain_key(bytes_to_address(account_history_key3)),
+        .timestamp = 244087591818874,
     };
     EXPECT_CALL(backend, get_block_hash_from_block_num(_))
         .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -2109,7 +2067,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query2})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -2121,7 +2079,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query3})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -2441,13 +2399,13 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
     }
 
     SECTION("Call: only trace") {
-        EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(1).WillRepeatedly(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query2})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -2459,7 +2417,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query3})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -2493,13 +2451,13 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         })"_json);
     }
     SECTION("Call: only stateDiff") {
-        EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(1).WillRepeatedly(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query2})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -2511,7 +2469,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query3})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -2568,13 +2526,13 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         })"_json);
     }
     SECTION("Call: full output") {
-        EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(1).WillRepeatedly(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query1})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue1};
+                .value = account_history_value1};
             co_return response;
         }));
         EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query2})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -2586,7 +2544,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         EXPECT_CALL(transaction, get_as_of(silkworm::db::kv::api::GetAsOfQuery{query3})).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
-                .value = kAccountHistoryValue3};
+                .value = account_history_value3};
             co_return response;
         }));
 
@@ -2964,33 +2922,28 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
 }
 
 TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") {
-    static Bytes kAccountHistoryKey1{*silkworm::from_hex("a85b4c37cd8f447848d49851a1bb06d10d410c13")};
+    static Bytes account_history_key1{*silkworm::from_hex("a85b4c37cd8f447848d49851a1bb06d10d410c13")};
 
-    static Bytes kAccountHistoryKey2{*silkworm::from_hex("0000000000000000000000000000000000000000")};
-    static Bytes kAccountHistoryValue2{*silkworm::from_hex("0008028ded68c33d14010000")};
+    static Bytes account_history_key2{*silkworm::from_hex("0000000000000000000000000000000000000000")};
+    static Bytes account_history_value2{*silkworm::from_hex("0008028ded68c33d14010000")};
 
-    static Bytes kAccountHistoryKey3{*silkworm::from_hex("daae090d53f9ed9e2e1fd25258c01bac4dd6d1c5")};
-    static Bytes kAccountHistoryValue3{*silkworm::from_hex("0127080334e1d62a9e34400000")};
-
-    auto& tx = transaction;
-    EXPECT_CALL(transaction, create_state(_, _, _)).Times(2).WillRepeatedly(Invoke([&tx](auto& ioc, const auto& storage, auto block_num) -> std::shared_ptr<State> {
-        return std::make_shared<RemoteState>(ioc, tx, storage, block_num);
-    }));
+    static Bytes account_history_key3{*silkworm::from_hex("daae090d53f9ed9e2e1fd25258c01bac4dd6d1c5")};
+    static Bytes account_history_value3{*silkworm::from_hex("0127080334e1d62a9e34400000")};
 
     db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey1)),
-        .timestamp = 244087591818873,
+        .key = db::account_domain_key(bytes_to_address(account_history_key1)),
+        .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfQuery query2{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey2)),
-        .timestamp = 244087591818873,
+        .key = db::account_domain_key(bytes_to_address(account_history_key2)),
+        .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfQuery query3{
         .table = table::kAccountDomain,
-        .key = db::account_domain_key(bytes_to_address(kAccountHistoryKey3)),
-        .timestamp = 244087591818873,
+        .key = db::account_domain_key(bytes_to_address(account_history_key3)),
+        .timestamp = 244087591818874,
     };
     EXPECT_CALL(backend, get_block_hash_from_block_num(_))
         .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -3000,7 +2953,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kConfigValue;
         }));
-    EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(2).WillRepeatedly(Invoke([]() -> Task<TxnId> {
+    EXPECT_CALL(transaction, first_txn_num_in_block(1'024'165)).Times(1).WillRepeatedly(Invoke([]() -> Task<TxnId> {
         co_return 244087591818873;
     }));
     EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -3012,13 +2965,13 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     EXPECT_CALL(transaction, get_as_of(std::move(query2))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
         db::kv::api::GetAsOfResult rsp1{
             .success = true,
-            .value = kAccountHistoryValue2};
+            .value = account_history_value2};
         co_return rsp1;
     }));
     EXPECT_CALL(transaction, get_as_of(std::move(query3))).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
         db::kv::api::GetAsOfResult rsp1{
             .success = true,
-            .value = kAccountHistoryValue3};
+            .value = account_history_value3};
         co_return rsp1;
     }));
 

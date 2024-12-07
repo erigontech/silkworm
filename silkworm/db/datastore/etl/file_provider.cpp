@@ -21,7 +21,7 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/infra/common/safe_strerror.hpp>
 
-namespace silkworm::db::etl {
+namespace silkworm::datastore::etl {
 
 namespace fs = std::filesystem;
 
@@ -109,4 +109,4 @@ std::string FileProvider::get_file_name() const { return file_name_; }
 
 size_t FileProvider::get_file_size() const { return file_size_; }
 
-}  // namespace silkworm::db::etl
+}  // namespace silkworm::datastore::etl

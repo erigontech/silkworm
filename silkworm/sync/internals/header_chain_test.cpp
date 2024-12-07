@@ -51,9 +51,9 @@ class HeaderChainForTest : public HeaderChain {
 
 TEST_CASE("HeaderList::split_into_segments no headers") {
     std::vector<BlockHeader> headers;
-    auto headerList = HeaderList::make(headers);
+    auto header_list = HeaderList::make(headers);
 
-    auto [segments, penalty] = headerList->split_into_segments();
+    auto [segments, penalty] = header_list->split_into_segments();
 
     REQUIRE(segments.empty());
     REQUIRE(penalty == Penalty::kNoPenalty);
@@ -65,9 +65,9 @@ TEST_CASE("HeaderList::split_into_segments single header") {
     header.number = 5;
     headers.push_back(header);
 
-    auto headerList = HeaderList::make(headers);
+    auto header_list = HeaderList::make(headers);
 
-    auto [segments, penalty] = headerList->split_into_segments();
+    auto [segments, penalty] = header_list->split_into_segments();
 
     REQUIRE(segments.size() == 1);
     REQUIRE(penalty == Penalty::kNoPenalty);
@@ -80,9 +80,9 @@ TEST_CASE("HeaderList::split_into_segments single header repeated twice") {
     headers.push_back(header);
     headers.push_back(header);
 
-    auto headerList = HeaderList::make(headers);
+    auto header_list = HeaderList::make(headers);
 
-    auto [segments, penalty] = headerList->split_into_segments();
+    auto [segments, penalty] = header_list->split_into_segments();
 
     REQUIRE(segments.empty());
     REQUIRE(penalty == Penalty::kDuplicateHeaderPenalty);
@@ -102,9 +102,9 @@ TEST_CASE("HeaderList::split_into_segments two connected headers") {
     header2.parent_hash = header1.hash();
     headers.push_back(header2);
 
-    auto headerList = HeaderList::make(headers);
+    auto header_list = HeaderList::make(headers);
 
-    auto [segments, penalty] = headerList->split_into_segments();
+    auto [segments, penalty] = header_list->split_into_segments();
 
     REQUIRE(penalty == Penalty::kNoPenalty);
     REQUIRE(segments.size() == 1);                      // 1 segment
@@ -127,9 +127,9 @@ TEST_CASE("HeaderList::split_into_segments two connected headers with wrong numb
     header2.parent_hash = header1.hash();
     headers.push_back(header2);
 
-    auto headerList = HeaderList::make(headers);
+    auto header_list = HeaderList::make(headers);
 
-    auto [segments, penalty] = headerList->split_into_segments();
+    auto [segments, penalty] = header_list->split_into_segments();
 
     REQUIRE(segments.empty());
     REQUIRE(penalty == Penalty::kWrongChildBlockHeightPenalty);
@@ -163,9 +163,9 @@ TEST_CASE("HeaderList::split_into_segments two headers connected to the third he
         string_view_to_byte_view("I'm different");  // To make sure the hash of h3 is different from the hash of h2
     headers.push_back(header3);
 
-    auto headerList = HeaderList::make(headers);
+    auto header_list = HeaderList::make(headers);
 
-    auto [segments, penalty] = headerList->split_into_segments();
+    auto [segments, penalty] = header_list->split_into_segments();
 
     REQUIRE(penalty == Penalty::kNoPenalty);
     REQUIRE(segments.size() == 3);                      // 3 segment
@@ -200,9 +200,9 @@ TEST_CASE("HeaderList::split_into_segments same three headers, but in a reverse 
     headers.push_back(header2);
     headers.push_back(header1);
 
-    auto headerList = HeaderList::make(headers);
+    auto header_list = HeaderList::make(headers);
 
-    auto [segments, penalty] = headerList->split_into_segments();
+    auto [segments, penalty] = header_list->split_into_segments();
 
     REQUIRE(penalty == Penalty::kNoPenalty);
     REQUIRE(segments.size() == 3);                      // 3 segment
@@ -240,9 +240,9 @@ TEST_CASE("HeaderList::split_into_segments two headers not connected to each oth
     headers.push_back(header3);
     headers.push_back(header2);
 
-    auto headerList = HeaderList::make(headers);
+    auto header_list = HeaderList::make(headers);
 
-    auto [segments, penalty] = headerList->split_into_segments();
+    auto [segments, penalty] = header_list->split_into_segments();
 
     REQUIRE(penalty == Penalty::kNoPenalty);
     REQUIRE(segments.size() == 2);              // 1 segment
@@ -276,9 +276,9 @@ TEST_CASE("HeaderList::split_into_segments three headers connected") {
     header3.parent_hash = header2.hash();
     headers.push_back(header3);
 
-    auto headerList = HeaderList::make(headers);
+    auto header_list = HeaderList::make(headers);
 
-    auto [segments, penalty] = headerList->split_into_segments();
+    auto [segments, penalty] = header_list->split_into_segments();
 
     REQUIRE(penalty == Penalty::kNoPenalty);
     REQUIRE(segments.size() == 1);                      // 1 segment
@@ -322,9 +322,9 @@ TEST_CASE("HeaderList::split_into_segments four headers connected") {
     header4.extra_data = string_view_to_byte_view("I'm different");
     headers.push_back(header4);
 
-    auto headerList = HeaderList::make(headers);
+    auto header_list = HeaderList::make(headers);
 
-    auto [segments, penalty] = headerList->split_into_segments();
+    auto [segments, penalty] = header_list->split_into_segments();
 
     REQUIRE(penalty == Penalty::kNoPenalty);
     REQUIRE(segments.size() == 3);                      // 3 segment

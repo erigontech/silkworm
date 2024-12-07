@@ -102,14 +102,14 @@ int main(int argc, char* argv[]) {
 
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
         data_dir.deploy();
-        db::EnvConfig db_config{data_dir.chaindata().path().string()};
+        datastore::kvdb::EnvConfig db_config{data_dir.chaindata().path().string()};
 
         db::DataStore data_store{
             db_config,
             data_dir.snapshots().path(),
         };
 
-        db::RWTxnManaged txn = data_store.chaindata_rw().start_rw_tx();
+        auto txn = data_store.chaindata_rw().start_rw_tx();
         auto chain_config{db::read_chain_config(txn)};
         if (!chain_config) {
             throw std::runtime_error("Unable to retrieve chain config");

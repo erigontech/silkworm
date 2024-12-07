@@ -18,9 +18,10 @@
 
 #include <string>
 
+#include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
-#include <silkworm/rpc/core/blocks.hpp>
+#include <silkworm/rpc/core/block_reader.hpp>
 
 namespace silkworm::rpc {
 
@@ -79,7 +80,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
 
     auto this_executor = co_await boost::asio::this_coro::executor;
     auto exec_result = co_await async_task(workers_.executor(), [&]() -> ExecutionResult {
-        auto state = transaction_.create_state(this_executor, storage_, block_num);
+        auto state = execution::StateFactory{transaction_}.create_state(this_executor, storage_, block_num);
 
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
         silkworm::Transaction transaction{call.to_transaction()};

@@ -39,7 +39,7 @@ TEST_CASE("HeadersStage - data model") {
     context.add_genesis_data();
     context.commit_txn();
 
-    RWAccess chaindata = context.chaindata_rw();
+    auto chaindata = context.chaindata_rw();
     auto data_model_factory = context.data_model_factory();
 
     /* status:
@@ -48,7 +48,7 @@ TEST_CASE("HeadersStage - data model") {
      *         h0 <----- h1
      */
     SECTION("one header after the genesis") {
-        RWTxnManaged tx = chaindata.start_rw_tx();
+        auto tx = chaindata.start_rw_tx();
         DataModel data_model = data_model_factory(tx);
 
         auto header0_hash = read_canonical_header_hash(tx, 0);
@@ -92,7 +92,7 @@ TEST_CASE("HeadersStage - data model") {
      *                |-- h1'
      */
     SECTION("some header after the genesis") {
-        RWTxnManaged tx = chaindata.start_rw_tx();
+        auto tx = chaindata.start_rw_tx();
         DataModel data_model = data_model_factory(tx);
 
         // starting from an initial status

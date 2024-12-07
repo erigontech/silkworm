@@ -189,12 +189,12 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         }
 
         // Store prefix sums of bucket sizes and bit positions
-        std::vector<int64_t> bucket_size_accumulator_(this->bucket_count_ + 1);      // accumulator for size of every bucket
-        std::vector<int64_t> bucket_position_accumulator_(this->bucket_count_ + 1);  // accumulator for position of every bucket in the encoding of the hash function
+        std::vector<int64_t> bucket_size_accumulator(this->bucket_count_ + 1);      // accumulator for size of every bucket
+        std::vector<int64_t> bucket_position_accumulator(this->bucket_count_ + 1);  // accumulator for position of every bucket in the encoding of the hash function
 
-        bucket_size_accumulator_[0] = bucket_position_accumulator_[0] = 0;
+        bucket_size_accumulator[0] = bucket_position_accumulator[0] = 0;
         for (size_t i = 0; i < bucket_count_; ++i) {
-            bucket_size_accumulator_[i + 1] = bucket_size_accumulator_[i] + buckets_[i].keys_.size();
+            bucket_size_accumulator[i + 1] = bucket_size_accumulator[i] + buckets_[i].keys_.size();
 
             // auto* underlying_buffer = buckets_[i].index_ofs_.rdbuf();
             // if (!is_empty(underlying_buffer))
@@ -209,10 +209,10 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
                 buckets_[i].gr_builder_.append_to(gr_builder_);
             }
 
-            bucket_position_accumulator_[i + 1] = gr_builder_.get_bits();
+            bucket_position_accumulator[i + 1] = gr_builder_.get_bits();
 
-            SILKWORM_ASSERT(bucket_size_accumulator_[i + 1] >= bucket_size_accumulator_[i]);
-            SILKWORM_ASSERT(bucket_position_accumulator_[i + 1] >= bucket_position_accumulator_[i]);
+            SILKWORM_ASSERT(bucket_size_accumulator[i + 1] >= bucket_size_accumulator[i]);
+            SILKWORM_ASSERT(bucket_position_accumulator[i + 1] >= bucket_position_accumulator[i]);
 
             golomb_param_max_index = std::max(golomb_param_max_index, buckets_[i].golomb_param_max_index_);
         }
@@ -223,8 +223,8 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         golomb_rice_codes = gr_builder_.build();
 
         // Construct double Elias-Fano index for bucket cumulative keys and bit positions
-        std::vector<uint64_t> cumulative_keys{bucket_size_accumulator_.begin(), bucket_size_accumulator_.end()};
-        std::vector<uint64_t> positions(bucket_position_accumulator_.begin(), bucket_position_accumulator_.end());
+        std::vector<uint64_t> cumulative_keys{bucket_size_accumulator.begin(), bucket_size_accumulator.end()};
+        std::vector<uint64_t> positions(bucket_position_accumulator.begin(), bucket_position_accumulator.end());
         double_ef_index.build(cumulative_keys, positions);
 
         return false;  // no collision

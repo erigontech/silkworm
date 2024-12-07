@@ -44,83 +44,27 @@ bool transaction_type_is_supported(TransactionType type, evmc_revision rev) {
 ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_revision rev, const uint64_t chain_id,
                                           const std::optional<intx::uint256>& base_fee_per_gas,
                                           const std::optional<intx::uint256>& blob_gas_price) {
-    if (txn.chain_id.has_value()) {
-        if (rev < EVMC_SPURIOUS_DRAGON) {
-            // EIP-155 transaction before EIP-155 was activated
-            return ValidationResult::kUnsupportedTransactionType;
-        }
-        if (txn.chain_id.value() != chain_id) {
-            return ValidationResult::kWrongChainId;
-        }
-    }
-
-    if (!transaction_type_is_supported(txn.type, rev)) {
-        return ValidationResult::kUnsupportedTransactionType;
-    }
-
-    if (base_fee_per_gas.has_value() && txn.max_fee_per_gas < base_fee_per_gas.value()) {
-        return ValidationResult::kMaxFeeLessThanBase;
-    }
-
-    // https://github.com/ethereum/EIPs/pull/3594
-    if (txn.max_priority_fee_per_gas > txn.max_fee_per_gas) {
-        return ValidationResult::kMaxPriorityFeeGreaterThanMax;
+    if (const auto common_check = pre_validate_common_base(txn, rev, chain_id); common_check != ValidationResult::kOk) {
+        return common_check;
     }
 
     if (!is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
         return ValidationResult::kInvalidSignature;
     }
 
-    const intx::uint128 g0{intrinsic_gas(txn, rev)};
-    if (txn.gas_limit < g0) {
-        return ValidationResult::kIntrinsicGas;
-    }
-
-    if (intx::count_significant_bytes(txn.maximum_gas_cost()) > 32) {
-        return ValidationResult::kInsufficientFunds;
-    }
-
-    // EIP-2681: Limit account nonce to 2^64-1
-    if (txn.nonce >= UINT64_MAX) {
-        return ValidationResult::kNonceTooHigh;
-    }
-
-    // EIP-3860: Limit and meter initcode
-    const bool contract_creation{!txn.to};
-    if (rev >= EVMC_SHANGHAI && contract_creation && txn.data.size() > kMaxInitCodeSize) {
-        return ValidationResult::kMaxInitCodeSizeExceeded;
-    }
-
-    // EIP-4844: Shard Blob Transactions
-    if (txn.type == TransactionType::kBlob) {
-        if (txn.blob_versioned_hashes.empty()) {
-            return ValidationResult::kNoBlobs;
+    if (rev >= EVMC_LONDON) {
+        if (base_fee_per_gas.has_value() && txn.max_fee_per_gas < base_fee_per_gas.value()) {
+            return ValidationResult::kMaxFeeLessThanBase;
         }
-        for (const Hash& h : txn.blob_versioned_hashes) {
-            if (h.bytes[0] != kBlobCommitmentVersionKzg) {
-                return ValidationResult::kWrongBlobCommitmentVersion;
-            }
-        }
-        SILKWORM_ASSERT(blob_gas_price);
-        if (txn.max_fee_per_blob_gas < blob_gas_price) {
-            return ValidationResult::kMaxFeePerBlobGasTooLow;
-        }
-        if (!txn.to) {
-            return ValidationResult::kProhibitedContractCreation;
+
+        // https://github.com/ethereum/EIPs/pull/3594
+        if (txn.max_priority_fee_per_gas > txn.max_fee_per_gas) {
+            return ValidationResult::kMaxPriorityFeeGreaterThanMax;
         }
     }
 
-    if (rev >= EVMC_PRAGUE) {
-        // EIP-7702
-        if (txn.type == TransactionType::kSetCode) {
-            // Contract creation is disallowed for SetCode transactions
-            if (contract_creation) {
-                return ValidationResult::kProhibitedContractCreation;
-            }
-            if (std::empty(txn.authorizations)) {
-                return ValidationResult::kEmptyAuthorizations;
-            }
-        }
+    if (const auto forks_check = pre_validate_common_forks(txn, rev, blob_gas_price); forks_check != ValidationResult::kOk) {
+        return forks_check;
     }
 
     return ValidationResult::kOk;
@@ -180,6 +124,10 @@ ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) 
         return ValidationResult::kInvalidSignature;
     }
 
+    if (const auto common_check = pre_validate_common_base(txn, evm.revision(), evm.config().chain_id); common_check != ValidationResult::kOk) {
+        return common_check;
+    }
+
     if (evm.revision() >= EVMC_LONDON) {
         if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
             if (txn.max_fee_per_gas < txn.max_priority_fee_per_gas) {
@@ -190,34 +138,87 @@ ValidationResult validate_call_precheck(const Transaction& txn, const EVM& evm) 
                 return ValidationResult::kMaxFeeLessThanBase;
             }
         }
-    } else {
-        if (txn.type != silkworm::TransactionType::kLegacy && txn.type != silkworm::TransactionType::kAccessList) {
+    }
+
+    if (const auto forks_check = pre_validate_common_forks(txn, evm.revision(), evm.block().header.blob_gas_price()); forks_check != ValidationResult::kOk) {
+        return forks_check;
+    }
+
+    return ValidationResult::kOk;
+}
+
+ValidationResult pre_validate_common_base(const Transaction& txn, evmc_revision revision, uint64_t chain_id) noexcept {
+    if (txn.chain_id.has_value()) {
+        if (revision < EVMC_SPURIOUS_DRAGON) {
+            // EIP-155 transaction before EIP-155 was activated
             return ValidationResult::kUnsupportedTransactionType;
         }
-    }
-
-    if (evm.revision() >= EVMC_CANCUN) {
-        if (!evm.block().header.excess_blob_gas) {
-            return ValidationResult::kWrongBlobGasUsed;
+        if (txn.chain_id.value() != chain_id) {
+            return ValidationResult::kWrongChainId;
         }
     }
 
-    if (evm.revision() >= EVMC_PRAGUE) {
-        if (txn.type == TransactionType::kSetCode && !txn.to) {
-            return ValidationResult::kProhibitedContractCreation;
-        }
-        if (txn.type == TransactionType::kSetCode && std::empty(txn.authorizations)) {
-            return ValidationResult::kEmptyAuthorizations;
-        }
+    if (!transaction_type_is_supported(txn.type, revision)) {
+        return ValidationResult::kUnsupportedTransactionType;
     }
 
-    const intx::uint128 g0{protocol::intrinsic_gas(txn, evm.revision())};
-    assert(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
-
+    const intx::uint128 g0{intrinsic_gas(txn, revision)};
     if (txn.gas_limit < g0) {
         return ValidationResult::kIntrinsicGas;
     }
 
+    if (intx::count_significant_bytes(txn.maximum_gas_cost()) > 32) {
+        return ValidationResult::kInsufficientFunds;
+    }
+
+    // EIP-2681: Limit account nonce to 2^64-1
+    if (txn.nonce >= UINT64_MAX) {
+        return ValidationResult::kNonceTooHigh;
+    }
+
+    return ValidationResult::kOk;
+}
+
+ValidationResult pre_validate_common_forks(const Transaction& txn, const evmc_revision rev, const std::optional<intx::uint256>& blob_gas_price) noexcept {
+    // EIP-3860: Limit and meter initcode
+    const bool contract_creation{!txn.to};
+    if (rev >= EVMC_SHANGHAI && contract_creation && txn.data.size() > kMaxInitCodeSize) {
+        return ValidationResult::kMaxInitCodeSizeExceeded;
+    }
+
+    if (rev >= EVMC_CANCUN) {
+        // EIP-4844: Shard Blob Transactions
+        if (txn.type == TransactionType::kBlob) {
+            if (txn.blob_versioned_hashes.empty()) {
+                return ValidationResult::kNoBlobs;
+            }
+            for (const Hash& h : txn.blob_versioned_hashes) {
+                if (h.bytes[0] != kBlobCommitmentVersionKzg) {
+                    return ValidationResult::kWrongBlobCommitmentVersion;
+                }
+            }
+            SILKWORM_ASSERT(blob_gas_price);
+            if (txn.max_fee_per_blob_gas < blob_gas_price) {
+                return ValidationResult::kMaxFeePerBlobGasTooLow;
+            }
+            if (!txn.to) {
+                return ValidationResult::kProhibitedContractCreation;
+            }
+        }
+    }
+
+    if (rev >= EVMC_PRAGUE) {
+        // EIP-7702
+        if (txn.type == TransactionType::kSetCode) {
+            // Contract creation is disallowed for SetCode transactions
+            if (contract_creation) {
+                return ValidationResult::kProhibitedContractCreation;
+            }
+            if (std::empty(txn.authorizations)) {
+                return ValidationResult::kEmptyAuthorizations;
+            }
+        }
+    }
     return ValidationResult::kOk;
 }
 

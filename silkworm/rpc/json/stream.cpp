@@ -96,8 +96,8 @@ Task<void> Stream::close() {
 }
 
 void Stream::open_object() {
-    bool isEntry = !stack_.empty() && (stack_.top() == kArrayOpen || stack_.top() == kEntryWritten);
-    if (isEntry) {
+    bool is_entry = !stack_.empty() && (stack_.top() == kArrayOpen || stack_.top() == kEntryWritten);
+    if (is_entry) {
         if (stack_.top() != kEntryWritten) {
             stack_.push(kEntryWritten);
         } else {

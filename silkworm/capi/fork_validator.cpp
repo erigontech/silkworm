@@ -25,9 +25,9 @@
 #include "silkworm.h"
 
 static void set_node_settings(SilkwormHandle handle, const struct SilkwormForkValidatorSettings& settings, MDBX_env* mdbx_env) {
-    silkworm::db::EnvUnmanaged unmanaged_env{mdbx_env};
+    silkworm::datastore::kvdb::EnvUnmanaged unmanaged_env{mdbx_env};
 
-    auto txn = silkworm::db::ROTxnManaged{unmanaged_env};
+    auto txn = silkworm::datastore::kvdb::ROTxnManaged{unmanaged_env};
     auto chain_config{silkworm::db::read_chain_config(txn)};
     SILKWORM_ASSERT(chain_config);
 
@@ -43,7 +43,7 @@ static void set_node_settings(SilkwormHandle handle, const struct SilkwormForkVa
     handle->node_settings.data_directory = std::move(data_dir);
 
     auto db_env_flags = unmanaged_env.get_flags();
-    handle->node_settings.chaindata_env_config = silkworm::db::EnvConfig{
+    handle->node_settings.chaindata_env_config = silkworm::datastore::kvdb::EnvConfig{
         .path = handle->data_dir_path.string(),
         .create = false,
         .readonly = (db_env_flags & MDBX_RDONLY) != 0,
@@ -124,8 +124,8 @@ SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_en
     SILK_INFO << "Starting fork validator";
     set_node_settings(handle, *settings, mdbx_env);
 
-    silkworm::db::EnvUnmanaged unmanaged_env{mdbx_env};
-    silkworm::db::RWAccess rw_access{unmanaged_env};
+    silkworm::datastore::kvdb::EnvUnmanaged unmanaged_env{mdbx_env};
+    silkworm::datastore::kvdb::RWAccess rw_access{unmanaged_env};
     silkworm::db::DataStoreRef data_store{
         rw_access,
         *handle->blocks_repository,

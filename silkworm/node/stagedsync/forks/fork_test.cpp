@@ -66,7 +66,7 @@ TEST_CASE("Fork") {
     Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
     NodeSettings node_settings = node::test_util::make_node_settings_from_temp_chain_data(context);
-    db::RWAccess db_access = context.chaindata_rw();
+    datastore::kvdb::RWAccess db_access = context.chaindata_rw();
 
     MainChain main_chain{
         ioc.get_executor(),
@@ -127,7 +127,7 @@ TEST_CASE("Fork") {
 
                 ForkForTest fork{
                     forking_point,
-                    db::ROTxnManaged(main_chain.tx().db()),  // this need to be on a different thread than main_chain
+                    datastore::kvdb::ROTxnManaged(main_chain.tx().db()),  // this need to be on a different thread than main_chain
                     data_model_factory,
                     /* log_timer_factory = */ std::nullopt,
                     main_chain.stages_factory(),

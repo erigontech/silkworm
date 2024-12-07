@@ -23,7 +23,7 @@
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/state/state_reader.hpp>
+#include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
@@ -34,8 +34,6 @@
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::core {
-
-using db::state::StateReader;
 
 Task<DumpAccounts> AccountDumper::dump_accounts(
     BlockCache& cache,
@@ -67,7 +65,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     auto paginated_result = co_await transaction_.range_as_of((std::move(query)));
     auto it = co_await paginated_result.begin();
 
-    while (const auto value = co_await it.next()) {
+    while (const auto value = co_await it->next()) {
         DumpAccount dump_account;
         evmc::address address{bytes_to_address(value->first)};
 
@@ -111,7 +109,6 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
 
 Task<void> AccountDumper::load_storage(BlockNum block_num, DumpAccounts& dump_accounts) {
     SILK_TRACE << "block_number " << block_num << " START";
-    StorageWalker storage_walker{transaction_};
     const auto txn_number = co_await transaction_.first_txn_num_in_block(block_num);
 
     for (auto& [address, account] : dump_accounts.accounts) {
@@ -126,10 +123,10 @@ Task<void> AccountDumper::load_storage(BlockNum block_num, DumpAccounts& dump_ac
             .ascending_order = true};
 
         auto paginated_result = co_await transaction_.range_as_of(std::move(query));
-        std::map<Bytes, Bytes> collected_entries;  // TODO(canepat) switch to ByteView?
+        std::map<Bytes, Bytes> collected_entries;
         auto it = co_await paginated_result.begin();
 
-        while (const auto value = co_await it.next()) {
+        while (const auto value = co_await it->next()) {
             if (value->second.empty())
                 continue;
 

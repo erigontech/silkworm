@@ -29,6 +29,7 @@
 namespace silkworm::db::kv::api {
 
 using namespace silkworm::test_util;
+using datastore::kvdb::ROTxnManaged;
 using silkworm::test_util::ContextTestBase;
 using test_util::TestDatabaseContext;
 
@@ -37,7 +38,7 @@ struct LocalCursorTest : public ContextTestBase {
     TestDatabaseContext database{tmp_dir};
     static inline uint32_t last_cursor_id{0};
 
-    db::ROAccess chaindata() const { return database.chaindata(); }
+    datastore::kvdb::ROAccess chaindata() const { return database.chaindata(); }
 };
 
 // In all following tests we need to create the MDBX transaction using the io_context scheduler thread, so we simply

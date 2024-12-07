@@ -251,7 +251,7 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
 }
 
 SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struct SilkwormMemoryMappedFile* segments[], size_t len) SILKWORM_NOEXCEPT {
-    const int kNeededIndexesToBuildInParallel = 2;
+    constexpr int kNeededIndexesToBuildInParallel = 2;
 
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
@@ -418,7 +418,7 @@ class BlockProvider {
 
   public:
     BlockProvider(BoundedBuffer<std::optional<Block>>* block_buffer,
-                  db::ROAccess db_access,
+                  datastore::kvdb::ROAccess db_access,
                   db::DataModelFactory data_model_factory,
                   BlockNum start_block, BlockNum max_block)
         : block_buffer_{block_buffer},
@@ -428,7 +428,7 @@ class BlockProvider {
           max_block_{max_block} {}
 
     void operator()() {
-        db::ROTxnManaged txn = db_access_.start_ro_tx();
+        auto txn = db_access_.start_ro_tx();
         db::DataModel access_layer = data_model_factory_(txn);
 
         BlockNum current_block{start_block_};
@@ -462,7 +462,7 @@ class BlockProvider {
 
   private:
     BoundedBuffer<std::optional<Block>>* block_buffer_;
-    db::ROAccess db_access_;
+    datastore::kvdb::ROAccess db_access_;
     db::DataModelFactory data_model_factory_;
     BlockNum start_block_;
     BlockNum max_block_;
@@ -501,7 +501,7 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
     SignalHandlerGuard signal_guard;
 
     try {
-        auto txn = db::RWTxnUnmanaged{mdbx_txn};
+        auto txn = datastore::kvdb::RWTxnUnmanaged{mdbx_txn};
 
         db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->blocks_repository})};
         state_buffer.set_memory_limit(batch_size);
@@ -618,8 +618,8 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 
     try {
         // Wrap MDBX env into an internal *unmanaged* env, i.e. MDBX env is only used but its lifecycle is untouched
-        db::EnvUnmanaged unmanaged_env{mdbx_env};
-        db::RWAccess rw_access{unmanaged_env};
+        datastore::kvdb::EnvUnmanaged unmanaged_env{mdbx_env};
+        datastore::kvdb::RWAccess rw_access{unmanaged_env};
         auto txn = rw_access.start_rw_tx();
         const auto env_path = unmanaged_env.get_path();
 
@@ -638,7 +638,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 
         BlockProvider block_provider{
             &block_buffer,
-            db::ROAccess{unmanaged_env},
+            datastore::kvdb::ROAccess{unmanaged_env},
             std::move(data_model_factory),
             start_block,
             max_block,

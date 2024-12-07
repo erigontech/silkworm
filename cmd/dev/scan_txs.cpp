@@ -61,9 +61,9 @@ int main(int argc, char* argv[]) {
     try {
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
         data_dir.deploy();
-        db::EnvConfig db_config{data_dir.chaindata().path().string()};
-        auto env{db::open_env(db_config)};
-        db::RWTxnManaged txn{env};
+        datastore::kvdb::EnvConfig db_config{data_dir.chaindata().path().string()};
+        auto env{datastore::kvdb::open_env(db_config)};
+        datastore::kvdb::RWTxnManaged txn{env};
         auto chain_config{db::read_chain_config(txn)};
         if (!chain_config) {
             throw std::runtime_error("Unable to retrieve chain config");
@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
         }
 
         // counters
-        uint64_t nTxs{0}, nErrors{0};
+        uint64_t n_txs{0}, n_errors{0};
 
         Block block;
         for (uint64_t block_num{from}; block_num < to; ++block_num) {
@@ -106,14 +106,14 @@ int main(int argc, char* argv[]) {
 
             // Erigon returns success in the receipt even for pre-Byzantium txs.
             for (const auto& receipt : receipts) {
-                ++nTxs;
-                nErrors += (!receipt.success);
+                ++n_txs;
+                n_errors += (!receipt.success);
             }
 
             // Report and reset counters
             if ((block_num % 50000) == 0) {
-                std::cout << block_num << "," << nTxs << "," << nErrors << "\n";
-                nTxs = nErrors = 0;
+                std::cout << block_num << "," << n_txs << "," << n_errors << "\n";
+                n_txs = n_errors = 0;
 
             } else if ((block_num % 100) == 0) {
                 // report progress

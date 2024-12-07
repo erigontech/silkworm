@@ -69,10 +69,10 @@ TEST_CASE("generate_jwt_token", "[silkworm][rpc][http][jwt]") {
     }
 
     SECTION("file path contains . or ..") {
-        const std::vector<std::filesystem::path> kJwtFilePaths{
+        const std::vector<std::filesystem::path> jwt_file_paths{
             TemporaryDirectory::get_unique_temporary_path() / "../jwt.hex",
             TemporaryDirectory::get_unique_temporary_path() / "./jwt.hex"};
-        for (const auto& jwt_file_path : kJwtFilePaths) {
+        for (const auto& jwt_file_path : jwt_file_paths) {
             std::string jwt_token;
             CHECK_NOTHROW((jwt_token = generate_jwt_token(jwt_file_path)));
             REQUIRE(std::filesystem::exists(jwt_file_path));
@@ -93,7 +93,7 @@ TEST_CASE("load_jwt_token", "[silkworm][rpc][http][jwt]") {
         CHECK_THROWS_AS(load_jwt_token(tmp_jwt_file.path()), std::runtime_error);
     }
 
-    const std::vector<std::string> kInvalidTokens{
+    const std::vector<std::string> invalid_tokens{
         "",
         "?=?",
         "d4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8",
@@ -106,7 +106,7 @@ TEST_CASE("load_jwt_token", "[silkworm][rpc][http][jwt]") {
         "0xd4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8f",
         "0xd4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8f4f",
         "0xd4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8f4ff"};
-    for (const auto& token : kInvalidTokens) {
+    for (const auto& token : invalid_tokens) {
         SECTION("invalid JWT file content: " + token) {
             tmp_jwt_ofs << token;
             tmp_jwt_ofs.close();
@@ -114,11 +114,11 @@ TEST_CASE("load_jwt_token", "[silkworm][rpc][http][jwt]") {
         }
     }
 
-    const std::vector<std::string> kValidTokens{
+    const std::vector<std::string> valid_tokens{
         "d4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8f4",
         "0xd4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8f4",
     };
-    for (const auto& token : kValidTokens) {
+    for (const auto& token : valid_tokens) {
         SECTION("valid JWT file content: " + token) {
             tmp_jwt_ofs << token;
             tmp_jwt_ofs.close();

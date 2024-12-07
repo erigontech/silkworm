@@ -16,7 +16,7 @@ Then simply run:
 ```
 Note:  we disable leaks detection to ignore known issues with GRPC library.
 
-The command above will start fuzzying without any prior knowledge about the request structure. It can be hours before it forms a valid request. To help the fuzzer, we can provide it with a collection of valid requests which it can use as a starting point, called corpus. Fortunatelly API test collection has a number of request we can use.
+The command above will start fuzzying without any prior knowledge about the request structure. It can be hours before it forms a valid request. To help the fuzzer, we can provide it with a collection of valid requests which it can use as a starting point, called corpus. Fortunately API test collection has a number of request we can use.
 
 ```bash
 mkdir -p corpus

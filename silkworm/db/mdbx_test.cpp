@@ -91,7 +91,9 @@ static const std::map<std::string, std::string> kGeneticCode{
     {"UUU", "Phenylalanine"},
 };
 
-namespace silkworm::db {
+namespace silkworm::datastore::kvdb {
+
+using namespace silkworm::db;
 
 TEST_CASE("Environment opening") {
     SECTION("Default page size on creation") {
@@ -605,8 +607,8 @@ static size_t page_space(const mdbx::env& env) {
 }
 
 static size_t max_multivalue_size_for_leaf_page(const mdbx::txn& txn) {
-    const size_t kDupSortNodes{2};
-    const size_t kNodeHeaderSize{8};  // size of MDBX node header (NODESIZE)
+    constexpr size_t kDupSortNodes{2};
+    constexpr size_t kNodeHeaderSize{8};  // size of MDBX node header (NODESIZE)
     return page_space(txn.env()) / kDupSortNodes - 2 * kNodeHeaderSize;
 }
 
@@ -860,11 +862,11 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
 
     // We need to split max multi-value data size between key and value
     constexpr size_t kKeySize{20};  // just to copycat account address size
-    const size_t kMaxNonInitialValueSize{[&env]() {
+    const size_t max_non_initial_value_size{[&env]() {
         auto ro_txn{env.start_read()};
         return max_multivalue_size_for_leaf_page(ro_txn);
     }()};
-    const size_t kMaxFirstValueSize{kMaxNonInitialValueSize - kKeySize};  // we need to take key size into account once
+    const size_t max_first_value_size{max_non_initial_value_size - kKeySize};  // we need to take key size into account once
     const Bytes key(kKeySize, '\0');
 
     // Initialize the map content w/ one max-size value [scope needed to limit rw_txn lifecycle]
@@ -878,7 +880,7 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
         REQUIRE(plain_state_stats.ms_leaf_pages == 0);
         REQUIRE(plain_state_stats.ms_overflow_pages == 0);
         auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
-        Bytes value(kMaxFirstValueSize, static_cast<uint8_t>(10));
+        Bytes value(max_first_value_size, static_cast<uint8_t>(10));
         plain_state_cursor.insert(to_slice(key), to_slice(value));  // insert or upsert equivalent here
         plain_state_stats = rw_txn.get_map_stat(plain_state_map);
         REQUIRE(plain_state_stats.ms_entries == 1);  // we have 1 value here
@@ -895,7 +897,7 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
         auto plain_state_map{open_map(rw_txn, table::kPlainState)};
         auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
         auto key_slice{to_slice(key)};
-        Bytes value(kMaxFirstValueSize, static_cast<uint8_t>(10));
+        Bytes value(max_first_value_size, static_cast<uint8_t>(10));
         auto value_slice{to_slice(value)};
         plain_state_cursor.upsert(key_slice, value_slice);
         auto plain_state_stats{rw_txn.get_map_stat(plain_state_map)};
@@ -914,7 +916,7 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
         auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
         auto key_slice{to_slice(key)};
         CHECK(plain_state_cursor.erase(key_slice, /*whole_multivalue=*/true));
-        Bytes value(kMaxFirstValueSize, static_cast<uint8_t>(10));
+        Bytes value(max_first_value_size, static_cast<uint8_t>(10));
         auto value_slice{to_slice(value)};
         plain_state_cursor.upsert(key_slice, value_slice);
         auto plain_state_stats{rw_txn.get_map_stat(plain_state_map)};
@@ -932,7 +934,7 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
         auto plain_state_map{open_map(rw_txn, table::kPlainState)};
         auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
         auto key_slice{to_slice(key)};
-        Bytes value(kMaxNonInitialValueSize, static_cast<uint8_t>(11));
+        Bytes value(max_non_initial_value_size, static_cast<uint8_t>(11));
         auto value_slice{to_slice(value)};
         plain_state_cursor.upsert(key_slice, value_slice);
         auto plain_state_stats{rw_txn.get_map_stat(plain_state_map)};
@@ -951,7 +953,7 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
         auto plain_state_cursor{rw_txn.open_cursor(plain_state_map)};
         auto key_slice{to_slice(key)};
         CHECK(plain_state_cursor.erase(key_slice, /*whole_multivalue=*/true));
-        Bytes value(kMaxFirstValueSize, static_cast<uint8_t>(11));
+        Bytes value(max_first_value_size, static_cast<uint8_t>(11));
         auto value_slice{to_slice(value)};
         plain_state_cursor.upsert(key_slice, value_slice);
         auto plain_state_stats{rw_txn.get_map_stat(plain_state_map)};
@@ -965,4 +967,4 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
     }
 }
 
-}  // namespace silkworm::db
+}  // namespace silkworm::datastore::kvdb

@@ -16,16 +16,7 @@
 
 #pragma once
 
-#include <chrono>
-#include <utility>
-
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/use_future.hpp>
-
-#include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc::test_util {
 

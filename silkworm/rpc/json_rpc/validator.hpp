@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <array>
 #include <string>
 
 #include <boost/regex.hpp>

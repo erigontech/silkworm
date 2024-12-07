@@ -19,9 +19,6 @@
 #include <iostream>
 #include <string>
 
-#include <evmc/evmc.hpp>
-
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 
 namespace silkworm::rpc {

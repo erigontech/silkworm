@@ -23,13 +23,10 @@
 
 #include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/kvdb/mdbx.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/kv/api/client.hpp>
 #include <silkworm/db/kv/state_changes_stream.hpp>
-#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/grpc/common/version.hpp>
-#include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/http/server.hpp>
 

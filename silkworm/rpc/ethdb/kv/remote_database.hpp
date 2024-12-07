@@ -17,7 +17,6 @@
 #pragma once
 
 #include <memory>
-#include <utility>
 
 #include <agrpc/grpc_context.hpp>
 #include <grpcpp/grpcpp.h>

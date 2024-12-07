@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <memory>
-
 #include <silkworm/infra/common/application_info.hpp>
 #include <silkworm/rpc/commands/admin_api.hpp>
 #include <silkworm/rpc/commands/debug_api.hpp>

@@ -16,7 +16,6 @@
 
 #include "remote_database.hpp"
 
-#include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/kv/grpc/client/remote_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
 

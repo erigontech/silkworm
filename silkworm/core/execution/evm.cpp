@@ -59,7 +59,7 @@ class DelegatingTracer : public evmone::Tracer {
     IntraBlockState& intra_block_state_;
 };
 
-evmc::VM EVM::evm1_{evmc_create_evmone()};
+SILKWORM_THREAD_LOCAL evmc::VM EVM::evm1_{evmc_create_evmone()};
 
 EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept
     : beneficiary{block.header.beneficiary},

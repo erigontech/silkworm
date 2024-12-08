@@ -77,7 +77,6 @@ static const evmc::bytes32 kZeroHeaderHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8
 static const Bytes kConfigKey{kZeroHeaderHash.bytes, kHashLength};
 static const Bytes kConfigValue{string_view_to_byte_view(kSepoliaConfig.to_json().dump())};  // NOLINT(cppcoreguidelines-interfaces-global-init)
 
-#ifdef notdef // temporary
 
 TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     static Bytes account_history_key1{*silkworm::from_hex("0a6bb546b9208cfab9e8fa2b9b2c042b18df7030")};
@@ -90,17 +89,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -175,6 +174,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
                 co_return kZeroHeaderHash;
             }));
+        EXPECT_CALL(transaction, first_txn_num_in_block(_)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
+        }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
@@ -208,17 +210,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
 
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
@@ -229,7 +231,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'095)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -327,17 +329,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -347,7 +349,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'095)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -437,17 +439,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -457,7 +459,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'095)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -552,17 +554,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -572,7 +574,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'095)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -668,17 +670,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -688,7 +690,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'095)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -771,17 +773,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -791,7 +793,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'095)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -885,17 +887,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -969,17 +971,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-        .timestamp = 244087591818873,
+        .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfQuery query2{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-        .timestamp = 244087591818873,
+        .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfQuery query3{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-        .timestamp = 244087591818873,
+        .timestamp = 244087591818874,
     };
     EXPECT_CALL(backend, get_block_hash_from_block_num(_))
         .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -989,7 +991,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kConfigValue;
         }));
-    EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
+    EXPECT_CALL(transaction, first_txn_num_in_block(5'405'095)).WillOnce(Invoke([]() -> Task<TxnId> {
         co_return 244087591818873;
     }));
     EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -1065,7 +1067,6 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
         ]
     })"_json);
 }
-#endif
 
 TEST_CASE_METHOD(DebugExecutorTest, "DebugConfig") {
     SECTION("json deserialization") {

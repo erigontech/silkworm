@@ -195,7 +195,7 @@ Task<void> SnapshotSync::download_snapshots() {
         notification_count = 0;
 
         SILK_INFO << "SnapshotSync: download progress: [" << completed << "/" << num_snapshots << "]";
-        if (log::test_verbosity(log::Level::kTrace)) {
+        if (log::test_verbosity(log::Level::kInfo)) {
             std::string counters_dump;
             for (int i{0}; i < counters.size(); ++i) {
                 const auto& stats_metric = client_.stats_metrics().at(static_cast<size_t>(i));
@@ -204,7 +204,7 @@ Task<void> SnapshotSync::download_snapshots() {
                 counters_dump.append(std::to_string(counters[i]));
                 if (i != counters.size() - 1) counters_dump.append(", ");
             }
-            SILK_TRACE << "SnapshotSync: counters dump [" << counters_dump << "]";
+            SILK_INFO << "SnapshotSync: counters dump [" << counters_dump << "]";
         }
     };
     boost::signals2::scoped_connection stats_subscription{client_.stats_subscription.connect(log_stats)};

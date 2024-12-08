@@ -29,6 +29,7 @@ TriggersStage::TriggersStage(SyncContext* sync_context)
 
 Stage::Result TriggersStage::forward(db::RWTxn& tx) {
     current_tx_ = &tx;
+    SILK_INFO_M("TriggersStage", {"op", "forward", "current_tx_", std::to_string(intptr_t(current_tx_))}) << "START";
     [[maybe_unused]] auto _ = gsl::finally([this] {
         current_tx_ = nullptr;
     });
@@ -36,12 +37,14 @@ Stage::Result TriggersStage::forward(db::RWTxn& tx) {
     ioc_.restart();
     ioc_.run();
 
+    SILK_INFO_M("TriggersStage", {"op", "forward", "current_tx_", std::to_string(intptr_t(current_tx_))}) << "END";
     return Stage::Result::kSuccess;
 }
 
 Task<void> TriggersStage::schedule(std::function<void(db::RWTxn&)> callback) {
     auto task_caller = [this, c = std::move(callback)]() -> Task<void> {
         db::RWTxn* tx = this->current_tx_;
+        SILK_INFO_M("TriggersStage", {"op", "schedule::lambda", "current_tx_", std::to_string(intptr_t(tx))}) << "START";
         SILKWORM_ASSERT(tx);
         c(*tx);
         co_return;
@@ -50,7 +53,9 @@ Task<void> TriggersStage::schedule(std::function<void(db::RWTxn&)> callback) {
 }
 
 bool TriggersStage::stop() {
+    SILK_INFO_M("TriggersStage", {"op", "stop", "current_tx_", std::to_string(intptr_t(current_tx_))}) << "START";
     ioc_.stop();
+    SILK_INFO_M("TriggersStage", {"op", "stop", "current_tx_", std::to_string(intptr_t(current_tx_))}) << "END";
     return Stage::stop();
 }
 

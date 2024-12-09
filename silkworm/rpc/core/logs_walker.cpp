@@ -131,10 +131,10 @@ Task<void> LogsWalker::get_logs(std::uint64_t start,
                          << to_timestamp;
 
                 db::kv::api::IndexRangeQuery query = {.table = db::table::kLogTopicIdx,
-                        .key = db::topic_domain_key(*it),
-                        .from_timestamp = from_timestamp,
-                        .to_timestamp = to_timestamp,
-                        .ascending_order = asc_order};
+                                                      .key = db::topic_domain_key(*it),
+                                                      .from_timestamp = from_timestamp,
+                                                      .to_timestamp = to_timestamp,
+                                                      .ascending_order = asc_order};
                 auto paginated_result = co_await tx_.index_range(std::move(query));
                 union_itr = db::kv::api::set_union(std::move(union_itr), co_await paginated_result.begin());
             }

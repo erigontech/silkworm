@@ -155,7 +155,9 @@ class EVM {
     std::vector<evmc::bytes32> block_hashes_{};
     EvmTracers tracers_;
 
-    evmc::VM evm1_;
+    // evmone is defined as static since it's' stateless and doesn't have to be recreated every time EVM class is created
+    // However, since evmone is not thread safe it should be unique per thread
+    SILKWORM_THREAD_LOCAL static evmc::VM evm1_;
 };
 
 class EvmHost : public evmc::Host {

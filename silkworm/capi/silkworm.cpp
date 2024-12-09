@@ -44,6 +44,7 @@
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/state/schema_config.hpp>
+#include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -54,6 +55,7 @@
 #include <silkworm/node/execution/block/block_executor.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
+#include <silkworm/execution/remote_state.hpp>
 
 #include "common.hpp"
 #include "instance.hpp"
@@ -732,7 +734,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
     }
 }
 
-//todo: add available gas, add txn, add block header
+// todo: add available gas, add txn, add block header
 SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, uint64_t block_num, uint64_t tx_index, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT {
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
@@ -791,20 +793,23 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, ui
         context_pool.join();
     });
 
-    Block block{}; //todo: get block header
+    Block block{};  // todo: get block header
 
     auto state = concurrency::spawn_future_and_wait(ioc, [&]() -> Task<std::shared_ptr<State>> {
         auto kv_transaction = co_await database->begin();
-        auto chain_storage = kv_transaction->create_storage();
+        const auto chain_storage = kv_transaction->create_storage();
         auto this_executor = co_await boost::asio::this_coro::executor;
-        co_return kv_transaction->create_state(this_executor, *chain_storage, block.header.number);
+        auto state = std::make_unique<silkworm::execution::RemoteState>(this_executor, *kv_transaction, *chain_storage, 1, std::nullopt);
+        co_return state;
+        // co_return execution::StateFactory{*kv_transaction}.create_state(this_executor, *chain_storage, block.header.number);
+        // co_return kv_transaction->create_state(this_executor, *chain_storage, block.header.number);
     });
 
     auto protocol_rule_set_{protocol::rule_set_factory(*chain_config)};
     ExecutionProcessor processor{block, *protocol_rule_set_, *state, *chain_config};
-    //add analysis cache, check block exec for more
+    // add analysis cache, check block exec for more
 
-    silkworm::Transaction transaction{}; //todo: get txn
+    silkworm::Transaction transaction{};  // todo: get txn
     silkworm::Receipt receipt{};
     const ValidationResult err{protocol::validate_transaction(transaction, processor.intra_block_state(), processor.available_gas())};
     if (err != ValidationResult::kOk) {

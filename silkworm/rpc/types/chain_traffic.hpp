@@ -16,11 +16,6 @@
 
 #pragma once
 
-#include <iostream>
-#include <optional>
-#include <vector>
-
-#include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
 namespace silkworm::rpc {

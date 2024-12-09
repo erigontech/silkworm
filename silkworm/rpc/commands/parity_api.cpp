@@ -16,7 +16,6 @@
 
 #include "parity_api.hpp"
 
-#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <vector>

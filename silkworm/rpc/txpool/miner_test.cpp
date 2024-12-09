@@ -24,12 +24,10 @@
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
 
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_responder.hpp>
 #include <silkworm/infra/grpc/test_util/interfaces/mining_mock_fix24351.grpc.pb.h>
-#include <silkworm/interfaces/txpool/mining.grpc.pb.h>
 #include <silkworm/rpc/test_util/api_test_base.hpp>
 
 namespace silkworm::rpc::txpool {

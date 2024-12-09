@@ -27,7 +27,6 @@
 #include <evmone/instructions_traits.hpp>
 #include <intx/intx.hpp>
 
-#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/precompile.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>

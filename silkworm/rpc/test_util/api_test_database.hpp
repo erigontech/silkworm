@@ -16,29 +16,15 @@
 
 #pragma once
 
-#include <bit>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
 #include <utility>
-#include <vector>
 
 #include <boost/asio/co_spawn.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/common/empty_hashes.hpp>
-#include <silkworm/core/execution/execution.hpp>
-#include <silkworm/core/state/in_memory_state.hpp>
-#include <silkworm/core/types/address.hpp>
-#include <silkworm/core/types/block.hpp>
-#include <silkworm/core/types/receipt.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/buffer.hpp>
-#include <silkworm/db/genesis.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/ethdb/file/local_database.hpp>

@@ -16,14 +16,10 @@
 
 #include "storage_walker.hpp"
 
-#include <sstream>
-
-#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/db/datastore/kvdb/bitmap.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
-#include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/split_cursor.hpp>
 

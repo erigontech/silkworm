@@ -105,9 +105,9 @@ TEST_CASE("Server::build_and_start", "[silkworm][node][rpc]") {
         bool register_request_calls_called_{false};
     };
 
-    SECTION("KO: Address already in use", "[silkworm][node][rpc]") {
-        GrpcNoLogGuard guard;
+    log::init();
 
+    SECTION("KO: Address already in use", "[silkworm][node][rpc]") {
         ServerSettings settings;
         settings.address_uri = kTestAddressUri;
         TestServer server1{settings};
@@ -118,8 +118,6 @@ TEST_CASE("Server::build_and_start", "[silkworm][node][rpc]") {
     }
 
     SECTION("KO: Name or service not known", "[silkworm][node][rpc]") {
-        GrpcNoLogGuard guard;
-
         ServerSettings settings;
         settings.address_uri = "local:12345";  // "localhost@12345" core dumped in gRPC 1.44.0-p0 (SIGSEGV)
         EmptyServer server{settings};

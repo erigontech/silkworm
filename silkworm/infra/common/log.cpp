@@ -24,6 +24,8 @@
 #include <stdexcept>
 #include <thread>
 
+#include <absl/log/globals.h>
+#include <absl/log/initialize.h>
 #include <absl/strings/ascii.h>
 #include <absl/time/clock.h>
 
@@ -39,6 +41,8 @@ static std::mutex out_mtx{};
 static std::unique_ptr<std::fstream> file_{nullptr};
 static bool is_terminal{false};
 thread_local std::string thread_name_{};
+static std::optional<AbseilLogGuard<log::AbseilToSilkwormLogSink>> absl_log_guard;
+static std::once_flag absl_log_init_once_flag;
 
 void init(const Settings& settings) {
     settings_ = settings;
@@ -47,9 +51,17 @@ void init(const Settings& settings) {
         // Forcibly disable colorized output to avoid escape char sequences into log file
         settings_.log_nocolor = true;
     }
+
+    absl::SetMinLogLevel(settings.log_grpc ? absl_min_log_level_from_silkworm(settings.log_verbosity) : absl::LogSeverityAtLeast::kInfinity);
+    absl::SetGlobalVLogLevel(settings.log_grpc ? absl_max_vlog_level_from_silkworm(settings.log_verbosity) : -1);
+    absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfinity);
     if (settings.log_grpc) {
-        gpr_set_log_function(gpr_silkworm_log);
+        absl_log_guard.emplace();
+    } else {
+        absl_log_guard = std::nullopt;
     }
+    std::call_once(absl_log_init_once_flag, absl::InitializeLog);
+
     init_terminal();
     is_terminal = settings_.log_std_out ? is_terminal_stdout() : is_terminal_stderr();
     settings_.log_nocolor = settings_.log_nocolor || !is_terminal;

@@ -29,19 +29,19 @@ class SilkwormRecipe(ConanFile):
         if self.settings.arch == 'wasm':
             return
 
-        self.requires('abseil/20230125.3')
+        self.requires('abseil/20240116.2')
         self.requires('asio-grpc/2.9.2')
         self.requires('benchmark/1.6.1')
         self.requires('boost/1.83.0')
         self.requires('cli11/2.2.0')
         self.requires('gmp/6.2.1')
-        self.requires('grpc/1.54.3')
+        self.requires('grpc/1.67.1')
         self.requires('gtest/1.12.1')
         self.requires('jwt-cpp/0.6.0')
         self.requires('libtorrent/2.0.10')
         self.requires('mimalloc/2.1.2')
-        self.requires('openssl/3.2.1')
-        self.requires('protobuf/3.21.12')
+        self.requires('openssl/3.3.2')
+        self.requires('protobuf/5.27.0')
         self.requires('roaring/1.1.2')
         self.requires('snappy/1.1.7')
         self.requires('spdlog/1.12.0')

@@ -19,7 +19,7 @@
 #include <ostream>
 #include <string>
 
-#include <grpc/support/log.h>
+#include <absl/log/log_sink_registry.h>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/common/base.hpp>
@@ -47,44 +47,90 @@ inline std::ostream& operator<<(std::ostream& out, const Status& status) {
 
 }  // namespace grpc
 
-// The default gRPC logging function
-void gpr_default_log(gpr_log_func_args* args);
+namespace silkworm::log {
 
-//! Define an empty gRPC logging function
-inline void gpr_no_log(gpr_log_func_args* /*args*/) {
+inline absl::LogSeverityAtLeast absl_min_log_level_from_silkworm(Level level) {
+    switch (level) {
+        case Level::kNone:
+            return absl::LogSeverityAtLeast::kInfinity;
+        case Level::kCritical:
+            return absl::LogSeverityAtLeast::kFatal;
+        case Level::kError:
+            return absl::LogSeverityAtLeast::kError;
+        case Level::kWarning:
+            return absl::LogSeverityAtLeast::kWarning;
+        case Level::kInfo:
+        case Level::kDebug:
+        case Level::kTrace:
+            return absl::LogSeverityAtLeast::kInfo;
+    }
+    SILKWORM_ASSERT(false);
+    return absl::LogSeverityAtLeast::kInfinity;
+}
+
+inline int absl_max_vlog_level_from_silkworm(Level level) {
+    switch (level) {
+        case Level::kNone:
+            return -1;
+        case Level::kCritical:
+        case Level::kError:
+        case Level::kWarning:
+        case Level::kInfo:
+            return 0;
+        case Level::kDebug:
+            return 2;
+        case Level::kTrace:
+            return 4;
+    }
+    SILKWORM_ASSERT(false);
+    return -1;
+}
+
+inline Level level_from_absl(absl::LogSeverity severity, int verbosity) {
+    if (verbosity >= 4)
+        return Level::kTrace;
+    if (verbosity >= 2)
+        return Level::kDebug;
+    switch (severity) {
+        case absl::LogSeverity::kInfo:
+            return Level::kInfo;
+        case absl::LogSeverity::kWarning:
+            return Level::kWarning;
+        case absl::LogSeverity::kError:
+            return Level::kError;
+        case absl::LogSeverity::kFatal:
+            return Level::kCritical;
+    }
+    return Level::kNone;
 }
 
 //! Define a gRPC logging function delegating to Silkworm logging facility.
-inline void gpr_silkworm_log(gpr_log_func_args* args) {
-    std::string log_message{"gRPC: "};
-    log_message.append(args->message);
-    if (args->severity == GPR_LOG_SEVERITY_ERROR) {
-        log_message.append(" ");
-        log_message.append(args->file);
-        log_message.append(":");
-        log_message.append(std::to_string(args->line));
-        SILK_ERROR << log_message;
-    } else if (args->severity == GPR_LOG_SEVERITY_INFO) {
-        SILK_INFO << log_message;
-    } else {  // args->severity == GPR_LOG_SEVERITY_DEBUG
-        SILK_DEBUG << log_message;
+struct AbseilToSilkwormLogSink : public absl::LogSink {
+    ~AbseilToSilkwormLogSink() override = default;
+    void Send(const absl::LogEntry& entry) override {
+        Level level = level_from_absl(entry.log_severity(), entry.verbosity());
+        if (test_verbosity(level)) {
+            auto text_message = entry.text_message();
+            BufferBase log{level, {text_message.data(), text_message.size()}, {}};
+        }
     }
-}
-
-namespace silkworm::rpc {
-
-//! Utility template class using RAII to configure the gRPC logging function for an instance lifetime.
-template <void (*F)(gpr_log_func_args*)>
-class GrpcLogGuard {
-  public:
-    explicit GrpcLogGuard() { gpr_set_log_function(F); }
-    ~GrpcLogGuard() { gpr_set_log_function(gpr_silkworm_log); }
 };
 
-//! Utility class to disable gRPC logging for an instance lifetime.
-using GrpcNoLogGuard = GrpcLogGuard<gpr_no_log>;
+struct AbseilToVoidLogSink : public absl::LogSink {
+    ~AbseilToVoidLogSink() override = default;
+    void Send(const absl::LogEntry&) override {}
+};
 
-//! Utility class to map gRPC logging to Silkworm logging for an instance lifetime.
-using Grpc2SilkwormLogGuard = GrpcLogGuard<gpr_silkworm_log>;
+//! Utility to configure absl::LogSink using RAII for an instance lifetime.
+template <class TLogSink>
+class AbseilLogGuard {
+  public:
+    explicit AbseilLogGuard() { absl::AddLogSink(&sink_); }
+    ~AbseilLogGuard() { absl::RemoveLogSink(&sink_); }
+    const TLogSink& sink() const { return sink_; }
 
-}  // namespace silkworm::rpc
+  private:
+    TLogSink sink_;
+};
+
+}  // namespace silkworm::log

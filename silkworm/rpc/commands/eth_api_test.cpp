@@ -15,6 +15,7 @@
 */
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/rpc/test_util/api_test_database.hpp>
@@ -85,11 +86,12 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_sendRawTransaction fails t
     })"_json;
     std::string reply;
     run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
-    CHECK(nlohmann::json::parse(reply) == R"({
-        "jsonrpc":"2.0",
-        "id":1,
-        "error":{"code":100,"message":"failed to connect to all addresses; last error: UNKNOWN: ipv4:127.0.0.1:12345: Failed to connect to remote host: Connection refused [std:grpc:14]"}
-    })"_json);
+    auto reply_json = nlohmann::json::parse(reply);
+    CHECK(reply_json["jsonrpc"] == "2.0");
+    CHECK(reply_json["id"] == 1);
+    REQUIRE(reply_json["error"].is_object());
+    CHECK(reply_json["error"]["code"] == 100);
+    CHECK_THAT(reply_json["error"]["message"], Catch::Matchers::StartsWith("failed to connect to all addresses; last error: UNKNOWN: ipv4:127.0.0.1:12345: Failed to connect to remote host"));
 }
 
 TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_feeHistory succeeds if request well-formed", "[rpc][api]") {

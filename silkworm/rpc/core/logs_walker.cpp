@@ -91,18 +91,18 @@ Task<void> LogsWalker::get_logs(std::uint64_t start,
     }
     auto max_tx_num = co_await db::txn::max_tx_num(tx_, end, provider) + 1;
 
-    SILK_LOG << "start: " << start << ", end: " << end << ", min_tx_num: " << min_tx_num << ", max_tx_num: " << max_tx_num;
+    SILK_DEBUG << "start: " << start << ", end: " << end << ", min_tx_num: " << min_tx_num << ", max_tx_num: " << max_tx_num;
 
     const auto from_timestamp = static_cast<db::kv::api::Timestamp>(min_tx_num);
     const auto to_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num);
 
     const auto chain_storage{tx_.create_storage()};
 
-    db::kv::api::PaginatedStream<db::kv::api::Timestamp> union_itr;
+    db::kv::api::PaginatedStream<db::kv::api::Timestamp> paginated_stream;
     if (!topics.empty()) {
         for (auto sub_topic = topics.begin(); sub_topic < topics.end(); ++sub_topic) {
             for (auto it = sub_topic->begin(); it < sub_topic->end(); ++it) {
-                SILK_LOG << "topic: " << to_hex(*it) << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
+                SILK_DEBUG << "topic: " << to_hex(*it) << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
                          << to_timestamp;
 
                 db::kv::api::IndexRangeQuery query = {.table = db::table::kLogTopicIdx,
@@ -111,13 +111,14 @@ Task<void> LogsWalker::get_logs(std::uint64_t start,
                                                       .to_timestamp = to_timestamp,
                                                       .ascending_order = asc_order};
                 auto paginated_result = co_await tx_.index_range(std::move(query));
-                union_itr = db::kv::api::set_union(std::move(union_itr), co_await paginated_result.begin());
+                paginated_stream = db::kv::api::set_union(std::move(paginated_stream), co_await paginated_result.begin());
             }
         }
     }
     if (!addresses.empty()) {
+        db::kv::api::PaginatedStream<db::kv::api::Timestamp> union_stream;
         for (auto it = addresses.begin(); it < addresses.end(); ++it) {
-            SILK_LOG << "address: " << *it << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
+            SILK_DEBUG << "address: " << *it << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
                      << to_timestamp;
 
             db::kv::api::IndexRangeQuery query = {.table = db::table::kLogAddrIdx,
@@ -126,11 +127,18 @@ Task<void> LogsWalker::get_logs(std::uint64_t start,
                                                   .to_timestamp = to_timestamp,
                                                   .ascending_order = asc_order};
             auto paginated_result = co_await tx_.index_range(std::move(query));
-            union_itr = db::kv::api::set_union(std::move(union_itr), co_await paginated_result.begin());
+            union_stream = db::kv::api::set_union(std::move(union_stream), co_await paginated_result.begin());
+        }
+
+        if (paginated_stream) {
+            paginated_stream = db::kv::api::set_intersection(std::move(paginated_stream), std::move(union_stream));
+        } else {
+            paginated_stream = std::move(union_stream);
         }
     }
-    if (!union_itr) {
-        union_itr = db::kv::api::set_union(std::move(union_itr), db::kv::api::make_range_stream(from_timestamp, to_timestamp));
+
+    if (!paginated_stream) {
+        paginated_stream = db::kv::api::make_range_stream(from_timestamp, to_timestamp);
     }
 
     std::map<std::string, Receipt> receipts;
@@ -140,42 +148,21 @@ Task<void> LogsWalker::get_logs(std::uint64_t start,
     uint64_t log_count{0};
     Logs filtered_chunk_logs;
 
-    while (const auto value = co_await union_itr->next()) {
-        const auto txn_id = static_cast<TxnId>(*value);
-        const auto block_num_opt = co_await db::txn::block_num_from_tx_num(tx_, txn_id, provider);
-        if (!block_num_opt) {
-            SILK_LOG << "No block found for txn_id " << txn_id;
-            break;
-        }
-        const auto block_num = block_num_opt.value();
-        const auto max_txn_id = co_await db::txn::max_tx_num(tx_, block_num, provider);
-        const auto min_txn_id = co_await db::txn::min_tx_num(tx_, block_num, provider);
-        const auto txn_index = txn_id > min_txn_id ? txn_id - min_txn_id - 1 : 0;
-
-        SILK_LOG
-            << "txn_id: " << txn_id
-            << " block_num: " << block_num
-            << ", txn_index: " << txn_index
-            << ", max_txn_id: " << max_txn_id
-            << ", min_txn_id: " << min_txn_id
-            << ", final txn: " << (txn_id == max_txn_id);
-
-        if (txn_id == max_txn_id) {
+    auto itr = db::txn::make_txn_nums_stream(std::move(paginated_stream), asc_order, tx_, provider);
+    while (const auto tnx_nums = co_await itr->next()) {
+        if (tnx_nums->final_txn) {
             continue;
         }
-
-        if (block_info && (block_info->block_num != block_num)) {
-            block_info.reset();
+        if (tnx_nums->block_changed) {
             receipts.clear();
-        }
-        if (!block_info) {
-            const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, *chain_storage, block_num);
+
+            const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, *chain_storage, tnx_nums->block_num);
             if (!block_with_hash) {
-                SILK_LOG << "Not found block no.  " << block_num;
+                SILK_DEBUG << "Not found block no.  " << tnx_nums->block_num;
                 break;
             }
             auto rr = co_await core::get_receipts(tx_, *block_with_hash, *chain_storage, workers_);
-            SILK_DEBUG << "Read #" << rr.size() << " receipts from block " << block_num;
+            SILK_DEBUG << "Read #" << rr.size() << " receipts from block " << tnx_nums->block_num;
 
             std::for_each(rr.begin(), rr.end(), [&receipts](const auto& item) {
                 receipts[silkworm::to_hex(item.tx_hash, false)] = std::move(item);
@@ -189,24 +176,24 @@ Task<void> LogsWalker::get_logs(std::uint64_t start,
             block_info = BlockInfo{block_with_hash->block.header.number, block_details};
             ++block_count;
         }
-        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_num, txn_index);
+        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
         if (!transaction) {
-            SILK_LOG << "No transaction found in block " << block_num << " for index " << txn_index;
-            break;
+            SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index;
+            continue;
         }
 
-        SILK_DEBUG << "Got transaction: block_num: " << block_num
-                   << ", txn_index: " << txn_index;
+        SILK_DEBUG << "Got transaction: block_num: " << tnx_nums->block_num
+                   << ", txn_index: " << tnx_nums->txn_index;
 
         const auto& receipt = receipts.at(silkworm::to_hex(transaction.value().hash(), false));
 
-        SILK_LOG << "#rawLogs: " << receipt.logs.size();
+        SILK_DEBUG << "#rawLogs: " << receipt.logs.size();
         filtered_chunk_logs.clear();
         filter_logs(std::move(receipt.logs), addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
-        SILK_LOG << "filtered #logs: " << filtered_chunk_logs.size();
+        SILK_DEBUG << "filtered #logs: " << filtered_chunk_logs.size();
 
         log_count += filtered_chunk_logs.size();
-        SILK_LOG << "log_count: " << log_count;
+        SILK_DEBUG << "log_count: " << log_count;
 
         logs.insert(logs.end(), filtered_chunk_logs.begin(), filtered_chunk_logs.end());
 
@@ -217,7 +204,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start,
             break;
         }
     }
-    SILK_LOG << "resulting logs size: " << logs.size();
+    SILK_DEBUG << "resulting logs size: " << logs.size();
 
     co_return;
 }

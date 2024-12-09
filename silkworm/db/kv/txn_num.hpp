@@ -53,4 +53,40 @@ Task<std::optional<BlockNum>> block_num_from_tx_num(kv::api::Transaction& tx,
                                                     TxNum tx_num,
                                                     chain::CanonicalBodyForStorageProvider provider);
 
+struct TransactionNums {
+    TxnId txn_id;
+    BlockNum block_num;
+    TxnId txn_index;
+    bool final_txn;
+    bool block_changed;
+};
+
+class PaginatedTransactionInfoIterator: public db::kv::api::PaginatedIterator<TransactionNums> {
+public:
+    PaginatedTransactionInfoIterator(db::kv::api::PaginatedStream<db::kv::api::Timestamp> stream,
+                            bool ascending,
+                            kv::api::Transaction& tx,
+                            db::chain::CanonicalBodyForStorageProvider& provider) :
+      stream_(std::move(stream)), ascending_(ascending), tx_(tx), provider_(provider) {}
+
+    Task<bool> has_next() override {
+        return stream_->has_next();
+    }
+    Task<std::optional<TransactionNums>> next() override;
+
+private:
+    db::kv::api::PaginatedStream<db::kv::api::Timestamp> stream_;
+    bool ascending_;
+    kv::api::Transaction& tx_;
+    db::chain::CanonicalBodyForStorageProvider& provider_;
+    BlockNum block_num_;
+    TxNum min_txn_num_{0};
+    TxNum max_txn_num_{0};
+    bool block_changed_{true};
+};
+
+db::kv::api::PaginatedStream<TransactionNums> make_txn_nums_stream(db::kv::api::PaginatedStream<db::kv::api::Timestamp> stream,
+                                                                   bool ascending,
+                                                                   kv::api::Transaction& tx,
+                                                                   db::chain::CanonicalBodyForStorageProvider &provider);
 }  // namespace silkworm::db::txn

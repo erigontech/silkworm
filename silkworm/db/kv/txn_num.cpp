@@ -21,9 +21,9 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/block_body_for_storage.hpp>
-#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/async_binary_search.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 #include "../tables.hpp"
 
@@ -163,8 +163,7 @@ Task<std::optional<TransactionNums>> PaginatedTransactionInfoIterator::next() {
     auto txn_nums = TransactionNums{
         .txn_id = tnx_id,
         .block_num = block_num_,
-        .block_changed = block_changed_
-    };
+        .block_changed = block_changed_};
 
     if (block_changed_) {
         max_txn_num_ = co_await db::txn::max_tx_num(tx_, block_num_, provider_);

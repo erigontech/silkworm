@@ -103,7 +103,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start,
         for (auto sub_topic = topics.begin(); sub_topic < topics.end(); ++sub_topic) {
             for (auto it = sub_topic->begin(); it < sub_topic->end(); ++it) {
                 SILK_DEBUG << "topic: " << to_hex(*it) << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
-                         << to_timestamp;
+                           << to_timestamp;
 
                 db::kv::api::IndexRangeQuery query = {.table = db::table::kLogTopicIdx,
                                                       .key = db::topic_domain_key(*it),
@@ -119,7 +119,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start,
         db::kv::api::PaginatedStream<db::kv::api::Timestamp> union_stream;
         for (auto it = addresses.begin(); it < addresses.end(); ++it) {
             SILK_DEBUG << "address: " << *it << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
-                     << to_timestamp;
+                       << to_timestamp;
 
             db::kv::api::IndexRangeQuery query = {.table = db::table::kLogAddrIdx,
                                                   .key = db::account_domain_key(*it),

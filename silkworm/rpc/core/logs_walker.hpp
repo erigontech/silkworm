@@ -24,6 +24,7 @@
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/block_reader.hpp>
+#include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/types/filter.hpp>
 #include <silkworm/rpc/types/log.hpp>
 

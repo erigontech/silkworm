@@ -71,31 +71,6 @@ Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_nums(const Filter& fil
     co_return std::make_pair(start, end);
 }
 
-class RangePaginatedIterator : public db::kv::api::PaginatedIterator<db::kv::api::Timestamp> {
-  public:
-    RangePaginatedIterator(db::kv::api::Timestamp from, db::kv::api::Timestamp to)
-        : current_(from), to_(to) {}
-
-    Task<bool> has_next() override {
-        co_return current_ <= to_;
-    }
-
-    Task<std::optional<db::kv::api::Timestamp>> next() override {
-        if (current_ > to_) {
-            co_return std::nullopt;
-        }
-        co_return current_++;
-    }
-
-  private:
-    db::kv::api::Timestamp current_;
-    db::kv::api::Timestamp to_;
-};
-
-db::kv::api::PaginatedStream<db::kv::api::Timestamp> create_range_stream(db::kv::api::Timestamp from, db::kv::api::Timestamp to) {
-    return std::make_unique<RangePaginatedIterator>(from, to);
-}
-
 struct BlockInfo {
     BlockNum block_num{0};
     BlockDetails details;
@@ -155,7 +130,7 @@ Task<void> LogsWalker::get_logs(std::uint64_t start,
         }
     }
     if (!union_itr) {
-        union_itr = db::kv::api::set_union(std::move(union_itr), create_range_stream(from_timestamp, to_timestamp));
+        union_itr = db::kv::api::set_union(std::move(union_itr), db::kv::api::make_range_stream(from_timestamp, to_timestamp));
     }
 
     std::map<std::string, Receipt> receipts;

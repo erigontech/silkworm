@@ -47,7 +47,7 @@ class LogsWalker {
     }
     Task<void> get_logs(std::uint64_t start, std::uint64_t end,
                         const FilterAddresses& addresses, const FilterTopics& topics,
-                        const LogFilterOptions& options, bool desc_order,
+                        const LogFilterOptions& options, bool asc_order,
                         std::vector<Log>& logs);
 
   private:

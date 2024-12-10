@@ -98,11 +98,12 @@ Task<void> LogsWalker::get_logs(BlockNum start,
                 SILK_DEBUG << "topic: " << to_hex(*it) << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
                            << to_timestamp;
 
-                db::kv::api::IndexRangeQuery query = {.table = db::table::kLogTopicIdx,
-                                                      .key = db::topic_domain_key(*it),
-                                                      .from_timestamp = from_timestamp,
-                                                      .to_timestamp = to_timestamp,
-                                                      .ascending_order = asc_order};
+                db::kv::api::IndexRangeQuery query = {
+                    .table = db::table::kLogTopicIdx,
+                    .key = db::topic_domain_key(*it),
+                    .from_timestamp = from_timestamp,
+                    .to_timestamp = to_timestamp,
+                    .ascending_order = asc_order};
                 auto paginated_result = co_await tx_.index_range(std::move(query));
                 paginated_stream = db::kv::api::set_union(std::move(paginated_stream), co_await paginated_result.begin());
             }
@@ -111,14 +112,14 @@ Task<void> LogsWalker::get_logs(BlockNum start,
     if (!addresses.empty()) {
         db::kv::api::PaginatedStream<db::kv::api::Timestamp> union_stream;
         for (auto it = addresses.begin(); it < addresses.end(); ++it) {
-            SILK_DEBUG << "address: " << *it << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
-                       << to_timestamp;
+            SILK_DEBUG << "address: " << *it << ", from_timestamp: " << from_timestamp << ", to_timestamp: " << to_timestamp;
 
-            db::kv::api::IndexRangeQuery query = {.table = db::table::kLogAddrIdx,
-                                                  .key = db::account_domain_key(*it),
-                                                  .from_timestamp = from_timestamp,
-                                                  .to_timestamp = to_timestamp,
-                                                  .ascending_order = asc_order};
+            db::kv::api::IndexRangeQuery query = {
+                .table = db::table::kLogAddrIdx,
+                .key = db::account_domain_key(*it),
+                .from_timestamp = from_timestamp,
+                .to_timestamp = to_timestamp,
+                .ascending_order = asc_order};
             auto paginated_result = co_await tx_.index_range(std::move(query));
             union_stream = db::kv::api::set_union(std::move(union_stream), co_await paginated_result.begin());
         }
@@ -162,14 +163,13 @@ Task<void> LogsWalker::get_logs(BlockNum start,
 
             ++block_count;
         }
-        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
+        const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
         if (!transaction) {
             SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index;
             continue;
         }
 
-        SILK_DEBUG << "Got transaction: block_num: " << tnx_nums->block_num
-                   << ", txn_index: " << tnx_nums->txn_index;
+        SILK_DEBUG << "Got transaction: block_num: " << tnx_nums->block_num << ", txn_index: " << tnx_nums->txn_index;
 
         const auto& receipt = receipts.at(silkworm::to_hex(transaction.value().hash(), false));
 

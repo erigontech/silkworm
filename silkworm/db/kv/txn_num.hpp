@@ -61,9 +61,11 @@ struct TransactionNums {
     bool block_changed{false};
 };
 
+using PaginatedTimestampStream = kv::api::PaginatedStream<kv::api::Timestamp>;
+
 class PaginatedTransactionInfoIterator : public kv::api::PaginatedIterator<TransactionNums> {
   public:
-    PaginatedTransactionInfoIterator(kv::api::PaginatedStream<kv::api::Timestamp> stream,
+    PaginatedTransactionInfoIterator(PaginatedTimestampStream stream,
                                      bool ascending,
                                      kv::api::Transaction& tx,
                                      db::chain::CanonicalBodyForStorageProvider& provider)
@@ -75,7 +77,7 @@ class PaginatedTransactionInfoIterator : public kv::api::PaginatedIterator<Trans
     Task<std::optional<TransactionNums>> next() override;
 
   private:
-    kv::api::PaginatedStream<kv::api::Timestamp> stream_;
+    PaginatedTimestampStream stream_;
     bool ascending_;
     kv::api::Transaction& tx_;
     db::chain::CanonicalBodyForStorageProvider& provider_;
@@ -85,7 +87,7 @@ class PaginatedTransactionInfoIterator : public kv::api::PaginatedIterator<Trans
     bool block_changed_{true};
 };
 
-kv::api::PaginatedStream<TransactionNums> make_txn_nums_stream(kv::api::PaginatedStream<kv::api::Timestamp> stream,
+kv::api::PaginatedStream<TransactionNums> make_txn_nums_stream(PaginatedTimestampStream stream,
                                                                bool ascending,
                                                                kv::api::Transaction& tx,
                                                                db::chain::CanonicalBodyForStorageProvider& provider);

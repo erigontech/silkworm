@@ -380,7 +380,7 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash&
 
     stream.write_field("result");
     stream.open_object();
-    co_await execute(stream, storage, block_num, block, transaction, /* index */0);
+    co_await execute(stream, storage, block_num, block, transaction, /* index */ 0);
     stream.close_object();
 
     co_return;

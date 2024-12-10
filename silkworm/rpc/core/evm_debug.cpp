@@ -378,11 +378,9 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash&
     const auto& block = block_with_hash->block;
     const auto block_num = block.header.number;
 
-    auto transaction_index = static_cast<std::int32_t>(block_with_hash->block.transactions.size());
-
     stream.write_field("result");
     stream.open_object();
-    co_await execute(stream, storage, block_num, block, transaction, transaction_index);
+    co_await execute(stream, storage, block_num, block, transaction, /* index */0);
     stream.close_object();
 
     co_return;
@@ -473,6 +471,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
     co_return;
 }
 
+// used by unit-test
 Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block, const Call& call) {
     rpc::Transaction transaction{call.to_transaction()};
 
@@ -500,7 +499,7 @@ Task<void> DebugExecutor::execute(
 
     // We must do the execution at the state after the txn identified by the given index within the given block
     // at the state after the block identified by the given block_num, i.e. at the start of the next block (block_num + 1)
-    const auto first_txn_num_in_block = co_await tx_.first_txn_num_in_block(block.header.number);
+    const auto first_txn_num_in_block = co_await tx_.first_txn_num_in_block(block_num + 1);
 
     co_await async_task(workers_.executor(), [&]() {
         const auto txn_id = first_txn_num_in_block + 1 + static_cast<uint64_t>(index);  // + 1 for system txn in the beginning of block

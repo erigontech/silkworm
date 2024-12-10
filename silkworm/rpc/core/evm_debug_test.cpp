@@ -108,7 +108,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, first_txn_num_in_block(10'336'006)).WillOnce(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(10'336'007)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -230,7 +230,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'095)).WillOnce(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -348,7 +348,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'095)).WillOnce(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -458,7 +458,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'095)).WillOnce(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -573,7 +573,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'095)).WillOnce(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -689,7 +689,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'095)).WillOnce(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -792,7 +792,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'095)).WillOnce(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -906,7 +906,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(transaction, first_txn_num_in_block(4'417'196)).WillOnce(Invoke([]() -> Task<TxnId> {
+        EXPECT_CALL(transaction, first_txn_num_in_block(4'417'197)).WillOnce(Invoke([]() -> Task<TxnId> {
             co_return 244087591818873;
         }));
         EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
@@ -990,7 +990,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
         .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return kConfigValue;
         }));
-    EXPECT_CALL(transaction, first_txn_num_in_block(5'405'095)).WillOnce(Invoke([]() -> Task<TxnId> {
+    EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).WillOnce(Invoke([]() -> Task<TxnId> {
         co_return 244087591818873;
     }));
     EXPECT_CALL(transaction, get_as_of(std::move(query1))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {

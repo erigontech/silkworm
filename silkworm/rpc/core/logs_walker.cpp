@@ -135,7 +135,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
         paginated_stream = db::kv::api::make_range_stream(from_timestamp, to_timestamp);
     }
 
-    std::map<std::string, Receipt> receipts;
+    std::map<evmc::bytes32, Receipt> receipts;
 
     uint64_t block_count{0};
     uint64_t log_count{0};
@@ -158,7 +158,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
             SILK_DEBUG << "Read #" << rr.size() << " receipts from block " << tnx_nums->block_num;
 
             std::for_each(rr.begin(), rr.end(), [&receipts](const auto& item) {
-                receipts[silkworm::to_hex(item.tx_hash, false)] = std::move(item);
+                receipts[item.tx_hash] = std::move(item);
             });
 
             ++block_count;
@@ -171,7 +171,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
 
         SILK_DEBUG << "Got transaction: block_num: " << tnx_nums->block_num << ", txn_index: " << tnx_nums->txn_index;
 
-        const auto& receipt = receipts.at(silkworm::to_hex(transaction.value().hash(), false));
+        const auto& receipt = receipts.at(transaction.value().hash());
 
         SILK_DEBUG << "#rawLogs: " << receipt.logs.size();
         filtered_chunk_logs.clear();

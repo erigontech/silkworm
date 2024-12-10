@@ -184,10 +184,10 @@ Task<std::optional<TransactionNums>> PaginatedTransactionInfoIterator::next() {
     co_return txn_nums;
 }
 
-db::kv::api::PaginatedStream<TransactionNums> make_txn_nums_stream(db::kv::api::PaginatedStream<db::kv::api::Timestamp> stream,
-                                                                   bool ascending,
-                                                                   kv::api::Transaction& tx,
-                                                                   db::chain::CanonicalBodyForStorageProvider& provider) {
+kv::api::PaginatedStream<TransactionNums> make_txn_nums_stream(kv::api::PaginatedStream<kv::api::Timestamp> stream,
+                                                               bool ascending,
+                                                               kv::api::Transaction& tx,
+                                                               db::chain::CanonicalBodyForStorageProvider& provider) {
     return std::make_unique<PaginatedTransactionInfoIterator>(std::move(stream), ascending, tx, provider);
 }
 

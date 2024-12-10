@@ -175,7 +175,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
 
         SILK_DEBUG << "#rawLogs: " << receipt.logs.size();
         filtered_chunk_logs.clear();
-        filter_logs(std::move(receipt.logs), addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
+        filter_logs(receipt.logs, addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
         SILK_DEBUG << "filtered #logs: " << filtered_chunk_logs.size();
 
         log_count += filtered_chunk_logs.size();
@@ -195,7 +195,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
     co_return;
 }
 
-void LogsWalker::filter_logs(const std::vector<Log>&& logs, const FilterAddresses& addresses, const FilterTopics& topics, std::vector<Log>& filtered_logs,
+void LogsWalker::filter_logs(const std::vector<Log>& logs, const FilterAddresses& addresses, const FilterTopics& topics, std::vector<Log>& filtered_logs,
                              size_t max_logs) {
     SILK_DEBUG << "filter_logs: addresses: " << addresses << ", topics: " << topics;
     size_t log_count = 0;

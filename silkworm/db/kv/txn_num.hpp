@@ -54,11 +54,11 @@ Task<std::optional<BlockNum>> block_num_from_tx_num(kv::api::Transaction& tx,
                                                     chain::CanonicalBodyForStorageProvider provider);
 
 struct TransactionNums {
-    TxnId txn_id;
-    BlockNum block_num;
-    TxnId txn_index;
-    bool final_txn;
-    bool block_changed;
+    TxnId txn_id{0};
+    BlockNum block_num{0};
+    TxnId txn_index{0};
+    bool final_txn{false};
+    bool block_changed{false};
 };
 
 class PaginatedTransactionInfoIterator : public kv::api::PaginatedIterator<TransactionNums> {
@@ -79,7 +79,7 @@ class PaginatedTransactionInfoIterator : public kv::api::PaginatedIterator<Trans
     bool ascending_;
     kv::api::Transaction& tx_;
     db::chain::CanonicalBodyForStorageProvider& provider_;
-    BlockNum block_num_;
+    BlockNum block_num_{0};
     TxNum min_txn_num_{0};
     TxNum max_txn_num_{0};
     bool block_changed_{true};

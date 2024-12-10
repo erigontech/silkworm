@@ -44,6 +44,7 @@
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/state/schema_config.hpp>
+#include <silkworm/execution/remote_state.hpp>
 #include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -55,7 +56,6 @@
 #include <silkworm/node/execution/block/block_executor.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
-#include <silkworm/execution/remote_state.hpp>
 
 #include "common.hpp"
 #include "instance.hpp"
@@ -736,6 +736,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 
 // todo: add available gas, add txn, add block header
 SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, uint64_t block_num, uint64_t tx_index, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT {
+    log::Info{"silkworm_execute_tx", {"block_num", std::to_string(block_num), "tx_index", std::to_string(tx_index)}};
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -761,12 +762,10 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, ui
     }
 
     // const auto chain_info = kKnownChainConfigs.find(chain_id);
-    const auto chain_info = kKnownChainConfigs.find(1337);
+    const auto chain_info = kKnownChainConfigs.find(1);
     if (!chain_info) {
         return SILKWORM_UNKNOWN_CHAIN_ID;
     }
-
-    const auto chain_config = *chain_info;
 
     //
     grpc::ChannelArguments channel_args;
@@ -805,17 +804,38 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, ui
         // co_return kv_transaction->create_state(this_executor, *chain_storage, block.header.number);
     });
 
-    auto protocol_rule_set_{protocol::rule_set_factory(*chain_config)};
-    ExecutionProcessor processor{block, *protocol_rule_set_, *state, *chain_config};
-    // add analysis cache, check block exec for more
+    // Hash h = evmc::bytes32{*from_hex("0x0a67937dc901730147bae17de95ae57cf20768933f0ea545e52c78af9a22c1edc")};
 
-    silkworm::Transaction transaction{};  // todo: get txn
-    silkworm::Receipt receipt{};
-    const ValidationResult err{protocol::validate_transaction(transaction, processor.intra_block_state(), processor.available_gas())};
-    if (err != ValidationResult::kOk) {
-        return SILKWORM_INVALID_BLOCK;
-    }
-    processor.execute_transaction(transaction, receipt);
+    // auto h = evmc::bytes32{*from_hex("0xa67937dc901730147bae17de95ae57cf20768933f0ea545e52c78af9a22c1edc")}
+    // auto h2 = to_bytes32(*from_hex("0xa67937dc901730147bae17de95ae57cf20768933f0ea545e52c78af9a22c1edc"));
+
+    // auto header = state->read_header(1, h2);
+    // if (header) {
+    //     log::Info{"header", {"number", std::to_string(header->number), "gas_used", std::to_string(header->gas_used)}};
+    // }
+    // else {
+    //     return SILKWORM_INVALID_BLOCK;
+    // }
+
+    auto a = hex_to_address("0x71562b71999873db5b286df957af199ec94617f7");
+    auto acc = state->read_account(a);
+
+    if (acc) {
+        log::Info{"account", {"balance", std::to_string(acc->balance.num_bits)}};    }
+
+    log::Info{"dupa blada, spadam"};
+    // const auto chain_config = *chain_info;
+    // auto protocol_rule_set_{protocol::rule_set_factory(*chain_config)};
+    // ExecutionProcessor processor{block, *protocol_rule_set_, *state, *chain_config};
+    // // add analysis cache, check block exec for more
+
+    // silkworm::Transaction transaction{};  // todo: get txn
+    // silkworm::Receipt receipt{};
+    // const ValidationResult err{protocol::validate_transaction(transaction, processor.intra_block_state(), processor.available_gas())};
+    // if (err != ValidationResult::kOk) {
+    //     return SILKWORM_INVALID_BLOCK;
+    // }
+    // processor.execute_transaction(transaction, receipt);
 
     return SILKWORM_OK;
 }

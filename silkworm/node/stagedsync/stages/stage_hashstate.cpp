@@ -36,6 +36,7 @@ using silkworm::datastore::etl::Entry;
 
 Stage::Result HashState::forward(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
+
     operation_ = OperationType::kForward;
     try {
         throw_if_stopping();
@@ -119,6 +120,7 @@ Stage::Result HashState::forward(RWTxn& txn) {
 
 Stage::Result HashState::unwind(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
+
     if (!sync_context_->unwind_point.has_value()) return ret;
     const BlockNum to{sync_context_->unwind_point.value()};
 
@@ -174,6 +176,7 @@ Stage::Result HashState::prune(RWTxn&) {
 
 Stage::Result HashState::hash_from_plainstate(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
+
     try {
         auto source = txn.ro_cursor_dup_sort(table::kPlainState);
         auto data{source->to_first(/*throw_notfound=*/true)};
@@ -334,6 +337,7 @@ Stage::Result HashState::hash_from_plainstate(RWTxn& txn) {
 
 Stage::Result HashState::hash_from_plaincode(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
+
     try {
         auto source = txn.ro_cursor(table::kPlainCodeHash);
         auto data{source->to_first(/*throw_notfound=*/false)};
@@ -407,6 +411,7 @@ Stage::Result HashState::hash_from_plaincode(RWTxn& txn) {
 
 Stage::Result HashState::hash_from_account_changeset(RWTxn& txn, BlockNum previous_progress, BlockNum to) {
     Stage::Result ret{Stage::Result::kSuccess};
+
     try {
         /*
          * 1) Read AccountChangeSet from previous_progress to 'to'
@@ -414,7 +419,6 @@ Stage::Result HashState::hash_from_account_changeset(RWTxn& txn, BlockNum previo
          * 3) Process the collected list and write values into Hashed tables (Account and Code)
          */
 
-        BlockNum reached_blocknum{0};
         BlockNum expected_blocknum{previous_progress + 1};
         ChangedAddresses changed_addresses{};
 
@@ -432,7 +436,7 @@ Stage::Result HashState::hash_from_account_changeset(RWTxn& txn, BlockNum previo
         // Initial record MUST be found because there is at least 1 change per block: the miner reward
         auto changeset_data = source_changeset->find(to_slice(source_initial_key), /*throw_notfound=*/true);
         while (changeset_data.done) {
-            reached_blocknum = endian::load_big_u64(from_slice(changeset_data.key).data());
+            const BlockNum reached_blocknum = endian::load_big_u64(from_slice(changeset_data.key).data());
             check_block_sequence(reached_blocknum, expected_blocknum);
             if (reached_blocknum > to) {
                 break;
@@ -464,8 +468,7 @@ Stage::Result HashState::hash_from_account_changeset(RWTxn& txn, BlockNum previo
             changeset_data = source_changeset->to_next(/*throw_notfound=*/false);
         }
 
-        ret = write_changes_from_changed_addresses(txn, changed_addresses);
-
+        write_changes_from_changed_addresses(txn, changed_addresses);
     } catch (const mdbx::exception& ex) {
         SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
@@ -485,14 +488,13 @@ Stage::Result HashState::hash_from_account_changeset(RWTxn& txn, BlockNum previo
 
 Stage::Result HashState::hash_from_storage_changeset(RWTxn& txn, BlockNum previous_progress, BlockNum to) {
     Stage::Result ret{Stage::Result::kSuccess};
+
     try {
         /*
          * 1) Read StorageChangeSet from previous_progress to 'to'
          * 2) For each address + incarnation changed hash it and lookup current value from PlainState
          * 3) Process the collected list and write values into HashedStorage
          */
-
-        BlockNum reached_blocknum{0};
 
         StorageChanges storage_changes{};
         absl::btree_map<evmc::address, evmc::bytes32> hashed_addresses{};
@@ -520,7 +522,7 @@ Stage::Result HashState::hash_from_storage_changeset(RWTxn& txn, BlockNum previo
         // process changes
         while (changeset_data.done) {
             auto changeset_key_view{from_slice(changeset_data.key)};
-            reached_blocknum = endian::load_big_u64(changeset_key_view.data());
+            const BlockNum reached_blocknum = endian::load_big_u64(changeset_key_view.data());
             if (reached_blocknum > to) {
                 break;
             }
@@ -560,8 +562,7 @@ Stage::Result HashState::hash_from_storage_changeset(RWTxn& txn, BlockNum previo
             changeset_data = source_changeset->to_next(/*throw_notfound=*/false);
         }
 
-        ret = write_changes_from_changed_storage(txn, storage_changes, hashed_addresses);
-
+        write_changes_from_changed_storage(txn, storage_changes, hashed_addresses);
     } catch (const mdbx::exception& ex) {
         SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
@@ -581,6 +582,7 @@ Stage::Result HashState::hash_from_storage_changeset(RWTxn& txn, BlockNum previo
 
 Stage::Result HashState::unwind_from_account_changeset(RWTxn& txn, BlockNum previous_progress, BlockNum to) {
     Stage::Result ret{Stage::Result::kSuccess};
+
     try {
         /*
          * This behaves pretty much similar to hash_from_account_changeset with one major difference:
@@ -644,20 +646,19 @@ Stage::Result HashState::unwind_from_account_changeset(RWTxn& txn, BlockNum prev
             changeset_data = changeset_cursor->to_next(/*throw_notfound=*/false);
         }
 
-        ret = write_changes_from_changed_addresses(txn, changed_addresses);
-
+        write_changes_from_changed_addresses(txn, changed_addresses);
     } catch (const mdbx::exception& ex) {
         SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        return Stage::Result::kDbError;
+        ret = Stage::Result::kDbError;
     } catch (const StageError& ex) {
         SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<Stage::Result>(ex.err());
     } catch (const std::exception& ex) {
         SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
-        return Stage::Result::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     } catch (...) {
         SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", "undefined"});
-        return Stage::Result::kUnexpectedError;
+        ret = Stage::Result::kUnexpectedError;
     }
 
     return ret;
@@ -747,8 +748,7 @@ Stage::Result HashState::unwind_from_storage_changeset(RWTxn& txn, BlockNum prev
             changeset_data = changeset_cursor->to_next(/*throw_notfound=*/false);
         }
 
-        ret = write_changes_from_changed_storage(txn, storage_changes, hashed_addresses);
-
+        write_changes_from_changed_storage(txn, storage_changes, hashed_addresses);
     } catch (const mdbx::exception& ex) {
         SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
@@ -766,7 +766,7 @@ Stage::Result HashState::unwind_from_storage_changeset(RWTxn& txn, BlockNum prev
     return ret;
 }
 
-Stage::Result HashState::write_changes_from_changed_addresses(RWTxn& txn, const ChangedAddresses& changed_addresses) {
+void HashState::write_changes_from_changed_addresses(RWTxn& txn, const ChangedAddresses& changed_addresses) {
     throw_if_stopping();
 
     std::unique_lock log_lck(log_mtx_);
@@ -825,11 +825,9 @@ Stage::Result HashState::write_changes_from_changed_addresses(RWTxn& txn, const 
             target_hashed_accounts->erase(db::to_slice(address_hash));
         }
     }
-
-    return Stage::Result::kSuccess;
 }
 
-Stage::Result HashState::write_changes_from_changed_storage(
+void HashState::write_changes_from_changed_storage(
     RWTxn& txn, StorageChanges& storage_changes,
     const absl::btree_map<evmc::address, evmc::bytes32>& hashed_addresses) {
     throw_if_stopping();
@@ -861,8 +859,6 @@ Stage::Result HashState::write_changes_from_changed_storage(
             }
         }
     }
-
-    return Stage::Result::kSuccess;
 }
 
 std::vector<std::string> HashState::get_log_progress() {

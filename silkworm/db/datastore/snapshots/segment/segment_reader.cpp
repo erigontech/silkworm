@@ -54,7 +54,7 @@ SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator++() {
 
 SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator+=(size_t count) {
     while ((count > 1) && it_.has_next()) {
-        it_.skip_auto();
+        it_.skip();
         --count;
     }
     if (count > 0) {

@@ -1467,7 +1467,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 Task<TraceCallResult> TraceCallExecutor::trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config) {
     // trace_call semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number
     rpc::Transaction transaction{call.to_transaction()};
-    auto result = co_await execute(block.header.number, block, transaction, /*index=*/-1, config, /*gas_bailout=*/true);
+    auto result = co_await execute(block.header.number, block, transaction, -1, config, /*gas_bailout=*/true);
     co_return result;
 }
 
@@ -1797,40 +1797,18 @@ Task<TraceCallResult> TraceCallExecutor::execute(
 
     std::shared_ptr<State> state{};
     std::shared_ptr<State> curr_state{};
-    if (index == -1) {
-        // We must do the execution at the state after the block identified by the given block_num
-        state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, block_num);
-        curr_state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, block_num);
-    } else {
-        // We must do the execution at the state after the txn identified by the given index within the given block
-        // at the state after the block identified by the given block_num, i.e. at the start of the next block (block_num + 1)
-        const auto first_txn_num_in_next_block = co_await tx_.first_txn_num_in_block(block_num + 1);
-        const auto txn_id = first_txn_num_in_next_block + 1 + static_cast<uint64_t>(index);  // + 1 for system txn in the beginning of block
-        state = execution::StateFactory{tx_}.create_state_txn(current_executor, chain_storage_, txn_id);
-        curr_state = execution::StateFactory{tx_}.create_state_txn(current_executor, chain_storage_, txn_id);
-    }
+    // We must do the execution at the state after the txn identified by the given index within the given block
+    // at the state after the block identified by the given block_num, i.e. at the start of the next block (block_num + 1)
+    const auto first_txn_num_in_next_block = co_await tx_.first_txn_num_in_block(block_num + 1);
+    const auto txn_id = first_txn_num_in_next_block + 1 + static_cast<uint64_t>(index);  // + 1 for system txn in the beginning of block
+    state = execution::StateFactory{tx_}.create_state_txn(current_executor, chain_storage_, txn_id);
+    curr_state = execution::StateFactory{tx_}.create_state_txn(current_executor, chain_storage_, txn_id);
     const auto trace_call_result = co_await async_task(workers_.executor(), [&]() -> TraceCallResult {
         Tracers tracers;
         silkworm::IntraBlockState initial_ibs{*state};
         StateAddresses state_addresses(initial_ibs);
 
         EVMExecutor executor{block, chain_config, workers_, curr_state};
-
-        if (index == -1) {
-            std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
-            tracers.push_back(tracer);
-
-            for (size_t idx{0}; idx < transaction.transaction_index; ++idx) {
-                silkworm::Transaction txn{block.transactions[idx]};
-                const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, gas_bailout);
-                if (execution_result.pre_check_error) {
-                    SILK_ERROR << "execution failed for tx " << idx << " due to pre-check error: " << *execution_result.pre_check_error;
-                }
-                executor.reset();
-            }
-
-            tracers.clear();
-        }
 
         TraceCallResult result;
         TraceCallTraces& traces = result.traces;

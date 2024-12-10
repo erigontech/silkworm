@@ -1467,7 +1467,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 Task<TraceCallResult> TraceCallExecutor::trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config) {
     // trace_call semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number
     rpc::Transaction transaction{call.to_transaction()};
-    auto result = co_await execute(block.header.number, block, transaction, -1, config, /*gas_bailout=*/true);
+    auto result = co_await execute(block.header.number, block, transaction, /*index=*/-1, config, /*gas_bailout=*/true);
     co_return result;
 }
 
@@ -1582,7 +1582,7 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHas
 
     const auto tnx_hash = transaction.hash();
 
-    for (const auto& call_trace : trace_result) {
+    for (const auto& call_trace :  trace_result) {
         Trace trace{call_trace};
 
         trace.block_num = block_with_hash.block.header.number;
@@ -1800,7 +1800,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
     // We must do the execution at the state after the txn identified by the given index within the given block
     // at the state after the block identified by the given block_num, i.e. at the start of the next block (block_num + 1)
     const auto first_txn_num_in_next_block = co_await tx_.first_txn_num_in_block(block_num + 1);
-    const auto txn_id = first_txn_num_in_next_block + 1 + static_cast<uint64_t>(index);  // + 1 for system txn in the beginning of block
+    const auto txn_id = first_txn_num_in_next_block + 1 + gsl::narrow<TxnId>(transaction.transaction_index);  // + 1 for system txn in the beginning of block
     state = execution::StateFactory{tx_}.create_state_txn(current_executor, chain_storage_, txn_id);
     curr_state = execution::StateFactory{tx_}.create_state_txn(current_executor, chain_storage_, txn_id);
     const auto trace_call_result = co_await async_task(workers_.executor(), [&]() -> TraceCallResult {

@@ -37,8 +37,8 @@ namespace silkworm::rpc {
 
 using namespace db::chain;
 
-Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_nums(const Filter& filter) {
-    uint64_t start{}, end{};
+Task<std::pair<BlockNum, BlockNum>> LogsWalker::get_block_nums(const Filter& filter) {
+    BlockNum start{}, end{};
 
     if (filter.block_hash.has_value()) {
         auto block_hash_bytes = silkworm::from_hex(filter.block_hash.value());
@@ -69,8 +69,8 @@ Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_nums(const Filter& fil
     co_return std::make_pair(start, end);
 }
 
-Task<void> LogsWalker::get_logs(std::uint64_t start,
-                                std::uint64_t end,
+Task<void> LogsWalker::get_logs(BlockNum start,
+                                BlockNum end,
                                 const FilterAddresses& addresses,
                                 const FilterTopics& topics,
                                 const LogFilterOptions& options,

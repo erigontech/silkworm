@@ -23,9 +23,9 @@
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/infra/common/async_binary_search.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 #include "../tables.hpp"
-#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::db::txn {
 

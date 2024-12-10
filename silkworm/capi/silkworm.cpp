@@ -773,7 +773,7 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, ui
     channel_args.SetMaxReceiveMessageSize(64 * 1024 * 1024);
     // Allow each client to open its own TCP connection to server (sharing one single connection becomes a bottleneck under high load)
     channel_args.SetInt(GRPC_ARG_USE_LOCAL_SUBCHANNEL_POOL, 1);
-    auto grpc_channel = grpc::CreateCustomChannel("localhost:9090", grpc::InsecureChannelCredentials(), channel_args);
+    auto grpc_erigon_channel = grpc::CreateCustomChannel("localhost:9090", grpc::InsecureChannelCredentials(), channel_args);
 
     silkworm::rpc::ClientContextPool context_pool{1};
 
@@ -783,8 +783,8 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, ui
 
     auto state_cache{std::make_unique<db::kv::api::CoherentStateCache>(db::kv::api::CoherentCacheConfig{})};
 
-    auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(ioc, grpc_channel, grpc_context)};
-    auto database = std::make_unique<rpc::ethdb::kv::RemoteDatabase>(backend.get(), state_cache.get(), grpc_context, grpc_channel);
+    auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(ioc, grpc_erigon_channel, grpc_context)};
+    auto database = std::make_unique<rpc::ethdb::kv::RemoteDatabase>(backend.get(), state_cache.get(), grpc_context, grpc_erigon_channel);
 
     context_pool.start();
     auto _ = gsl::finally([&context_pool] {
@@ -798,8 +798,8 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, ui
         auto kv_transaction = co_await database->begin();
         const auto chain_storage = kv_transaction->create_storage();
         auto this_executor = co_await boost::asio::this_coro::executor;
-        auto state = std::make_unique<silkworm::execution::RemoteState>(this_executor, *kv_transaction, *chain_storage, 1, std::nullopt);
-        co_return state;
+        auto remote_state = std::make_unique<silkworm::execution::RemoteState>(this_executor, *kv_transaction, *chain_storage, 1, std::nullopt);
+        co_return remote_state;
         // co_return execution::StateFactory{*kv_transaction}.create_state(this_executor, *chain_storage, block.header.number);
         // co_return kv_transaction->create_state(this_executor, *chain_storage, block.header.number);
     });
@@ -821,7 +821,8 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, ui
     auto acc = state->read_account(a);
 
     if (acc) {
-        log::Info{"account", {"balance", std::to_string(acc->balance.num_bits)}};    }
+        log::Info{"account", {"balance", std::to_string(acc->balance.num_bits)}};
+    }
 
     log::Info{"dupa blada, spadam"};
     // const auto chain_config = *chain_info;

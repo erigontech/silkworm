@@ -153,7 +153,7 @@ Task<bool> RemoteBackEnd::get_block(BlockNum block_num, const HashAsSpan& hash, 
     ByteView block_rlp{string_view_to_byte_view(reply.block_rlp())};
     SILK_DEBUG << "RemoteBackEnd::get_block block_num=" << block_num << " reply=" << reply.DebugString();
     if (const auto decode_result{rlp::decode(block_rlp, block)}; !decode_result) {
-        SILK_ERROR << "RemoteBackEnd::get_block block_num=" << block_num << " decode error=" << int (decode_result.error());
+        SILK_ERROR << "RemoteBackEnd::get_block block_num=" << block_num << " decode error=" << int(decode_result.error());
         co_return false;
     }
     if (read_senders) {

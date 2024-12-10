@@ -54,7 +54,8 @@ Task<uint64_t> AsyncRemoteState::previous_incarnation(const evmc::address& /*add
 }
 
 Task<std::optional<BlockHeader>> AsyncRemoteState::read_header(BlockNum block_num, const evmc::bytes32& block_hash) const noexcept {
-    SILK_DEBUG << "AsyncRemoteState::read_header: " << " number: " << block_num;
+    SILK_DEBUG << "AsyncRemoteState::read_header: "
+               << " number: " << block_num;
 
     co_return co_await storage_.read_header(block_num, block_hash);
 }

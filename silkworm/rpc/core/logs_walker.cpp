@@ -27,13 +27,11 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/ethdb/bitmap.hpp>
 #include <silkworm/rpc/ethdb/cbor.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
-#include <silkworm/rpc/ethdb/walk.hpp>
 
 namespace silkworm::rpc {
 
@@ -70,11 +68,6 @@ Task<std::pair<uint64_t, uint64_t>> LogsWalker::get_block_nums(const Filter& fil
     }
     co_return std::make_pair(start, end);
 }
-
-struct BlockInfo {
-    BlockNum block_num{0};
-    BlockDetails details;
-};
 
 Task<void> LogsWalker::get_logs(std::uint64_t start,
                                 std::uint64_t end,
@@ -142,7 +135,6 @@ Task<void> LogsWalker::get_logs(std::uint64_t start,
     }
 
     std::map<std::string, Receipt> receipts;
-    std::optional<BlockInfo> block_info;
 
     uint64_t block_count{0};
     uint64_t log_count{0};
@@ -168,12 +160,6 @@ Task<void> LogsWalker::get_logs(std::uint64_t start,
                 receipts[silkworm::to_hex(item.tx_hash, false)] = std::move(item);
             });
 
-            const Block extended_block{block_with_hash, false};
-            const auto block_size = extended_block.get_block_size();
-            const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header,
-                                             block_with_hash->block.transactions.size(), block_with_hash->block.ommers,
-                                             block_with_hash->block.withdrawals};
-            block_info = BlockInfo{block_with_hash->block.header.number, block_details};
             ++block_count;
         }
         auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);

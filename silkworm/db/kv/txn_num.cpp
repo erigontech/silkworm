@@ -160,19 +160,18 @@ Task<std::optional<TransactionNums>> PaginatedTransactionInfoIterator::next() {
         block_changed_ = true;
     }
 
-    auto txn_nums = TransactionNums{
-        .txn_id = tnx_id,
-        .block_num = block_num_,
-        .block_changed = block_changed_};
-
     if (block_changed_) {
         max_txn_num_ = co_await db::txn::max_tx_num(tx_, block_num_, provider_);
         min_txn_num_ = co_await db::txn::min_tx_num(tx_, block_num_, provider_);
         block_changed_ = false;
     }
 
-    txn_nums.final_txn = tnx_id == max_txn_num_;
-    txn_nums.txn_index = tnx_id - min_txn_num_ - 1;
+    const TransactionNums txn_nums{
+        .txn_id = tnx_id,
+        .block_num = block_num_,
+        .txn_index = tnx_id - min_txn_num_ - 1,
+        .final_txn = tnx_id == max_txn_num_,
+        .block_changed = block_changed_};
 
     SILK_DEBUG << "txn_id: " << txn_nums.txn_id
                << ", block_num: " << txn_nums.block_num

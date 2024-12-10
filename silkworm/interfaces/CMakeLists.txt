@@ -16,6 +16,7 @@
 
 include(generate_grpc.cmake)
 
+find_package(absl REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Protobuf REQUIRED)
 
@@ -55,7 +56,14 @@ endif(NOT MSVC)
 
 target_include_directories(silkworm_interfaces PUBLIC "${SILKWORM_MAIN_DIR};${CMAKE_CURRENT_SOURCE_DIR}")
 
-set(LIBS_PUBLIC gRPC::grpc++ protobuf::libprotobuf)
+# cmake-format: off
+set(LIBS_PUBLIC
+    absl::log
+    absl::strings
+    gRPC::grpc++
+    protobuf::libprotobuf
+)
+# cmake-format: on
 set(LIBS_PRIVATE "")
 if(MSVC)
   list(APPEND LIBS_PRIVATE ntdll.lib)

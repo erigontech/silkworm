@@ -39,6 +39,7 @@ target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
 set(LIBS_PUBLIC
     silkworm_core
     silkworm_interfaces
+    absl::log
     absl::strings
     asio-grpc::asio-grpc
     Boost::headers

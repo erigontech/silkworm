@@ -56,6 +56,7 @@ function(silkworm_library TARGET)
   list(FILTER TEST_SRC INCLUDE REGEX "${TEST_REGEX}")
 
   list(FILTER SRC EXCLUDE REGEX "${TEST_REGEX}")
+  list(FILTER SRC EXCLUDE REGEX "cmd/")
   list(FILTER SRC EXCLUDE REGEX "_benchmark\\.cpp$")
   add_library(${TARGET} ${ARG_TYPE} ${SRC})
 

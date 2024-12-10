@@ -41,6 +41,7 @@
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/infra/cmd/common.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/environment.hpp>
@@ -53,8 +54,6 @@
 #include <silkworm/node/stagedsync/stages/stage_interhashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 #include <silkworm/node/stagedsync/stages_factory_impl.hpp>
-
-#include "../common/common.hpp"
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -255,7 +254,7 @@ static stagedsync::BodiesStageFactory make_bodies_stage_factory(
             data_model_factory,
             [] { return 0; });
     };
-};
+}
 
 static stagedsync::StageContainerFactory make_stages_factory(
     const NodeSettings& node_settings,

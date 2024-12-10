@@ -14,20 +14,12 @@
    limitations under the License.
 ]]
 
-if(NOT SILKWORM_CORE_ONLY)
-  find_package(CLI11 REQUIRED)
+set(TARGET silkworm_sentry_cmd)
 
-  set(COMMON_SRC
-      common.cpp
-      common.hpp
-      human_size_option.cpp
-      human_size_option.hpp
-      ip_endpoint_option.cpp
-      ip_endpoint_option.hpp
-      shutdown_signal.cpp
-      shutdown_signal.hpp
-  )
-  add_library(cmd_common "${COMMON_SRC}")
-  target_link_libraries(cmd_common silkworm-buildinfo CLI11::CLI11 silkworm_infra)
+find_package(CLI11 REQUIRED)
 
-endif()
+file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+
+add_library(${TARGET} ${SRC})
+
+target_link_libraries(${TARGET} PUBLIC silkworm_core silkworm_infra silkworm_sentry silkworm_infra_cmd CLI11::CLI11)

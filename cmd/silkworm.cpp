@@ -29,18 +29,17 @@
 #include <boost/asio/use_future.hpp>
 
 #include <silkworm/buildinfo.h>
+#include <silkworm/db/cmd/snapshot_options.hpp>
+#include <silkworm/infra/cmd/common.hpp>
+#include <silkworm/infra/cmd/shutdown_signal.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
+#include <silkworm/node/cmd/node_options.hpp>
 #include <silkworm/node/node.hpp>
-
-#include "common/common.hpp"
-#include "common/node_options.hpp"
-#include "common/rpcdaemon_options.hpp"
-#include "common/sentry_options.hpp"
-#include "common/shutdown_signal.hpp"
-#include "common/snapshot_options.hpp"
+#include <silkworm/rpc/cmd/rpcdaemon_options.hpp>
+#include <silkworm/sentry/cmd/sentry_options.hpp>
 
 using namespace silkworm;
 

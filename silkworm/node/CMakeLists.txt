@@ -16,6 +16,7 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
+add_subdirectory(cmd)
 add_subdirectory(execution/block)
 add_subdirectory(stagedsync/stages)
 add_subdirectory(test_util)

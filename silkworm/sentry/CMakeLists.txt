@@ -23,6 +23,9 @@ find_package(Microsoft.GSL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(Snappy REQUIRED)
 
+# sentry cmd
+add_subdirectory(cmd)
+
 # sentry common
 add_subdirectory(common)
 

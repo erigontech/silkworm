@@ -23,4 +23,8 @@ file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 
 add_library(${TARGET} ${SRC})
 
-target_link_libraries(${TARGET} PUBLIC silkworm_db silkworm_infra_cmd Boost::headers CLI11::CLI11 PRIVATE silkworm-buildinfo)
+target_link_libraries(
+  ${TARGET}
+  PUBLIC silkworm_db silkworm_infra_cmd Boost::headers CLI11::CLI11
+  PRIVATE silkworm-buildinfo
+)

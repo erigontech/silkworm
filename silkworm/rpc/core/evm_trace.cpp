@@ -1582,7 +1582,7 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHas
 
     const auto tnx_hash = transaction.hash();
 
-    for (const auto& call_trace :  trace_result) {
+    for (const auto& call_trace : trace_result) {
         Trace trace{call_trace};
 
         trace.block_num = block_with_hash.block.header.number;

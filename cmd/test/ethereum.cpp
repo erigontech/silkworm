@@ -479,7 +479,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    size_t stack_size{40 * kMebi};
+    size_t stack_size{50 * kMebi};
 #ifdef NDEBUG
     stack_size = 16 * kMebi;
 #endif

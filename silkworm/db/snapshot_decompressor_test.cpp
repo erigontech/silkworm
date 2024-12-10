@@ -335,14 +335,14 @@ TEST_CASE("Iterator::Iterator empty data", "[silkworm][node][seg][decompressor]"
     }
     SECTION("next") {
         silkworm::Bytes buffer;
-        CHECK_THROWS_AS(decoder.make_iterator().next(buffer), std::runtime_error);
+        CHECK_THROWS_AS(decoder.make_iterator().next_compressed(buffer), std::runtime_error);
     }
     SECTION("next_uncompressed") {
         silkworm::Bytes buffer;
         CHECK_THROWS_AS(decoder.make_iterator().next_uncompressed(buffer), std::runtime_error);
     }
     SECTION("skip") {
-        CHECK_THROWS_AS(decoder.make_iterator().skip(), std::runtime_error);
+        CHECK_THROWS_AS(decoder.make_iterator().skip_compressed(), std::runtime_error);
     }
     SECTION("skip_uncompressed") {
         CHECK_THROWS_AS(decoder.make_iterator().skip_uncompressed(), std::runtime_error);
@@ -416,12 +416,12 @@ TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][node][seg][decompressor]
         auto it = decoder.make_iterator();
         while (it.has_next() && i < kLoremIpsumWords.size()) {
             if (i % 2 == 0) {
-                it.skip();
+                it.skip_compressed();
             } else {
                 const std::string word_plus_index{kLoremIpsumWords[i] + " " + std::to_string(i)};
                 const Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
                 Bytes decoded_word;
-                it.next(decoded_word);
+                it.next_compressed(decoded_word);
                 CHECK(decoded_word == expected_word);
             }
             ++i;
@@ -448,7 +448,7 @@ TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][seg][decompr
                 ++modified_word[expected_word.size() - 1];
                 CHECK(!it.has_prefix(modified_word));
             }
-            it.skip();
+            it.skip_compressed();
             ++i;
         }
         CHECK(i == kLoremIpsumWords.size());

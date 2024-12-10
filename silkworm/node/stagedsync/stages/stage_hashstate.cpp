@@ -225,7 +225,6 @@ Stage::Result HashState::hash_from_plainstate(RWTxn& txn) {
 
                 Entry entry{Bytes(address_hash.bytes, kHashLength), Bytes{from_slice(data.value)}};
                 collector_->collect(std::move(entry));
-
             } else if (data.key.length() == kPlainStoragePrefixLength) {
                 // Hash storage
                 // data.key           == Address + Incarnation
@@ -238,7 +237,7 @@ Stage::Result HashState::hash_from_plainstate(RWTxn& txn) {
 
                 // Iterate dupkeys only to avoid re-hashing of same address
                 while (data) {
-                    if (!(data.value.length() > kHashLength)) {
+                    if (data.value.length() <= kHashLength) {
                         const auto incarnation{endian::load_big_u64(&data_key_view[kAddressLength])};
                         const std::string what("Unexpected empty value in PlainState for Account " + current_key_ +
                                                " incarnation " + std::to_string(incarnation));
@@ -429,10 +428,9 @@ Stage::Result HashState::hash_from_account_changeset(RWTxn& txn, BlockNum previo
         auto source_initial_key{block_key(expected_blocknum)};
         auto source_changeset = txn.ro_cursor_dup_sort(table::kAccountChangeSet);
         auto source_plainstate = txn.ro_cursor_dup_sort(table::kPlainState);
-        auto changeset_data{
-            source_changeset->find(to_slice(source_initial_key),  // Initial record MUST be found because
-                                   /*throw_notfound=*/true)};     // there is at least 1 change per block
-                                                                  // (the miner reward)
+
+        // Initial record MUST be found because there is at least 1 change per block: the miner reward
+        auto changeset_data = source_changeset->find(to_slice(source_initial_key), /*throw_notfound=*/true);
         while (changeset_data.done) {
             reached_blocknum = endian::load_big_u64(from_slice(changeset_data.key).data());
             check_block_sequence(reached_blocknum, expected_blocknum);
@@ -452,7 +450,7 @@ Stage::Result HashState::hash_from_account_changeset(RWTxn& txn, BlockNum previo
                 evmc::address address{bytes_to_address(changeset_value_view)};
                 if (!changed_addresses.contains(address)) {
                     auto address_hash{to_bytes32(keccak256(address.bytes).bytes)};
-                    auto plainstate_data{source_plainstate->find(db::to_slice(address), /*throw_notfound=*/false)};
+                    auto plainstate_data = source_plainstate->find(db::to_slice(address), /*throw_notfound=*/false);
                     if (plainstate_data.done) {
                         Bytes current_value{from_slice(plainstate_data.value)};
                         changed_addresses[address] = std::make_pair(address_hash, current_value);
@@ -610,7 +608,7 @@ Stage::Result HashState::unwind_from_account_changeset(RWTxn& txn, BlockNum prev
 
         auto changeset_cursor = txn.ro_cursor_dup_sort(table::kAccountChangeSet);
         auto initial_key{block_key(expected_blocknum)};
-        auto changeset_data{changeset_cursor->find(to_slice(initial_key), /*throw_notfound=*/true)};
+        auto changeset_data = changeset_cursor->find(to_slice(initial_key), /*throw_notfound=*/true);
 
         while (changeset_data.done) {
             reached_blocknum = endian::load_big_u64(from_slice(changeset_data.key).data());
@@ -695,11 +693,13 @@ Stage::Result HashState::unwind_from_storage_changeset(RWTxn& txn, BlockNum prev
 
         auto changeset_cursor = txn.ro_cursor_dup_sort(table::kStorageChangeSet);
         auto initial_key_prefix{block_key(to + 1)};
-        auto changeset_data{changeset_cursor->lower_bound(to_slice(initial_key_prefix), /*throw_notfound=*/false)};
+        auto changeset_data = changeset_cursor->lower_bound(to_slice(initial_key_prefix), /*throw_notfound=*/false);
 
         if (!changeset_data.done) {
-            log::Warning(log_prefix_,
-                         {"function", std::string(__FUNCTION__), "warning", "no storage changeset found", "description", "this should only happen during integration tests"});
+            SILK_TRACE_M(log_prefix_,
+                         {"function", std::string(__FUNCTION__),
+                          "warning", "no storage changeset found",
+                          "description", "this should only happen during integration tests"});
             return ret;
         }
 

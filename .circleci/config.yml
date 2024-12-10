@@ -436,7 +436,7 @@ jobs:
       - run:
           name: "Core unit tests"
           working_directory: ~/build
-          command: wasmer cmd/test/core_test --stack-size 16777216
+          command: wasmer silkworm/core/silkworm_core_test --stack-size 16777216
 
 parameters:
   clang_version_min:

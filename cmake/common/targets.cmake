@@ -46,8 +46,13 @@ function(silkworm_library TARGET)
   get_directory_property(SUB_LIBS SUBDIRECTORIES)
   list_filter_dirs(SRC SUB_LIBS)
 
+  set(TEST_REGEX "_test\\.cpp$")
+  # test_util subdirectories without CMakeLists.txt belong to TEST_SRC
+  if(NOT "${CMAKE_CURRENT_SOURCE_DIR}" MATCHES "/test_util$")
+    set(TEST_REGEX "(${TEST_REGEX}|\/test_util\/)")
+  endif()
+
   set(TEST_SRC ${SRC})
-  set(TEST_REGEX "(_test\\.cpp$|\/test_util\/)")
   list(FILTER TEST_SRC INCLUDE REGEX "${TEST_REGEX}")
 
   list(FILTER SRC EXCLUDE REGEX "${TEST_REGEX}")

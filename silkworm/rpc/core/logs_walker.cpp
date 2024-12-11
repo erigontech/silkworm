@@ -157,7 +157,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
             SILK_DEBUG << "Read #" << rr.size() << " receipts from block " << tnx_nums->block_num;
 
             for (TxnId i = 0; i < rr.size(); ++i) {
-                receipts[i] = rr[i];
+                receipts[i] = std::move(rr[i]);
             }
 
             ++block_count;

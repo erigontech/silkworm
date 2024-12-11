@@ -135,7 +135,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
         paginated_stream = db::kv::api::make_range_stream(from_timestamp, to_timestamp);
     }
 
-    std::map<TxnId, Receipt> receipts;
+    Receipts receipts;
     uint64_t block_count{0};
     uint64_t log_count{0};
     Logs filtered_chunk_logs;
@@ -153,12 +153,8 @@ Task<void> LogsWalker::get_logs(BlockNum start,
                 SILK_DEBUG << "Not found block no.  " << tnx_nums->block_num;
                 break;
             }
-            auto rr = co_await core::get_receipts(tx_, *block_with_hash, *chain_storage, workers_);
-            SILK_DEBUG << "Read #" << rr.size() << " receipts from block " << tnx_nums->block_num;
-
-            for (TxnId i = 0; i < rr.size(); ++i) {
-                receipts[i] = std::move(rr[i]);
-            }
+            receipts = std::move(co_await core::get_receipts(tx_, *block_with_hash, *chain_storage, workers_));
+            SILK_DEBUG << "Read #" << receipts.size() << " receipts from block " << tnx_nums->block_num;
 
             ++block_count;
         }
@@ -170,6 +166,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
 
         SILK_DEBUG << "Got transaction: block_num: " << tnx_nums->block_num << ", txn_index: " << tnx_nums->txn_index;
 
+        SILKWORM_ASSERT(tnx_nums->txn_index < receipts.size());
         const auto& receipt = receipts.at(tnx_nums->txn_index);
 
         SILK_DEBUG << "#rawLogs: " << receipt.logs.size();

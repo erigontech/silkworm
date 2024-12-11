@@ -52,8 +52,8 @@ silkworm_library(
   PRIVATE ${LIBS_PRIVATE}
 )
 
-# silkworm_infra_cmd depends on silkworm_infra
-add_subdirectory(cmd)
+# silkworm_infra_cli depends on silkworm_infra
+add_subdirectory(cli)
 
 # silkworm_infra_test_util depends on silkworm_infra
 add_subdirectory(test_util)

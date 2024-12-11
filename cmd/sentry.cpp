@@ -22,13 +22,13 @@
 #include <boost/process/environment.hpp>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/infra/cmd/common.hpp>
-#include <silkworm/infra/cmd/shutdown_signal.hpp>
+#include <silkworm/infra/cli/common.hpp>
+#include <silkworm/infra/cli/shutdown_signal.hpp>
 #include <silkworm/infra/common/application_info.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/sentry/cmd/sentry_options.hpp>
+#include <silkworm/sentry/cli/sentry_options.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>
 

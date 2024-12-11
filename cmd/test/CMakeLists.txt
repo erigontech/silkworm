@@ -60,7 +60,7 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # BE&KV Tests
   add_executable(backend_kv_test backend_kv_test.cpp)
-  target_link_libraries(backend_kv_test PRIVATE silkworm_infra_cmd silkworm_node CLI11::CLI11 magic_enum::magic_enum)
+  target_link_libraries(backend_kv_test PRIVATE silkworm_infra_cli silkworm_node CLI11::CLI11 magic_enum::magic_enum)
 
   add_executable(sentry_client_test sentry_client_test.cpp)
   target_link_libraries(sentry_client_test PRIVATE silkworm_sentry)

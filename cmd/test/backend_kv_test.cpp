@@ -34,7 +34,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/infra/cmd/shutdown_signal.hpp>
+#include <silkworm/infra/cli/shutdown_signal.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>

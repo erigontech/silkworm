@@ -26,7 +26,7 @@
 #include <silkworm/core/types/block_body_for_storage.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/infra/cmd/common.hpp>
+#include <silkworm/infra/cli/common.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>

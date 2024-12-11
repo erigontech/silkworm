@@ -24,8 +24,6 @@ if(NOT SILKWORM_CORE_ONLY)
   # Benchmarks
   add_subdirectory(benchmark)
 
-  find_package(CLI11 REQUIRED)
-
   if(SILKWORM_USE_MIMALLOC)
     find_package(mimalloc REQUIRED)
   endif()
@@ -42,11 +40,10 @@ if(NOT SILKWORM_CORE_ONLY)
   # cmake-format: off
   set(SILKWORM_LIBRARIES
       silkworm_node
-      silkworm_db_cmd
-      silkworm_node_cmd
-      silkworm_rpcdaemon_cmd
-      silkworm_sentry_cmd
-      CLI11::CLI11
+      silkworm_db_cli
+      silkworm_node_cli
+      silkworm_rpcdaemon_cli
+      silkworm_sentry_cli
       $<$<BOOL:${MSVC}>:Kernel32.lib>
   )
   # cmake-format: on
@@ -54,7 +51,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(silkworm PRIVATE ${SILKWORM_LIBRARIES})
 
   # [=] standalone RpcDaemon component
-  set(RPCDAEMON_LIBRARIES silkworm_rpcdaemon silkworm_rpcdaemon_cmd)
+  set(RPCDAEMON_LIBRARIES silkworm_rpcdaemon silkworm_rpcdaemon_cli)
   if(SILKWORM_USE_MIMALLOC)
     list(APPEND RPCDAEMON_LIBRARIES mimalloc-static)
   endif()
@@ -65,6 +62,6 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # [=] standalone Sentry component
   add_executable(sentry sentry.cpp)
-  target_link_libraries(sentry PRIVATE silkworm_sentry silkworm_sentry_cmd)
+  target_link_libraries(sentry PRIVATE silkworm_sentry silkworm_sentry_cli)
 
 endif()

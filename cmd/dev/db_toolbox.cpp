@@ -44,7 +44,7 @@
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/infra/cmd/common.hpp>
+#include <silkworm/infra/cli/common.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>

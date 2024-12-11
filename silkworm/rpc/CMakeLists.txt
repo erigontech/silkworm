@@ -58,8 +58,8 @@ silkworm_library(
   PRIVATE ${SILKWORM_RPCDAEMON_PRIVATE_LIBRARIES}
 )
 
-# silkworm_rpcdaemon_cmd depends on silkworm_rpcdaemon
-add_subdirectory(cmd)
+# silkworm_rpcdaemon_cli depends on silkworm_rpcdaemon
+add_subdirectory(cli)
 
 # silkworm_rpcdaemon_test_util depends on silkworm_rpcdaemon
 add_subdirectory(test_util)

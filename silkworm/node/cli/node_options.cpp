@@ -20,8 +20,8 @@
 #include <string>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/cmd/common.hpp>
-#include <silkworm/infra/cmd/human_size_option.hpp>
+#include <silkworm/infra/cli/common.hpp>
+#include <silkworm/infra/cli/human_size_option.hpp>
 
 namespace silkworm::cmd::common {
 

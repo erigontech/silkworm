@@ -25,7 +25,7 @@ set(PRIVATE_LIBS
     silkworm_db
     silkworm_rpcdaemon
     silkworm_capi
-    silkworm_infra_cmd
+    silkworm_infra_cli
 )
 
 target_link_libraries(execute PRIVATE ${PRIVATE_LIBS})

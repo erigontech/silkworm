@@ -33,8 +33,8 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
-#include <silkworm/infra/cmd/common.hpp>
-#include <silkworm/infra/cmd/shutdown_signal.hpp>
+#include <silkworm/infra/cli/common.hpp>
+#include <silkworm/infra/cli/shutdown_signal.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/daemon.hpp>

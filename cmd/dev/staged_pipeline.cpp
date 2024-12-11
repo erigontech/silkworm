@@ -41,7 +41,7 @@
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/infra/cmd/common.hpp>
+#include <silkworm/infra/cli/common.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/environment.hpp>

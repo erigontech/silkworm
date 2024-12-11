@@ -23,9 +23,6 @@ find_package(Microsoft.GSL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(Snappy REQUIRED)
 
-# sentry cmd
-add_subdirectory(cmd)
-
 # sentry common
 add_subdirectory(common)
 
@@ -72,3 +69,6 @@ silkworm_library(
   PUBLIC ${LIBS_PUBLIC}
   PRIVATE ${LIBS_PRIVATE}
 )
+
+# silkworm_sentry_cli depends on silkworm_sentry
+add_subdirectory(cli)

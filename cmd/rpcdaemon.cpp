@@ -17,8 +17,8 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/infra/cmd/common.hpp>
-#include <silkworm/rpc/cmd/rpcdaemon_options.hpp>
+#include <silkworm/infra/cli/common.hpp>
+#include <silkworm/rpc/cli/rpcdaemon_options.hpp>
 #include <silkworm/rpc/daemon.hpp>
 
 using namespace silkworm;

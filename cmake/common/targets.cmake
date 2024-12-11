@@ -56,8 +56,9 @@ function(silkworm_library TARGET)
   list(FILTER TEST_SRC INCLUDE REGEX "${TEST_REGEX}")
 
   list(FILTER SRC EXCLUDE REGEX "${TEST_REGEX}")
-  if(NOT "${CMAKE_CURRENT_SOURCE_DIR}" MATCHES "/cmd$")
-    list(FILTER SRC EXCLUDE REGEX "\/cmd\/")
+  # cli subdirectories with CMakeLists.txt belong to silkworm_*_cli libraries
+  if(NOT "${CMAKE_CURRENT_SOURCE_DIR}" MATCHES "/cli$")
+    list(FILTER SRC EXCLUDE REGEX "\/cli\/")
   endif()
   list(FILTER SRC EXCLUDE REGEX "_benchmark\\.cpp$")
 

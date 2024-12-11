@@ -53,8 +53,8 @@
 #include <silkworm/db/snapshot_recompress.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/infra/cmd/common.hpp>
-#include <silkworm/infra/cmd/shutdown_signal.hpp>
+#include <silkworm/infra/cli/common.hpp>
+#include <silkworm/infra/cli/shutdown_signal.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>

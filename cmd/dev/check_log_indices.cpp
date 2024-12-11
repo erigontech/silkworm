@@ -33,7 +33,7 @@
 #include <silkworm/db/log_cbor.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
-#include <silkworm/infra/cmd/common.hpp>
+#include <silkworm/infra/cli/common.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>

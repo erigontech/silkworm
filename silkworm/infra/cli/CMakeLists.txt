@@ -16,19 +16,19 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-find_package(absl REQUIRED)
+find_package(Boost REQUIRED COMPONENTS headers)
 find_package(CLI11 REQUIRED)
 
-set(LIBS_PUBLIC
-    silkworm_core
-    silkworm_rpcdaemon
-    silkworm_infra_cmd
-    Boost::headers
-    absl::strings
-    CLI11::CLI11
+set(LIBS_PUBLIC silkworm_core silkworm_infra Boost::headers CLI11::CLI11)
+
+# cmake-format: off
+set(LIBS_PRIVATE
+    silkworm-buildinfo
 )
+# cmake-format: on
 
 silkworm_library(
-    silkworm_rpcdaemon_cmd
-    PUBLIC ${LIBS_PUBLIC}
+  silkworm_infra_cli
+  PUBLIC ${LIBS_PUBLIC}
+  PRIVATE ${LIBS_PRIVATE}
 )

@@ -23,7 +23,7 @@ find_package(Protobuf REQUIRED)
 find_package(tomlplusplus REQUIRED)
 
 add_executable(backend_kv_server backend_kv_server.cpp)
-target_link_libraries(backend_kv_server PRIVATE silkworm_db_cmd silkworm_node silkworm_sync CLI11::CLI11)
+target_link_libraries(backend_kv_server PRIVATE silkworm_db_cmd silkworm_node silkworm_sync)
 
 add_executable(check_blockhashes check_blockhashes.cpp)
 target_link_libraries(check_blockhashes PRIVATE silkworm_node CLI11::CLI11)

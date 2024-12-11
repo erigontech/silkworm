@@ -54,7 +54,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(silkworm PRIVATE ${SILKWORM_LIBRARIES})
 
   # [=] standalone RpcDaemon component
-  set(RPCDAEMON_LIBRARIES silkworm_rpcdaemon silkworm_rpcdaemon_cmd CLI11::CLI11)
+  set(RPCDAEMON_LIBRARIES silkworm_rpcdaemon silkworm_rpcdaemon_cmd)
   if(SILKWORM_USE_MIMALLOC)
     list(APPEND RPCDAEMON_LIBRARIES mimalloc-static)
   endif()
@@ -65,6 +65,6 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # [=] standalone Sentry component
   add_executable(sentry sentry.cpp)
-  target_link_libraries(sentry PRIVATE silkworm_sentry silkworm_sentry_cmd CLI11::CLI11)
+  target_link_libraries(sentry PRIVATE silkworm_sentry silkworm_sentry_cmd)
 
 endif()

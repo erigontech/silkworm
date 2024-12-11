@@ -153,7 +153,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
                 SILK_DEBUG << "Not found block no.  " << tnx_nums->block_num;
                 break;
             }
-            receipts = std::move(co_await core::get_receipts(tx_, *block_with_hash, *chain_storage, workers_));
+            receipts = co_await core::get_receipts(tx_, *block_with_hash, *chain_storage, workers_);
             SILK_DEBUG << "Read #" << receipts.size() << " receipts from block " << tnx_nums->block_num;
 
             ++block_count;

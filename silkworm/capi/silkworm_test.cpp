@@ -31,9 +31,10 @@
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
+#include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/environment.hpp>
-#include <silkworm/rpc/test_util/api_test_database.hpp>
+#include <silkworm/node/stagedsync/execution_engine.hpp>
 
 #include "instance.hpp"
 

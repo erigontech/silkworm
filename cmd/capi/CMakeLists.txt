@@ -24,7 +24,7 @@ set(PRIVATE_LIBS
     silkworm_infra
     silkworm_db
     silkworm_rpcdaemon
-    silkworm_capi
+    silkworm_capi_static
     silkworm_infra_cli
 )
 

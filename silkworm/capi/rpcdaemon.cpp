@@ -14,7 +14,9 @@
    limitations under the License.
 */
 
+#include <silkworm/db/data_store.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/rpc/daemon.hpp>
 #include <silkworm/rpc/settings.hpp>
 
 #include "common.hpp"

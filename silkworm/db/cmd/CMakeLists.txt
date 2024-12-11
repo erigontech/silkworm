@@ -14,17 +14,26 @@
    limitations under the License.
 ]]
 
-set(TARGET silkworm_db_cmd)
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 find_package(Boost REQUIRED COMPONENTS headers)
 find_package(CLI11 REQUIRED)
 
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+set(LIBS_PUBLIC
+    silkworm_db
+    silkworm_infra_cmd
+    Boost::headers
+    CLI11::CLI11
+)
 
-add_library(${TARGET} ${SRC})
+# cmake-format: off
+set(LIBS_PRIVATE
+    silkworm-buildinfo
+)
+# cmake-format: on
 
-target_link_libraries(
-  ${TARGET}
-  PUBLIC silkworm_db silkworm_infra_cmd Boost::headers CLI11::CLI11
-  PRIVATE silkworm-buildinfo
+silkworm_library(
+    silkworm_db_cmd
+    PUBLIC ${LIBS_PUBLIC}
+    PRIVATE ${LIBS_PRIVATE}
 )

@@ -56,8 +56,11 @@ function(silkworm_library TARGET)
   list(FILTER TEST_SRC INCLUDE REGEX "${TEST_REGEX}")
 
   list(FILTER SRC EXCLUDE REGEX "${TEST_REGEX}")
-  list(FILTER SRC EXCLUDE REGEX "cmd/")
+  if(NOT "${CMAKE_CURRENT_SOURCE_DIR}" MATCHES "/cmd$")
+    list(FILTER SRC EXCLUDE REGEX "\/cmd\/")
+  endif()
   list(FILTER SRC EXCLUDE REGEX "_benchmark\\.cpp$")
+
   add_library(${TARGET} ${ARG_TYPE} ${SRC})
 
   target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")

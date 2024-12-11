@@ -14,12 +14,18 @@
    limitations under the License.
 ]]
 
-set(TARGET silkworm_node_cmd)
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 find_package(CLI11 REQUIRED)
 
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+set(LIBS_PUBLIC
+    silkworm_core
+    silkworm_node
+    silkworm_infra_cmd
+    CLI11::CLI11
+)
 
-add_library(${TARGET} ${SRC})
-
-target_link_libraries(${TARGET} PUBLIC silkworm_core silkworm_node silkworm_infra_cmd CLI11::CLI11)
+silkworm_library(
+    silkworm_node_cmd
+    PUBLIC ${LIBS_PUBLIC}
+)

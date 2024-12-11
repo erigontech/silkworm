@@ -16,10 +16,8 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-add_subdirectory(cmd)
 add_subdirectory(execution/block)
 add_subdirectory(stagedsync/stages)
-add_subdirectory(test_util)
 
 find_package(absl REQUIRED COMPONENTS strings)
 find_package(asio-grpc REQUIRED)
@@ -60,5 +58,11 @@ silkworm_library(
   PUBLIC ${SILKWORM_NODE_PUBLIC_LIBS}
   PRIVATE ${SILKWORM_NODE_PRIVATE_LIBS}
 )
+
+# silkworm_node_cmd depends on silkworm_node
+add_subdirectory(cmd)
+
+# silkworm_node_test_util depends on silkworm_node
+add_subdirectory(test_util)
 
 target_link_libraries(silkworm_node_test PRIVATE silkworm_node_test_util GTest::gmock)

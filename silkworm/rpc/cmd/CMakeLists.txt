@@ -14,13 +14,21 @@
    limitations under the License.
 ]]
 
-set(TARGET silkworm_rpcdaemon_cmd)
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 find_package(absl REQUIRED)
 find_package(CLI11 REQUIRED)
 
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+set(LIBS_PUBLIC
+    silkworm_core
+    silkworm_rpcdaemon
+    silkworm_infra_cmd
+    Boost::headers
+    absl::strings
+    CLI11::CLI11
+)
 
-add_library(${TARGET} ${SRC})
-
-target_link_libraries(${TARGET} PUBLIC silkworm_core silkworm_rpcdaemon silkworm_infra_cmd absl::strings CLI11::CLI11)
+silkworm_library(
+    silkworm_rpcdaemon_cmd
+    PUBLIC ${LIBS_PUBLIC}
+)

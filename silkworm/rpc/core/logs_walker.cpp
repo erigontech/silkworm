@@ -159,7 +159,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
             for (TxnId i = 0; i < rr.size(); ++i) {
                 receipts[i] = rr[i];
             }
-            
+
             ++block_count;
         }
         const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);

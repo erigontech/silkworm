@@ -117,7 +117,7 @@ SnapshotBundleData open_bundle_data(
                 open_existence_indexes(entity_schema, dir_path, step_range),
                 open_btree_indexes(entity_schema, dir_path, step_range),
             });
-    };
+    }
     return data;
 }
 
@@ -153,15 +153,13 @@ Domain SnapshotBundle::domain(datastore::EntityName name) const {
         data.accessor_indexes.at(Schema::kDomainAccessorIndexName),
         data.existence_indexes.at(Schema::kDomainExistenceIndexName),
         data.btree_indexes.at(Schema::kDomainBTreeIndexName),
+        std::nullopt,
     };
     if (data.segments.contains(Schema::kHistorySegmentName)) {
         domain.history.emplace(History{
             data.segments.at(Schema::kHistorySegmentName),
             data.accessor_indexes.at(Schema::kHistoryAccessorIndexName),
-            InvertedIndex{
-                data.kv_segments.at(Schema::kInvIdxKVSegmentName),
-                data.accessor_indexes.at(Schema::kInvIdxAccessorIndexName),
-            },
+            inverted_index(name),
         });
     }
     return domain;
@@ -169,7 +167,7 @@ Domain SnapshotBundle::domain(datastore::EntityName name) const {
 
 InvertedIndex SnapshotBundle::inverted_index(datastore::EntityName name) const {
     auto& data = data_.entities.at(name);
-    return {
+    return InvertedIndex{
         data.kv_segments.at(Schema::kInvIdxKVSegmentName),
         data.accessor_indexes.at(Schema::kInvIdxAccessorIndexName),
     };

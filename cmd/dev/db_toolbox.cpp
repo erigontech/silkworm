@@ -1460,10 +1460,10 @@ void do_freeze(EnvConfig& config, const DataDirectory& data_dir, bool keep_block
         config,
         data_dir.snapshots().path(),
     };
-    StageSchedulerAdapter stage_scheduler{data_store.chaindata_rw()};
+    StageSchedulerAdapter stage_scheduler{data_store.chaindata().access_rw()};
 
     Freezer freezer{
-        data_store.chaindata(),
+        data_store.chaindata().access_ro(),
         data_store.ref().blocks_repository,
         stage_scheduler,
         data_dir.temp().path(),

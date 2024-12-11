@@ -103,8 +103,11 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* en
     }
 
     auto daemon_settings = make_daemon_settings(handle, *settings);
+    handle->chaindata = std::make_unique<datastore::kvdb::DatabaseUnmanaged>(
+        db::DataStore::make_chaindata_database(datastore::kvdb::EnvUnmanaged{env}));
+
     db::DataStoreRef data_store{
-        datastore::kvdb::RWAccess{datastore::kvdb::EnvUnmanaged{env}},
+        handle->chaindata->ref(),
         *handle->blocks_repository,
         *handle->state_repository,
     };

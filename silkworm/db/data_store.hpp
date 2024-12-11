@@ -25,22 +25,33 @@
 namespace silkworm::db {
 
 struct DataStoreRef {
-    datastore::kvdb::RWAccess chaindata;
+    datastore::kvdb::DatabaseRef chaindata;
+    state::StateDatabaseRef state_db() const { return {chaindata}; }
     snapshots::SnapshotRepository& blocks_repository;
     snapshots::SnapshotRepository& state_repository;
 };
 
 class DataStore {
-  public:
-    explicit DataStore(datastore::DataStore store) : store_{std::move(store)} {}
     DataStore(
-        mdbx::env_managed chaindata_env,
+        datastore::kvdb::Database chaindata_database,
         snapshots::SnapshotRepository blocks_repository,
         snapshots::SnapshotRepository state_repository)
         : store_{
               make_schema(),
-              std::move(chaindata_env),
+              make_databases_map(std::move(chaindata_database)),
               make_repositories_map(std::move(blocks_repository), std::move(state_repository)),
+          } {}
+
+  public:
+    explicit DataStore(datastore::DataStore store) : store_{std::move(store)} {}
+
+    DataStore(
+        mdbx::env_managed chaindata_env,
+        const std::filesystem::path& repository_path)
+        : DataStore{
+              make_chaindata_database(std::move(chaindata_env)),
+              blocks::make_blocks_repository(repository_path),
+              state::make_state_repository(repository_path),
           } {}
 
     DataStore(
@@ -48,28 +59,35 @@ class DataStore {
         const std::filesystem::path& repository_path)
         : DataStore{
               datastore::kvdb::open_env(chaindata_env_config),
-              blocks::make_blocks_repository(repository_path),
-              state::make_state_repository(repository_path),
+              repository_path,
           } {}
-
-    void close() {
-        store_.close();
-    }
 
     DataStoreRef ref() const {
         return {
-            store_.chaindata_rw(),
-            store_.repository(blocks::kBlocksRepositoryName),
-            store_.repository(state::kStateRepositoryName),
+            chaindata().ref(),
+            blocks_repository(),
+            state_repository(),
         };
     }
 
-    datastore::kvdb::ROAccess chaindata() const { return store_.chaindata(); }
-    datastore::kvdb::RWAccess chaindata_rw() const { return store_.chaindata_rw(); }
+    datastore::kvdb::Database& chaindata() const { return store_.default_database(); }
+
+    snapshots::SnapshotRepository& blocks_repository() const {
+        return store_.repository(blocks::kBlocksRepositoryName);
+    }
+    snapshots::SnapshotRepository& state_repository() const {
+        return store_.repository(state::kStateRepositoryName);
+    }
+
+    static datastore::kvdb::Schema::DatabaseDef make_chaindata_database_schema();
+    static datastore::kvdb::Database make_chaindata_database(mdbx::env_managed chaindata_env);
+    static datastore::kvdb::DatabaseUnmanaged make_chaindata_database(datastore::kvdb::EnvUnmanaged chaindata_env);
 
   private:
     static datastore::Schema make_schema();
 
+    static std::map<datastore::EntityName, std::unique_ptr<datastore::kvdb::Database>> make_databases_map(
+        datastore::kvdb::Database chaindata_database);
     static std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> make_repositories_map(
         snapshots::SnapshotRepository blocks_repository,
         snapshots::SnapshotRepository state_repository);

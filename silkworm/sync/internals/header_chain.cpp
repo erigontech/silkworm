@@ -575,7 +575,7 @@ void HeaderChain::request_nack(const GetBlockHeadersPacket66& packet) {
     SILK_TRACE_M("HeaderChain") << "restoring timestamp due to request nack;"
                                 << " request_id=" << packet.request_id;
 
-    anchor_queue_.update(anchor, [&](auto& anchor_) { anchor_->restore_timestamp(); });
+    anchor_queue_.update(anchor, [&](auto& anchor_arg) { anchor_arg->restore_timestamp(); });
 }
 
 bool HeaderChain::has_link(Hash hash) { return (links_.find(hash) != links_.end()); }
@@ -700,7 +700,7 @@ std::tuple<std::vector<Segment>, Penalty> HeaderList::split_into_segments() {
     return {segments, Penalty::kNoPenalty};
 }
 
-HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segment, bool is_a_new_block, const PeerId& peerId) {
+HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segment, bool is_a_new_block, const PeerId& peer_id) {
     if (segment.empty()) return false;
     auto [anchor, start] = find_anchor(segment);
     auto [tip, end] = find_link(segment, start);
@@ -755,7 +755,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::process_segment(const Segment& segm
             }
         } else {
             op = "new anchor";
-            request_more = new_anchor(segment_slice, peerId);
+            request_more = new_anchor(segment_slice, peer_id);
         }
         // SILK_TRACE << "HeaderChain, segment " << op << " up=" << start_num << " (" << segment[start]->hash()
         //            << ") down=" << end_num << " (" << segment[end - 1]->hash() << ") (more=" << request_more << ")";
@@ -986,13 +986,13 @@ void HeaderChain::extend_up(const std::shared_ptr<Link>& attachment_link, Segmen
         << (segment_slice.rend() - 1)->operator*().number;
 }
 
-HeaderChain::RequestMoreHeaders HeaderChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) {
+HeaderChain::RequestMoreHeaders HeaderChain::new_anchor(Segment::Slice segment_slice, PeerId peer_id) {
     using std::to_string;
 
     // Add or find anchor
     auto anchor_header = *segment_slice.rbegin();  // lowest header
     bool check_limits = true;
-    auto [anchor, pre_existing] = add_anchor_if_not_present(*anchor_header, std::move(peerId), check_limits);
+    auto [anchor, pre_existing] = add_anchor_if_not_present(*anchor_header, std::move(peer_id), check_limits);
 
     // Iterate over headers backwards (from parents towards children)
     std::shared_ptr<Link> prev_link;
@@ -1018,7 +1018,7 @@ HeaderChain::RequestMoreHeaders HeaderChain::new_anchor(Segment::Slice segment_s
     return !pre_existing;
 }
 
-std::tuple<std::shared_ptr<Anchor>, HeaderChain::Pre_Existing> HeaderChain::add_anchor_if_not_present(const BlockHeader& anchor_header, PeerId peerId, bool check_limits) {
+std::tuple<std::shared_ptr<Anchor>, HeaderChain::Pre_Existing> HeaderChain::add_anchor_if_not_present(const BlockHeader& anchor_header, PeerId peer_id, bool check_limits) {
     using std::to_string;
 
     auto a = anchors_.find(anchor_header.parent_hash);
@@ -1039,7 +1039,7 @@ std::tuple<std::shared_ptr<Anchor>, HeaderChain::Pre_Existing> HeaderChain::add_
                                           ", limit: " + to_string(kAnchorLimit));
     }
 
-    std::shared_ptr<Anchor> anchor = std::make_shared<Anchor>(anchor_header, std::move(peerId));
+    std::shared_ptr<Anchor> anchor = std::make_shared<Anchor>(anchor_header, std::move(peer_id));
     if (anchor->block_num > 0) {
         anchors_[anchor_header.parent_hash] = anchor;
         anchor_queue_.push(anchor);

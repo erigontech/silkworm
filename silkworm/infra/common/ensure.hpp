@@ -32,9 +32,9 @@ inline void ensure(bool condition, const char (&message)[N]) {
 
 //! Ensure that condition is met, otherwise raise a logic error with dynamically built message
 //! Usage: `ensure(condition, [&]() { return "Message: " + get_str(); });`
-inline void ensure(bool condition, const std::function<std::string()>& messageBuilder) {
+inline void ensure(bool condition, const std::function<std::string()>& message_builder) {
     if (!condition) [[unlikely]] {
-        throw std::logic_error(messageBuilder());
+        throw std::logic_error(message_builder());
     }
 }
 
@@ -47,23 +47,23 @@ inline void ensure_invariant(bool condition, const char (&message)[N]) {
 }
 
 //! Similar to \code ensure with emphasis on invariant violation
-inline void ensure_invariant(bool condition, const std::function<std::string()>& messageBuilder) {
+inline void ensure_invariant(bool condition, const std::function<std::string()>& message_builder) {
     if (!condition) [[unlikely]] {
-        throw std::logic_error("Invariant violation: " + messageBuilder());
+        throw std::logic_error("Invariant violation: " + message_builder());
     }
 }
 
 //! Similar to \code ensure with emphasis on pre-condition violation
-inline void ensure_pre_condition(bool condition, const std::function<std::string()>& messageBuilder) {
+inline void ensure_pre_condition(bool condition, const std::function<std::string()>& message_builder) {
     if (!condition) [[unlikely]] {
-        throw std::invalid_argument("Pre-condition violation: " + messageBuilder());
+        throw std::invalid_argument("Pre-condition violation: " + message_builder());
     }
 }
 
 //! Similar to \code ensure with emphasis on post-condition violation
-inline void ensure_post_condition(bool condition, const std::function<std::string()>& messageBuilder) {
+inline void ensure_post_condition(bool condition, const std::function<std::string()>& message_builder) {
     if (!condition) [[unlikely]] {
-        throw std::logic_error("Post-condition violation: " + messageBuilder());
+        throw std::logic_error("Post-condition violation: " + message_builder());
     }
 }
 

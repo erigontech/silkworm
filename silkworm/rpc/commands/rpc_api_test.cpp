@@ -30,19 +30,19 @@ using test_util::RpcApiTestBase;
 #endif
 
 // Function to recursively sort JSON arrays
-void sort_array(nlohmann::json& jsonObj) {  // NOLINT(*-no-recursion)
-    if (jsonObj.is_array()) {
+void sort_array(nlohmann::json& json_obj) {  // NOLINT(*-no-recursion)
+    if (json_obj.is_array()) {
         // Sort the elements within the array
-        std::sort(jsonObj.begin(), jsonObj.end(), [](const nlohmann::json& a, const nlohmann::json& b) {
+        std::sort(json_obj.begin(), json_obj.end(), [](const nlohmann::json& a, const nlohmann::json& b) {
             return a.dump() < b.dump();
         });
 
         // Recursively sort nested arrays
-        for (auto& item : jsonObj) {
+        for (auto& item : json_obj) {
             sort_array(item);
         }
-    } else if (jsonObj.is_object()) {
-        for (auto& item : jsonObj.items()) {
+    } else if (json_obj.is_object()) {
+        for (auto& item : json_obj.items()) {
             sort_array(item.value());
         }
     }

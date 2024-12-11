@@ -78,8 +78,8 @@ void Fork::close() {
         memory_tx_.abort();
 }
 
-void Fork::flush(db::RWTxn& main_chain_tx_) {
-    memory_tx_.flush(main_chain_tx_);
+void Fork::flush(db::RWTxn& main_chain_tx) {
+    memory_tx_.flush(main_chain_tx);
 }
 
 BlockId Fork::current_head() const {

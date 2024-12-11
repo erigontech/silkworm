@@ -88,8 +88,8 @@ Task<ForkChoiceUpdatedReply> RemoteExecutionEngine::fork_choice_updated(const Fo
     co_return fork_choice_updated_reply_from_result(fork_choice_result);
 }
 
-Task<ExecutionPayloadAndValue> RemoteExecutionEngine::get_payload(uint64_t /*payloadId*/, Msec /*timeout*/) {
-    // We do not support the payload building process yet, so any payloadId is unknown
+Task<ExecutionPayloadAndValue> RemoteExecutionEngine::get_payload(uint64_t /*payload_id*/, Msec /*timeout*/) {
+    // We do not support the payload building process yet, so any payload ID is unknown
     throw boost::system::system_error{to_system_code(ErrorCode::kUnknownPayload)};
 }
 

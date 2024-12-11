@@ -32,7 +32,7 @@ class RemoteExecutionEngine final : public ExecutionEngine {
 
     Task<PayloadStatus> new_payload(const NewPayloadRequest& request, Msec timeout) override;
     Task<ForkChoiceUpdatedReply> fork_choice_updated(const ForkChoiceUpdatedRequest& request, Msec timeout) override;
-    Task<ExecutionPayloadAndValue> get_payload(uint64_t payloadId, Msec timeout) override;
+    Task<ExecutionPayloadAndValue> get_payload(uint64_t payload_id, Msec timeout) override;
     Task<ExecutionPayloadBodies> get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes, Msec timeout) override;
     Task<ExecutionPayloadBodies> get_payload_bodies_by_range(BlockNum start, uint64_t count, Msec timeout) override;
 

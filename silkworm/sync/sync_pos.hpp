@@ -42,7 +42,7 @@ class PoSSync : public ChainSync, public rpc::engine::ExecutionEngine {
     // public interface called by the external PoS client
     Task<rpc::PayloadStatus> new_payload(const rpc::NewPayloadRequest& request, std::chrono::milliseconds timeout) override;
     Task<rpc::ForkChoiceUpdatedReply> fork_choice_updated(const rpc::ForkChoiceUpdatedRequest& request, std::chrono::milliseconds timeout) override;
-    Task<rpc::ExecutionPayloadAndValue> get_payload(uint64_t payloadId, std::chrono::milliseconds timeout) override;
+    Task<rpc::ExecutionPayloadAndValue> get_payload(uint64_t payload_id, std::chrono::milliseconds timeout) override;
     Task<rpc::ExecutionPayloadBodies> get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes, std::chrono::milliseconds timeout) override;
     Task<rpc::ExecutionPayloadBodies> get_payload_bodies_by_range(BlockNum start, uint64_t count, std::chrono::milliseconds timeout) override;
 

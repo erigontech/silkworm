@@ -151,7 +151,7 @@ TEST_CASE("PatternCoveringSearch1") {
 
     PatternCoveringSearch search{
         patterns_tree,
-        [](void* patternScore) { return *reinterpret_cast<uint64_t*>(patternScore); }};
+        [](void* pattern_score) { return *reinterpret_cast<uint64_t*>(pattern_score); }};
 
     {
         auto& result = search.cover_word("0x6c6f6e67"_hex);

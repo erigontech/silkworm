@@ -69,6 +69,8 @@ static const std::array kFailingTests{
     // in the result the non-empty storage remains unchanged.
     // This scenarion don't happen in real networks. The desired behavior for implementations
     // is still being discussed.
+    kBlockchainDir / "GeneralStateTests" / "stCreate2" / "create2collisionStorage.json",
+    kBlockchainDir / "GeneralStateTests" / "stCreate2" / "create2collisionStorageParis.json",
     kBlockchainDir / "GeneralStateTests" / "stCreate2" / "RevertInCreateInInitCreate2.json",
     kBlockchainDir / "GeneralStateTests" / "stCreate2" / "RevertInCreateInInitCreate2Paris.json",
     kBlockchainDir / "GeneralStateTests" / "stRevertTest" / "RevertInCreateInInit.json",

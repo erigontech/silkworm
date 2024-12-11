@@ -380,7 +380,7 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash&
 
     stream.write_field("result");
     stream.open_object();
-    co_await execute(stream, storage, block_num, block, transaction, -1);
+    co_await execute(stream, storage, block_num, block, transaction, /* index */ 0);
     stream.close_object();
 
     co_return;
@@ -471,9 +471,13 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
     co_return;
 }
 
+// used by unit-test
 Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block, const Call& call) {
     rpc::Transaction transaction{call.to_transaction()};
-    co_await execute(stream, storage, block.header.number, block, transaction, -1);
+
+    auto transaction_index = static_cast<std::int32_t>(block.transactions.size());
+
+    co_await execute(stream, storage, block.header.number, block, transaction, transaction_index);
     co_return;
 }
 
@@ -492,15 +496,16 @@ Task<void> DebugExecutor::execute(
 
     const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
-    co_await async_task(workers_.executor(), [&]() {
-        auto state = execution::StateFactory{tx_}.create_state(current_executor, storage, block_num);
-        EVMExecutor executor{block, chain_config, workers_, state};
 
-        for (auto idx{0}; idx < index; ++idx) {
-            silkworm::Transaction txn{block.transactions[static_cast<size_t>(idx)]};
-            executor.call(block, txn);
-        }
-        executor.reset();
+    // We must do the execution at the state after the txn identified by the given index within the given block
+    // at the state after the block identified by the given block_num, i.e. at the start of the next block (block_num + 1)
+    const auto first_txn_num_in_block = co_await tx_.first_txn_num_in_block(block_num + 1);
+
+    co_await async_task(workers_.executor(), [&]() {
+        const auto txn_id = first_txn_num_in_block + 1 + static_cast<uint64_t>(index);  // + 1 for system txn in the beginning of block
+        const auto state = execution::StateFactory{tx_}.create_state_txn(current_executor, storage, txn_id);
+
+        EVMExecutor executor{block, chain_config, workers_, state};
 
         auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
 
@@ -543,15 +548,16 @@ Task<void> DebugExecutor::execute(
 
     const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
-    co_await async_task(workers_.executor(), [&]() {
-        auto state = execution::StateFactory{tx_}.create_state(current_executor, storage, block.header.number);
-        EVMExecutor executor{block, chain_config, workers_, state};
 
-        for (auto idx{0}; idx < transaction_index; ++idx) {
-            silkworm::Transaction txn{block_transactions[static_cast<size_t>(idx)]};
-            executor.call(block, txn);
-        }
-        executor.reset();
+    // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
+    // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
+    const auto first_txn_num_in_block = co_await tx_.first_txn_num_in_block(block.header.number + 1);
+
+    co_await async_task(workers_.executor(), [&]() {
+        const auto txn_id = first_txn_num_in_block + 1 + static_cast<uint64_t>(transaction_index);  // + 1 for system txn in the beginning of block
+
+        auto state = execution::StateFactory{tx_}.create_state_txn(current_executor, storage, txn_id);
+        EVMExecutor executor{block, chain_config, workers_, state};
 
         for (const auto& bundle : bundles) {
             const auto& block_override = bundle.block_override;

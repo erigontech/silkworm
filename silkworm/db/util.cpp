@@ -213,4 +213,8 @@ Bytes code_domain_key(const evmc::address& address) {
     return {address.bytes, kAddressLength};
 }
 
+Bytes topic_domain_key(const evmc::bytes32& topic) {
+    return {topic.bytes, sizeof(topic.bytes)};
+}
+
 }  // namespace silkworm::db

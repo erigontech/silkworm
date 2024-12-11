@@ -438,5 +438,7 @@ inline constexpr const char* kCommitmentHistoryIdx{"CommitmentHistoryIdx"};
 inline constexpr const char* kReceiptHistoryIdx{"ReceiptHistoryIdx"};
 inline constexpr const char* kTracesFromIdx{"TracesFromIdx"};
 inline constexpr const char* kTracesToIdx{"TracesToIdx"};
+inline constexpr const char* kLogAddrIdx{"LogAddrIdx"};
+inline constexpr const char* kLogTopicIdx{"LogTopicIdx"};
 
 }  // namespace silkworm::db::table

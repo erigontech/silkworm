@@ -22,10 +22,8 @@
 #include <vector>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/cli/ip_endpoint_option.hpp>
 #include <silkworm/infra/common/log.hpp>
-
-#include "common.hpp"
-#include "ip_endpoint_option.hpp"
 
 namespace silkworm::cmd::common {
 

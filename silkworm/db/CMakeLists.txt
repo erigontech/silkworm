@@ -17,7 +17,6 @@
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 add_subdirectory(datastore)
-add_subdirectory(test_util)
 
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
@@ -55,5 +54,11 @@ silkworm_library(
   PUBLIC ${LIBS_PUBLIC}
   PRIVATE ${LIBS_PRIVATE}
 )
+
+# silkworm_db_cli depends on silkworm_db
+add_subdirectory(cli)
+
+# silkworm_db_test_util depends on silkworm_db
+add_subdirectory(test_util)
 
 target_link_libraries(silkworm_db_test PRIVATE silkworm_db_test_util silkworm_infra_test_util)

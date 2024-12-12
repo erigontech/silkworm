@@ -22,7 +22,6 @@
 
 #include <CLI/CLI.hpp>
 #include <evmc/evmc.hpp>
-#include <gsl/narrow>
 #include <roaring/roaring.hh>
 
 #include <silkworm/buildinfo.h>
@@ -34,12 +33,11 @@
 #include <silkworm/db/log_cbor.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
+#include <silkworm/infra/cli/common.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
-
-#include "../common/common.hpp"
 
 using Roaring = roaring::Roaring;
 using namespace silkworm;

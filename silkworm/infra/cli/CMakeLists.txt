@@ -14,20 +14,21 @@
    limitations under the License.
 ]]
 
-if(NOT SILKWORM_CORE_ONLY)
-  find_package(CLI11 REQUIRED)
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-  set(COMMON_SRC
-      common.cpp
-      common.hpp
-      human_size_option.cpp
-      human_size_option.hpp
-      ip_endpoint_option.cpp
-      ip_endpoint_option.hpp
-      shutdown_signal.cpp
-      shutdown_signal.hpp
-  )
-  add_library(cmd_common "${COMMON_SRC}")
-  target_link_libraries(cmd_common silkworm-buildinfo CLI11::CLI11 silkworm_infra)
+find_package(Boost REQUIRED COMPONENTS headers)
+find_package(CLI11 REQUIRED)
 
-endif()
+set(LIBS_PUBLIC silkworm_core silkworm_infra Boost::headers CLI11::CLI11)
+
+# cmake-format: off
+set(LIBS_PRIVATE
+    silkworm-buildinfo
+)
+# cmake-format: on
+
+silkworm_library(
+  silkworm_infra_cli
+  PUBLIC ${LIBS_PUBLIC}
+  PRIVATE ${LIBS_PRIVATE}
+)

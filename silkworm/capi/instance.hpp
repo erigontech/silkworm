@@ -22,11 +22,21 @@
 
 #include <boost/asio/cancellation_signal.hpp>
 
-#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
-#include <silkworm/rpc/daemon.hpp>
+#include <silkworm/node/common/node_settings.hpp>
+
+namespace silkworm::snapshots {
+class SnapshotRepository;
+}  // namespace silkworm::snapshots
+
+namespace silkworm::rpc {
+class Daemon;
+}  // namespace silkworm::rpc
+
+namespace silkworm::stagedsync {
+class ExecutionEngine;
+}  // namespace silkworm::stagedsync
 
 struct SilkwormInstance {
     silkworm::log::Settings log_settings;

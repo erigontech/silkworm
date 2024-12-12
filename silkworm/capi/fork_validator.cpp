@@ -17,6 +17,7 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/environment.hpp>
+#include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/stagedsync/stages_factory_impl.hpp>
 

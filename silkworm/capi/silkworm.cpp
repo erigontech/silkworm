@@ -51,6 +51,8 @@
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/execution/block/block_executor.hpp>
+#include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/rpc/daemon.hpp>
 
 #include "common.hpp"
 #include "instance.hpp"

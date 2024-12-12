@@ -17,7 +17,6 @@
 #include "silkworm.h"
 
 #include <cstring>
-#include <iostream>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -28,7 +27,6 @@
 #include <silkworm/db/blocks/transactions/txn_index.hpp>
 #include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/datastore/kvdb/mdbx.hpp>
-#include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>

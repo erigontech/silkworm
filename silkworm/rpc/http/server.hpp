@@ -52,8 +52,6 @@ class Server {
 
     void start();
 
-    void stop();
-
   private:
     static std::tuple<std::string, std::string> parse_endpoint(const std::string& tcp_end_point);
 

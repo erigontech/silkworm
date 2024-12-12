@@ -399,10 +399,6 @@ void Daemon::stop() {
     state_changes_stream_->close();
 
     context_pool_.stop();
-
-    for (auto& service : rpc_services_) {
-        service->stop();
-    }
 }
 
 void Daemon::join() {

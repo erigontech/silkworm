@@ -484,6 +484,7 @@ void forward(datastore::kvdb::EnvConfig& config, BlockNum forward_point, const b
 
     config.readonly = false;
 
+    Environment::set_stop_at_block(forward_point);
     Environment::set_start_at_stage(start_at_stage);
     Environment::set_stop_before_stage(stop_before_stage);
 

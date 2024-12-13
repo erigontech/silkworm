@@ -22,6 +22,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
@@ -180,6 +181,12 @@ Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const BlockNumOrHash&
     } else {
         throw std::invalid_argument("Invalid Block Number or Hash");
     }
+}
+
+Task<BlockNum> BlockReader::get_block_num(const Hash& hash) {
+    auto bn = co_await chain_storage_.read_block_num(hash);
+    ensure(bn != 0, "get_block_num: block with hash not found");
+    co_return *bn;
 }
 
 Task<BlockNum> BlockReader::get_current_block_num() {

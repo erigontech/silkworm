@@ -825,27 +825,27 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
 }
 
 Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
-        kv::api::Transaction& tx,
-        db::chain::CanonicalBodyForStorageProvider& provider,
-        BlockNum block_num_param,
-        const evmc::address& address,
-        db::kv::api::Timestamp from_timestamp,
-        bool ascending, uint64_t page_size) {
+    kv::api::Transaction& tx,
+    db::chain::CanonicalBodyForStorageProvider& provider,
+    BlockNum block_num_param,
+    const evmc::address& address,
+    db::kv::api::Timestamp from_timestamp,
+    bool ascending, uint64_t page_size) {
     const auto key = db::code_domain_key(address);
     db::kv::api::IndexRangeQuery query_to{
-            .table = db::table::kTracesToIdx,
-            .key = key,
-            .from_timestamp = from_timestamp,
-            .to_timestamp = -1,
-            .ascending_order = ascending};
+        .table = db::table::kTracesToIdx,
+        .key = key,
+        .from_timestamp = from_timestamp,
+        .to_timestamp = -1,
+        .ascending_order = ascending};
     auto paginated_result_to = co_await tx.index_range(std::move(query_to));
 
     db::kv::api::IndexRangeQuery query_from{
-            .table = db::table::kTracesFromIdx,
-            .key = key,
-            .from_timestamp = from_timestamp,
-            .to_timestamp = -1,
-            .ascending_order = ascending};
+        .table = db::table::kTracesFromIdx,
+        .key = key,
+        .from_timestamp = from_timestamp,
+        .to_timestamp = -1,
+        .ascending_order = ascending};
     auto paginated_result_from = co_await tx.index_range(std::move(query_from));
 
     auto it_from = co_await paginated_result_from.begin();

@@ -864,10 +864,10 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     std::optional<BlockInfo> block_info;
 
     auto paginated_stream = db::kv::api::set_union(std::move(it_from), std::move(it_to), ascending);
-    auto itr = db::txn::make_txn_nums_stream(std::move(paginated_stream), ascending, tx, provider);
+    auto txn_nums_it = db::txn::make_txn_nums_stream(std::move(paginated_stream), ascending, tx, provider);
     const auto chain_storage = tx.create_storage();
 
-    while (const auto tnx_nums = co_await itr->next()) {
+    while (const auto tnx_nums = co_await txn_nums_it->next()) {
         SILK_DEBUG
             << "txn_id: " << tnx_nums->txn_id
             << " block_num: " << tnx_nums->block_num

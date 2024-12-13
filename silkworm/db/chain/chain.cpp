@@ -31,7 +31,6 @@
 
 namespace silkworm::db::chain {
 
-
 Task<evmc::bytes32> read_head_header_hash(kv::api::Transaction& tx) {
     const auto value = co_await tx.get_one(table::kHeadHeaderName, string_to_bytes(table::kHeadHeaderName));
     if (value.empty()) {

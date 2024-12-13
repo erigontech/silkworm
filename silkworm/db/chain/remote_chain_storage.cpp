@@ -239,5 +239,4 @@ Task<std::optional<Transaction>> RemoteChainStorage::read_transaction_by_idx_in_
     co_return body.transactions[txn_id];
 }
 
-
 }  // namespace silkworm::db::chain

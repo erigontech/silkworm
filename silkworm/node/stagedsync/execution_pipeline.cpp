@@ -171,21 +171,22 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_b
             const auto stage_result = current_stage_->second->forward(cycle_txn);
 
             if (stage_result != Stage::Result::kSuccess) { /* clang-format off */
-                auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
-                log::Error(get_log_prefix(current_stage_name), {"op", "Forward", "returned", result_description});
-                SILK_ERROR_M("ExecutionPipeline") << "Forward interrupted due to stage " << current_stage_->first << " failure";
+                const auto result_description = std::string(magic_enum::enum_name<Stage::Result>(stage_result));
+                SILK_ERROR_M(get_log_prefix(current_stage_name), {"op", "Forward", "failure", result_description});
                 return stage_result;
             } /* clang-format on */
 
-            auto stage_head_number = read_stage_progress(cycle_txn, current_stage_name.data());
-            if (!stop_at_block && stage_head_number != target_block_num) {
-                throw std::logic_error("Sync pipeline: stage returned success with an block_num different from target=" +
-                                       to_string(target_block_num) + " reached= " + to_string(stage_head_number));
+            const auto stage_head_number = read_stage_progress(cycle_txn, current_stage_name.data());
+            if (!stop_at_block && stage_head_number != target_block_num && current_stage_name != kTriggersStageKey) {
+                SILK_ERROR_M(get_log_prefix(current_stage_name),
+                             {"op", "Forward", "target", to_string(target_block_num), "reached", to_string(stage_head_number)});
+                throw std::logic_error("stage returned success with an block_num different from target=" +
+                                       to_string(target_block_num) + " reached=" + to_string(stage_head_number));
             }
 
-            auto [_, stage_duration] = stages_stop_watch.lap();
+            const auto [_, stage_duration] = stages_stop_watch.lap();
             if (stage_duration > kStageDurationThresholdForLog) {
-                log::Info(get_log_prefix(current_stage_name), {"op", "Forward", "done", StopWatch::format(stage_duration)});
+                SILK_INFO_M(get_log_prefix(current_stage_name), {"op", "Forward", "done", StopWatch::format(stage_duration)});
             }
         }
 

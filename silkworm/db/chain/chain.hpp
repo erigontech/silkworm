@@ -31,7 +31,7 @@ namespace silkworm::db::chain {
 
 using Transactions = std::vector<silkworm::Transaction>;
 
-Task<std::optional<intx::uint256>> read_total_difficulty(kv::api::Transaction& tx, const evmc::bytes32& block_hash, BlockNum block_num);
+// Task<std::optional<intx::uint256>> read_total_difficulty(kv::api::Transaction& tx, const evmc::bytes32& block_hash, BlockNum block_num);
 
 Task<evmc::bytes32> read_head_header_hash(kv::api::Transaction& tx);
 

@@ -31,22 +31,6 @@
 
 namespace silkworm::db::chain {
 
-Task<std::optional<intx::uint256>> read_total_difficulty(kv::api::Transaction& tx, const evmc::bytes32& block_hash, uint64_t block_num) {
-    const auto block_key = db::block_key(block_num, block_hash.bytes);
-    SILK_TRACE << "read_total_difficulty block_key: " << to_hex(block_key);
-    const auto result{co_await tx.get_one(table::kDifficultyName, block_key)};
-    if (result.empty()) {
-        co_return std::nullopt;
-    }
-    ByteView value{result};
-    intx::uint256 total_difficulty{0};
-    auto decoding_result{rlp::decode(value, total_difficulty)};
-    if (!decoding_result) {
-        throw std::runtime_error{"cannot RLP-decode total difficulty value in read_total_difficulty"};
-    }
-    SILK_DEBUG << "read_total_difficulty canonical total difficulty: " << total_difficulty;
-    co_return total_difficulty;
-}
 
 Task<evmc::bytes32> read_head_header_hash(kv::api::Transaction& tx) {
     const auto value = co_await tx.get_one(table::kHeadHeaderName, string_to_bytes(table::kHeadHeaderName));

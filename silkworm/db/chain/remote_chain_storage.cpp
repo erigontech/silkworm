@@ -204,7 +204,20 @@ Task<bool> RemoteChainStorage::read_rlp_transaction(const evmc::bytes32& /*txn_h
 }
 
 Task<std::optional<intx::uint256>> RemoteChainStorage::read_total_difficulty(const Hash& hash, BlockNum block_num) const {
-    co_return co_await db::chain::read_total_difficulty(tx_, hash, block_num);
+    const auto block_key = db::block_key(block_num, hash.bytes);
+    SILK_TRACE << "read_total_difficulty block_key: " << to_hex(block_key);
+    const auto result{co_await tx_.get_one(table::kDifficultyName, block_key)};
+    if (result.empty()) {
+        co_return std::nullopt;
+    }
+    ByteView value{result};
+    intx::uint256 total_difficulty{0};
+    auto decoding_result{rlp::decode(value, total_difficulty)};
+    if (!decoding_result) {
+        throw std::runtime_error{"cannot RLP-decode total difficulty value in read_total_difficulty"};
+    }
+    SILK_DEBUG << "read_total_difficulty canonical total difficulty: " << total_difficulty;
+    co_return total_difficulty;
 }
 
 Task<std::optional<BlockNum>> RemoteChainStorage::read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
@@ -225,5 +238,6 @@ Task<std::optional<Transaction>> RemoteChainStorage::read_transaction_by_idx_in_
     }
     co_return body.transactions[txn_id];
 }
+
 
 }  // namespace silkworm::db::chain

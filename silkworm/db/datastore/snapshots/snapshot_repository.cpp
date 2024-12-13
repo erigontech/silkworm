@@ -67,12 +67,6 @@ size_t SnapshotRepository::bundles_count() const {
     return bundles_->size();
 }
 
-void SnapshotRepository::close() {
-    SILK_TRACE << "Close snapshot repository folder: " << dir_path_.string();
-    std::scoped_lock lock(*bundles_mutex_);
-    bundles_ = std::make_shared<Bundles>();
-}
-
 BlockNum SnapshotRepository::max_block_available() const {
     Step end_step = max_end_step();
     if (end_step.value == 0) return 0;

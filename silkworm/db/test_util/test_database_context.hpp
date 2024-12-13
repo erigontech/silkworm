@@ -66,10 +66,7 @@ class TestDataStore : public TestDatabaseContext {
         : TestDatabaseContext{tmp_dir},
           data_store_{
               move_env(),
-              blocks::make_blocks_repository(
-                  DataDirectory{tmp_dir.path(), true}.snapshots().path()),
-              state::make_state_repository(
-                  DataDirectory{tmp_dir.path(), false}.snapshots().path()),
+              DataDirectory{tmp_dir.path(), true}.snapshots().path(),
           } {}
     ~TestDataStore() override = default;
 
@@ -77,10 +74,10 @@ class TestDataStore : public TestDatabaseContext {
     db::DataStore* operator->() { return &data_store_; }
 
     datastore::kvdb::ROAccess chaindata() const override {
-        return data_store_.chaindata();
+        return data_store_.chaindata().access_ro();
     }
     datastore::kvdb::RWAccess chaindata_rw() const override {
-        return data_store_.chaindata_rw();
+        return data_store_.chaindata().access_rw();
     }
 
     db::DataModelFactory data_model_factory() {

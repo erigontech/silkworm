@@ -60,7 +60,6 @@ class SnapshotRepository {
     const Schema::RepositoryDef& schema() const { return schema_; };
 
     void reopen_folder();
-    void close();
 
     void add_snapshot_bundle(SnapshotBundle bundle);
 

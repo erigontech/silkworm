@@ -315,9 +315,9 @@ int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, const 
 
     // Execute blocks
     if (settings.use_internal_txn) {
-        return execute_with_internal_txn(handle, settings, data_store.chaindata_rw());
+        return execute_with_internal_txn(handle, settings, data_store.chaindata().access_rw());
     }
-    return execute_with_external_txn(handle, settings, data_store.chaindata_rw().start_rw_tx());
+    return execute_with_external_txn(handle, settings, data_store.chaindata().access_rw().start_rw_tx());
 }
 
 int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, const DataDirectory& data_dir) {

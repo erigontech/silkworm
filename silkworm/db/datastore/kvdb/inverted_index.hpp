@@ -16,12 +16,13 @@
 
 #pragma once
 
-#include "snapshots/history.hpp"
+#include "mdbx.hpp"
 
-namespace silkworm::datastore {
+namespace silkworm::datastore::kvdb {
 
-struct History {
-    snapshots::History snapshots;
+struct InvertedIndex {
+    const MapConfig& keys_table;
+    const MapConfig& index_table;
 };
 
-}  // namespace silkworm::datastore
+}  // namespace silkworm::datastore::kvdb

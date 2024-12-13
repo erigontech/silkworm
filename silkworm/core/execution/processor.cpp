@@ -180,6 +180,31 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         receipt.logs.emplace_back(Log{addr, std::move(topics), std::move(data)});
     receipt.bloom = logs_bloom(receipt.logs);
 
+    if (evm1_v2_) {
+        // Apply the state diff produced by evmone APIv2 to the state and skip the Silkworm execution.
+        const auto& state_diff = evm1_receipt.state_diff;
+        for (const auto& m : state_diff.modified_accounts) {
+            if (!m.code.empty()) {
+                state_.create_contract(m.addr);
+                state_.set_code(m.addr, m.code);
+            }
+
+            auto& acc = state_.get_or_create_object(m.addr);
+            acc.current->nonce = m.nonce;
+            acc.current->balance = m.balance;
+
+            auto& storage = state_.storage_[m.addr];
+            for (const auto& [k, v] : m.modified_storage) {
+                storage.committed[k].original = v;
+            }
+        }
+
+        for (const auto& a : state_diff.deleted_accounts) {
+            state_.destruct(a);
+        }
+        return;
+    }
+
     state_.clear_journal_and_substate();
 
     const std::optional<evmc::address> sender{txn.sender()};

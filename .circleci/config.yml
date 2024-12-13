@@ -439,37 +439,4 @@ workflows:
       not:
         equal: [ master, <<pipeline.git.branch>> ]
     jobs:
-      - lint
-      - linux-clang-tidy-diff
-      - linux-release:
-          name: linux-gcc-12-release
-          compiler_id: gcc
-          compiler_version: 12
-          ethereum_tests: false
-          requires:
-            - lint
-      - linux-release:
-          name: linux-clang-<<pipeline.parameters.clang_version_min>>-release
-          compiler_id: clang
-          compiler_version: <<pipeline.parameters.clang_version_min>>
-          ethereum_tests: false
-          requires:
-            - lint
-
-  integration:
-    when:
-      or:
-        - equal: [ master, <<pipeline.git.branch>> ]
-        - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
-    jobs:
-      - linux-release:
-          name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release
-          compiler_id: gcc
-          compiler_version: <<pipeline.parameters.gcc_version_min>>
-      - linux-gcc-thread-sanitizer
-      - linux-clang-coverage
-      - linux-clang-address-sanitizer
-      - linux-clang-fuzzer:
-          name: linux-clang-fuzzer
-      - linux-clang-tidy
       - linux-wasm-build

@@ -61,6 +61,8 @@ class BlockReader {
 
     Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumOrHash& block_num_or_hash);
 
+    Task<BlockNum> get_block_num(const Hash& hash);
+
     Task<BlockNum> get_current_block_num();
 
     Task<BlockNum> get_max_block_num();

@@ -57,28 +57,6 @@ struct ChainTest : public silkworm::test_util::ContextTestBase {
     test_util::MockTransaction transaction;
 };
 
-TEST_CASE_METHOD(ChainTest, "read_header_number") {
-    SECTION("existent hash") {
-        EXPECT_CALL(transaction, get_one(table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> { co_return kNumber; }));
-        const evmc::bytes32 block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
-        const auto header_number = spawn_and_wait(read_header_number(transaction, block_hash));
-        CHECK(header_number == 4'000'000);
-    }
-
-    SECTION("non-existent hash") {
-        EXPECT_CALL(transaction, get_one(table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
-            co_return Bytes{};
-        }));
-        const evmc::bytes32 block_hash{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
-        auto result = spawn(read_header_number(transaction, block_hash));
-#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
-        CHECK_THROWS_AS(result.get(), std::invalid_argument);
-#else
-        CHECK_THROWS_MATCHES(result.get(), std::invalid_argument, Message("empty block number value in read_header_number"));
-#endif  // SILKWORM_SANITIZE
-    }
-}
-
 TEST_CASE_METHOD(ChainTest, "read_total_difficulty") {
     SECTION("empty RLP buffer") {
         EXPECT_CALL(transaction, get_one(table::kDifficultyName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {

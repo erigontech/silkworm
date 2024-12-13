@@ -46,7 +46,7 @@ Task<std::pair<BlockNum, BlockNum>> LogsWalker::get_block_nums(const Filter& fil
             start = end = std::numeric_limits<uint64_t>::max();
         } else {
             auto block_hash = silkworm::to_bytes32(block_hash_bytes.value());
-            auto block_num = co_await read_header_number(tx_, block_hash);
+            auto block_num = co_await block_reader_.get_block_num(block_hash);
             start = end = block_num;
         }
     } else {

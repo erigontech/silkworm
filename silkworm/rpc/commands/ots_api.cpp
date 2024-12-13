@@ -825,27 +825,27 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
 }
 
 Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
-    kv::api::Transaction& tx,
-    db::chain::CanonicalBodyForStorageProvider& provider,
-    BlockNum block_num_param,
-    const evmc::address& address,
-    db::kv::api::Timestamp from_timestamp,
-    bool ascending, uint64_t page_size) {
+        kv::api::Transaction& tx,
+        db::chain::CanonicalBodyForStorageProvider& provider,
+        BlockNum block_num_param,
+        const evmc::address& address,
+        db::kv::api::Timestamp from_timestamp,
+        bool ascending, uint64_t page_size) {
     const auto key = db::code_domain_key(address);
     db::kv::api::IndexRangeQuery query_to{
-        .table = db::table::kTracesToIdx,
-        .key = key,
-        .from_timestamp = from_timestamp,
-        .to_timestamp = -1,
-        .ascending_order = ascending};
+            .table = db::table::kTracesToIdx,
+            .key = key,
+            .from_timestamp = from_timestamp,
+            .to_timestamp = -1,
+            .ascending_order = ascending};
     auto paginated_result_to = co_await tx.index_range(std::move(query_to));
 
     db::kv::api::IndexRangeQuery query_from{
-        .table = db::table::kTracesFromIdx,
-        .key = key,
-        .from_timestamp = from_timestamp,
-        .to_timestamp = -1,
-        .ascending_order = ascending};
+            .table = db::table::kTracesFromIdx,
+            .key = key,
+            .from_timestamp = from_timestamp,
+            .to_timestamp = -1,
+            .ascending_order = ascending};
     auto paginated_result_from = co_await tx.index_range(std::move(query_from));
 
     auto it_from = co_await paginated_result_from.begin();
@@ -862,49 +862,36 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
 
     std::map<std::string, Receipt> receipts;
     std::optional<BlockInfo> block_info;
-    auto block_num_changed = false;
 
-    auto it = db::kv::api::set_union(std::move(it_from), std::move(it_to), ascending);
+    auto paginated_stream = db::kv::api::set_union(std::move(it_from), std::move(it_to), ascending);
+    auto itr = db::txn::make_txn_nums_stream(std::move(paginated_stream), ascending, tx, provider);
     const auto chain_storage = tx.create_storage();
 
-    while (const auto value = co_await it->next()) {
-        const auto txn_id = static_cast<TxnId>(*value);
-        const auto block_num_opt = co_await db::txn::block_num_from_tx_num(tx, txn_id, provider);
-        if (!block_num_opt) {
-            SILK_DEBUG << "No block found for txn_id " << txn_id;
-            break;
-        }
-        const auto block_num = block_num_opt.value();
-        const auto max_txn_id = co_await db::txn::max_tx_num(tx, block_num, provider);
-        const auto min_txn_id = co_await db::txn::min_tx_num(tx, block_num, provider);
-        const auto txn_index = txn_id - min_txn_id - 1;
+    while (const auto tnx_nums = co_await itr->next()) {
         SILK_DEBUG
-            << "txn_id: " << txn_id
-            << " block_num: " << block_num
-            << ", txn_index: " << txn_index
-            << ", max_txn_id: " << max_txn_id
-            << ", min_txn_id: " << min_txn_id
-            << ", final txn: " << (txn_id == max_txn_id)
-            << ", ascending: " << ascending;
+            << "txn_id: " << tnx_nums->txn_id
+            << " block_num: " << tnx_nums->block_num
+            << ", txn_index: " << tnx_nums->txn_index
+            << ", final txn: " << tnx_nums->final_txn
+            << ", ascending: " << std::boolalpha << ascending;
 
-        if (txn_id == max_txn_id) {
+        if (tnx_nums->final_txn) {
             continue;
         }
 
-        block_num_changed = false;
-        if (block_info && (block_info->block_num != block_num)) {
+        if (tnx_nums->block_changed) {
             block_info.reset();
         }
 
         if (!block_info) {
-            const auto block_with_hash = co_await rpc::core::read_block_by_number(*block_cache_, *chain_storage, block_num);
+            const auto block_with_hash = co_await rpc::core::read_block_by_number(*block_cache_, *chain_storage, tnx_nums->block_num);
             if (!block_with_hash) {
-                SILK_DEBUG << "Not found block no.  " << block_num;
+                SILK_DEBUG << "Not found block no.  " << tnx_nums->block_num;
                 co_return results;
             }
 
             auto rr = co_await core::get_receipts(tx, *block_with_hash, *chain_storage, workers_);
-            SILK_DEBUG << "Read #" << rr.size() << " receipts from block " << block_num;
+            SILK_DEBUG << "Read #" << rr.size() << " receipts from block " << tnx_nums->block_num;
 
             std::for_each(rr.begin(), rr.end(), [&receipts](const auto& item) {
                 receipts[silkworm::to_hex(item.tx_hash, false)] = std::move(item);
@@ -916,10 +903,8 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
                                              block_with_hash->block.transactions.size(), block_with_hash->block.ommers,
                                              block_with_hash->block.withdrawals};
             block_info = BlockInfo{block_with_hash->block.header.number, block_details};
-            block_num_changed = true;
         }
-
-        if (results.transactions.size() >= page_size && block_num_changed) {
+        if (results.transactions.size() >= page_size && tnx_nums->block_changed) {
             if (ascending) {
                 results.first_page = false;
             } else {
@@ -928,9 +913,9 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
             break;
         }
 
-        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_num, txn_index);
+        const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
         if (!transaction) {
-            SILK_DEBUG << "No transaction found in block " << block_num << " for index " << txn_index;
+            SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index;
             co_return results;
         }
         results.receipts.push_back(std::move(receipts.at(silkworm::to_hex(transaction.value().hash(), false))));

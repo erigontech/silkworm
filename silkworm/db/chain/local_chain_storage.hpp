@@ -69,6 +69,8 @@ class LocalChainStorage : public ChainStorage {
     Task<std::optional<BlockNum>> read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const override;
     Task<std::optional<Transaction>> read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_id) const override;
 
+    Task<std::pair<std::optional<BlockHeader>, std::optional<Hash>>> read_head_header_and_hash() const override;
+
   private:
     db::DataModel data_model_;
 };

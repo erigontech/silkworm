@@ -26,8 +26,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 
-#include "chain.hpp"
-
 namespace silkworm::db::chain {
 
 RemoteChainStorage::RemoteChainStorage(kv::api::Transaction& tx, Providers providers)
@@ -253,7 +251,7 @@ Task<std::pair<std::optional<BlockHeader>, std::optional<Hash>>> RemoteChainStor
 
     const Hash hash{head_header_hash};
 
-    co_return {std::move(header), hash};
+    co_return std::pair{std::move(header), hash};
 }
 
 }  // namespace silkworm::db::chain

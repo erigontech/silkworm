@@ -122,7 +122,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         // Lookup the first and last block headers
         const auto first_header = co_await chain_storage->read_canonical_header(kEarliestBlockNum);
         ensure(first_header.has_value(), "cannot find earliest header");
-        auto [current_header, head_header_hash] = co_await chain_storage->read_head_header_and_hash();
+        const auto [current_header, head_header_hash] = co_await chain_storage->read_head_header_and_hash();
         ensure(current_header.has_value(), "cannot find head header");
         const BlockNum current_block_num = current_header->number;
 

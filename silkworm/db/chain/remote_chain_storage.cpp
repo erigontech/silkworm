@@ -249,9 +249,9 @@ Task<std::pair<std::optional<BlockHeader>, std::optional<Hash>>> RemoteChainStor
 
     auto header = co_await read_header(head_header_hash);
 
-    const Hash hash{head_header_hash};
+    Hash header_hash{head_header_hash};
 
-    co_return std::pair{std::move(header), hash};
+    co_return std::pair{std::move(header), std::move(header_hash)};
 }
 
 }  // namespace silkworm::db::chain

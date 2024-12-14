@@ -64,7 +64,7 @@ class CallExecutor {
                                         const Bundles& bundles,
                                         std::optional<std::uint64_t> opt_timeout,
                                         const AccountsOverrides& accounts_overrides,
-                                        int32_t transaction_index,
+                                        TxnId txn_id,
                                         boost::asio::any_io_executor& executor);
 
   private:

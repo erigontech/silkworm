@@ -22,7 +22,6 @@
 
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/chain/chain.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>

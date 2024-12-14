@@ -19,12 +19,12 @@
 #include <utility>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
-
-#include "chain.hpp"
 
 namespace silkworm::db::chain {
 
@@ -237,6 +237,21 @@ Task<std::optional<Transaction>> RemoteChainStorage::read_transaction_by_idx_in_
         co_return std::nullopt;
     }
     co_return body.transactions[txn_id];
+}
+
+Task<std::pair<std::optional<BlockHeader>, std::optional<Hash>>> RemoteChainStorage::read_head_header_and_hash() const {
+    const auto value = co_await tx_.get_one(table::kHeadHeaderName, string_to_bytes(table::kHeadHeaderName));
+    if (value.empty()) {
+        throw std::runtime_error{"empty head header hash value in read_head_header_hash"};
+    }
+    const auto head_header_hash{to_bytes32(value)};
+    SILK_DEBUG << "head header hash: " << to_hex(head_header_hash);
+
+    auto header = co_await read_header(head_header_hash);
+
+    Hash header_hash{head_header_hash};
+
+    co_return std::pair{std::move(header), std::move(header_hash)};
 }
 
 }  // namespace silkworm::db::chain

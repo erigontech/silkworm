@@ -22,7 +22,6 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-#include <silkworm/db/chain/chain.hpp>
 #include <silkworm/infra/common/async_binary_search.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -123,10 +122,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         // Lookup the first and last block headers
         const auto first_header = co_await chain_storage->read_canonical_header(kEarliestBlockNum);
         ensure(first_header.has_value(), "cannot find earliest header");
-        const auto head_header_hash = co_await db::chain::read_head_header_hash(*tx);
-        const auto head_header_block_num = co_await chain_storage->read_block_num(head_header_hash);
-        ensure(head_header_block_num.has_value(), "cannot find head header hash");
-        const auto current_header = co_await chain_storage->read_header(*head_header_block_num, head_header_hash);
+        const auto [current_header, head_header_hash] = co_await chain_storage->read_head_header_and_hash();
         ensure(current_header.has_value(), "cannot find head header");
         const BlockNum current_block_num = current_header->number;
 

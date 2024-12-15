@@ -1618,7 +1618,7 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
     // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
     // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
     execution::StateFactory state_factory{tx_};
-    auto txn_id = co_await state_factory.get_txn_id(block_num - 1, static_cast<uint32_t>(transaction_with_block.transaction.transaction_index));
+    auto txn_id = co_await state_factory.get_txn_id(block_num - 1, gsl::narrow<uint32_t>(transaction_with_block.transaction.transaction_index));
 
     const auto trace_result = co_await async_task(workers_.executor(), [&]() -> TraceEntriesResult {
         auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
@@ -1647,7 +1647,7 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
     // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
     // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
     execution::StateFactory state_factory{tx_};
-    auto txn_id = co_await state_factory.get_txn_id(block_num, transaction_with_block.transaction.transaction_index);
+    auto txn_id = co_await state_factory.get_txn_id(block_num, gsl::narrow<uint32_t>(transaction_with_block.transaction.transaction_index));
 
     const auto trace_error = co_await async_task(workers_.executor(), [&]() -> std::string {
         auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
@@ -1680,7 +1680,7 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
     // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
     // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
     execution::StateFactory state_factory{tx_};
-    auto txn_id = co_await state_factory.get_txn_id(block_num - 1, static_cast<uint64_t>(transaction_with_block.transaction.transaction_index));
+    auto txn_id = co_await state_factory.get_txn_id(block_num - 1, gsl::narrow<uint32_t>(transaction_with_block.transaction.transaction_index));
 
     const auto trace_op_result = co_await async_task(workers_.executor(), [&]() -> TraceOperationsResult {
         auto state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, txn_id);
@@ -1813,7 +1813,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
     // We must do the execution at the state after the txn identified by the given index within the given block
     // at the state after the block identified by the given block_num, i.e. at the start of the next block (block_num + 1)
     execution::StateFactory state_factory{tx_};
-    auto txn_id = co_await state_factory.get_txn_id(block_num, gsl::narrow<TxnId>(transaction.transaction_index));
+    auto txn_id = co_await state_factory.get_txn_id(block_num, gsl::narrow<uint32_t>(transaction.transaction_index));
     auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
     auto curr_state = state_factory.create_state(current_executor, chain_storage_, txn_id);
     const auto trace_call_result = co_await async_task(workers_.executor(), [&]() -> TraceCallResult {

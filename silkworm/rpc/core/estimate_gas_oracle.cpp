@@ -79,8 +79,12 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     SILK_DEBUG << "hi: " << hi << ", lo: " << lo << ", cap: " << cap;
 
     auto this_executor = co_await boost::asio::this_coro::executor;
+
+    execution::StateFactory state_factory{transaction_};
+    auto txn_id = co_await state_factory.get_txn_id(block_num);
+
     auto exec_result = co_await async_task(workers_.executor(), [&]() -> ExecutionResult {
-        auto state = execution::StateFactory{transaction_}.create_state(this_executor, storage_, block_num);
+        auto state = execution::StateFactory{transaction_}.create_state(this_executor, storage_, txn_id);
 
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
         silkworm::Transaction transaction{call.to_transaction()};

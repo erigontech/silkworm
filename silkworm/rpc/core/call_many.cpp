@@ -44,7 +44,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
                                                   boost::asio::any_io_executor& this_executor) {
     CallManyResult result;
     const auto& block = block_with_hash->block;
-    auto state = execution::StateFactory{transaction_}.create_state_txn(this_executor, storage, txn_id);
+    auto state = execution::StateFactory{transaction_}.create_state(this_executor, storage, txn_id);
     EVMExecutor executor{block, config, workers_, std::make_shared<state::OverrideState>(*state, accounts_overrides)};
 
     std::uint64_t timeout = opt_timeout.value_or(5000);

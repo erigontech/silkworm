@@ -434,8 +434,12 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
 
     const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
+
+    execution::StateFactory state_factory{tx_};
+    auto txn_id = co_await state_factory.get_txn_id(block_num - 1);
+
     co_await async_task(workers_.executor(), [&]() -> void {
-        auto state = execution::StateFactory{tx_}.create_state(current_executor, storage, block_num - 1);
+        auto state = state_factory.create_state(current_executor, storage, txn_id);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         for (std::uint64_t idx = 0; idx < transactions.size(); ++idx) {
@@ -499,11 +503,11 @@ Task<void> DebugExecutor::execute(
 
     // We must do the execution at the state after the txn identified by the given index within the given block
     // at the state after the block identified by the given block_num, i.e. at the start of the next block (block_num + 1)
-    const auto first_txn_num_in_block = co_await tx_.first_txn_num_in_block(block_num + 1);
+    execution::StateFactory state_factory{tx_};
+    auto txn_id = co_await state_factory.get_txn_id(block_num, static_cast<uint32_t>(index));
 
     co_await async_task(workers_.executor(), [&]() {
-        const auto txn_id = first_txn_num_in_block + 1 + static_cast<uint64_t>(index);  // + 1 for system txn in the beginning of block
-        const auto state = execution::StateFactory{tx_}.create_state_txn(current_executor, storage, txn_id);
+        const auto state = state_factory.create_state(current_executor, storage, txn_id);
 
         EVMExecutor executor{block, chain_config, workers_, state};
 
@@ -551,12 +555,11 @@ Task<void> DebugExecutor::execute(
 
     // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
     // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
-    const auto first_txn_num_in_block = co_await tx_.first_txn_num_in_block(block.header.number + 1);
+    execution::StateFactory state_factory{tx_};
+    auto txn_id = co_await state_factory.get_txn_id(block.header.number, static_cast<uint32_t>(transaction_index));
 
     co_await async_task(workers_.executor(), [&]() {
-        const auto txn_id = first_txn_num_in_block + 1 + static_cast<uint64_t>(transaction_index);  // + 1 for system txn in the beginning of block
-
-        auto state = execution::StateFactory{tx_}.create_state_txn(current_executor, storage, txn_id);
+        auto state = state_factory.create_state(current_executor, storage, txn_id);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         for (const auto& bundle : bundles) {

@@ -1222,8 +1222,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
 
     SECTION("callMany: failed with intrinsic gas too low") {
         EXPECT_CALL(transaction, first_txn_num_in_block(5'405'096)).Times(1).WillRepeatedly(Invoke([]() -> Task<TxnId> {
-           co_return 244087591818873;
-         }));
+            co_return 244087591818873;
+        }));
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
                 co_return kZeroHeaderHash;

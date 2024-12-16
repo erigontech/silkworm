@@ -212,10 +212,9 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     logs_.push_back(log);
 }
 
-void DebugTracer::on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
+void DebugTracer::on_precompiled_run(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     SILK_DEBUG << "DebugTracer::on_precompiled_run:"
-               << " status: " << result.status_code
-               << ", gas: " << std::dec << gas;
+               << " status: " << result.status_code;
 
     if (logs_.size() > 1) {
         flush_logs();

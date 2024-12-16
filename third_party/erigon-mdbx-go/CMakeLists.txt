@@ -15,7 +15,20 @@
 ]]
 
 set(MDBX_ENABLE_TESTS OFF)
+
+# reduce the log verbosity of mdbx-go/mdbxdist/CMakeLists.txt
+if(NOT CMAKE_MESSAGE_LOG_LEVEL)
+  set(CMAKE_MESSAGE_LOG_LEVEL_EMPTY YES)
+  set(CMAKE_MESSAGE_LOG_LEVEL NOTICE)
+endif()
+
 add_subdirectory(mdbx-go/mdbxdist)
+
+# restore the log verbosity
+if(CMAKE_MESSAGE_LOG_LEVEL_EMPTY)
+  unset(CMAKE_MESSAGE_LOG_LEVEL)
+endif()
+
 target_compile_definitions(mdbx-static PUBLIC CONSTEXPR_ASSERT=assert)
 
 if(MDBX_BUILD_TOOLS)

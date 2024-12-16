@@ -28,7 +28,7 @@ runs:
     - name: Preinstall Conan packages
       shell: bash
       working-directory: ${{runner.workspace}}/silkworm
-      run: CC=clang-16 CXX=clang++-16 conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/experimental/linux_x64_clang_16_release .
+      run: CC=clang-16 CXX=clang++-16 conan install --output-folder=build/conan --build=missing --profile:all=cmake/profiles/experimental/linux_x64_clang_16_release .
 
     - name: Configure CMake
       shell: bash

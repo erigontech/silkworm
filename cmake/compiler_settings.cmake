@@ -89,16 +89,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
     link_libraries(c++abi)
   endif()
 
-  # cmake-format: off
-  # abseil in conan is prebuilt with clang 13 (see profiles),
-  # linking absl::log with clang 18+ produces an error due to an ABI change:
-  # https://github.com/abseil/abseil-cpp/issues/1747
-  # https://github.com/llvm/llvm-project/issues/102443
-  # cmake-format: on
-  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 18)
-    add_compile_options(-fclang-abi-compat=17)
-  endif()
-
 else()
   message(WARNING "${CMAKE_CXX_COMPILER_ID} is not a supported compiler. Use at your own risk.")
 endif()

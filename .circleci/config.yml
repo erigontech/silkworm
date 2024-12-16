@@ -85,7 +85,7 @@ commands:
       - run:
           name: "Install Conan"
           command: |
-            pip3 install --user --no-warn-script-location conan==1.64.1
+            pip3 install --user --no-warn-script-location conan==2.10.2
             conan_path="$(python3 -m site --user-base)/bin"
             echo "export \"PATH=$conan_path:\$PATH\"" >> "$BASH_ENV"
             "$conan_path/conan" --version
@@ -109,7 +109,7 @@ commands:
           command: |
             if [[ "<<parameters.compiler_id>>" == "clang" ]]
             then
-                conan_profile=linux_x64_clang_13_release
+                conan_profile=linux_x64_clang_16_release
             else
                 conan_profile=linux_x64_gcc_11_release
             fi
@@ -128,7 +128,7 @@ commands:
           name: "Save Conan cache"
           key: *conan-cache-key
           paths:
-            - ~/.conan
+            - ~/.conan2
 
   build_fuzzer:
     steps:
@@ -146,7 +146,7 @@ commands:
       - run:
           name: "CMake Fuzzer"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
+          command: cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
       - run:
           name: "Build Fuzzer"
           command: |

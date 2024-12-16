@@ -155,7 +155,7 @@ Task<CallManyResult> CallExecutor::execute(
         context.transaction_index == -1 ? block_with_hash->block.transactions.size() : static_cast<uint64_t>(context.transaction_index);
 
     auto this_executor = co_await boost::asio::this_coro::executor;
-    const auto min_tx_num = co_await transaction_.first_txn_num_in_block(block_with_hash->block.header.number + 1);
+    const auto min_tx_num = co_await transaction_.first_txn_num_in_block(block_with_hash->block.header.number);
     const auto txn_id = min_tx_num + transaction_index + 1;  // for system txn in the beginning of block
     result = co_await async_task(workers_.executor(), [&]() -> CallManyResult {
         return executes_all_bundles(chain_config,

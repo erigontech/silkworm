@@ -99,7 +99,6 @@ struct VmTrace;
 
 struct TraceOp {
     int64_t gas_cost{0};
-    std::optional<int64_t> precompiled_call_gas;
     std::optional<int64_t> call_gas_cap;
     std::optional<TraceEx> trace_ex;
     std::string idx;
@@ -150,7 +149,7 @@ class VmTraceTracer : public silkworm::EvmTracer {
                               const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_pre_check_failed(const evmc_result& result, const evmc_message& msg) noexcept override;
-    void on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& intra_block_state) noexcept override;
+    void on_precompiled_run(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
 
   private:
     VmTrace& vm_trace_;

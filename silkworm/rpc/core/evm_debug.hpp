@@ -85,8 +85,7 @@ class DebugTracer : public EvmTracer {
                               const evmone::ExecutionState& execution_state,
                               const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_precompiled_run(const evmc_result& result, int64_t gas,
-                            const silkworm::IntraBlockState& intra_block_state) noexcept override;
+    void on_precompiled_run(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
 
     void flush_logs();
 

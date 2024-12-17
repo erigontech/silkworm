@@ -47,7 +47,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
     auto state = execution::StateFactory{transaction_}.create_state(this_executor, storage, txn_id);
     EVMExecutor executor{block, config, workers_, std::make_shared<state::OverrideState>(*state, accounts_overrides)};
 
-    std::uint64_t timeout = opt_timeout.value_or(5000);
+    uint64_t timeout = opt_timeout.value_or(5000);
     const auto start_time = clock_time::now();
 
     // Don't call reserve here to preallocate result.results - since json value is dynamic it doesn't know yet how much it should allocate!
@@ -132,7 +132,7 @@ Task<CallManyResult> CallExecutor::execute(
     std::optional<std::uint64_t> timeout) {
     const auto chain_storage{transaction_.create_storage()};
 
-    std::uint16_t count{0};
+    uint16_t count{0};
     bool empty = true;
     for (const auto& bundle : bundles) {
         SILK_DEBUG << "bundle[" << count++ << "]: " << bundle;
@@ -151,14 +151,12 @@ Task<CallManyResult> CallExecutor::execute(
     if (!block_with_hash) {
         throw std::invalid_argument("read_block_by_block_num_or_hash: block not found");
     }
-    auto transaction_index = context.transaction_index;
-    if (transaction_index == -1) {
-        transaction_index = static_cast<std::int32_t>(block_with_hash->block.transactions.size());
-    }
+    const uint64_t transaction_index =
+        context.transaction_index == -1 ? block_with_hash->block.transactions.size() : static_cast<uint64_t>(context.transaction_index);
 
     auto this_executor = co_await boost::asio::this_coro::executor;
-    const auto min_tx_num = co_await transaction_.first_txn_num_in_block(block_with_hash->block.header.number + 1);
-    const auto txn_id = min_tx_num + static_cast<long unsigned int>(transaction_index) + 1;  // for system txn in the beginning of block
+    const auto min_tx_num = co_await transaction_.first_txn_num_in_block(block_with_hash->block.header.number);
+    const auto txn_id = min_tx_num + transaction_index + 1;  // for system txn in the beginning of block
     result = co_await async_task(workers_.executor(), [&]() -> CallManyResult {
         return executes_all_bundles(chain_config,
                                     *chain_storage,

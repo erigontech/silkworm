@@ -104,6 +104,10 @@ if(SILKWORM_USE_MIMALLOC)
   endif()
 endif()
 
+if(SILKWORM_CORE_ONLY)
+  set(CONAN_CXXFLAGS_ARG "catch2/*:tools.build:cxxflags=[\"-fno-exceptions\"]")
+endif()
+
 conan_cmake_install(
   PATH_OR_REFERENCE "${CONAN_BINARY_DIR}"
   INSTALL_FOLDER "${CONAN_BINARY_DIR}"

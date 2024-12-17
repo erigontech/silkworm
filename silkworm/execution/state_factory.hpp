@@ -36,7 +36,7 @@ struct StateFactory {
         TxnId txn_id);
 
     Task<TxnId> get_txn_id(BlockNum block_num, uint32_t tx_id = 0) {
-        const auto base_txn_in_block = co_await tx.first_txn_num_in_block(block_num + 1);
+        const auto base_txn_in_block = co_await tx.first_txn_num_in_block(block_num);
         co_return base_txn_in_block + 1 + tx_id;  // + 1 for system txn in the beginning of block
     }
 };

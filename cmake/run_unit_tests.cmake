@@ -52,6 +52,10 @@ foreach(TEST_COMMAND IN LISTS TEST_COMMANDS)
     set(ENV{LLVM_PROFILE_FILE} "${TEST_COMMAND_NAME}.profraw")
   endif()
 
+  if("${SILKWORM_SANITIZE}" STREQUAL "thread")
+    set(ENV{TSAN_OPTIONS} "suppressions=tsan_suppressions.txt")
+  endif()
+
   execute_process(COMMAND "${TEST_COMMAND}" "--rng-seed=${TIME}" "--min-duration=2" RESULT_VARIABLE EXIT_CODE)
   if(NOT (EXIT_CODE EQUAL 0))
     message(FATAL_ERROR "${TEST_COMMAND_REL_PATH} has failed: ${EXIT_CODE}")

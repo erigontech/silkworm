@@ -180,7 +180,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
         SILK_DEBUG << "log_count: " << log_count;
 
         if (options.add_timestamp) {
-            for (auto &log: filtered_chunk_logs) {
+            for (auto& log : filtered_chunk_logs) {
                 log.timestamp = block_timestamp;
             }
         }

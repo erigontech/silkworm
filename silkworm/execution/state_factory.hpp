@@ -33,12 +33,12 @@ struct StateFactory {
     std::shared_ptr<State> create_state(
         boost::asio::any_io_executor& executor,
         const db::chain::ChainStorage& storage,
-        BlockNum block_num);
-
-    std::shared_ptr<State> create_state_txn(
-        boost::asio::any_io_executor& executor,
-        const db::chain::ChainStorage& storage,
         TxnId txn_id);
+
+    Task<TxnId> user_txn_id_at(BlockNum block_num, uint32_t txn_index = 0) {
+        const auto base_txn_in_block = co_await tx.first_txn_num_in_block(block_num);
+        co_return base_txn_in_block + 1 + txn_index;  // + 1 for system txn in the beginning of block
+    }
 };
 
 }  // namespace silkworm::execution

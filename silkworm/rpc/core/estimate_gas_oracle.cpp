@@ -25,7 +25,7 @@
 
 namespace silkworm::rpc {
 
-Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block, std::optional<BlockNum> block_num_for_gas_limit) {
+Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block, TxnId txn_id, std::optional<BlockNum> block_num_for_gas_limit) {
     SILK_DEBUG << "EstimateGasOracle::estimate_gas called";
 
     const auto block_num = block.header.number;
@@ -79,8 +79,11 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     SILK_DEBUG << "hi: " << hi << ", lo: " << lo << ", cap: " << cap;
 
     auto this_executor = co_await boost::asio::this_coro::executor;
+
+    execution::StateFactory state_factory{transaction_};
+
     auto exec_result = co_await async_task(workers_.executor(), [&]() -> ExecutionResult {
-        auto state = execution::StateFactory{transaction_}.create_state(this_executor, storage_, block_num);
+        auto state = state_factory.create_state(this_executor, storage_, txn_id);
 
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
         silkworm::Transaction transaction{call.to_transaction()};

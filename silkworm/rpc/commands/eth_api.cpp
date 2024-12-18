@@ -923,8 +923,11 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
             co_return co_await state_reader.read_account(address);
         };
 
+        execution::StateFactory state_factory{*tx};
+        const auto txn_id = co_await state_factory.user_txn_id_at(latest_block.header.number);
+
         rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, chain_config, workers_, *tx, *chain_storage};
-        const auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block, block_num_for_gas_limit);
+        const auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block, txn_id, block_num_for_gas_limit);
 
         reply = make_json_content(request, to_quantity(estimated_gas));
     } catch (const std::invalid_argument& iv) {
@@ -1154,9 +1157,12 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
         }
         silkworm::Transaction txn{call.to_transaction()};
 
+        execution::StateFactory state_factory{*tx};
+        const auto txn_id = co_await state_factory.user_txn_id_at(block_num + 1);
+
         const auto execution_result = co_await EVMExecutor::call(
-            chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&tx](auto& io_executor, auto block_num1, auto& storage) {
-                return execution::StateFactory{*tx}.create_state(io_executor, storage, block_num1);
+            chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&state_factory](auto& io_executor, auto curr_txn_id, auto& storage) {
+                return state_factory.create_state(io_executor, storage, curr_txn_id);
             });
 
         if (execution_result.success()) {
@@ -1340,10 +1346,14 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         Tracers tracers{tracer};
         auto txn = call.to_transaction(std::nullopt, nonce);
         AccessList saved_access_list = call.access_list;
+
+        execution::StateFactory state_factory{*tx};
+        const auto txn_id = co_await state_factory.user_txn_id_at(block_with_hash->block.header.number + 1);
+
         while (true) {
             const auto execution_result = co_await EVMExecutor::call(
-                chain_config, *chain_storage, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num, auto& storage) {
-                    return execution::StateFactory{*tx}.create_state(io_executor, storage, block_num);
+                chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&](auto& io_executor, auto curr_txn_id, auto& storage) {
+                    return state_factory.create_state(io_executor, storage, curr_txn_id);
                 },
                 tracers, /* refund */ true, /* gasBailout */ false);
 
@@ -1436,9 +1446,12 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
                 break;
             }
 
+            execution::StateFactory state_factory{*tx};
+            const auto txn_id = co_await state_factory.user_txn_id_at(block_with_hash->block.header.number + 1);
+
             const auto execution_result = co_await EVMExecutor::call(
-                chain_config, *chain_storage, workers_, block_with_hash->block, tx_with_block->transaction, [&](auto& io_executor, auto block_num, auto& storage) {
-                    return execution::StateFactory{*tx}.create_state(io_executor, storage, block_num);
+                chain_config, *chain_storage, workers_, block_with_hash->block, tx_with_block->transaction, txn_id, [&](auto& io_executor, auto curr_txn_id, auto& storage) {
+                    return state_factory.create_state(io_executor, storage, curr_txn_id);
                 });
             if (execution_result.pre_check_error) {
                 reply = make_json_error(request, kServerError, execution_result.pre_check_error.value());

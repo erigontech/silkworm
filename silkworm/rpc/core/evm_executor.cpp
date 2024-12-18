@@ -292,13 +292,14 @@ Task<ExecutionResult> EVMExecutor::call(
     WorkerPool& workers,
     const silkworm::Block& block,
     const silkworm::Transaction& txn,
+    const TxnId txn_id,
     StateFactory state_factory,
     const Tracers& tracers,
     bool refund,
     bool gas_bailout) {
     auto this_executor = co_await boost::asio::this_coro::executor;
     const auto execution_result = co_await async_task(workers.executor(), [&]() -> ExecutionResult {
-        auto state = state_factory(this_executor, block.header.number, chain_storage);
+        auto state = state_factory(this_executor, txn_id, chain_storage);
         EVMExecutor executor{block, config, workers, state};
         return executor.call(block, txn, tracers, refund, gas_bailout);
     });

@@ -1813,7 +1813,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     // We must do the execution at the state after the txn identified by the given index within the given block
-    // at the state after the block identified by the given block_num,
+    // at the state after the block identified by the given block_num
     execution::StateFactory state_factory{tx_};
     auto txn_id = co_await state_factory.get_txn_id(block_num, gsl::narrow<uint32_t>(transaction.transaction_index));
     auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);

@@ -376,10 +376,11 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash&
     rpc::Transaction transaction{call.to_transaction()};
 
     const auto& block = block_with_hash->block;
-    const auto block_num = block.header.number;
+    const auto block_num = block.header.number + 1;
 
     stream.write_field("result");
     stream.open_object();
+    // trace_call semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number + 1
     co_await execute(stream, storage, block_num, block, transaction, /* index */ 0);
     stream.close_object();
 
@@ -397,10 +398,11 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
     } else {
         const auto& block = tx_with_block->block_with_hash->block;
         const auto& transaction = tx_with_block->transaction;
-        const auto block_num = block.header.number - 1;
+        const auto block_num = block.header.number;
 
         stream.write_field("result");
         stream.open_object();
+        // trace_transaction semantics: we must execute the txn from the state at the current block
         co_await execute(stream, storage, block_num, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
         stream.close_object();
     }
@@ -502,9 +504,9 @@ Task<void> DebugExecutor::execute(
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     // We must do the execution at the state after the txn identified by the given index within the given block
-    // at the state after the block identified by the given block_num, i.e. at the start of the next block (block_num + 1)
+    // at the state after the block identified by the given block_num
     execution::StateFactory state_factory{tx_};
-    auto txn_id = co_await state_factory.get_txn_id(block_num + 1, static_cast<uint32_t>(index));
+    auto txn_id = co_await state_factory.get_txn_id(block_num, static_cast<uint32_t>(index));
 
     co_await async_task(workers_.executor(), [&]() {
         const auto state = state_factory.create_state(current_executor, storage, txn_id);

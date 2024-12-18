@@ -139,6 +139,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
     uint64_t log_count{0};
     Logs filtered_chunk_logs;
 
+    uint64_t block_timestamp;
     auto itr = db::txn::make_txn_nums_stream(std::move(paginated_stream), asc_order, tx_, provider);
     while (const auto tnx_nums = co_await itr->next()) {
         if (tnx_nums->final_txn) {
@@ -152,10 +153,9 @@ Task<void> LogsWalker::get_logs(BlockNum start,
                 SILK_DEBUG << "Not found block no.  " << tnx_nums->block_num;
                 break;
             }
+            block_timestamp = block_with_hash->block.header.timestamp;
             receipts = co_await core::get_receipts(tx_, *block_with_hash, *chain_storage, workers_);
             SILK_DEBUG << "Read #" << receipts.size() << " receipts from block " << tnx_nums->block_num;
-
-            ++block_count;
         }
         const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
         if (!transaction) {
@@ -172,10 +172,18 @@ Task<void> LogsWalker::get_logs(BlockNum start,
         filtered_chunk_logs.clear();
         filter_logs(receipt.logs, addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
         SILK_DEBUG << "filtered #logs: " << filtered_chunk_logs.size();
-
+        if (filtered_chunk_logs.empty()) {
+            continue;
+        }
+        ++block_count;
         log_count += filtered_chunk_logs.size();
         SILK_DEBUG << "log_count: " << log_count;
 
+        if (options.add_timestamp) {
+            for (auto &log: filtered_chunk_logs) {
+                log.timestamp = block_timestamp;
+            }
+        }
         logs.insert(logs.end(), filtered_chunk_logs.begin(), filtered_chunk_logs.end());
 
         if (options.log_count != 0 && options.log_count <= log_count) {

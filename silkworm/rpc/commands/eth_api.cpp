@@ -924,7 +924,7 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
         };
 
         execution::StateFactory state_factory{*tx};
-        auto txn_id = co_await state_factory.get_txn_id(latest_block.header.number);
+        const auto txn_id = co_await state_factory.user_txn_id_at(latest_block.header.number);
 
         rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, chain_config, workers_, *tx, *chain_storage};
         const auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block, txn_id, block_num_for_gas_limit);
@@ -1158,7 +1158,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
         silkworm::Transaction txn{call.to_transaction()};
 
         execution::StateFactory state_factory{*tx};
-        auto txn_id = co_await state_factory.get_txn_id(block_num + 1);
+        const auto txn_id = co_await state_factory.user_txn_id_at(block_num + 1);
 
         const auto execution_result = co_await EVMExecutor::call(
             chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&state_factory](auto& io_executor, auto curr_txn_id, auto& storage) {
@@ -1348,7 +1348,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         AccessList saved_access_list = call.access_list;
 
         execution::StateFactory state_factory{*tx};
-        auto txn_id = co_await state_factory.get_txn_id(block_with_hash->block.header.number + 1);
+        const auto txn_id = co_await state_factory.user_txn_id_at(block_with_hash->block.header.number + 1);
 
         while (true) {
             const auto execution_result = co_await EVMExecutor::call(
@@ -1447,7 +1447,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
             }
 
             execution::StateFactory state_factory{*tx};
-            auto txn_id = co_await state_factory.get_txn_id(block_with_hash->block.header.number + 1);
+            const auto txn_id = co_await state_factory.user_txn_id_at(block_with_hash->block.header.number + 1);
 
             const auto execution_result = co_await EVMExecutor::call(
                 chain_config, *chain_storage, workers_, block_with_hash->block, tx_with_block->transaction, txn_id, [&](auto& io_executor, auto curr_txn_id, auto& storage) {

@@ -1415,6 +1415,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     execution::StateFactory state_factory{tx_};
+    // trace_block semantics: we must execute the call from the state at the current block
     auto txn_id = co_await state_factory.get_txn_id(block_num);
 
     const auto call_result = co_await async_task(workers_.executor(), [&]() -> std::vector<TraceCallResult> {
@@ -1469,9 +1470,9 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 }
 
 Task<TraceCallResult> TraceCallExecutor::trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config) {
-    // trace_call semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number
+    // trace_call semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number + 1
     rpc::Transaction transaction{call.to_transaction()};
-    auto result = co_await execute(block.header.number, block, transaction, /*index=*/-1, config, /*gas_bailout=*/true);
+    auto result = co_await execute(block.header.number + 1, block, transaction, /*index=*/-1, config, /*gas_bailout=*/true);
     co_return result;
 }
 
@@ -1485,7 +1486,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     execution::StateFactory state_factory{tx_};
-    // trace_call semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number + 1
+    // trace_calls semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number + 1
     auto txn_id = co_await state_factory.get_txn_id(block_num + 1);
 
     const auto trace_calls_result = co_await async_task(workers_.executor(), [&]() -> TraceManyCallResult {
@@ -1581,15 +1582,15 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
 }
 
 Task<TraceCallResult> TraceCallExecutor::trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config) {
-    // trace_transaction semantics: we must execute the txn from the state at the end of the previous block, so we pass block.header.number - 1
-    return execute(block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config, /*gas_bailout=*/false);
+    // trace_transaction semantics: we must execute the txn from the state at the current block
+    return execute(block.header.number, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config, /*gas_bailout=*/false);
 }
 
 Task<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction, bool gas_bailout) {
     std::vector<Trace> traces;
 
-    // trace_transaction semantics: we must execute the txn from the state at the end of the previous block, so we pass block.header.number - 1
-    const auto result = co_await execute(block_with_hash.block.header.number - 1, block_with_hash.block, transaction,
+    // trace_transaction semantics: we must execute the txn from the state at the position transaction_index of the current block
+    const auto result = co_await execute(block_with_hash.block.header.number, block_with_hash.block, transaction,
                                          gsl::narrow<int32_t>(transaction.transaction_index), {false, true, false}, gas_bailout);
     const auto& trace_result = result.traces.trace;
 
@@ -1812,9 +1813,9 @@ Task<TraceCallResult> TraceCallExecutor::execute(
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     // We must do the execution at the state after the txn identified by the given index within the given block
-    // at the state after the block identified by the given block_num, i.e. at the start of the next block (block_num + 1)
+    // at the state after the block identified by the given block_num,
     execution::StateFactory state_factory{tx_};
-    auto txn_id = co_await state_factory.get_txn_id(block_num + 1, gsl::narrow<uint32_t>(transaction.transaction_index));
+    auto txn_id = co_await state_factory.get_txn_id(block_num, gsl::narrow<uint32_t>(transaction.transaction_index));
     auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
     auto curr_state = state_factory.create_state(current_executor, chain_storage_, txn_id);
     const auto trace_call_result = co_await async_task(workers_.executor(), [&]() -> TraceCallResult {

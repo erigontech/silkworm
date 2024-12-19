@@ -73,7 +73,7 @@ snapshots::SnapshotRepository make_state_repository(std::filesystem::path dir_pa
         std::move(dir_path),
         open,
         make_state_repository_schema(),
-        std::make_unique<snapshots::StepToTxnIdConverter>(),
+        std::make_unique<datastore::StepToTxnIdConverter>(),
         make_state_index_builders_factory(),
     };
 }

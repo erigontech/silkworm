@@ -67,7 +67,7 @@ class SnapshotSync {
     Task<void> build_missing_indexes();
 
     void seed_frozen_local_snapshots();
-    void seed_frozen_bundle(snapshots::StepRange range);
+    void seed_frozen_bundle(datastore::StepRange range);
     void seed_bundle(snapshots::SnapshotBundle& bundle);
     void seed_snapshot(const snapshots::SnapshotPath& path);
 

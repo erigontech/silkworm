@@ -43,6 +43,16 @@ string(TIMESTAMP TIME "%s")
 message("For all tests --rng-seed=${TIME}")
 message("")
 
+set(SILKWORM_HOME_DIR "${SILKWORM_BUILD_DIR}/..")
+file(REAL_PATH "${SILKWORM_HOME_DIR}" SILKWORM_HOME_DIR)
+message("SILKWORM_HOME_DIR=${SILKWORM_HOME_DIR}")
+
+if("${SILKWORM_SANITIZE}" STREQUAL "thread")
+  set(ENV{TSAN_OPTIONS} "suppressions=tools/sanitizer/tsan_suppressions.txt")
+endif()
+message("SILKWORM_SANITIZE=${SILKWORM_SANITIZE}")
+message("TSAN_OPTIONS=$ENV{TSAN_OPTIONS}")
+
 foreach(TEST_COMMAND IN LISTS TEST_COMMANDS)
   file(RELATIVE_PATH TEST_COMMAND_REL_PATH "${SILKWORM_BUILD_DIR}" "${TEST_COMMAND}")
   message("Running ${TEST_COMMAND_REL_PATH}...")
@@ -52,13 +62,11 @@ foreach(TEST_COMMAND IN LISTS TEST_COMMANDS)
     set(ENV{LLVM_PROFILE_FILE} "${TEST_COMMAND_NAME}.profraw")
   endif()
 
-  if("${SILKWORM_SANITIZE}" STREQUAL "thread")
-    set(ENV{TSAN_OPTIONS} "suppressions=tsan_suppressions.txt")
-  endif()
-  message("SILKWORM_SANITIZE=${SILKWORM_SANITIZE}")
-  message("TSAN_OPTIONS=$ENV{TSAN_OPTIONS}")
-
-  execute_process(COMMAND "${TEST_COMMAND}" "--rng-seed=${TIME}" "--min-duration=2" RESULT_VARIABLE EXIT_CODE)
+  execute_process(
+    COMMAND "${TEST_COMMAND}" "--rng-seed=${TIME}" "--min-duration=2"
+    WORKING_DIRECTORY "${SILKWORM_HOME_DIR}"
+    RESULT_VARIABLE EXIT_CODE
+  )
   if(NOT (EXIT_CODE EQUAL 0))
     message(FATAL_ERROR "${TEST_COMMAND_REL_PATH} has failed: ${EXIT_CODE}")
   endif()

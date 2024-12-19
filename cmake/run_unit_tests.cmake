@@ -63,8 +63,12 @@ foreach(TEST_COMMAND IN LISTS TEST_COMMANDS)
   endif()
 
   execute_process(
-    COMMAND "${TEST_COMMAND}" "--rng-seed=${TIME}" "--min-duration=2"
-    WORKING_DIRECTORY "${SILKWORM_HOME_DIR}"
+    COMMAND
+    "${TEST_COMMAND}"
+    "--rng-seed=${TIME}"
+    "--min-duration=2"
+    WORKING_DIRECTORY
+    "${SILKWORM_HOME_DIR}"
     RESULT_VARIABLE EXIT_CODE
   )
   if(NOT (EXIT_CODE EQUAL 0))

@@ -28,7 +28,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
-#include <silkworm/rpc/ethdb/bitmap.hpp>
 #include <silkworm/rpc/ethdb/cbor.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 
@@ -93,6 +92,11 @@ Task<void> LogsWalker::get_logs(BlockNum start,
     db::kv::api::PaginatedStream<db::kv::api::Timestamp> paginated_stream;
     if (!topics.empty()) {
         for (auto sub_topic = topics.begin(); sub_topic < topics.end(); ++sub_topic) {
+            if (sub_topic->empty()) {
+                continue;
+            }
+
+            db::kv::api::PaginatedStream<db::kv::api::Timestamp> union_stream;
             for (auto it = sub_topic->begin(); it < sub_topic->end(); ++it) {
                 SILK_DEBUG << "topic: " << to_hex(*it) << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
                            << to_timestamp;
@@ -104,8 +108,13 @@ Task<void> LogsWalker::get_logs(BlockNum start,
                     .to_timestamp = to_timestamp,
                     .ascending_order = asc_order};
                 auto paginated_result = co_await tx_.index_range(std::move(query));
-                paginated_stream = db::kv::api::set_union(std::move(paginated_stream), co_await paginated_result.begin());
+                union_stream = db::kv::api::set_union(std::move(union_stream), co_await paginated_result.begin());
             }
+            if (!paginated_stream) {
+                paginated_stream = std::move(union_stream);
+                continue;
+            }
+            paginated_stream = db::kv::api::set_intersection(std::move(paginated_stream), std::move(union_stream));
         }
     }
     if (!addresses.empty()) {

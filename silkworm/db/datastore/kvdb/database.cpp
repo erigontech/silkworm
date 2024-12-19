@@ -46,13 +46,16 @@ DatabaseRef::EntitiesMap make_entities(
 
 Domain DatabaseRef::domain(datastore::EntityName name) const {
     auto& entity = entities_.at(name);
+    auto& domain_def = dynamic_cast<Schema::DomainDef&>(*schema_.entities().at(name));
     Domain domain{
         entity.at(Schema::kDomainValuesName),
+        domain_def.has_large_values(),
         std::nullopt,
     };
     if (entity.contains(Schema::kHistoryValuesName)) {
         domain.history.emplace(History{
             entity.at(Schema::kHistoryValuesName),
+            domain_def.has_large_values(),
             inverted_index(name),
         });
     }

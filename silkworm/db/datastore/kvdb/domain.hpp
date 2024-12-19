@@ -25,6 +25,7 @@ namespace silkworm::datastore::kvdb {
 
 struct Domain {
     const MapConfig& values_table;
+    bool has_large_values;
     std::optional<History> history;
 };
 

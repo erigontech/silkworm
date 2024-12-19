@@ -50,6 +50,7 @@ datastore::kvdb::Schema::DatabaseDef make_state_database_schema() {
     schema.domain(kDomainNameAccounts);
     schema.domain(kDomainNameStorage);
     schema.domain(kDomainNameCode)
+        .enable_large_values()
         .values_disable_multi_value();
     schema.domain(kDomainNameCommitment)
         .without_history();

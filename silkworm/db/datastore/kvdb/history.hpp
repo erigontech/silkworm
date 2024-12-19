@@ -23,6 +23,7 @@ namespace silkworm::datastore::kvdb {
 
 struct History {
     const MapConfig& values_table;
+    bool has_large_values;
     InvertedIndex inverted_index;
 };
 

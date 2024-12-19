@@ -1,5 +1,5 @@
-Silkworm implements a small utility named `dbtool` which helps dealing with large LMDB datafile produced by Turbo-Geth.
-Simple usage is `./dbtool [OPTIONS] [SUBCOMMAND] [SUBCOMMANDOPTIONS]`
+Silkworm implements a small utility named `db_toolbox` which helps dealing with large LMDB datafile produced by Turbo-Geth.
+Simple usage is `./db_toolbox [OPTIONS] [SUBCOMMAND] [SUBCOMMANDOPTIONS]`
 
 # OPTIONS
 Common options always specify the base data file to open :
@@ -11,10 +11,10 @@ LMDB's mapSize value basically indicates the width of the segment of virtual mem
 
 ### Hint
 Omitting the specification of --lmdb.mapSize is allowed as long as the data file already exists on disk. In such case the value is automatically adjusted to the size of data.mdb. This is like specifying an `lmdb.mapSize == 0`.
-**Warning** : although dbtool protects against errors is highly discouraged to provide a value for --lmdb.mapSize lower than actual file size cause, as observed behavior, the result is a truncation of data file to a size matching --lmdb.mapSize thus causing the invalidation of all mappings for existing data.
+**Warning** : although db_toolbox protects against errors is highly discouraged to provide a value for --lmdb.mapSize lower than actual file size cause, as observed behavior, the result is a truncation of data file to a size matching --lmdb.mapSize thus causing the invalidation of all mappings for existing data.
 
 # Subcommand : tables
-Usage `./dbtool --datadir <parent-directory-to-data.mdb> tables`
+Usage `./db_toolbox --datadir <parent-directory-to-data.mdb> tables`
 
 This subcommand requires no additional arguments and provides a detailed list of tables stored into data.mdb.
 Here is a sample output:
@@ -85,7 +85,7 @@ Each table reports:
 The bottom part of the report depicts the storage status of the data file.
 
 # Subcommand : freelist
-Usage `./dbtool --datadir <parent-directory-to-data.mdb> freelist [--detail]`
+Usage `./db_toolbox --datadir <parent-directory-to-data.mdb> freelist [--detail]`
 
 This produces as output the sum of reclaimable space held in FREE_DBI.
 Sample :
@@ -142,17 +142,17 @@ Sample :
 ```
 
 # Subcommand : clear
-Usage `./dbtool --datadir <parent-directory-to-data.mdb> clear --names <list-of-table-names> [--drop]`
+Usage `./db_toolbox --datadir <parent-directory-to-data.mdb> clear --names <list-of-table-names> [--drop]`
 
 This command provides a handy way to empty a table from all records or drop it.
 
 Example :
-`./dbtool --datadir <parent-directory-to-data.mdb> clear --names h b`
+`./db_toolbox --datadir <parent-directory-to-data.mdb> clear --names h b`
 
 will delete all records from tables `h` and `b` but the table (meant as a container) will remain into database.
 
 Example :
-`./dbtool --datadir <parent-directory-to-data.mdb> clear --names h b --drop`
+`./db_toolbox --datadir <parent-directory-to-data.mdb> clear --names h b --drop`
 
 will delete tables `h` and `b` from database just like a SQL `drop` statement.
 
@@ -160,7 +160,7 @@ will delete tables `h` and `b` from database just like a SQL `drop` statement.
 Like all operations on LMDB the deletion of records (or of an entire table) lives within a writable transaction and by consequence requires database file to have enough space available to record all data pages which will be freed by the transaction. This implies the size of database file may grow.
 
 # Subcommand : compact
-Usage `./dbtool --datadir <parent-directory-to-data.mdb> compact --workdir <parent-directory-to-compacted-data.mdb> [--replace] [--nobak]`
+Usage `./db_toolbox --datadir <parent-directory-to-data.mdb> compact --workdir <parent-directory-to-compacted-data.mdb> [--replace] [--nobak]`
 
 The purpose of this subcommand is to obtain a _compacted_ data file. The compaction process renumbers all data pages while reclaiming those previously freed by preceding transactions. This command is the implementation of `mdb_env_copy2` LMDB API call with `MDB_CP_COMPACT` flag. 
 Running this command reports no progress and, ad indicative figure, took more than 6 hours to compact an 730GB data file on Windows with NMVe storage support.
@@ -290,7 +290,7 @@ This tools gives the user the ability to copy individual table(s) from one datab
 
 Usage 
 ```
-./dbtool --datadir <parent-directory-to-source-data.mdb> copy --targetdir <parent-directory-to-target-data.mdb> \
+./db_toolbox --datadir <parent-directory-to-source-data.mdb> copy --targetdir <parent-directory-to-target-data.mdb> \
          [--create --new.mapSize <value>] [--tables <list-of-table-names-to-copy>] \
          [--noempty] [--upsert] [--commit]
 ```
@@ -308,7 +308,7 @@ This tool automatically enlarges data file on behalf of the amount of data being
 
 A useful progress is provided like in this sample:
 ```
-dbtool --datadir e:\tg\tg\chaindata copy --targetdir e:\tg\compact-temp --tables hAT hST
+db_toolbox --datadir e:\tg\tg\chaindata copy --targetdir e:\tg\compact-temp --tables hAT hST
 
  Table                                         Progress
  ------------------------ --------------------------------------------------

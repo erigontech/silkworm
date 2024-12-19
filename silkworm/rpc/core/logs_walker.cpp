@@ -177,7 +177,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
         SILKWORM_ASSERT(tnx_nums->txn_index < receipts.size());
         const auto& receipt = receipts.at(tnx_nums->txn_index);
 
-        SILK_DEBUG << "#rawLogs: " << receipt.logs.size();
+        SILK_DEBUG << "blockNum: " << tnx_nums->block_num << ", #rawLogs: " << receipt.logs.size();
         filtered_chunk_logs.clear();
         filter_logs(receipt.logs, addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
         SILK_DEBUG << "filtered #logs: " << filtered_chunk_logs.size();

@@ -55,6 +55,8 @@ foreach(TEST_COMMAND IN LISTS TEST_COMMANDS)
   if("${SILKWORM_SANITIZE}" STREQUAL "thread")
     set(ENV{TSAN_OPTIONS} "suppressions=tsan_suppressions.txt")
   endif()
+  message("SILKWORM_SANITIZE=${SILKWORM_SANITIZE}")
+  message("TSAN_OPTIONS=$ENV{TSAN_OPTIONS}")
 
   execute_process(COMMAND "${TEST_COMMAND}" "--rng-seed=${TIME}" "--min-duration=2" RESULT_VARIABLE EXIT_CODE)
   if(NOT (EXIT_CODE EQUAL 0))

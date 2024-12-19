@@ -14,16 +14,21 @@
    limitations under the License.
 */
 
-#pragma once
-
-#include <silkworm/db/datastore/kvdb/domain.hpp>
-#include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
-
-#include "account_codecs.hpp"
 #include "address_codecs.hpp"
+
+#include <catch2/catch_test_macros.hpp>
+
+#include <silkworm/core/common/util.hpp>
 
 namespace silkworm::db::state {
 
-using AccountsDomainKVSegmentReader = snapshots::segment::KVSegmentReader<AddressDecoder, AccountDecoder>;
+TEST_CASE("AddressDecoder") {
+    using evmc::literals::operator""_address;
+    AddressDecoder decoder;
+    decoder.decode_word(*from_hex("0x000000000000000000636f6e736f6c652e6c6f67"));
+    CHECK(decoder.value == 0x000000000000000000636f6e736f6c652e6c6f67_address);
+
+    CHECK_THROWS_AS(decoder.decode_word({}), std::runtime_error);
+}
 
 }  // namespace silkworm::db::state

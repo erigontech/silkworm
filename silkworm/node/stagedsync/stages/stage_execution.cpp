@@ -573,8 +573,11 @@ void Execution::revert_state(ByteView key, ByteView value, RWCursorDupSort& plai
                 Bytes code_hash_key(kAddressLength + kIncarnationLength, '\0');
                 std::memcpy(&code_hash_key[0], &key[0], kAddressLength);
                 endian::store_big_u64(&code_hash_key[kAddressLength], account.incarnation);
-                auto new_code_hash = plain_code_table.find(to_slice(code_hash_key));
-                std::memcpy(&account.code_hash.bytes[0], new_code_hash.value.data(), kHashLength);
+                const auto new_code_hash = plain_code_table.find(to_slice(code_hash_key), /*throw_notfound=*/false);
+                if (new_code_hash.done) {
+                    SILKWORM_ASSERT(new_code_hash.value.size() >= kHashLength);
+                    std::memcpy(&account.code_hash.bytes[0], new_code_hash.value.data(), kHashLength);
+                }
             }
             // cleaning up contract codes
             auto state_account_encoded{plain_state_table.find(to_slice(key), /*throw_notfound=*/false)};

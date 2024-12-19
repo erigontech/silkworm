@@ -19,6 +19,11 @@ if(NOT SILKWORM_BUILD_DIR)
 endif()
 file(REAL_PATH "${SILKWORM_BUILD_DIR}" SILKWORM_BUILD_DIR)
 
+if(NOT SILKWORM_PROJECT_DIR)
+  set(SILKWORM_PROJECT_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
+endif()
+file(REAL_PATH "${SILKWORM_PROJECT_DIR}" SILKWORM_PROJECT_DIR)
+
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   set(CMAKE_EXECUTABLE_SUFFIX ".exe")
 endif()
@@ -43,14 +48,10 @@ string(TIMESTAMP TIME "%s")
 message("For all tests --rng-seed=${TIME}")
 message("")
 
-set(SILKWORM_HOME_DIR "${SILKWORM_BUILD_DIR}/..")
-file(REAL_PATH "${SILKWORM_HOME_DIR}" SILKWORM_HOME_DIR)
-message("SILKWORM_HOME_DIR=${SILKWORM_HOME_DIR}")
-
 if("${SILKWORM_SANITIZE}" STREQUAL "thread")
-  set(TSAN_SUPPRESSIONS "suppressions=${SILKWORM_HOME_DIR}/tools/sanitizer/tsan_suppressions.txt")
-  set(ENV{TSAN_OPTIONS} "${TSAN_SUPPRESSIONS}")
+  set(ENV{TSAN_OPTIONS} "suppressions=${SILKWORM_PROJECT_DIR}/tools/sanitizer/tsan_suppressions.txt")
 endif()
+message("SILKWORM_PROJECT_DIR=${SILKWORM_PROJECT_DIR}")
 message("SILKWORM_SANITIZE=${SILKWORM_SANITIZE}")
 message("TSAN_OPTIONS=$ENV{TSAN_OPTIONS}")
 

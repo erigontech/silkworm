@@ -167,7 +167,7 @@ commands:
           command: make "SILKWORM_BUILD_DIR=$HOME/build" run_smoke_tests
       - run:
           name: "Unit tests"
-          command: make "SILKWORM_BUILD_DIR=$HOME/build" SILKWORM_CLANG_COVERAGE=OFF SILKWORM_SANITIZE=<<parameters.sanitizer>> run_unit_tests
+          command: make "SILKWORM_BUILD_DIR=$HOME/build" SILKWORM_CLANG_COVERAGE=OFF SILKWORM_SANITIZE=<<parameters.sanitizer>> "SILKWORM_PROJECT_DIR=$HOME/project" run_unit_tests
       - when:
           condition: <<parameters.ethereum_tests>>
           steps:

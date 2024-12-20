@@ -180,7 +180,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
         // ERIGON3 compatibility: erigon_getLatestLogs overwrites log index
         if (options.overwrite_log_index) {
             uint32_t log_index{0};
-            for (auto& log: receipt.logs) {
+            for (auto& log : receipt.logs) {
                 log.index = log_index++;
             }
         }

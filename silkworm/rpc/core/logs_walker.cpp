@@ -175,7 +175,15 @@ Task<void> LogsWalker::get_logs(BlockNum start,
         SILK_DEBUG << "Got transaction: block_num: " << tnx_nums->block_num << ", txn_index: " << tnx_nums->txn_index;
 
         SILKWORM_ASSERT(tnx_nums->txn_index < receipts.size());
-        const auto& receipt = receipts.at(tnx_nums->txn_index);
+        auto& receipt = receipts.at(tnx_nums->txn_index);
+
+        // ERIGON3 compatibility: erigon_getLatestLogs overwrites log index
+        if (options.overwrite_log_index) {
+            uint32_t log_index{0};
+            for (auto& log: receipt.logs) {
+                log.index = log_index++;
+            }
+        }
 
         SILK_DEBUG << "blockNum: " << tnx_nums->block_num << ", #rawLogs: " << receipt.logs.size();
         filtered_chunk_logs.clear();

@@ -331,10 +331,12 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
         co_return;
     }
 
-    LogFilterOptions options{true};
+    LogFilterOptions options{true, true};
     if (params.size() > 1) {
         options = params[1].get<LogFilterOptions>();
+
         options.add_timestamp = true;
+        options.overwrite_log_index = true;
     }
 
     if (options.log_count != 0 && options.block_count != 0) {

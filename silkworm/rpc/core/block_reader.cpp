@@ -150,6 +150,9 @@ Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const std::string& bl
     } else if (is_valid_hex(block_id)) {
         block_num = static_cast<BlockNum>(std::stol(block_id, nullptr, 16));
         check_if_latest = latest_required;
+    } else if (is_valid_dec(block_id)) {
+        block_num = static_cast<BlockNum>(std::stol(block_id, nullptr, 10));
+        check_if_latest = latest_required;
     } else {
         throw std::invalid_argument("get_block_num::Invalid Block Id");
     }

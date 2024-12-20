@@ -28,7 +28,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
-#include <silkworm/rpc/ethdb/bitmap.hpp>
 #include <silkworm/rpc/ethdb/cbor.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 
@@ -93,6 +92,11 @@ Task<void> LogsWalker::get_logs(BlockNum start,
     db::kv::api::PaginatedStream<db::kv::api::Timestamp> paginated_stream;
     if (!topics.empty()) {
         for (auto sub_topic = topics.begin(); sub_topic < topics.end(); ++sub_topic) {
+            if (sub_topic->empty()) {
+                continue;
+            }
+
+            db::kv::api::PaginatedStream<db::kv::api::Timestamp> union_stream;
             for (auto it = sub_topic->begin(); it < sub_topic->end(); ++it) {
                 SILK_DEBUG << "topic: " << to_hex(*it) << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
                            << to_timestamp;
@@ -104,8 +108,13 @@ Task<void> LogsWalker::get_logs(BlockNum start,
                     .to_timestamp = to_timestamp,
                     .ascending_order = asc_order};
                 auto paginated_result = co_await tx_.index_range(std::move(query));
-                paginated_stream = db::kv::api::set_union(std::move(paginated_stream), co_await paginated_result.begin());
+                union_stream = db::kv::api::set_union(std::move(union_stream), co_await paginated_result.begin());
             }
+            if (!paginated_stream) {
+                paginated_stream = std::move(union_stream);
+                continue;
+            }
+            paginated_stream = db::kv::api::set_intersection(std::move(paginated_stream), std::move(union_stream));
         }
     }
     if (!addresses.empty()) {
@@ -139,6 +148,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
     uint64_t log_count{0};
     Logs filtered_chunk_logs;
 
+    uint64_t block_timestamp;
     auto itr = db::txn::make_txn_nums_stream(std::move(paginated_stream), asc_order, tx_, provider);
     while (const auto tnx_nums = co_await itr->next()) {
         if (tnx_nums->final_txn) {
@@ -152,10 +162,9 @@ Task<void> LogsWalker::get_logs(BlockNum start,
                 SILK_DEBUG << "Not found block no.  " << tnx_nums->block_num;
                 break;
             }
+            block_timestamp = block_with_hash->block.header.timestamp;
             receipts = co_await core::get_receipts(tx_, *block_with_hash, *chain_storage, workers_);
             SILK_DEBUG << "Read #" << receipts.size() << " receipts from block " << tnx_nums->block_num;
-
-            ++block_count;
         }
         const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
         if (!transaction) {
@@ -166,16 +175,32 @@ Task<void> LogsWalker::get_logs(BlockNum start,
         SILK_DEBUG << "Got transaction: block_num: " << tnx_nums->block_num << ", txn_index: " << tnx_nums->txn_index;
 
         SILKWORM_ASSERT(tnx_nums->txn_index < receipts.size());
-        const auto& receipt = receipts.at(tnx_nums->txn_index);
+        auto& receipt = receipts.at(tnx_nums->txn_index);
 
-        SILK_DEBUG << "#rawLogs: " << receipt.logs.size();
+        // ERIGON3 compatibility: erigon_getLatestLogs overwrites log index
+        if (options.overwrite_log_index) {
+            uint32_t log_index{0};
+            for (auto& log : receipt.logs) {
+                log.index = log_index++;
+            }
+        }
+
+        SILK_DEBUG << "blockNum: " << tnx_nums->block_num << ", #rawLogs: " << receipt.logs.size();
         filtered_chunk_logs.clear();
         filter_logs(receipt.logs, addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
         SILK_DEBUG << "filtered #logs: " << filtered_chunk_logs.size();
-
+        if (filtered_chunk_logs.empty()) {
+            continue;
+        }
+        ++block_count;
         log_count += filtered_chunk_logs.size();
         SILK_DEBUG << "log_count: " << log_count;
 
+        if (options.add_timestamp) {
+            for (auto& log : filtered_chunk_logs) {
+                log.timestamp = block_timestamp;
+            }
+        }
         logs.insert(logs.end(), filtered_chunk_logs.begin(), filtered_chunk_logs.end());
 
         if (options.log_count != 0 && options.log_count <= log_count) {

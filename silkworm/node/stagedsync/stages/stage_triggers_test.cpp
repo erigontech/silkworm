@@ -27,7 +27,7 @@ namespace silkworm::stagedsync {
 using namespace silkworm::db;
 using db::test_util::TempChainDataStore;
 
-class TriggersStateFotTest : public TriggersStage {
+class TriggersStateForTest : public TriggersStage {
   public:
     using TriggersStage::TriggersStage;
     boost::asio::io_context& io_context() { return ioc_; }
@@ -39,7 +39,7 @@ TEST_CASE("TriggersStage: scheduled task lifetime") {
     txn.disable_commit();
 
     stagedsync::SyncContext sync_context{};
-    TriggersStateFotTest stage_triggers{&sync_context};
+    TriggersStateForTest stage_triggers{&sync_context};
     auto future = concurrency::spawn_future(stage_triggers.io_context(), stage_triggers.schedule([](auto& rw_txn) {
         rw_txn.is_open();
     }));

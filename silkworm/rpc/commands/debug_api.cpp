@@ -554,7 +554,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
         co_return;
     }
 
-    BlockNum block_num;
+    BlockNum block_num{0};
     if (params[0].is_string()) {
         const auto value = params[0].get<std::string>();
         if (silkworm::is_valid_hex(value)) {

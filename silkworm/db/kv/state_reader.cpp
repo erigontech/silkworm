@@ -26,19 +26,14 @@
 
 namespace silkworm::db::kv {
 
-StateReader::StateReader(kv::api::Transaction& tx, std::optional<BlockNum> block_num, std::optional<TxnId> txn_id) : tx_(tx), block_num_(block_num), txn_number_(txn_id) {
-    SILKWORM_ASSERT((txn_id && !block_num) || (!txn_id && block_num));
+StateReader::StateReader(kv::api::Transaction& tx, TxnId txn_id) : tx_(tx), txn_number_(txn_id) {
 }
 
 Task<std::optional<Account>> StateReader::read_account(const evmc::address& address) const {
-    if (!txn_number_) {
-        txn_number_ = co_await tx_.first_txn_num_in_block(*block_num_);
-    }
-
     db::kv::api::GetAsOfQuery query{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(address),
-        .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
+        .timestamp = static_cast<kv::api::Timestamp>(txn_number_),
     };
     const auto result = co_await tx_.get_as_of(std::move(query));
     if (!result.success) {
@@ -53,14 +48,10 @@ Task<std::optional<Account>> StateReader::read_account(const evmc::address& addr
 Task<evmc::bytes32> StateReader::read_storage(const evmc::address& address,
                                               uint64_t /* incarnation */,
                                               const evmc::bytes32& location_hash) const {
-    if (!txn_number_) {
-        txn_number_ = co_await tx_.first_txn_num_in_block(*block_num_);
-    }
-
     db::kv::api::GetAsOfQuery query{
         .table = table::kStorageDomain,
         .key = db::storage_domain_key(address, location_hash),
-        .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
+        .timestamp = static_cast<kv::api::Timestamp>(txn_number_),
     };
     const auto result = co_await tx_.get_as_of(std::move(query));
     if (!result.success) {
@@ -73,14 +64,11 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
     if (code_hash == kEmptyHash) {
         co_return std::nullopt;
     }
-    if (!txn_number_) {
-        txn_number_ = co_await tx_.first_txn_num_in_block(*block_num_);
-    }
 
     db::kv::api::GetAsOfQuery query{
         .table = table::kCodeDomain,
         .key = db::code_domain_key(address),
-        .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
+        .timestamp = static_cast<kv::api::Timestamp>(txn_number_),
     };
     const auto result = co_await tx_.get_as_of(std::move(query));
     if (!result.success) {

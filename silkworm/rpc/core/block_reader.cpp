@@ -54,10 +54,10 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOr
 
     SILK_TRACE << "read_balance_changes: block_num: " << block_num;
 
-    StateReader state_reader{transaction_, block_num + 1};
-
     const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_num);
     const auto end_txn_number = co_await transaction_.first_txn_num_in_block(block_num + 1);
+
+    StateReader state_reader{transaction_, end_txn_number};
 
     db::kv::api::HistoryRangeQuery query{
         .table = db::table::kAccountDomain,

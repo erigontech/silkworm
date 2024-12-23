@@ -1087,7 +1087,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugConfig") {
 
         std::ostringstream os;
         os << config;
-        CHECK(os.str() == "disableStorage: true disableMemory: false disableStack: true");
+        CHECK(os.str() == "disableStorage: true disableMemory: false disableStack: true NoRefunds: false");
     }
 }
 

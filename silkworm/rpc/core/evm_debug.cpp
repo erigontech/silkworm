@@ -39,12 +39,17 @@ void from_json(const nlohmann::json& json, DebugConfig& tc) {
     json.at("disableStorage").get_to(tc.disable_storage);
     json.at("disableMemory").get_to(tc.disable_memory);
     json.at("disableStack").get_to(tc.disable_stack);
+
+    if (json.count("NoRefunds") != 0) {
+        json.at("NoRefunds").get_to(tc.no_refunds);
+    }
 }
 
 std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
     out << "disableStorage: " << std::boolalpha << tc.disable_storage;
     out << " disableMemory: " << std::boolalpha << tc.disable_memory;
     out << " disableStack: " << std::boolalpha << tc.disable_stack;
+    out << " NoRefunds: " << std::boolalpha << tc.no_refunds;
 
     return out;
 }
@@ -443,6 +448,8 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
         auto state = state_factory.create_state(current_executor, storage, txn_id);
         EVMExecutor executor{block, chain_config, workers_, state};
 
+        bool refunds = !config_.no_refunds;
+
         for (std::uint64_t idx = 0; idx < transactions.size(); ++idx) {
             rpc::Transaction txn{block.transactions[idx]};
             SILK_DEBUG << "processing transaction: idx: " << idx << " txn: " << txn;
@@ -456,7 +463,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
             stream.open_array();
 
             Tracers tracers{debug_tracer};
-            const auto execution_result = executor.call(block, txn, tracers, /* refund */ false, /* gasBailout */ false);
+            const auto execution_result = executor.call(block, txn, tracers, refunds, /* gasBailout */ false);
 
             debug_tracer->flush_logs();
             stream.close_array();
@@ -517,8 +524,9 @@ Task<void> DebugExecutor::execute(
         stream.write_field("structLogs");
         stream.open_array();
 
+        bool refunds = !config_.no_refunds;
         Tracers tracers{debug_tracer};
-        const auto execution_result = executor.call(block, transaction, tracers);
+        const auto execution_result = executor.call(block, transaction, tracers, refunds);
 
         debug_tracer->flush_logs();
         stream.close_array();
@@ -587,6 +595,7 @@ Task<void> DebugExecutor::execute(
             }
 
             stream.open_array();
+            bool refunds = !config_.no_refunds;
 
             for (const auto& call : bundle.transactions) {
                 silkworm::Transaction txn{call.to_transaction()};
@@ -598,7 +607,7 @@ Task<void> DebugExecutor::execute(
                 auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
                 Tracers tracers{debug_tracer};
 
-                const auto execution_result = executor.call(block_context.block_with_hash->block, txn, tracers, /* refund */ false, /* gasBailout */ false);
+                const auto execution_result = executor.call(block_context.block_with_hash->block, txn, tracers, refunds, /* gasBailout */ false);
 
                 debug_tracer->flush_logs();
                 stream.close_array();

@@ -354,7 +354,9 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
     auto tx = co_await database_->begin();
 
     try {
-        LogsWalker logs_walker(*block_cache_, *tx, *backend_, workers_);
+        auto storage = tx->create_storage();
+        LogsWalker logs_walker(*block_cache_, *tx, *storage, *backend_, workers_);
+
         const auto [start, end] = co_await logs_walker.get_block_nums(filter);
         if (start == end && start == std::numeric_limits<std::uint64_t>::max()) {
             auto error_msg = "invalid eth_getLogs filter block_hash: " + filter.block_hash.value();

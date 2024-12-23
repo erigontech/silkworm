@@ -553,8 +553,18 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
         stream.write_json(reply);
         co_return;
     }
-    const BlockNum block_num =
-        params[0].is_string() ? std::stoul(params[0].get<std::string>(), nullptr, 10) : params[0].get<BlockNum>();
+
+    BlockNum block_num{0};
+    if (params[0].is_string()) {
+        const auto value = params[0].get<std::string>();
+        if (silkworm::is_valid_hex(value)) {
+            block_num = static_cast<BlockNum>(std::stol(value, nullptr, 16));
+        } else if (silkworm::is_valid_dec(value)) {
+            block_num = static_cast<BlockNum>(std::stol(value, nullptr, 10));
+        }
+    } else {
+        block_num = params[0].get<BlockNum>();
+    }
 
     debug::DebugConfig config;
     if (params.size() > 1) {

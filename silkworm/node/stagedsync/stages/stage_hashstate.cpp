@@ -25,6 +25,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 
 namespace silkworm::stagedsync {
@@ -799,7 +800,7 @@ void HashState::write_changes_from_changed_addresses(RWTxn& txn, const ChangedAd
             target_hashed_accounts->upsert(db::to_slice(address_hash), to_slice(current_encoded_value));
 
             // Lookup value in PlainCodeHash for Contract
-            auto account = Account::from_encoded_storage(current_encoded_value);
+            auto account = db::state::AccountCodec::from_encoded_storage(current_encoded_value);
             success_or_throw(account);
             if (account->incarnation != 0) {
                 std::memcpy(&plain_code_key[0], address.bytes, kAddressLength);
@@ -814,7 +815,8 @@ void HashState::write_changes_from_changed_addresses(RWTxn& txn, const ChangedAd
                                                    "address_hash", to_hex(address_hash),
                                                    "incarnation", std::to_string(account->incarnation)});
                         std::memcpy(account->code_hash.bytes, code_data.value.data(), kHashLength);
-                        target_hashed_accounts->upsert(db::to_slice(address_hash), to_slice(account->encode_for_storage()));
+                        Bytes account_data = db::state::AccountCodec::encode_for_storage(*account);
+                        target_hashed_accounts->upsert(db::to_slice(address_hash), to_slice(account_data));
                     }
                     target_hashed_code->upsert(to_slice(hashed_code_key), code_data.value);
                 } else {

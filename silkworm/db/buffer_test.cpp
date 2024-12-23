@@ -26,6 +26,8 @@
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
+#include "state/account_codec.hpp"
+
 namespace silkworm::db {
 
 TEST_CASE("Buffer storage", "[silkworm][db][buffer]") {
@@ -245,7 +247,7 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
 
     SECTION("New EOA account") {
         const evmc::address address{0xbe00000000000000000000000000000000000000_address};
-        Account current_account;
+        state::AccountEncodable current_account;
         current_account.balance = kEther;
 
         Buffer buffer{txn, std::make_unique<BufferROTxDataModel>(txn)};
@@ -277,7 +279,7 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
         initial_account.nonce = 1;
         initial_account.balance = 0;
 
-        Account current_account;
+        state::AccountEncodable current_account;
         current_account.nonce = 2;
         current_account.balance = kEther;
 
@@ -303,7 +305,7 @@ TEST_CASE("Buffer account", "[silkworm][db][buffer]") {
         data_value_view.remove_prefix(kAddressLength);
         REQUIRE(!data_value_view.empty());
 
-        auto previous_account{Account::from_encoded_storage(data_value_view)};
+        auto previous_account = state::AccountCodec::from_encoded_storage(data_value_view);
         CHECK(previous_account == initial_account);
     }
 

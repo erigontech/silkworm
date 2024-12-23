@@ -29,6 +29,7 @@
 #include <silkworm/db/datastore/kvdb/bitmap.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/receipt_cbor.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -744,7 +745,7 @@ std::optional<Account> read_account(ROTxn& txn, const evmc::address& address, st
         return std::nullopt;
     }
 
-    const auto acc_res{Account::from_encoded_storage(encoded.value())};
+    const auto acc_res = state::AccountCodec::from_encoded_storage(encoded.value());
     success_or_throw(acc_res);
     Account acc{*acc_res};
 
@@ -787,7 +788,7 @@ static std::optional<uint64_t> historical_previous_incarnation(ROTxn& txn, const
     if (!encoded_account) {
         return std::nullopt;
     }
-    const auto acc_result{Account::from_encoded_storage(encoded_account.value())};
+    const auto acc_result = state::AccountCodec::from_encoded_storage(encoded_account.value());
     success_or_throw(acc_result);
     Account account{*acc_result};
     const uint64_t previous_incarnation{account.incarnation > 0 ? account.incarnation - 1 : 0};

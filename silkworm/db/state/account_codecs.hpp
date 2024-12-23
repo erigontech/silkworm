@@ -20,6 +20,7 @@
 #include <silkworm/db/datastore/snapshots/common/codec.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 
+#include "account_codec.hpp"
 #include "silkworm/db/util.hpp"
 
 namespace silkworm::db::state {
@@ -30,7 +31,7 @@ struct AccountDecoder : public snapshots::Decoder {
     ~AccountDecoder() override = default;
 
     void decode_word(ByteView word) override {
-        auto account = Account::from_encoded_storage_v3(word);
+        auto account = AccountCodec::from_encoded_storage_v3(word);
         if (!account)
             throw DecodingException{account.error(), "AccountDecoder failed to decode Account"};
         value = std::move(*account);

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <silkworm/core/types/account.hpp>
+#include <silkworm/db/datastore/kvdb/codec.hpp>
 #include <silkworm/db/datastore/snapshots/common/codec.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 
@@ -24,6 +25,25 @@
 #include "silkworm/db/util.hpp"
 
 namespace silkworm::db::state {
+
+struct AccountKVDBCodec : public datastore::kvdb::Codec {
+    Account value;
+    Bytes data;
+
+    ~AccountKVDBCodec() override = default;
+
+    datastore::kvdb::Slice encode() override {
+        data = AccountCodec::encode_for_storage_v3(value);
+        return datastore::kvdb::to_slice(data);
+    }
+
+    void decode(datastore::kvdb::Slice slice) override {
+        value = unwrap_or_throw(AccountCodec::from_encoded_storage_v3(datastore::kvdb::from_slice(slice)));
+    }
+};
+
+static_assert(datastore::kvdb::EncoderConcept<AccountKVDBCodec>);
+static_assert(datastore::kvdb::DecoderConcept<AccountKVDBCodec>);
 
 struct AccountDecoder : public snapshots::Decoder {
     Account value;

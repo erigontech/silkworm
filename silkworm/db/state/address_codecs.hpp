@@ -20,9 +20,22 @@
 
 #include <evmc/evmc.hpp>
 
+#include <silkworm/db/datastore/kvdb/codec.hpp>
 #include <silkworm/db/datastore/snapshots/common/codec.hpp>
 
 namespace silkworm::db::state {
+
+struct AddressKVDBEncoder : public datastore::kvdb::Encoder {
+    evmc::address value;
+
+    ~AddressKVDBEncoder() override = default;
+
+    datastore::kvdb::Slice encode() override {
+        return {&value.bytes, kAddressLength};
+    }
+};
+
+static_assert(datastore::kvdb::EncoderConcept<AddressKVDBEncoder>);
 
 struct AddressDecoder : public snapshots::Decoder {
     evmc::address value;

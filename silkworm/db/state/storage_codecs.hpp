@@ -16,11 +16,27 @@
 
 #pragma once
 
+#include <cstring>
 #include <stdexcept>
 
 #include "address_codecs.hpp"
 
 namespace silkworm::db::state {
+
+struct Bytes32KVDBCodec : public datastore::kvdb::Codec {
+    evmc::bytes32 value;
+    ~Bytes32KVDBCodec() override = default;
+    datastore::kvdb::Slice encode() override {
+        return {&value.bytes, sizeof(value.bytes)};
+    }
+    void decode(datastore::kvdb::Slice slice) override {
+        SILKWORM_ASSERT(slice.size() >= sizeof(value.bytes));
+        std::memcpy(value.bytes, slice.data(), sizeof(value.bytes));
+    }
+};
+
+static_assert(datastore::kvdb::EncoderConcept<Bytes32KVDBCodec>);
+static_assert(datastore::kvdb::DecoderConcept<Bytes32KVDBCodec>);
 
 struct Bytes32Decoder : public snapshots::Decoder {
     evmc::bytes32 value;
@@ -33,6 +49,26 @@ struct Bytes32Decoder : public snapshots::Decoder {
 };
 
 static_assert(snapshots::DecoderConcept<Bytes32Decoder>);
+
+struct StorageAddressAndLocationKVDBEncoder : public datastore::kvdb::Encoder {
+    struct {
+        evmc::address address;
+        evmc::bytes32 location_hash;
+    } value;
+
+    struct {
+        AddressKVDBEncoder address;
+        Bytes32KVDBCodec location_hash;
+    } encoder;
+
+    Bytes data;
+
+    ~StorageAddressAndLocationKVDBEncoder() override = default;
+
+    datastore::kvdb::Slice encode() override;
+};
+
+static_assert(datastore::kvdb::EncoderConcept<StorageAddressAndLocationKVDBEncoder>);
 
 struct StorageAddressAndLocationDecoder : public snapshots::Decoder {
     struct {

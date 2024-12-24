@@ -14,19 +14,20 @@
    limitations under the License.
 */
 
-#pragma once
-
-#include <silkworm/db/datastore/kvdb/domain.hpp>
-#include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
-
 #include "storage_codecs.hpp"
 
 namespace silkworm::db::state {
 
-using StorageDomainGetLatestQuery = datastore::kvdb::DomainGetLatestQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>;
-using StorageDomainPutQuery = datastore::kvdb::DomainPutQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>;
-using StorageDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>;
+datastore::kvdb::Slice StorageAddressAndLocationKVDBEncoder::encode() {
+    // TODO: this extra copy could be avoided if encoders are able to contain a reference
+    encoder.address.value = value.address;
+    encoder.location_hash.value = value.location_hash;
 
-using StorageDomainKVSegmentReader = snapshots::segment::KVSegmentReader<StorageAddressAndLocationDecoder, Bytes32Decoder>;
+    data.clear();
+    data.reserve(kAddressLength + kHashLength);
+    data.append(datastore::kvdb::from_slice(encoder.address.encode()));
+    data.append(datastore::kvdb::from_slice(encoder.location_hash.encode()));
+    return datastore::kvdb::to_slice(data);
+}
 
 }  // namespace silkworm::db::state

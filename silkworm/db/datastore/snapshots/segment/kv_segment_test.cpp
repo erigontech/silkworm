@@ -25,7 +25,7 @@
 
 namespace silkworm::snapshots::segment {
 
-struct CharCodec : public Encoder, public Decoder {
+struct CharCodec : public Codec {
     char value{};
     Bytes word;
 

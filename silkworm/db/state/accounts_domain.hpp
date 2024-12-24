@@ -24,6 +24,10 @@
 
 namespace silkworm::db::state {
 
+using AccountsDomainGetLatestQuery = datastore::kvdb::DomainGetLatestQuery<AddressKVDBEncoder, AccountKVDBCodec>;
+using AccountsDomainPutQuery = datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, AccountKVDBCodec>;
+using AccountsDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, AccountKVDBCodec>;
+
 using AccountsDomainKVSegmentReader = snapshots::segment::KVSegmentReader<AddressDecoder, AccountDecoder>;
 
 }  // namespace silkworm::db::state

@@ -14,29 +14,21 @@
    limitations under the License.
 */
 
-#pragma once
+#include "big_endian_codec.hpp"
 
-#include <string>
+#include <silkworm/core/common/endian.hpp>
 
-#include <silkworm/core/common/bytes_to_string.hpp>
+namespace silkworm::datastore::kvdb {
 
-#include "../common/codec.hpp"
+Slice BigEndianU64Codec::encode() {
+    data.resize(sizeof(uint64_t), 0);
+    endian::store_big_u64(data.data(), value);
+    return to_slice(data);
+}
 
-namespace silkworm::snapshots {
+void BigEndianU64Codec::decode(Slice slice) {
+    SILKWORM_ASSERT(slice.size() >= sizeof(uint64_t));
+    value = endian::load_big_u64(static_cast<uint8_t*>(slice.data()));
+}
 
-struct StringCodec : public Codec {
-    std::string value;
-    Bytes word;
-
-    ~StringCodec() override = default;
-
-    ByteView encode_word() override {
-        word = string_to_bytes(value);
-        return word;
-    }
-    void decode_word(ByteView input_word) override {
-        value = byte_view_to_string_view(input_word);
-    }
-};
-
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::datastore::kvdb

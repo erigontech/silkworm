@@ -16,27 +16,20 @@
 
 #pragma once
 
-#include <string>
+#include "codec.hpp"
 
-#include <silkworm/core/common/bytes_to_string.hpp>
+namespace silkworm::datastore::kvdb {
 
-#include "../common/codec.hpp"
+struct BigEndianU64Codec : public Codec {
+    uint64_t value{0};
+    Bytes data;
 
-namespace silkworm::snapshots {
-
-struct StringCodec : public Codec {
-    std::string value;
-    Bytes word;
-
-    ~StringCodec() override = default;
-
-    ByteView encode_word() override {
-        word = string_to_bytes(value);
-        return word;
-    }
-    void decode_word(ByteView input_word) override {
-        value = byte_view_to_string_view(input_word);
-    }
+    ~BigEndianU64Codec() override = default;
+    Slice encode() override;
+    void decode(Slice slice) override;
 };
 
-}  // namespace silkworm::snapshots
+static_assert(EncoderConcept<BigEndianU64Codec>);
+static_assert(DecoderConcept<BigEndianU64Codec>);
+
+}  // namespace silkworm::datastore::kvdb

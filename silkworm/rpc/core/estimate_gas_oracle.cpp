@@ -49,7 +49,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     if (gas_price && gas_price != 0) {
         evmc::address from = call.from.value_or(evmc::address{0});
 
-        std::optional<silkworm::Account> account{co_await account_reader_(from, block_num + 1)};
+        std::optional<silkworm::Account> account{co_await account_reader_(from, txn_id)};
 
         intx::uint256 balance = account->balance;
         SILK_DEBUG << "balance for address " << from << ": 0x" << intx::hex(balance);

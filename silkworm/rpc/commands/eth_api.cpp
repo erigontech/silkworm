@@ -918,8 +918,8 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
             return chain_storage->read_canonical_header(block_num);
         };
 
-        rpc::AccountReader account_reader = [&tx](const evmc::address& address, BlockNum block_num) -> Task<std::optional<Account>> {
-            StateReader state_reader{*tx, block_num + 1};
+        rpc::AccountReader account_reader = [&tx](const evmc::address& address, TxnId txn_id) -> Task<std::optional<Account>> {
+            StateReader state_reader{*tx, txn_id};
             co_return co_await state_reader.read_account(address);
         };
 
@@ -973,7 +973,10 @@ Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request,
         const auto [block_num, is_latest_block] = co_await block_reader.get_block_num(block_num_or_hash);
         tx->set_state_cache_enabled(is_latest_block);
 
-        StateReader state_reader{*tx, block_num + 1};
+        execution::StateFactory state_factory{*tx};
+        const auto txn_id = co_await state_factory.user_txn_id_at(block_num + 1);
+        StateReader state_reader{*tx, txn_id};
+
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         reply = make_json_content(request, "0x" + (account ? intx::hex(account->balance) : "0"));
@@ -1012,7 +1015,10 @@ Task<void> EthereumRpcApi::handle_eth_get_code(const nlohmann::json& request, nl
         const auto [block_num, is_latest_block] = co_await block_reader.get_block_num(block_id, /*latest_required=*/true);
         tx->set_state_cache_enabled(is_latest_block);
 
-        StateReader state_reader{*tx, block_num + 1};
+        execution::StateFactory state_factory{*tx};
+        const auto txn_id = co_await state_factory.user_txn_id_at(block_num + 1);
+
+        StateReader state_reader{*tx, txn_id};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         if (account) {
@@ -1053,7 +1059,11 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json
         const auto [block_num, is_latest_block] = co_await block_reader.get_block_num(block_id, /*latest_required=*/true);
         tx->set_state_cache_enabled(is_latest_block);
 
-        StateReader state_reader{*tx, block_num + 1};
+        execution::StateFactory state_factory{*tx};
+        const auto txn_id = co_await state_factory.user_txn_id_at(block_num + 1);
+
+        StateReader state_reader{*tx, txn_id};
+
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         if (account) {
@@ -1101,7 +1111,10 @@ Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& reque
         const auto [block_num, is_latest_block] = co_await block_reader.get_block_num(block_id, /*latest_required=*/true);
         tx->set_state_cache_enabled(is_latest_block);
 
-        StateReader state_reader{*tx, block_num + 1};
+        execution::StateFactory state_factory{*tx};
+        const auto txn_id = co_await state_factory.user_txn_id_at(block_num + 1);
+
+        StateReader state_reader{*tx, txn_id};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
 
         if (account) {
@@ -1317,7 +1330,10 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         const bool is_latest_block = co_await block_reader.get_latest_executed_block_num() == block_with_hash->block.header.number;
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
-        StateReader state_reader{*tx, block_with_hash->block.header.number + 1};
+        execution::StateFactory state_factory{*tx};
+        const auto txn_id = co_await state_factory.user_txn_id_at(block_with_hash->block.header.number + 1);
+
+        StateReader state_reader{*tx, txn_id};
 
         std::optional<uint64_t> nonce = std::nullopt;
         evmc::address to{};
@@ -1346,9 +1362,6 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         Tracers tracers{tracer};
         auto txn = call.to_transaction(std::nullopt, nonce);
         AccessList saved_access_list = call.access_list;
-
-        execution::StateFactory state_factory{*tx};
-        const auto txn_id = co_await state_factory.user_txn_id_at(block_with_hash->block.header.number + 1);
 
         while (true) {
             const auto execution_result = co_await EVMExecutor::call(

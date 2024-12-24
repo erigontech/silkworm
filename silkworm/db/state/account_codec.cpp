@@ -146,56 +146,68 @@ tl::expected<Account, DecodingError> AccountCodec::from_encoded_storage(ByteView
     return a;
 }
 
-tl::expected<Account, DecodingError> AccountCodec::from_encoded_storage_v3(ByteView encoded_payload) noexcept {
-    Account a;
-    if (encoded_payload.empty()) {
-        return a;
-    }
-    size_t pos{0};
-    for (int i{0}; i < 4; ++i) {
-        uint8_t len = encoded_payload[pos++];
-        if (len == 0) {
-            if (encoded_payload.length() == pos && i < 3) {
-                return tl::unexpected{DecodingError::kUnexpectedLength};
-            }
-            continue;
-        }
-        if (encoded_payload.length() < pos + len) {
-            return tl::unexpected{DecodingError::kInputTooShort};
-        }
-        const auto encoded_value{encoded_payload.substr(pos, len)};
-        switch (i) {
-            case 0:
-                if (DecodingResult res{endian::from_big_compact(encoded_value, a.nonce)}; !res) {
-                    return tl::unexpected{res.error()};
-                }
-                break;
-            case 1:
-                if (DecodingResult res{endian::from_big_compact(encoded_value, a.balance)}; !res) {
-                    return tl::unexpected{res.error()};
-                }
-                break;
-            case 2:
-                if (len != kHashLength) {
-                    return tl::unexpected{DecodingError::kUnexpectedLength};
-                }
-                std::memcpy(a.code_hash.bytes, encoded_value.data(), kHashLength);
-                break;
-            case 3:
-                if (DecodingResult res{endian::from_big_compact(encoded_value, a.incarnation)}; !res) {
-                    return tl::unexpected{res.error()};
-                }
-                break;
-            default:
-                intx::unreachable();
-        }
-        pos += len;
-        if (pos >= encoded_payload.length() && i < 3) {
-            return tl::unexpected{DecodingError::kInputTooShort};
-        }
-    }
+Bytes AccountCodec::encode_for_storage_v3(const Account& account) {
+    Bytes result;
+    auto write = [&result](ByteView field) {
+        result.push_back(static_cast<uint8_t>(field.size()));
+        result.append(field);
+    };
 
-    return a;
+    write(endian::to_big_compact(account.nonce));
+    write(endian::to_big_compact(account.balance));
+    write((account.code_hash != kEmptyHash) ? ByteView{account.code_hash.bytes, kHashLength} : ByteView{});
+    write(endian::to_big_compact(account.incarnation));
+
+    return result;
+}
+
+tl::expected<Account, DecodingError> AccountCodec::from_encoded_storage_v3(ByteView encoded_payload) noexcept {
+    auto read = [&encoded_payload]() -> tl::expected<ByteView, DecodingError> {
+        if (encoded_payload.empty()) {
+            return tl::unexpected{DecodingError::kInputTooShort};
+        }
+        uint8_t len = encoded_payload[0];
+        encoded_payload.remove_prefix(1);
+
+        if (encoded_payload.size() < len) {
+            return tl::unexpected{DecodingError::kInputTooShort};
+        }
+        ByteView field = encoded_payload.substr(0, len);
+        encoded_payload.remove_prefix(len);
+        return field;
+    };
+
+    auto read_and_decode = [&read](auto out_ptr, auto decode) -> DecodingResult {
+        auto field = read();
+        if (!field) return tl::unexpected{field.error()};
+        if (field->empty()) return {};
+        return decode(*field, *out_ptr);
+    };
+
+    auto decode_hash = [](ByteView data, evmc_bytes32& out_hash) -> DecodingResult {
+        if (data.size() == kHashLength) {
+            std::memcpy(out_hash.bytes, data.data(), kHashLength);
+            return {};
+        } else {
+            return tl::unexpected{DecodingError::kUnexpectedLength};
+        }
+    };
+
+    Account account;
+
+    auto result = read_and_decode(&account.nonce, endian::from_big_compact<uint64_t>);
+    if (!result) return tl::unexpected{result.error()};
+
+    result = read_and_decode(&account.balance, endian::from_big_compact<intx::uint256>);
+    if (!result) return tl::unexpected{result.error()};
+
+    result = read_and_decode(&account.code_hash, decode_hash);
+    if (!result) return tl::unexpected{result.error()};
+
+    result = read_and_decode(&account.incarnation, endian::from_big_compact<uint64_t>);
+    if (!result) return tl::unexpected{result.error()};
+
+    return account;
 }
 
 tl::expected<uint64_t, DecodingError> AccountCodec::incarnation_from_encoded_storage(ByteView encoded_payload) noexcept {

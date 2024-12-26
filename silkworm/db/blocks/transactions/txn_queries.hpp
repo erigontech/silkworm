@@ -21,6 +21,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/datastore/snapshots/basic_queries.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_repository_ro_access.hpp>
 
 #include "../schema_config.hpp"
 #include "txn_segment.hpp"
@@ -69,8 +70,7 @@ class TransactionBlockNumByTxnHashSegmentQuery {
 
 class TransactionBlockNumByTxnHashQuery {
   public:
-    // TODO: use a sub-interface of SnapshotRepository
-    explicit TransactionBlockNumByTxnHashQuery(SnapshotRepository& repository)
+    explicit TransactionBlockNumByTxnHashQuery(const SnapshotRepositoryROAccess& repository)
         : repository_{repository} {}
 
     std::optional<BlockNum> exec(const Hash& hash) {
@@ -85,7 +85,7 @@ class TransactionBlockNumByTxnHashQuery {
     }
 
   private:
-    SnapshotRepository& repository_;
+    const SnapshotRepositoryROAccess& repository_;
 };
 
 }  // namespace silkworm::snapshots

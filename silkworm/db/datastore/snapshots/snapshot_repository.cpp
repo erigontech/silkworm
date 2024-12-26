@@ -23,6 +23,8 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
+#include "index_builders_factory.hpp"
+
 namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;

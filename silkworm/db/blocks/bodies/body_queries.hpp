@@ -17,7 +17,7 @@
 #pragma once
 
 #include <silkworm/db/datastore/snapshots/basic_queries.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_repository_ro_access.hpp>
 
 #include "../schema_config.hpp"
 #include "body_segment.hpp"
@@ -28,8 +28,7 @@ using BodyFindByBlockNumSegmentQuery = FindByIdSegmentQuery<BodySegmentReader>;
 
 class BodyFindByBlockNumQuery {
   public:
-    // TODO: use a sub-interface of SnapshotRepository
-    explicit BodyFindByBlockNumQuery(SnapshotRepository& repository)
+    explicit BodyFindByBlockNumQuery(const SnapshotRepositoryROAccess& repository)
         : repository_{repository} {}
 
     std::optional<BlockBodyForStorage> exec(BlockNum block_num) {
@@ -39,7 +38,7 @@ class BodyFindByBlockNumQuery {
     }
 
   private:
-    SnapshotRepository& repository_;
+    const SnapshotRepositoryROAccess& repository_;
 };
 
 }  // namespace silkworm::snapshots

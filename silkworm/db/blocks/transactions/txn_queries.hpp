@@ -40,6 +40,11 @@ class TransactionBlockNumByTxnHashSegmentQuery {
         : index_(index),
           cross_check_query_(cross_check_query) {}
 
+    explicit TransactionBlockNumByTxnHashSegmentQuery(
+        const SnapshotBundle& bundle)
+        : TransactionBlockNumByTxnHashSegmentQuery{
+              make(db::blocks::BundleDataRef{*bundle})} {}
+
     std::optional<BlockNum> exec(const Hash& hash) {
         // Lookup the entire txn to check that the retrieved txn hash matches (no way to know if key exists in MPHF)
         const auto transaction = cross_check_query_.exec(hash);
@@ -47,26 +52,30 @@ class TransactionBlockNumByTxnHashSegmentQuery {
         return result;
     }
 
+    static TransactionBlockNumByTxnHashSegmentQuery make(db::blocks::BundleDataRef bundle) {
+        TransactionFindByHashSegmentQuery cross_check_query{
+            SegmentAndAccessorIndex{
+                bundle.txn_segment(),
+                bundle.idx_txn_hash(),
+            },
+        };
+        return {bundle.idx_txn_hash_2_block(), cross_check_query};
+    }
+
   private:
     const rec_split::AccessorIndex& index_;
     TransactionFindByHashSegmentQuery cross_check_query_;
 };
 
-template <std::ranges::view TBundlesView, class TBundle = typename std::ranges::iterator_t<TBundlesView>::value_type>
 class TransactionBlockNumByTxnHashQuery {
   public:
-    explicit TransactionBlockNumByTxnHashQuery(TBundlesView bundles)
-        : bundles_(std::move(bundles)) {}
+    // TODO: use a sub-interface of SnapshotRepository
+    explicit TransactionBlockNumByTxnHashQuery(SnapshotRepository& repository)
+        : repository_{repository} {}
 
     std::optional<BlockNum> exec(const Hash& hash) {
-        for (const TBundle& bundle_ptr : bundles_) {
-            db::blocks::BundleDataRef bundle{**bundle_ptr};
-            const segment::SegmentFileReader& segment = bundle.txn_segment();
-            const rec_split::AccessorIndex& idx_txn_hash = bundle.idx_txn_hash();
-            const rec_split::AccessorIndex& idx_txn_hash_2_block = bundle.idx_txn_hash_2_block();
-
-            TransactionFindByHashSegmentQuery cross_check_query{{segment, idx_txn_hash}};
-            TransactionBlockNumByTxnHashSegmentQuery query{idx_txn_hash_2_block, cross_check_query};
+        for (const auto& bundle_ptr : repository_.view_bundles_reverse()) {
+            TransactionBlockNumByTxnHashSegmentQuery query{*bundle_ptr};
             auto block_num = query.exec(hash);
             if (block_num) {
                 return block_num;
@@ -76,7 +85,7 @@ class TransactionBlockNumByTxnHashQuery {
     }
 
   private:
-    TBundlesView bundles_;
+    SnapshotRepository& repository_;
 };
 
 }  // namespace silkworm::snapshots

@@ -61,7 +61,7 @@ static BlockNum get_first_stored_header_num(ROTxn& txn) {
 }
 
 static std::optional<uint64_t> get_next_base_txn_id(SnapshotRepository& repository, BlockNum block_num) {
-    auto body = BodyFindByBlockNumMultiQuery{repository}.exec(block_num);
+    auto body = BodyFindByBlockNumQuery{repository}.exec(block_num);
     if (!body) return std::nullopt;
     return body->base_txn_id + body->txn_count;
 }

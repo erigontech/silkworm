@@ -27,9 +27,9 @@
 namespace silkworm::snapshots {
 
 template <segment::SegmentReaderConcept TSegmentReader>
-class BasicQuery {
+class BasicSegmentQuery {
   public:
-    explicit BasicQuery(
+    explicit BasicSegmentQuery(
         const SegmentAndAccessorIndex segment_and_index)
         : reader_{segment_and_index.segment},
           index_{segment_and_index.index} {}
@@ -40,8 +40,8 @@ class BasicQuery {
 };
 
 template <segment::SegmentReaderConcept TSegmentReader>
-struct FindByIdQuery : public BasicQuery<TSegmentReader> {
-    using BasicQuery<TSegmentReader>::BasicQuery;
+struct FindByIdSegmentQuery : public BasicSegmentQuery<TSegmentReader> {
+    using BasicSegmentQuery<TSegmentReader>::BasicSegmentQuery;
 
     std::optional<typename TSegmentReader::Iterator::value_type> exec(uint64_t id) {
         auto offset = this->index_.lookup_by_data_id(id);
@@ -54,8 +54,8 @@ struct FindByIdQuery : public BasicQuery<TSegmentReader> {
 };
 
 template <segment::SegmentReaderConcept TSegmentReader>
-struct FindByHashQuery : public BasicQuery<TSegmentReader> {
-    using BasicQuery<TSegmentReader>::BasicQuery;
+struct FindByHashSegmentQuery : public BasicSegmentQuery<TSegmentReader> {
+    using BasicSegmentQuery<TSegmentReader>::BasicSegmentQuery;
 
     std::optional<typename TSegmentReader::Iterator::value_type> exec(const Hash& hash) {
         auto offset = this->index_.lookup_by_hash(hash);
@@ -75,8 +75,8 @@ struct FindByHashQuery : public BasicQuery<TSegmentReader> {
 };
 
 template <segment::SegmentReaderConcept TSegmentReader>
-struct RangeFromIdQuery : public BasicQuery<TSegmentReader> {
-    using BasicQuery<TSegmentReader>::BasicQuery;
+struct RangeFromIdSegmentQuery : public BasicSegmentQuery<TSegmentReader> {
+    using BasicSegmentQuery<TSegmentReader>::BasicSegmentQuery;
 
     std::vector<typename TSegmentReader::Iterator::value_type> exec_into_vector(uint64_t first_id, uint64_t count) {
         auto offset = this->index_.lookup_by_data_id(first_id);

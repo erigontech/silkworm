@@ -22,7 +22,7 @@
 
 namespace silkworm::snapshots {
 
-using HeaderFindByBlockNumQuery = FindByIdQuery<HeaderSegmentReader>;
-using HeaderFindByHashQuery = FindByHashQuery<HeaderSegmentReader>;
+using HeaderFindByBlockNumSegmentQuery = FindByIdSegmentQuery<HeaderSegmentReader>;
+using HeaderFindByHashSegmentQuery = FindByHashSegmentQuery<HeaderSegmentReader>;
 
 }  // namespace silkworm::snapshots

@@ -24,18 +24,18 @@
 
 namespace silkworm::snapshots {
 
-using BodyFindByBlockNumQuery = FindByIdQuery<BodySegmentReader>;
+using BodyFindByBlockNumSegmentQuery = FindByIdSegmentQuery<BodySegmentReader>;
 
-class BodyFindByBlockNumMultiQuery {
+class BodyFindByBlockNumQuery {
   public:
     // TODO: use a sub-interface of SnapshotRepository
-    explicit BodyFindByBlockNumMultiQuery(SnapshotRepository& repository)
+    explicit BodyFindByBlockNumQuery(SnapshotRepository& repository)
         : repository_{repository} {}
 
     std::optional<BlockBodyForStorage> exec(BlockNum block_num) {
         const auto [segment_and_index, _] = repository_.find_segment(db::blocks::kBodySegmentAndIdxNames, block_num);
         if (!segment_and_index) return std::nullopt;
-        return BodyFindByBlockNumQuery{*segment_and_index}.exec(block_num);
+        return BodyFindByBlockNumSegmentQuery{*segment_and_index}.exec(block_num);
     }
 
   private:

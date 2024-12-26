@@ -27,16 +27,16 @@
 
 namespace silkworm::snapshots {
 
-using TransactionFindByIdQuery = FindByIdQuery<TransactionSegmentReader>;
-using TransactionFindByHashQuery = FindByHashQuery<TransactionSegmentReader>;
-using TransactionRangeFromIdQuery = RangeFromIdQuery<TransactionSegmentReader>;
-using TransactionPayloadRlpRangeFromIdQuery = RangeFromIdQuery<TransactionSegmentPayloadRlpReader<Bytes>>;
+using TransactionFindByIdSegmentQuery = FindByIdSegmentQuery<TransactionSegmentReader>;
+using TransactionFindByHashSegmentQuery = FindByHashSegmentQuery<TransactionSegmentReader>;
+using TransactionRangeFromIdSegmentQuery = RangeFromIdSegmentQuery<TransactionSegmentReader>;
+using TransactionPayloadRlpRangeFromIdSegmentQuery = RangeFromIdSegmentQuery<TransactionSegmentPayloadRlpReader<Bytes>>;
 
-class TransactionBlockNumByTxnHashQuery {
+class TransactionBlockNumByTxnHashSegmentQuery {
   public:
-    TransactionBlockNumByTxnHashQuery(
+    TransactionBlockNumByTxnHashSegmentQuery(
         const rec_split::AccessorIndex& index,
-        TransactionFindByHashQuery cross_check_query)
+        TransactionFindByHashSegmentQuery cross_check_query)
         : index_(index),
           cross_check_query_(cross_check_query) {}
 
@@ -49,13 +49,13 @@ class TransactionBlockNumByTxnHashQuery {
 
   private:
     const rec_split::AccessorIndex& index_;
-    TransactionFindByHashQuery cross_check_query_;
+    TransactionFindByHashSegmentQuery cross_check_query_;
 };
 
 template <std::ranges::view TBundlesView, class TBundle = typename std::ranges::iterator_t<TBundlesView>::value_type>
-class TransactionBlockNumByTxnHashMultiQuery {
+class TransactionBlockNumByTxnHashQuery {
   public:
-    explicit TransactionBlockNumByTxnHashMultiQuery(TBundlesView bundles)
+    explicit TransactionBlockNumByTxnHashQuery(TBundlesView bundles)
         : bundles_(std::move(bundles)) {}
 
     std::optional<BlockNum> exec(const Hash& hash) {
@@ -65,8 +65,8 @@ class TransactionBlockNumByTxnHashMultiQuery {
             const rec_split::AccessorIndex& idx_txn_hash = bundle.idx_txn_hash();
             const rec_split::AccessorIndex& idx_txn_hash_2_block = bundle.idx_txn_hash_2_block();
 
-            TransactionFindByHashQuery cross_check_query{{segment, idx_txn_hash}};
-            TransactionBlockNumByTxnHashQuery query{idx_txn_hash_2_block, cross_check_query};
+            TransactionFindByHashSegmentQuery cross_check_query{{segment, idx_txn_hash}};
+            TransactionBlockNumByTxnHashSegmentQuery query{idx_txn_hash_2_block, cross_check_query};
             auto block_num = query.exec(hash);
             if (block_num) {
                 return block_num;

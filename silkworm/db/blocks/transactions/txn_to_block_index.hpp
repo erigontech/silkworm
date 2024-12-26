@@ -33,7 +33,7 @@ namespace silkworm::snapshots {
 
 class TransactionToBlockIndexInputDataQuery : public IndexInputDataQuery {
   public:
-    explicit TransactionToBlockIndexInputDataQuery(TxsAndBodiesQuery query)
+    explicit TransactionToBlockIndexInputDataQuery(TxsAndBodiesSegmentQuery query)
         : query_(std::move(query)) {}
 
     Iterator begin() override;
@@ -43,7 +43,7 @@ class TransactionToBlockIndexInputDataQuery : public IndexInputDataQuery {
     bool equal_iterators(std::shared_ptr<void> lhs_it_impl, std::shared_ptr<void> rhs_it_impl) const override;
 
   private:
-    TxsAndBodiesQuery query_;
+    TxsAndBodiesSegmentQuery query_;
 };
 
 class TransactionToBlockIndex {

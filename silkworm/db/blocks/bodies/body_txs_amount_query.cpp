@@ -22,10 +22,10 @@
 
 namespace silkworm::snapshots {
 
-BodyTxsAmountQuery::Result BodyTxsAmountQuery::exec() {
+BodyTxsAmountSegmentQuery::Result BodyTxsAmountSegmentQuery::exec() {
     size_t body_count = segment_.item_count();
     if (body_count == 0) {
-        throw std::runtime_error("BodyTxsAmountQuery empty body snapshot: " + segment_.path().path().string());
+        throw std::runtime_error("BodyTxsAmountSegmentQuery empty body snapshot: " + segment_.path().path().string());
     }
 
     BodySegmentReader reader{segment_};

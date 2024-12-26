@@ -32,7 +32,7 @@
 
 namespace silkworm::snapshots {
 
-class TxsAndBodiesQuery {
+class TxsAndBodiesSegmentQuery {
   public:
     class Iterator {
       public:
@@ -85,7 +85,7 @@ class TxsAndBodiesQuery {
 
     static_assert(std::input_or_output_iterator<Iterator>);
 
-    TxsAndBodiesQuery(
+    TxsAndBodiesSegmentQuery(
         SnapshotPath txs_segment_path,
         std::optional<MemoryMappedRegion> txs_segment_region,
         SnapshotPath bodies_segment_path,

@@ -1270,7 +1270,7 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(BlockNum block_n
     // We know the header snapshot in advance: find it based on target block number
     const auto [segment_and_index, _] = repository_.find_segment(blocks::kHeaderSegmentAndIdxNames, block_num);
     if (segment_and_index) {
-        block_header = HeaderFindByBlockNumQuery{*segment_and_index}.exec(block_num);
+        block_header = HeaderFindByBlockNumSegmentQuery{*segment_and_index}.exec(block_num);
     }
     return block_header;
 }
@@ -1281,14 +1281,14 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash
     for (const auto& bundle_ptr : repository_.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
         auto segment_and_index = bundle.segment_and_accessor_index(blocks::kHeaderSegmentAndIdxNames);
-        block_header = HeaderFindByHashQuery{segment_and_index}.exec(hash);
+        block_header = HeaderFindByHashSegmentQuery{segment_and_index}.exec(hash);
         if (block_header) break;
     }
     return block_header;
 }
 
 std::optional<BlockBodyForStorage> DataModel::read_body_for_storage_from_snapshot(BlockNum block_num) const {
-    return BodyFindByBlockNumMultiQuery{repository_}.exec(block_num);
+    return BodyFindByBlockNumQuery{repository_}.exec(block_num);
 }
 
 bool DataModel::read_body_from_snapshot(BlockNum block_num, BlockBody& body) const {
@@ -1313,7 +1313,7 @@ bool DataModel::is_body_in_snapshot(BlockNum block_num) const {
     // We know the body snapshot in advance: find it based on target block number
     const auto [segment_and_index, _] = repository_.find_segment(blocks::kBodySegmentAndIdxNames, block_num);
     if (segment_and_index) {
-        const auto stored_body = BodyFindByBlockNumQuery{*segment_and_index}.exec(block_num);
+        const auto stored_body = BodyFindByBlockNumSegmentQuery{*segment_and_index}.exec(block_num);
         return stored_body.has_value();
     }
 
@@ -1328,7 +1328,7 @@ bool DataModel::read_transactions_from_snapshot(BlockNum block_num, uint64_t bas
     const auto [segment_and_index, _] = repository_.find_segment(blocks::kTxnSegmentAndIdxNames, block_num);
     if (!segment_and_index) return false;
 
-    txs = TransactionRangeFromIdQuery{*segment_and_index}.exec_into_vector(base_txn_id, txn_count);
+    txs = TransactionRangeFromIdSegmentQuery{*segment_and_index}.exec_into_vector(base_txn_id, txn_count);
 
     return true;
 }
@@ -1336,7 +1336,7 @@ bool DataModel::read_transactions_from_snapshot(BlockNum block_num, uint64_t bas
 bool DataModel::read_rlp_transactions_from_snapshot(BlockNum block_num, std::vector<Bytes>& rlp_txs) const {
     const auto [body_segment_and_index, _] = repository_.find_segment(blocks::kBodySegmentAndIdxNames, block_num);
     if (body_segment_and_index) {
-        auto stored_body = BodyFindByBlockNumQuery{*body_segment_and_index}.exec(block_num);
+        auto stored_body = BodyFindByBlockNumSegmentQuery{*body_segment_and_index}.exec(block_num);
         if (!stored_body) return false;
 
         // Skip first and last *system transactions* in block body
@@ -1348,7 +1348,7 @@ bool DataModel::read_rlp_transactions_from_snapshot(BlockNum block_num, std::vec
         const auto [tx_segment_and_index, _2] = repository_.find_segment(blocks::kTxnSegmentAndIdxNames, block_num);
         if (!tx_segment_and_index) return false;
 
-        rlp_txs = TransactionPayloadRlpRangeFromIdQuery{*tx_segment_and_index}.exec_into_vector(base_txn_id, txn_count);
+        rlp_txs = TransactionPayloadRlpRangeFromIdSegmentQuery{*tx_segment_and_index}.exec_into_vector(base_txn_id, txn_count);
 
         return true;
     }
@@ -1382,7 +1382,7 @@ std::optional<BlockNum> DataModel::read_tx_lookup_from_db(const evmc::bytes32& t
 }
 
 std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const {
-    TransactionBlockNumByTxnHashMultiQuery query{repository_.view_bundles_reverse()};
+    TransactionBlockNumByTxnHashQuery query{repository_.view_bundles_reverse()};
     return query.exec(tx_hash);
 }
 

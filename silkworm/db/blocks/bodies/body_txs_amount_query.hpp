@@ -22,14 +22,14 @@
 
 namespace silkworm::snapshots {
 
-class BodyTxsAmountQuery {
+class BodyTxsAmountSegmentQuery {
   public:
     struct Result {
         uint64_t first_tx_id{};
         uint64_t count{};
     };
 
-    explicit BodyTxsAmountQuery(const segment::SegmentFileReader& segment) : segment_(segment) {}
+    explicit BodyTxsAmountSegmentQuery(const segment::SegmentFileReader& segment) : segment_(segment) {}
 
     Result exec();
 

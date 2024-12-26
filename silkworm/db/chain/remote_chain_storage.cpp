@@ -194,7 +194,7 @@ Task<bool> RemoteChainStorage::read_rlp_transactions(BlockNum block_num, const e
     }
     rlp_txs.reserve(block.transactions.size());
     for (const auto& transaction : block.transactions) {
-        rlp::encode(rlp_txs.emplace_back(), transaction);
+        rlp::encode(rlp_txs.emplace_back(), transaction, /*wrap_eip2718_into_string=*/false);
     }
     co_return true;
 }
@@ -210,6 +210,11 @@ Task<bool> RemoteChainStorage::read_rlp_transaction(const evmc::bytes32& txn_has
         co_return false;
     }
 
+    std::vector<Bytes> rlp_txs;
+    if (!co_await read_rlp_transactions(*block_num, *block_hash, rlp_txs)) {
+        co_return false;
+    }
+
     Block block;
     const bool success = co_await providers_.block(*block_num, block_hash->bytes, /*.read_senders=*/false, block);
     if (!success) {
@@ -218,7 +223,7 @@ Task<bool> RemoteChainStorage::read_rlp_transaction(const evmc::bytes32& txn_has
     for (const auto& transaction : block.transactions) {
         Bytes rlp;
         if (transaction.hash() == txn_hash) {
-            rlp::encode(rlp, transaction);
+            rlp::encode(rlp, transaction, /*wrap_eip2718_into_string=*/false);
             rlp_tx = rlp;
             co_return true;
         }

@@ -554,14 +554,16 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
         co_return;
     }
 
+    auto tx = co_await database_->begin();
+
     BlockNum block_num{0};
     if (params[0].is_string()) {
+        auto chain_storage = tx->create_storage();
+        BlockReader block_reader{*chain_storage, *tx};
+
         const auto value = params[0].get<std::string>();
-        if (silkworm::is_valid_hex(value)) {
-            block_num = static_cast<BlockNum>(std::stol(value, nullptr, 16));
-        } else if (silkworm::is_valid_dec(value)) {
-            block_num = static_cast<BlockNum>(std::stol(value, nullptr, 10));
-        }
+
+        block_num = co_await block_reader.get_block_num(value);
     } else {
         block_num = params[0].get<BlockNum>();
     }
@@ -576,8 +578,6 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
     stream.open_object();
     stream.write_json_field("id", request["id"]);
     stream.write_field("jsonrpc", "2.0");
-
-    auto tx = co_await database_->begin();
 
     try {
         const auto chain_storage = tx->create_storage();

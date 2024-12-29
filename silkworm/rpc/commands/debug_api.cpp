@@ -734,7 +734,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_receipts(const nlohmann::json& requ
         std::vector<std::string> raw_receipts;
         for (auto& rpc_receipt : receipts) {
             silkworm::Receipt core_receipt{
-                .type = static_cast<TransactionType>(rpc_receipt.type.value_or(0)),
+                .type = rpc_receipt.txn_type,
                 .success = rpc_receipt.success,
                 .cumulative_gas_used = rpc_receipt.cumulative_gas_used,
                 .bloom = rpc_receipt.bloom,

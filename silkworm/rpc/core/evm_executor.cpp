@@ -275,9 +275,9 @@ ExecutionResult EVMExecutor::call_with_receipt(
     receipt.type = static_cast<uint8_t>(txn.type);
     for (const auto& log : logs) {
         Log rpc_log;
-        rpc_log.address = log.address;
-        rpc_log.data = log.data;
-        rpc_log.topics = log.topics;
+        rpc_log.address = std::move(log.address);
+        rpc_log.data = std::move(log.data);
+        rpc_log.topics = std::move(log.topics);
         receipt.logs.push_back(rpc_log);
     }
 

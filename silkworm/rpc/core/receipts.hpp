@@ -28,7 +28,7 @@ namespace silkworm::rpc::core {
 
 static constexpr int kGasPerBlob = 0x20000;
 
-Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash, const db::chain::ChainStorage& chain_storage, WorkerPool& workers);
+Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash, const db::chain::ChainStorage& chain_storage, WorkerPool& workers, bool extended_receipt_info = true);
 
 Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, BlockNum block_num);
 

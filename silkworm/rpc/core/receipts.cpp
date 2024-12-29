@@ -32,7 +32,7 @@ namespace silkworm::rpc::core {
 
 using ethdb::walk;
 
-Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash, const db::chain::ChainStorage& chain_storage, WorkerPool& workers) {
+Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash, const db::chain::ChainStorage& chain_storage, WorkerPool& workers, bool extended_receipt_info) {
     if (block_with_hash.block.transactions.empty()) {
         co_return Receipts{};
     }
@@ -56,6 +56,11 @@ Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockW
     if (transactions.size() != receipts.size()) {
         throw std::runtime_error{"#transactions and #receipts do not match in read_receipts"};
     }
+
+    if (!extended_receipt_info) {
+        co_return *raw_receipts;
+    }
+
     uint32_t log_index{0};
     for (size_t i{0}; i < receipts.size(); ++i) {
         // The tx hash can be calculated by the tx content itself

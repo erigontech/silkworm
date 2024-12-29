@@ -27,6 +27,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/core/types/receipt.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -35,12 +36,18 @@
 #include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_debug.hpp>
+#include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/core/storage_walker.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/call.hpp>
 #include <silkworm/rpc/types/dump_account.hpp>
+
+
+#include <cbor/encoder.h>
+#include <cbor/output_dynamic.h>
+
 
 namespace silkworm::rpc::commands {
 
@@ -716,6 +723,86 @@ Task<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request
         Bytes encoded_block;
         rlp::encode(encoded_block, block);
         reply = make_json_content(request, silkworm::to_hex(encoded_block, true));
+    } catch (const std::invalid_argument& iv) {
+        SILK_ERROR << "exception: " << iv.what() << " processing request: " << request.dump();
+        reply = make_json_error(request, kServerError, iv.what());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request, kInternalError, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request, kServerError, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+}
+
+Bytes cbor_encode(const Receipt& r) {
+    cbor::output_dynamic output{};
+    cbor::encoder encoder{output};
+
+    std::cout << "cumulative: " << static_cast<unsigned long long>(r.cumulative_gas_used) << "\n";
+    encoder.write_int(static_cast<unsigned>(*(r.type)));
+    encoder.write_null();  // no PostState
+    encoder.write_int(r.success ? 1u : 0u);
+    encoder.write_int(static_cast<unsigned long long>(r.cumulative_gas_used));  // NOLINT(google-runtime-int)
+
+    // Bloom filter and logs are omitted, same as in Erigon
+
+    return Bytes{output.data(), output.size()};
+}
+
+Task<void> DebugRpcApi::handle_debug_get_raw_receipts(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+
+    if (params.size() != 1) {
+        auto error_msg = "invalid debug_getRawReceipts params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request, kInvalidParams, error_msg);
+        co_return;
+    }
+    const auto block_num_or_hash = params[0].get<BlockNumOrHash>();
+
+    auto tx = co_await database_->begin();
+
+    try {
+        const auto chain_storage = tx->create_storage();
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        if (!block_with_hash) {
+            reply = make_json_content(request, nullptr);
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
+
+        auto receipts{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_, false)};
+        SILK_TRACE << "#receipts: " << receipts.size();
+
+        const auto block{block_with_hash->block};
+
+        std::vector<std::string> rlp_receipts;
+        for (size_t i{0}; i < receipts.size(); ++i) {
+            Receipt& rpc_receipt = receipts[i];
+            silkworm::Receipt silkworm_receipt;
+            Bytes to;
+            silkworm_receipt.success = rpc_receipt.success;
+            silkworm_receipt.bloom =  std::move(rpc_receipt.bloom);
+            silkworm_receipt.cumulative_gas_used =  rpc_receipt.cumulative_gas_used;
+            silkworm_receipt.type =  static_cast<silkworm::TransactionType>(*(rpc_receipt.type));
+            for (const auto& log : rpc_receipt.logs) {
+                silkworm::Log silkworm_log;
+                silkworm_log.address = std::move(log.address);
+                silkworm_log.data = std::move(log.data);
+                silkworm_log.topics = std::move(log.topics);
+                silkworm_receipt.logs.push_back(silkworm_log);
+            }
+
+            silkworm::rlp::encode(to, silkworm_receipt);
+
+            rlp_receipts.push_back(silkworm::to_hex(to, true));
+        }
+        reply = make_json_content(request, rlp_receipts);
+
     } catch (const std::invalid_argument& iv) {
         SILK_ERROR << "exception: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kServerError, iv.what());

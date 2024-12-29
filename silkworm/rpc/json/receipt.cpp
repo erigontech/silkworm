@@ -35,7 +35,7 @@ void to_json(nlohmann::json& json, const Receipt& receipt) {
     } else {
         json["to"] = nlohmann::json{};
     }
-    json["type"] = to_quantity(static_cast<uint8_t>(receipt.txn_type));
+    json["type"] = to_quantity(static_cast<uint8_t>(receipt.type));
     json["gasUsed"] = to_quantity(receipt.gas_used);
     json["cumulativeGasUsed"] = to_quantity(receipt.cumulative_gas_used);
     json["effectiveGasPrice"] = to_quantity(receipt.effective_gas_price);
@@ -65,7 +65,7 @@ void from_json(const nlohmann::json& json, Receipt& receipt) {
         if (!json[0].is_number()) {
             throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: number expected in [0]"};
         }
-        receipt.txn_type = json[0];
+        receipt.type = json[0];
 
         if (!json[1].is_null()) {
             throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: null expected in [1]"};

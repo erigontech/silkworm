@@ -271,13 +271,13 @@ ExecutionResult EVMExecutor::call_with_receipt(
     receipt.success = exec_result.success();
     receipt.bloom = logs_bloom(logs);
     receipt.gas_used = txn.gas_limit - exec_result.gas_left;
-    receipt.txn_type = txn.type;
+    receipt.type = txn.type;
     for (auto& log : logs) {
         Log rpc_log;
         rpc_log.address = log.address;
         rpc_log.data = std::move(log.data);
         rpc_log.topics = std::move(log.topics);
-        receipt.logs.push_back(rpc_log);
+        receipt.logs.push_back(std::move(rpc_log));
     }
 
     SILK_DEBUG << "EVMExecutor::call call_result: " << exec_result.error_message() << " #data: " << exec_result.data.size() << " end";

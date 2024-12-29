@@ -100,7 +100,7 @@ Task<Receipts> get_receipts(db::kv::api::Transaction& tx,
 
         receipts[i].from = transactions[i].sender();
         receipts[i].to = transactions[i].to;
-        receipts[i].txn_type = transactions[i].type;
+        receipts[i].type = transactions[i].type;
 
         // The derived fields of receipt are taken from block and transaction
         for (size_t j{0}; j < receipts[i].logs.size(); ++j) {

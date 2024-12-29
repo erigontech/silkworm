@@ -60,12 +60,12 @@ TEST_CASE("deserialize wrong object receipt", "[rpc][from_json]") {
 TEST_CASE("deserialize empty array receipt", "[rpc][from_json]") {
     const nlohmann::json j1 = R"([0,null,0,0])"_json;
     const auto r1 = j1.get<Receipt>();
-    CHECK(r1.txn_type == TransactionType::kLegacy);
+    CHECK(r1.type == TransactionType::kLegacy);
     CHECK(r1.success == false);
     CHECK(r1.cumulative_gas_used == 0);
     const auto j2 = nlohmann::json::from_cbor(*silkworm::from_hex("8400f60000"));
     const auto r2 = j2.get<Receipt>();
-    CHECK(r2.txn_type == TransactionType::kLegacy);
+    CHECK(r2.type == TransactionType::kLegacy);
     CHECK(r2.success == false);
     CHECK(r2.cumulative_gas_used == 0);
 }
@@ -73,7 +73,7 @@ TEST_CASE("deserialize empty array receipt", "[rpc][from_json]") {
 TEST_CASE("deserialize array receipt", "[rpc][from_json]") {
     const nlohmann::json j = R"([1,null,1,123456])"_json;
     const auto r = j.get<Receipt>();
-    CHECK(r.txn_type == TransactionType::kAccessList);
+    CHECK(r.type == TransactionType::kAccessList);
     CHECK(r.success == true);
     CHECK(r.cumulative_gas_used == 123456);
 }

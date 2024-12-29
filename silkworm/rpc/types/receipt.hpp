@@ -30,7 +30,7 @@ namespace silkworm::rpc {
 
 struct Receipt {
     /* raw fields */
-    TransactionType txn_type{TransactionType::kLegacy};  // EIP-2718
+    TransactionType type{TransactionType::kLegacy};  // EIP-2718
     bool success{false};
     uint64_t cumulative_gas_used{0};
     silkworm::Bloom bloom{};

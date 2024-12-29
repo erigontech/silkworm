@@ -48,7 +48,7 @@ std::ostream& operator<<(std::ostream& out, const Receipt& r) {
     }
     out << " tx_hash: " << to_hex(r.tx_hash);
     out << " tx_index: " << r.tx_index;
-    out << " type: 0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(r.txn_type) << std::dec;
+    out << " type: 0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(r.type) << std::dec;
     return out;
 }
 

@@ -45,5 +45,4 @@ Bytes cbor_encode(const std::vector<Receipt>& v) {
     return Bytes{output.data(), output.size()};
 }
 
-
 }  // namespace silkworm

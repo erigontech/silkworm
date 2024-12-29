@@ -23,12 +23,14 @@
 #include <string>
 #include <vector>
 
+#include <cbor/encoder.h>
+#include <cbor/output_dynamic.h>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/core/types/receipt.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/core/types/receipt.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
@@ -43,11 +45,6 @@
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/call.hpp>
 #include <silkworm/rpc/types/dump_account.hpp>
-
-
-#include <cbor/encoder.h>
-#include <cbor/output_dynamic.h>
-
 
 namespace silkworm::rpc::commands {
 
@@ -786,9 +783,9 @@ Task<void> DebugRpcApi::handle_debug_get_raw_receipts(const nlohmann::json& requ
             silkworm::Receipt silkworm_receipt;
             Bytes to;
             silkworm_receipt.success = rpc_receipt.success;
-            silkworm_receipt.bloom =  std::move(rpc_receipt.bloom);
-            silkworm_receipt.cumulative_gas_used =  rpc_receipt.cumulative_gas_used;
-            silkworm_receipt.type =  static_cast<silkworm::TransactionType>(*(rpc_receipt.type));
+            silkworm_receipt.bloom = std::move(rpc_receipt.bloom);
+            silkworm_receipt.cumulative_gas_used = rpc_receipt.cumulative_gas_used;
+            silkworm_receipt.type = static_cast<silkworm::TransactionType>(*(rpc_receipt.type));
             for (const auto& log : rpc_receipt.logs) {
                 silkworm::Log silkworm_log;
                 silkworm_log.address = std::move(log.address);

@@ -553,8 +553,18 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
         stream.write_json(reply);
         co_return;
     }
-    const BlockNum block_num =
-        params[0].is_string() ? std::stoul(params[0].get<std::string>(), nullptr, 10) : params[0].get<BlockNum>();
+
+    BlockNum block_num{0};
+    if (params[0].is_string()) {
+        const auto value = params[0].get<std::string>();
+        if (silkworm::is_valid_hex(value)) {
+            block_num = static_cast<BlockNum>(std::stol(value, nullptr, 16));
+        } else if (silkworm::is_valid_dec(value)) {
+            block_num = static_cast<BlockNum>(std::stol(value, nullptr, 10));
+        }
+    } else {
+        block_num = params[0].get<BlockNum>();
+    }
 
     debug::DebugConfig config;
     if (params.size() > 1) {
@@ -708,7 +718,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request
         reply = make_json_content(request, silkworm::to_hex(encoded_block, true));
     } catch (const std::invalid_argument& iv) {
         SILK_ERROR << "exception: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, kInvalidParams, iv.what());
+        reply = make_json_error(request, kServerError, iv.what());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());
@@ -740,14 +750,14 @@ Task<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& reques
         const auto block_hash = co_await chain_storage->read_canonical_header_hash(block_num);
         const auto header = co_await chain_storage->read_header(block_num, block_hash->bytes);
         if (!header) {
-            throw std::invalid_argument("header " + std::to_string(block_num) + " not found");
+            throw std::invalid_argument("header not found");
         }
         Bytes encoded_header;
         rlp::encode(encoded_header, *header);
         reply = make_json_content(request, silkworm::to_hex(encoded_header, true));
     } catch (const std::invalid_argument& iv) {
         SILK_ERROR << "exception: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, kInvalidParams, iv.what());
+        reply = make_json_error(request, kServerError, iv.what());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());
@@ -783,7 +793,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::json& r
         reply = make_json_content(request, silkworm::to_hex(rlp, true));
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
-        reply = make_json_error(request, kInvalidParams, iv.what());
+        reply = make_json_error(request, kServerError, iv.what());
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());

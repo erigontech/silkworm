@@ -48,6 +48,7 @@ struct DebugConfig {
     bool disable_storage{false};
     bool disable_memory{false};
     bool disable_stack{false};
+    bool no_refunds{false};
 };
 
 std::string uint256_to_hex(const evmone::uint256& x);

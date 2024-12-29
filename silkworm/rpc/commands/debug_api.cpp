@@ -117,7 +117,6 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohm
         reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
-
     auto start_block_id = params[0].get<std::string>();
     auto end_block_id = start_block_id;
     if (params.size() == 2) {
@@ -166,7 +165,6 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
         reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
-
     const auto start_hash = params[0].get<evmc::bytes32>();
     auto end_hash = start_hash;
     if (params.size() == 2) {
@@ -217,13 +215,11 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
         reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
-
     auto block_hash = params[0].get<evmc::bytes32>();
     auto tx_index = params[1].get<std::uint64_t>();
     auto address = params[2].get<evmc::address>();
     auto start_key = params[3].get<evmc::bytes32>();
     auto max_result = params[4].get<std::uint64_t>();
-
     SILK_DEBUG << "block_hash: 0x" << silkworm::to_hex(block_hash)
                << " tx_index: " << tx_index
                << " address: " << address
@@ -302,11 +298,9 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
         reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
-
     auto block_hash = params[0].get<evmc::bytes32>();
     auto tx_index = params[1].get<uint64_t>();
     auto address = params[2].get<evmc::address>();
-
     SILK_DEBUG << "block_hash: 0x" << silkworm::to_hex(block_hash)
                << " tx_index: " << tx_index
                << " address: " << address;
@@ -393,16 +387,13 @@ Task<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& req
         SILK_ERROR << error_msg;
         const auto reply = make_json_error(request, kInvalidParams, error_msg);
         stream.write_json(reply);
-
         co_return;
     }
-    auto transaction_hash = params[0].get<evmc::bytes32>();
-
+    const auto transaction_hash = params[0].get<evmc::bytes32>();
     debug::DebugConfig config;
     if (params.size() > 1) {
         config = params[1].get<debug::DebugConfig>();
     }
-
     SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash) << " config: {" << config << "}";
 
     stream.open_object();
@@ -438,7 +429,6 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
         SILK_ERROR << error_msg;
         const auto reply = make_json_error(request, kInvalidParams, error_msg);
         stream.write_json(reply);
-
         co_return;
     }
     const auto call = params[0].get<Call>();
@@ -447,7 +437,6 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
     if (params.size() > 2) {
         config = params[2].get<debug::DebugConfig>();
     }
-
     SILK_DEBUG << "call: " << call << " block_num_or_hash: " << block_num_or_hash << " config: {" << config << "}";
 
     stream.open_object();
@@ -493,37 +482,29 @@ Task<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& reque
         SILK_ERROR << error_msg << request.dump();
         const auto reply = make_json_error(request, kInvalidParams, error_msg);
         stream.write_json(reply);
-
         co_return;
     }
-
     const auto& params = request["params"];
     if (params.size() < 2) {
         auto error_msg = "invalid debug_traceCallMany params: " + params.dump();
         SILK_ERROR << error_msg;
         const auto reply = make_json_error(request, kInvalidParams, error_msg);
         stream.write_json(reply);
-
         co_return;
     }
     const auto bundles = params[0].get<Bundles>();
-
     if (bundles.empty()) {
         const auto error_msg = "invalid debug_traceCallMany bundle list: " + params.dump();
         SILK_ERROR << error_msg;
         const auto reply = make_json_error(request, kInvalidParams, error_msg);
         stream.write_json(reply);
-
         co_return;
     }
-
     const auto simulation_context = params[1].get<SimulationContext>();
-
     debug::DebugConfig config;
     if (params.size() > 2) {
         config = params[2].get<debug::DebugConfig>();
     }
-
     SILK_DEBUG << "bundles: " << bundles << " simulation_context: " << simulation_context << " config: {" << config << "}";
 
     stream.open_object();
@@ -557,7 +538,6 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
         stream.write_json(reply);
         co_return;
     }
-
     BlockNum block_num{0};
     if (params[0].is_string()) {
         const auto value = params[0].get<std::string>();
@@ -569,12 +549,10 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
     } else {
         block_num = params[0].get<BlockNum>();
     }
-
     debug::DebugConfig config;
     if (params.size() > 1) {
         config = params[1].get<debug::DebugConfig>();
     }
-
     SILK_DEBUG << "block_num: " << block_num << " config: {" << config << "}";
 
     stream.open_object();
@@ -620,12 +598,10 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
         co_return;
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
-
     debug::DebugConfig config;
     if (params.size() > 1) {
         config = params[1].get<debug::DebugConfig>();
     }
-
     SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash) << " config: {" << config << "}";
 
     stream.open_object();
@@ -697,7 +673,6 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
 
 Task<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
-
     if (params.size() != 1) {
         auto error_msg = "invalid debug_getRawBlock params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -734,24 +709,8 @@ Task<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request
     co_await tx->close();  // RAII not (yet) available with coroutines
 }
 
-Bytes cbor_encode(const Receipt& r) {
-    cbor::output_dynamic output{};
-    cbor::encoder encoder{output};
-
-    std::cout << "cumulative: " << static_cast<unsigned long long>(r.cumulative_gas_used) << "\n";
-    encoder.write_int(static_cast<unsigned>(*(r.type)));
-    encoder.write_null();  // no PostState
-    encoder.write_int(r.success ? 1u : 0u);
-    encoder.write_int(static_cast<unsigned long long>(r.cumulative_gas_used));  // NOLINT(google-runtime-int)
-
-    // Bloom filter and logs are omitted, same as in Erigon
-
-    return Bytes{output.data(), output.size()};
-}
-
 Task<void> DebugRpcApi::handle_debug_get_raw_receipts(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
-
     if (params.size() != 1) {
         auto error_msg = "invalid debug_getRawReceipts params: " + params.dump();
         SILK_ERROR << error_msg;
@@ -861,7 +820,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::json& r
         reply = make_json_error(request, kInvalidParams, error_msg);
         co_return;
     }
-    auto transaction_hash = params[0].get<evmc::bytes32>();
+    const auto transaction_hash = params[0].get<evmc::bytes32>();
     SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
     auto tx = co_await database_->begin();

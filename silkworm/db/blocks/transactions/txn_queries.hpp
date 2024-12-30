@@ -68,24 +68,6 @@ class TransactionBlockNumByTxnHashSegmentQuery {
     TransactionFindByHashSegmentQuery cross_check_query_;
 };
 
-class TransactionBlockNumByTxnHashQuery {
-  public:
-    explicit TransactionBlockNumByTxnHashQuery(const SnapshotRepositoryROAccess& repository)
-        : repository_{repository} {}
-
-    std::optional<BlockNum> exec(const Hash& hash) {
-        for (const auto& bundle_ptr : repository_.view_bundles_reverse()) {
-            TransactionBlockNumByTxnHashSegmentQuery query{*bundle_ptr};
-            auto block_num = query.exec(hash);
-            if (block_num) {
-                return block_num;
-            }
-        }
-        return std::nullopt;
-    }
-
-  private:
-    const SnapshotRepositoryROAccess& repository_;
-};
+using TransactionBlockNumByTxnHashQuery = FindMapQuery<TransactionBlockNumByTxnHashSegmentQuery>;
 
 }  // namespace silkworm::snapshots

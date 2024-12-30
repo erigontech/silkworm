@@ -24,21 +24,13 @@
 
 namespace silkworm::snapshots {
 
-using BodyFindByBlockNumSegmentQuery = FindByIdSegmentQuery<BodySegmentReader>;
+using BodyFindByBlockNumSegmentQuery = FindByIdSegmentQuery<BodySegmentReader, &db::blocks::kBodySegmentAndIdxNames>;
 
-class BodyFindByBlockNumQuery {
-  public:
-    explicit BodyFindByBlockNumQuery(const SnapshotRepositoryROAccess& repository)
-        : repository_{repository} {}
-
+struct BodyFindByBlockNumQuery : public FindByTimestampMapQuery<BodyFindByBlockNumSegmentQuery> {
+    using FindByTimestampMapQuery::FindByTimestampMapQuery;
     std::optional<BlockBodyForStorage> exec(BlockNum block_num) {
-        const auto [segment_and_index, _] = repository_.find_segment(db::blocks::kBodySegmentAndIdxNames, block_num);
-        if (!segment_and_index) return std::nullopt;
-        return BodyFindByBlockNumSegmentQuery{*segment_and_index}.exec(block_num);
+        return FindByTimestampMapQuery::exec(block_num, block_num);
     }
-
-  private:
-    const SnapshotRepositoryROAccess& repository_;
 };
 
 }  // namespace silkworm::snapshots

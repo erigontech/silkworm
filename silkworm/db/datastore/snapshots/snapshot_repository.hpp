@@ -90,8 +90,9 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
     }
 
     std::pair<std::optional<SegmentAndAccessorIndex>, std::shared_ptr<SnapshotBundle>> find_segment(
-        std::array<datastore::EntityName, 3> names,
+        const SegmentAndAccessorIndexNames& names,
         Timestamp t) const override;
+    std::shared_ptr<SnapshotBundle> find_bundle(Timestamp t) const override;
     std::shared_ptr<SnapshotBundle> find_bundle(Step step) const override;
 
     std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(StepRange range) const override;

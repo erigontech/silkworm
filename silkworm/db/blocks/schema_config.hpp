@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <array>
 #include <memory>
 
 #include "../datastore/common/entity_name.hpp"
@@ -44,7 +43,7 @@ inline constexpr std::string_view kHeaderSegmentTag = kHeaderSegmentName.name;
 //! Index header_hash -> block_num -> headers_segment_offset
 inline constexpr datastore::EntityName kIdxHeaderHashName{"headers.idx"};
 inline constexpr std::string_view kIdxHeaderHashTag = kHeaderSegmentTag;
-inline constexpr std::array<datastore::EntityName, 3> kHeaderSegmentAndIdxNames{
+inline constexpr snapshots::SegmentAndAccessorIndexNames kHeaderSegmentAndIdxNames{
     snapshots::Schema::kDefaultEntityName,
     kHeaderSegmentName,
     kIdxHeaderHashName,
@@ -55,7 +54,7 @@ inline constexpr std::string_view kBodySegmentTag = kBodySegmentName.name;
 //! Index block_num -> bodies_segment_offset
 inline constexpr datastore::EntityName kIdxBodyNumberName{"bodies.idx"};
 inline constexpr std::string_view kIdxBodyNumberTag = kBodySegmentTag;
-inline constexpr std::array<datastore::EntityName, 3> kBodySegmentAndIdxNames{
+inline constexpr snapshots::SegmentAndAccessorIndexNames kBodySegmentAndIdxNames{
     snapshots::Schema::kDefaultEntityName,
     kBodySegmentName,
     kIdxBodyNumberName,
@@ -66,7 +65,7 @@ inline constexpr std::string_view kTxnSegmentTag = kTxnSegmentName.name;
 //! Index transaction_hash -> txn_id -> transactions_segment_offset
 inline constexpr datastore::EntityName kIdxTxnHashName{"transactions.idx"};
 inline constexpr std::string_view kIdxTxnHashTag = kTxnSegmentTag;
-inline constexpr std::array<datastore::EntityName, 3> kTxnSegmentAndIdxNames{
+inline constexpr snapshots::SegmentAndAccessorIndexNames kTxnSegmentAndIdxNames{
     snapshots::Schema::kDefaultEntityName,
     kTxnSegmentName,
     kIdxTxnHashName,

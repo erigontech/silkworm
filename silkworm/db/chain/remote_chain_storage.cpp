@@ -210,11 +210,6 @@ Task<bool> RemoteChainStorage::read_rlp_transaction(const evmc::bytes32& txn_has
         co_return false;
     }
 
-    std::vector<Bytes> rlp_txs;
-    if (!co_await read_rlp_transactions(*block_num, *block_hash, rlp_txs)) {
-        co_return false;
-    }
-
     Block block;
     const bool success = co_await providers_.block(*block_num, block_hash->bytes, /*.read_senders=*/false, block);
     if (!success) {

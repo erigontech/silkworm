@@ -199,7 +199,7 @@ Task<bool> RemoteChainStorage::read_rlp_transactions(BlockNum block_num, const e
     co_return true;
 }
 
-Task<bool> RemoteChainStorage::read_rlp_transaction(const evmc::bytes32& txn_hash, Bytes& rlp_tx) const {
+Task<bool> RemoteChainStorage::(const evmc::bytes32& txn_hash, Bytes& rlp_tx) const {
     auto block_num = co_await providers_.block_num_from_txn_hash(txn_hash.bytes);
     if (!block_num) {
         co_return false;
@@ -207,11 +207,6 @@ Task<bool> RemoteChainStorage::read_rlp_transaction(const evmc::bytes32& txn_has
 
     const auto block_hash = co_await providers_.canonical_block_hash_from_number(*block_num);
     if (!block_hash) {
-        co_return false;
-    }
-
-    std::vector<Bytes> rlp_txs;
-    if (!co_await read_rlp_transactions(*block_num, *block_hash, rlp_txs)) {
         co_return false;
     }
 

@@ -70,6 +70,7 @@ class DebugRpcApi {
     Task<void> handle_debug_get_raw_block(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_debug_get_raw_header(const nlohmann::json& request, nlohmann::json& reply);
     Task<void> handle_debug_get_raw_transaction(const nlohmann::json& request, nlohmann::json& reply);
+    Task<void> handle_debug_get_raw_receipts(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
     boost::asio::io_context& ioc_;

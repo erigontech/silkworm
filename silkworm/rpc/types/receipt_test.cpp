@@ -43,13 +43,13 @@ TEST_CASE("print empty receipt", "[rpc][types][receipt]") {
 TEST_CASE("print receipt", "[rpc][types][receipt]") {
     Logs logs{};
     Receipt r{
+        TransactionType::kDynamicFee,
         true,
         210000,
         bloom_from_logs(logs),
         logs};
     r.from = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address;
     r.to = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address;
-    r.type = 2;
     CHECK_NOTHROW(silkworm::test_util::null_stream() << r);
 }
 
@@ -96,6 +96,7 @@ TEST_CASE("bloom from more than one log", "[rpc][types][receipt]") {
 TEST_CASE("receipt with empty bloom", "[rpc][types][receipt]") {
     Logs logs{};
     Receipt r{
+        TransactionType::kLegacy,
         true,
         210000,
         bloom_from_logs(logs),

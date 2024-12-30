@@ -28,10 +28,14 @@
 
 namespace silkworm::snapshots {
 
-using TransactionFindByIdSegmentQuery = FindByIdSegmentQuery<TransactionSegmentReader>;
-using TransactionFindByHashSegmentQuery = FindByHashSegmentQuery<TransactionSegmentReader>;
-using TransactionRangeFromIdSegmentQuery = RangeFromIdSegmentQuery<TransactionSegmentReader>;
-using TransactionPayloadRlpRangeFromIdSegmentQuery = RangeFromIdSegmentQuery<TransactionSegmentPayloadRlpReader<Bytes>>;
+using TransactionFindByIdSegmentQuery = FindByIdSegmentQuery<TransactionSegmentReader, &db::blocks::kTxnSegmentAndIdxNames>;
+using TransactionFindByHashSegmentQuery = FindByHashSegmentQuery<TransactionSegmentReader, &db::blocks::kTxnSegmentAndIdxNames>;
+
+using TransactionRangeFromIdSegmentQuery = RangeFromIdSegmentQuery<TransactionSegmentReader, &db::blocks::kTxnSegmentAndIdxNames>;
+using TransactionRangeFromIdQuery = FindByTimestampMapQuery<TransactionRangeFromIdSegmentQuery>;
+
+using TransactionPayloadRlpRangeFromIdSegmentQuery = RangeFromIdSegmentQuery<TransactionSegmentPayloadRlpReader<Bytes>, &db::blocks::kTxnSegmentAndIdxNames>;
+using TransactionPayloadRlpRangeFromIdQuery = FindByTimestampMapQuery<TransactionPayloadRlpRangeFromIdSegmentQuery>;
 
 class TransactionBlockNumByTxnHashSegmentQuery {
   public:

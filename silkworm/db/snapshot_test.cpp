@@ -211,18 +211,18 @@ TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index
     TransactionRangeFromIdSegmentQuery query{{txn_segment, idx_txn_hash}};
 
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
-    CHECK(query.exec_into_vector(7'341'263, 0).empty());
-    CHECK(query.exec_into_vector(7'341'263, 7).size() == 7);
+    CHECK(query.exec(7'341'263, 0)->empty());
+    CHECK(query.exec(7'341'263, 7)->size() == 7);
 
     // block 1'500'013: base_txn_id is 7'341'272, txn_count is 1
-    CHECK(query.exec_into_vector(7'341'272, 0).empty());
-    CHECK(query.exec_into_vector(7'341'272, 1).size() == 1);
+    CHECK(query.exec(7'341'272, 0)->empty());
+    CHECK(query.exec(7'341'272, 1)->size() == 1);
 
     // invalid base_txn_id returns empty
-    CHECK(query.exec_into_vector(0, 1).empty());
-    CHECK(query.exec_into_vector(10'000'000, 1).empty());
-    CHECK(query.exec_into_vector(7'341'261, 1).empty());  // before the first system tx
-    CHECK(query.exec_into_vector(7'341'274, 1).empty());  // after the last system tx
+    CHECK_FALSE(query.exec(0, 1));
+    CHECK_FALSE(query.exec(10'000'000, 1));
+    CHECK_FALSE(query.exec(7'341'261, 1));  // before the first system tx
+    CHECK_FALSE(query.exec(7'341'274, 1));  // after the last system tx
 }
 
 TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][index]") {
@@ -240,18 +240,18 @@ TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][i
     TransactionPayloadRlpRangeFromIdSegmentQuery query{{txn_segment, idx_txn_hash}};
 
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
-    CHECK(query.exec_into_vector(7'341'263, 0).empty());
-    CHECK(query.exec_into_vector(7'341'263, 7).size() == 7);
+    CHECK(query.exec(7'341'263, 0)->empty());
+    CHECK(query.exec(7'341'263, 7)->size() == 7);
 
     // block 1'500'013: base_txn_id is 7'341'272, txn_count is 1
-    CHECK(query.exec_into_vector(7'341'272, 0).empty());
-    CHECK(query.exec_into_vector(7'341'272, 1).size() == 1);
+    CHECK(query.exec(7'341'272, 0)->empty());
+    CHECK(query.exec(7'341'272, 1)->size() == 1);
 
     // invalid base_txn_id returns empty
-    CHECK(query.exec_into_vector(0, 1).empty());
-    CHECK(query.exec_into_vector(10'000'000, 1).empty());
-    CHECK(query.exec_into_vector(7'341'261, 1).empty());  // before the first system tx
-    CHECK(query.exec_into_vector(7'341'274, 1).empty());  // after the last system tx
+    CHECK_FALSE(query.exec(0, 1));
+    CHECK_FALSE(query.exec(10'000'000, 1));
+    CHECK_FALSE(query.exec(7'341'261, 1));  // before the first system tx
+    CHECK_FALSE(query.exec(7'341'274, 1));  // after the last system tx
 }
 
 TEST_CASE("slice_tx_payload", "[silkworm][node][snapshot]") {

@@ -30,7 +30,7 @@ namespace silkworm::snapshots {
 
 template <
     segment::SegmentReaderConcept TSegmentReader,
-    const SegmentAndAccessorIndexNames* segment_names = nullptr>
+    const SegmentAndAccessorIndexNames* segment_names>
 class BasicSegmentQuery {
   public:
     explicit BasicSegmentQuery(
@@ -48,7 +48,7 @@ class BasicSegmentQuery {
 
 template <
     segment::SegmentReaderConcept TSegmentReader,
-    const SegmentAndAccessorIndexNames* segment_names = nullptr>
+    const SegmentAndAccessorIndexNames* segment_names>
 struct FindByIdSegmentQuery : public BasicSegmentQuery<TSegmentReader, segment_names> {
     using BasicSegmentQuery<TSegmentReader, segment_names>::BasicSegmentQuery;
 
@@ -64,7 +64,7 @@ struct FindByIdSegmentQuery : public BasicSegmentQuery<TSegmentReader, segment_n
 
 template <
     segment::SegmentReaderConcept TSegmentReader,
-    const SegmentAndAccessorIndexNames* segment_names = nullptr>
+    const SegmentAndAccessorIndexNames* segment_names>
 struct FindByHashSegmentQuery : public BasicSegmentQuery<TSegmentReader, segment_names> {
     using BasicSegmentQuery<TSegmentReader, segment_names>::BasicSegmentQuery;
 
@@ -87,14 +87,14 @@ struct FindByHashSegmentQuery : public BasicSegmentQuery<TSegmentReader, segment
 
 template <
     segment::SegmentReaderConcept TSegmentReader,
-    const SegmentAndAccessorIndexNames* segment_names = nullptr>
+    const SegmentAndAccessorIndexNames* segment_names>
 struct RangeFromIdSegmentQuery : public BasicSegmentQuery<TSegmentReader, segment_names> {
     using BasicSegmentQuery<TSegmentReader, segment_names>::BasicSegmentQuery;
 
-    std::vector<typename TSegmentReader::Iterator::value_type> exec_into_vector(uint64_t first_id, uint64_t count) {
+    std::optional<std::vector<typename TSegmentReader::Iterator::value_type>> exec(uint64_t first_id, uint64_t count) {
         auto offset = this->index_.lookup_by_data_id(first_id);
         if (!offset) {
-            return {};
+            return std::nullopt;
         }
 
         return this->reader_.read_into_vector(*offset, count);

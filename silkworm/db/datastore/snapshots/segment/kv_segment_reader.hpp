@@ -183,7 +183,6 @@ class KVSegmentReader {
 
     std::optional<typename Iterator::value_type_owned> seek_one(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
         auto it = seek(offset, hash_prefix);
-        auto& [key, value] = *it;
         return (it != end()) ? std::optional{it.move_value()} : std::nullopt;
     }
 
@@ -255,8 +254,78 @@ class KVSegmentKeysReader {
 
     std::optional<typename Iterator::value_type> seek_one(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
         auto it = seek(offset, hash_prefix);
-        auto& [key, value] = *it;
-        return (it != end()) ? std::optional{it.move_value()} : std::nullopt;
+        return (it != end()) ? std::optional{std::move(*it)} : std::nullopt;
+    }
+
+    const SnapshotPath& path() const { return reader_.path(); }
+
+  private:
+    const KVSegmentFileReader& reader_;
+};
+
+template <DecoderConcept TValueDecoder>
+class KVSegmentValuesReader {
+  public:
+    class Iterator {
+      public:
+        using value_type = decltype(TValueDecoder::value);
+        using iterator_category [[maybe_unused]] = std::input_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using pointer = value_type*;
+        using reference = value_type&;
+
+        explicit Iterator(KVSegmentFileReader::Iterator it)
+            : it_(std::move(it)) {}
+
+        reference operator*() const { return value(); }
+        pointer operator->() const { return &value(); }
+
+        Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
+        Iterator& operator++() {
+            ++it_;
+            return *this;
+        }
+
+        Iterator& operator+=(size_t count) {
+            it_ += count;
+            return *this;
+        }
+
+        friend bool operator!=(const Iterator& lhs, const Iterator& rhs) = default;
+        friend bool operator==(const Iterator& lhs, const Iterator& rhs) = default;
+
+      private:
+        value_type& value() const {
+            Decoder& base_value_decoder = *(it_->second);
+            // dynamic_cast is safe because TValueDecoder was used when creating the Iterator
+            auto& value_decoder = dynamic_cast<TValueDecoder&>(base_value_decoder);
+            return value_decoder.value;
+        }
+
+        KVSegmentFileReader::Iterator it_;
+    };
+
+    static_assert(std::input_iterator<Iterator>);
+
+    using ValueDecoderType = TValueDecoder;
+
+    explicit KVSegmentValuesReader(const KVSegmentFileReader& reader) : reader_(reader) {}
+
+    Iterator begin() const {
+        return Iterator{reader_.begin({}, std::make_shared<TValueDecoder>())};
+    }
+
+    Iterator end() const {
+        return Iterator{reader_.end()};
+    }
+
+    Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
+        return Iterator{reader_.seek(offset, hash_prefix, {}, std::make_shared<TValueDecoder>())};
+    }
+
+    std::optional<typename Iterator::value_type> seek_one(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
+        auto it = seek(offset, hash_prefix);
+        return (it != end()) ? std::optional{std::move(*it)} : std::nullopt;
     }
 
     const SnapshotPath& path() const { return reader_.path(); }
@@ -274,5 +343,10 @@ template <class TKVSegmentKeysReader>
 concept KVSegmentKeysReaderConcept =
     std::same_as<TKVSegmentKeysReader, KVSegmentKeysReader<typename TKVSegmentKeysReader::KeyDecoderType>> ||
     std::derived_from<TKVSegmentKeysReader, KVSegmentKeysReader<typename TKVSegmentKeysReader::KeyDecoderType>>;
+
+template <class TKVSegmentValuesReader>
+concept KVSegmentValuesReaderConcept =
+    std::same_as<TKVSegmentValuesReader, KVSegmentKeysReader<typename TKVSegmentValuesReader::ValueDecoderType>> ||
+    std::derived_from<TKVSegmentValuesReader, KVSegmentKeysReader<typename TKVSegmentValuesReader::ValueDecoderType>>;
 
 }  // namespace silkworm::snapshots::segment

@@ -23,17 +23,12 @@ runs:
 
     - name: Temporary step - conan cache cleanup - to be executed only once per runner
       shell: bash
-      run: conan remove "*" --force
-
-    - name: Preinstall Conan packages
-      shell: bash
-      working-directory: ${{runner.workspace}}/silkworm
-      run: CC=clang-16 CXX=clang++-16 conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/experimental/linux_x64_clang_16_release .
+      run: /opt/conan2/bin/conan remove --confirm "*"
 
     - name: Configure CMake
       shell: bash
       working-directory: ${{runner.workspace}}/silkworm/build
-      run: CC=clang-16 CXX=clang++-16 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=experimental/linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON -DSILKWORM_FUZZER_SANITIZERS=${{inputs.fuzzer_sanitizers}}
+      run: CC=clang-16 CXX=clang++-16 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON -DSILKWORM_FUZZER_SANITIZERS=${{inputs.fuzzer_sanitizers}}
 
     - name: Build Silkworm Fuzzer Test
       shell: bash

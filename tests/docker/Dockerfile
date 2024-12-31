@@ -6,7 +6,7 @@ FROM cimg/python:3.12.0 as base
 # 1 Install dependencies
 RUN sudo apt-get update
 RUN sudo apt install -y python3-pip
-RUN sudo pip3 install conan==1.64.1 chardet
+RUN sudo pip3 install conan==2.10.2 chardet
 RUN sudo apt-get update
 
 # 2 Get repo and submodules
@@ -22,7 +22,7 @@ RUN cmake/setup/compiler_install.sh clang 16
 
 # 4 Build all targets
 WORKDIR /app/build
-RUN cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_x64_clang_13_debug
+RUN cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake
 WORKDIR /app/project
 RUN cmake --build /app/build -j4 
 
@@ -48,7 +48,7 @@ RUN git pull origin ${BRANCH}
 # Rebuild all targets
 RUN echo "Rebuilding"
 WORKDIR /app/build
-RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_x64_clang_13_debug
+RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake
 WORKDIR /app/project
 RUN sudo cmake --build /app/build -j4 
 
@@ -64,7 +64,7 @@ RUN sudo cmake --build /app/build -j4
 # RUN for file in ~/artifacts/*; do sed -i 's/^>> //' "$file"; done
 # # Rebuild fuzzer
 # WORKDIR /app/build
-# RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_x64_clang_13_debug -DSILKWORM_FUZZING=ON
+# RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
 # WORKDIR /app/project
 # RUN sudo cmake --build /app/build -j4 --target rpcdaemon_fuzzer_test
 # # Run fuzzer

@@ -36,7 +36,6 @@ TEST_CASE("EliasFanoDecoder") {
 
     EliasFanoDecoder decoder;
     decoder.decode_word(string_view_to_byte_view(expected_list_str));
-    REQUIRE(decoder.value.has_value());
     CHECK(decoder.value == expected_list);
 }
 

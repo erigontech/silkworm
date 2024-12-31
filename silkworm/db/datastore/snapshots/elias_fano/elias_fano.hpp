@@ -148,7 +148,10 @@ class EliasFanoList32 {
         std::copy(data.begin(), data.end(), reinterpret_cast<uint8_t*>(data_.data()));
     }
 
-    size_t sequence_length() const { return count_ + 1; }
+    size_t sequence_length() const {
+        if (u_ == 0) return 0;
+        return count_ + 1;
+    }
 
     size_t count() const { return count_; }
 
@@ -254,7 +257,13 @@ class EliasFanoList32 {
                (data_ == other.data_);
     }
 
+    static EliasFanoList32 empty_list() {
+        return EliasFanoList32{};
+    }
+
   private:
+    EliasFanoList32() {}
+
     uint64_t derive_fields() {
         l_ = u_ / (count_ + 1) == 0 ? 0 : 63 ^ static_cast<uint64_t>(std::countl_zero(u_ / (count_ + 1)));
         lower_bits_mask_ = (uint64_t{1} << l_) - 1;

@@ -30,6 +30,20 @@ intx::uint128 intrinsic_gas(const UnsignedTransaction& txn, const evmc_revision 
         gas += fee::kGTxCreate;
     }
 
+    const uint64_t data_len{txn.data.length()};
+    if (data_len > 0) {
+        const intx::uint128 non_zero_bytes{std::ranges::count_if(txn.data, [](uint8_t c) { return c != 0; })};
+        const intx::uint128 non_zero_gas{rev >= EVMC_ISTANBUL ? fee::kGTxDataNonZeroIstanbul : fee::kGTxDataNonZeroFrontier};
+        gas += non_zero_bytes * non_zero_gas;
+        const intx::uint128 zero_bytes{data_len - non_zero_bytes};
+        gas += zero_bytes * fee::kGTxDataZero;
+
+        // EIP-3860: Limit and meter initcode
+        if (contract_creation && rev >= EVMC_SHANGHAI) {
+            gas += num_words(data_len) * fee::kInitCodeWordCost;
+        }
+    }
+
     // EIP-2930: Optional access lists
     gas += intx::uint128{txn.access_list.size()} * fee::kAccessListAddressCost;
     intx::uint128 total_num_of_storage_keys{0};
@@ -37,22 +51,6 @@ intx::uint128 intrinsic_gas(const UnsignedTransaction& txn, const evmc_revision 
         total_num_of_storage_keys += e.storage_keys.size();
     }
     gas += total_num_of_storage_keys * fee::kAccessListStorageKeyCost;
-
-    const uint64_t data_len{txn.data.length()};
-    if (data_len == 0) {
-        return gas;
-    }
-
-    const intx::uint128 non_zero_bytes{std::ranges::count_if(txn.data, [](uint8_t c) { return c != 0; })};
-    const intx::uint128 non_zero_gas{rev >= EVMC_ISTANBUL ? fee::kGTxDataNonZeroIstanbul : fee::kGTxDataNonZeroFrontier};
-    gas += non_zero_bytes * non_zero_gas;
-    const intx::uint128 zero_bytes{data_len - non_zero_bytes};
-    gas += zero_bytes * fee::kGTxDataZero;
-
-    // EIP-3860: Limit and meter initcode
-    if (contract_creation && rev >= EVMC_SHANGHAI) {
-        gas += num_words(data_len) * fee::kInitCodeWordCost;
-    }
 
     return gas;
 }

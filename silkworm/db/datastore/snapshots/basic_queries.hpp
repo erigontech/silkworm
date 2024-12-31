@@ -69,7 +69,7 @@ struct FindByHashSegmentQuery : public BasicSegmentQuery<TSegmentReader, segment
     using BasicSegmentQuery<TSegmentReader, segment_names>::BasicSegmentQuery;
 
     std::optional<typename TSegmentReader::Iterator::value_type> exec(const Hash& hash) {
-        auto offset = this->index_.lookup_by_hash(hash);
+        auto offset = this->index_.lookup_by_key(hash);
         if (!offset) {
             return std::nullopt;
         }

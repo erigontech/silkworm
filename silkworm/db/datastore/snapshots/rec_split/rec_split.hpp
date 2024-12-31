@@ -641,14 +641,31 @@ class RecSplit {
     //! Return the value associated with the given key within the MPHF mapping
     size_t operator()(const std::string& key) const { return operator()(string_view_to_byte_view(key)); }
 
-    //! Search result: value position and flag indicating if found or not
-    using LookupResult = std::pair<size_t, bool>;
+    /**
+     * If RecSplitFeatures::kEnums (double_enum_index_) is enabled
+     * Ordinal is an index of an item from the [0, key_count()) interval.
+     * It is output of MPHF mapping, and input to the EF mapping:
+     * - MPHF(key) = ordinal;
+     * - EF(ordinal) = value (offset);
+     * It can be converted to "data id" using base_data_id():
+     *     data_id = base_data_id + ordinal
+     *
+     * If RecSplitFeatures::kEnums (double_enum_index_) is disabled
+     * Ordinal is just the value (offset) output of MPHF mapping:
+     * - MPHF(key) = value (offset) = ordinal;
+     * In this case base_data_id() is not applicable.
+     */
+    struct Ordinal {
+        uint64_t value{0};
+    };
 
     //! Return the value associated with the given key within the index
-    LookupResult lookup(const std::string& key) const { return lookup(string_view_to_byte_view(key)); }
+    std::optional<Ordinal> lookup_ordinal_by_key(const std::string& key) const {
+        return lookup_ordinal_by_key(string_view_to_byte_view(key));
+    }
 
     //! Return the value associated with the given key within the index
-    LookupResult lookup(ByteView key) const {
+    std::optional<Ordinal> lookup_ordinal_by_key(ByteView key) const {
         const Hash128& hashed_key{murmur_hash_3(key)};
         const auto record = operator()(hashed_key);
         const auto position = 1 + 8 + bytes_per_record_ * (record + 1);
@@ -657,15 +674,27 @@ class RecSplit {
         ensure(position + sizeof(uint64_t) < region.size(),
                [&]() { return "position: " + std::to_string(position) + " plus 8 exceeds file length"; });
         const auto value = endian::load_big_u64(region.data() + position) & record_mask_;
-        if (less_false_positives_ && value < existence_filter_.size()) {
-            return {value, existence_filter_.at(value) == static_cast<uint8_t>(hashed_key.first)};
+
+        if (less_false_positives_ && (value < existence_filter_.size()) &&
+            (existence_filter_.at(value) != static_cast<uint8_t>(hashed_key.first))) {
+            return std::nullopt;
         }
-        return {value, true};
+
+        return Ordinal{value};
     }
 
     //! Return the offset of the i-th element in the index. Perfect hash table lookup is not performed,
     //! only access to the Elias-Fano structure containing all offsets
-    size_t lookup_by_ordinal(uint64_t i) const { return ef_offsets_->get(i); }
+    size_t lookup_by_ordinal(Ordinal ord) const {
+        SILKWORM_ASSERT(double_enum_index_);
+        return ef_offsets_->get(ord.value);
+    }
+
+    std::optional<uint64_t> lookup_data_id_by_key(ByteView key) const {
+        SILKWORM_ASSERT(double_enum_index_);
+        auto ord = lookup_ordinal_by_key(key);
+        return ord ? std::optional{ord->value + base_data_id()} : std::nullopt;
+    }
 
     std::optional<size_t> lookup_by_data_id(uint64_t data_id) const {
         // check if data_id is not out of range
@@ -675,12 +704,13 @@ class RecSplit {
             return std::nullopt;
         }
 
-        return lookup_by_ordinal(data_id - base_data_id());
+        return lookup_by_ordinal(Ordinal{data_id - base_data_id()});
     }
 
     std::optional<size_t> lookup_by_key(ByteView key) const {
-        auto [i, found] = lookup(key);
-        return found ? std::optional{lookup_by_ordinal(i)} : std::nullopt;
+        auto ord = lookup_ordinal_by_key(key);
+        if (!ord) return std::nullopt;
+        return double_enum_index_ ? lookup_by_ordinal(*ord) : std::optional{ord->value};
     }
 
     //! Return the number of keys used to build the RecSplit instance

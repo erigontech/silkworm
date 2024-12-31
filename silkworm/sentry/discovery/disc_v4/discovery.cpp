@@ -67,7 +67,15 @@ class DiscoveryImpl : private MessageHandler {
     Task<void> run() {
         using namespace concurrency::awaitable_wait_for_all;
         server_.setup();
-        co_await (server_.run() && discover_more() && ping_checks() && ping_checks_tasks_.wait());
+        try {
+            co_await (server_.run() && discover_more() && ping_checks() && ping_checks_tasks_.wait());
+        } catch (const boost::system::system_error& ex) {
+            SILK_WARN_M("sentry") << "DiscoveryImpl::run ex=" << ex.what();
+            if (ex.code() == boost::system::errc::operation_canceled) {
+                SILK_WARN_M("sentry") << "DiscoveryImpl::run operation_canceled";
+            }
+            throw;
+        }
     }
 
     void discover_more_needed() {

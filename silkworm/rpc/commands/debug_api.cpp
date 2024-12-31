@@ -29,6 +29,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/receipt.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
@@ -341,7 +342,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
             co_return;
         }
 
-        const auto account{Account::from_encoded_storage_v3(result.value)};
+        const auto account{db::state::AccountCodec::from_encoded_storage_v3(result.value)};
         if (account) {
             json_result["nonce"] = rpc::to_quantity(account->nonce);
             json_result["balance"] = "0x" + intx::to_string(account->balance, 16);

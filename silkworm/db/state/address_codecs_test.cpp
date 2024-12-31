@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "address_decoder.hpp"
+#include "address_codecs.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 

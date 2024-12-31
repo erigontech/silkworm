@@ -19,7 +19,7 @@
 #include <cstdint>
 #include <string>
 
-namespace silkworm::snapshots {
+namespace silkworm::datastore {
 
 using Timestamp = uint64_t;
 
@@ -34,4 +34,4 @@ struct TimestampRange {
     std::string to_string() const { return std::string("[") + std::to_string(start) + ", " + std::to_string(end) + ")"; }
 };
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::datastore

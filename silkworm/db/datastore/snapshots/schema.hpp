@@ -56,7 +56,7 @@ class Schema {
             return *this;
         }
 
-        SnapshotPath make_path(const std::filesystem::path& dir_path, StepRange range) const;
+        SnapshotPath make_path(const std::filesystem::path& dir_path, datastore::StepRange range) const;
 
         Format format() const { return format_; }
         const std::optional<std::string>& sub_dir_name() const { return sub_dir_name_; }

@@ -14,28 +14,20 @@
    limitations under the License.
 */
 
-#pragma once
-
-#include <stdexcept>
-
-#include <evmc/evmc.hpp>
-
-#include <silkworm/db/datastore/snapshots/common/codec.hpp>
+#include "storage_codecs.hpp"
 
 namespace silkworm::db::state {
 
-struct AddressDecoder : public snapshots::Decoder {
-    evmc::address value;
+datastore::kvdb::Slice StorageAddressAndLocationKVDBEncoder::encode() {
+    // TODO: this extra copy could be avoided if encoders are able to contain a reference
+    encoder.address.value = value.address;
+    encoder.location_hash.value = value.location_hash;
 
-    ~AddressDecoder() override = default;
-
-    void decode_word(ByteView word) override {
-        if (word.size() < kAddressLength)
-            throw std::runtime_error{"AddressDecoder failed to decode"};
-        std::memcpy(value.bytes, word.data(), kAddressLength);
-    }
-};
-
-static_assert(snapshots::DecoderConcept<AddressDecoder>);
+    data.clear();
+    data.reserve(kAddressLength + kHashLength);
+    data.append(datastore::kvdb::from_slice(encoder.address.encode()));
+    data.append(datastore::kvdb::from_slice(encoder.location_hash.encode()));
+    return datastore::kvdb::to_slice(data);
+}
 
 }  // namespace silkworm::db::state

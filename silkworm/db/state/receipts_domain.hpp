@@ -18,10 +18,15 @@
 
 #include <stdexcept>
 
+#include <silkworm/db/datastore/kvdb/domain.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 #include <silkworm/db/datastore/snapshots/segment/seg/common/varint.hpp>
 
 namespace silkworm::db::state {
+
+using ReceiptsDomainGetLatestQuery = datastore::kvdb::DomainGetLatestQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawDecoder<ByteView>>;
+using ReceiptsDomainPutQuery = datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
+using ReceiptsDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
 
 enum class ReceiptsDomainKey : uint8_t {
     kCumulativeGasUsedInBlockKey = 0,

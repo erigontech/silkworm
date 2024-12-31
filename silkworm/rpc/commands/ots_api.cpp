@@ -27,6 +27,7 @@
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/async_binary_search.hpp>
@@ -329,7 +330,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
                 prev_txn_id = txn_id;
                 continue;
             }
-            const auto account{Account::from_encoded_storage_v3(result.value)};
+            const auto account{db::state::AccountCodec::from_encoded_storage_v3(result.value)};
             SILK_DEBUG << "Account: " << *account;
             if (account->nonce > nonce) {
                 break;
@@ -359,7 +360,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
                 creation_txn_id = static_cast<uint64_t>(txn_id);
                 co_return false;
             }
-            const auto account{Account::from_encoded_storage_v3(result.value)};
+            const auto account{db::state::AccountCodec::from_encoded_storage_v3(result.value)};
             SILK_DEBUG << "account.nonce: " << account->nonce << ", nonce: " << nonce;
             if (account->nonce <= nonce) {
                 creation_txn_id = std::max(creation_txn_id, static_cast<uint64_t>(txn_id));
@@ -492,7 +493,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
                 prev_txn_id = txn_id;
                 continue;
             }
-            const auto account{Account::from_encoded_storage_v3(result.value)};
+            const auto account{db::state::AccountCodec::from_encoded_storage_v3(result.value)};
             SILK_DEBUG << "Decoded account: " << *account;
 
             if (account->incarnation == account_opt.value().incarnation) {

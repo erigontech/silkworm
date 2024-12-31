@@ -25,6 +25,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/log_cbor.hpp>
 #include <silkworm/db/receipt_cbor.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -87,23 +88,26 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
         Bytes encoded_initial{};
         if (initial) {
             bool omit_code_hash{!account_deleted};
-            encoded_initial = initial->encode_for_storage(omit_code_hash);
+            encoded_initial = state::AccountCodec::encode_for_storage(*initial, omit_code_hash);
         }
 
         block_account_changes_[block_num_].insert_or_assign(address, encoded_initial);
     }
 
+    size_t encoding_length_for_storage = current ? state::AccountCodec::encoding_length_for_storage(*current) : 0;
+
     if (equal) {
-        batch_state_size_ += kAddressLength + (current ? current->encoding_length_for_storage() : 0);
+        batch_state_size_ += kAddressLength + encoding_length_for_storage;
         return;
     }
+
     auto it{accounts_.find(address)};
     if (it != accounts_.end()) {
-        batch_state_size_ -= it->second.has_value() ? it->second->encoding_length_for_storage() : 0;
-        batch_state_size_ += (current ? current->encoding_length_for_storage() : 0);
+        batch_state_size_ -= it->second.has_value() ? state::AccountCodec::encoding_length_for_storage(*it->second) : 0;
+        batch_state_size_ += encoding_length_for_storage;
         it->second = current;
     } else {
-        batch_state_size_ += kAddressLength + (current ? current->encoding_length_for_storage() : 0);
+        batch_state_size_ += kAddressLength + encoding_length_for_storage;
         accounts_[address] = current;
     }
 
@@ -365,7 +369,7 @@ void Buffer::write_state_to_db() {
             auto key{to_slice(address)};
             state_table->erase(key, /*whole_multivalue=*/true);  // PlainState is multivalue
             if (it->second.has_value()) {
-                Bytes encoded{it->second->encode_for_storage()};
+                Bytes encoded = state::AccountCodec::encode_for_storage(*it->second);
                 state_table->upsert(key, to_slice(encoded));
                 written_size += kAddressLength + encoded.length();
             }

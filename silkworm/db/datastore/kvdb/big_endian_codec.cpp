@@ -14,15 +14,21 @@
    limitations under the License.
 */
 
-#pragma once
+#include "big_endian_codec.hpp"
 
-#include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
-#include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
+#include <silkworm/core/common/endian.hpp>
 
-#include "address_codecs.hpp"
+namespace silkworm::datastore::kvdb {
 
-namespace silkworm::db::state {
+Slice BigEndianU64Codec::encode() {
+    data.resize(sizeof(uint64_t), 0);
+    endian::store_big_u64(data.data(), value);
+    return to_slice(data);
+}
 
-using TracesFromInvertedIndexKVSegmentReader = snapshots::segment::KVSegmentReader<AddressDecoder, snapshots::RawDecoder<Bytes>>;
+void BigEndianU64Codec::decode(Slice slice) {
+    SILKWORM_ASSERT(slice.size() >= sizeof(uint64_t));
+    value = endian::load_big_u64(static_cast<uint8_t*>(slice.data()));
+}
 
-}  // namespace silkworm::db::state
+}  // namespace silkworm::datastore::kvdb

@@ -17,13 +17,58 @@
 #pragma once
 
 #include "inverted_index.hpp"
+#include "kvts_codec.hpp"
 #include "mdbx.hpp"
 
 namespace silkworm::datastore::kvdb {
 
 struct History {
     const MapConfig& values_table;
+    bool has_large_values;
     InvertedIndex inverted_index;
+};
+
+template <EncoderConcept TEncoder>
+using HistoryKeyEncoder = KVTSKeyEncoder<TEncoder, TimestampEncoder>;
+
+template <EncoderConcept TEncoder>
+using HistoryValueEncoder = KVTSValueEncoder<TEncoder, TimestampEncoder>;
+
+template <EncoderConcept TKeyEncoder, EncoderConcept TValueEncoder>
+struct HistoryPutQuery {
+    RWTxn& tx;
+    History entity;
+
+    using TKey = decltype(TKeyEncoder::value);
+    using TValue = decltype(TValueEncoder::value);
+
+    void exec(const TKey& key, const TValue& value, Timestamp timestamp) {
+        HistoryKeyEncoder<TKeyEncoder> key_encoder{entity.has_large_values};
+        key_encoder.value.key.value = key;
+        key_encoder.value.timestamp.value = timestamp;
+
+        HistoryValueEncoder<TValueEncoder> value_encoder{entity.has_large_values};
+        value_encoder.value.value.value = value;
+        value_encoder.value.timestamp.value = timestamp;
+
+        tx.rw_cursor(entity.values_table)->insert(key_encoder.encode(), value_encoder.encode());
+
+        InvertedIndexPutQuery<TKeyEncoder> inverted_index_query{tx, entity.inverted_index};
+        inverted_index_query.exec(key, timestamp, false);
+    }
+};
+
+template <EncoderConcept TKeyEncoder>
+struct HistoryDeleteQuery {
+    RWTxn& tx;
+    History entity;
+
+    using TKey = decltype(TKeyEncoder::value);
+
+    void exec(const TKey& key, Timestamp timestamp) {
+        HistoryPutQuery<TKeyEncoder, RawEncoder<ByteView>> query{tx, entity};
+        query.exec(key, ByteView{}, timestamp);
+    }
 };
 
 }  // namespace silkworm::datastore::kvdb

@@ -42,14 +42,17 @@ class DatabaseRef {
     // this is private, use Database.ref() or DatabaseUnmanaged.ref() to create
     DatabaseRef(
         mdbx::env env,
+        const Schema::DatabaseDef& schema,
         const EntitiesMap& entities)
         : env_{env},
+          schema_{schema},
           entities_{entities} {}
 
     friend class Database;
     friend class DatabaseUnmanaged;
 
     mdbx::env env_;
+    const Schema::DatabaseDef& schema_;
     const EntitiesMap& entities_;
 };
 
@@ -70,7 +73,7 @@ class Database {
     Domain domain(datastore::EntityName name) const { return ref().domain(name); }
     InvertedIndex inverted_index(datastore::EntityName name) { return ref().inverted_index(name); }
 
-    DatabaseRef ref() const { return {env_, entities_}; }  // NOLINT(cppcoreguidelines-slicing)
+    DatabaseRef ref() const { return {env_, schema_, entities_}; }  // NOLINT(cppcoreguidelines-slicing)
 
   private:
     mdbx::env_managed env_;
@@ -93,7 +96,7 @@ class DatabaseUnmanaged {
     Domain domain(datastore::EntityName name) const { return ref().domain(name); }
     InvertedIndex inverted_index(datastore::EntityName name) { return ref().inverted_index(name); }
 
-    DatabaseRef ref() const { return {env_, entities_}; }  // NOLINT(cppcoreguidelines-slicing)
+    DatabaseRef ref() const { return {env_, schema_, entities_}; }  // NOLINT(cppcoreguidelines-slicing)
 
   private:
     EnvUnmanaged env_;

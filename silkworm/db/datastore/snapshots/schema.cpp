@@ -23,7 +23,7 @@ namespace silkworm::snapshots {
 
 SnapshotPath Schema::SnapshotFileDef::make_path(
     const std::filesystem::path& dir_path,
-    StepRange range) const {
+    datastore::StepRange range) const {
     auto filename_format = sub_dir_name() ? SnapshotPath::FilenameFormat::kE3 : SnapshotPath::FilenameFormat::kE2;
     return SnapshotPath::make(dir_path, sub_dir_name(), filename_format, kSnapshotV1, range, tag(), file_ext());
 }

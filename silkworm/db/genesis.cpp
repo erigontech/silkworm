@@ -23,6 +23,7 @@
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/address.hpp>
 
+#include "state/account_codec.hpp"
 #include "tables.hpp"
 
 namespace silkworm::db {
@@ -121,7 +122,7 @@ void write_genesis_allocation_to_db(RWTxn& txn, const InMemoryState& genesis_all
     auto code_table{open_cursor(txn, table::kCode)};
     for (const auto& [address, account] : genesis_allocation.accounts()) {
         // Store account plain state
-        Bytes encoded{account.encode_for_storage()};
+        Bytes encoded = state::AccountCodec::encode_for_storage(account);
         state_table->upsert(to_slice(address), to_slice(encoded));
 
         // Store code

@@ -60,7 +60,7 @@ snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_p
         std::move(dir_path),
         open,
         make_blocks_repository_schema(),
-        std::make_unique<snapshots::StepToBlockNumConverter>(),
+        std::make_unique<datastore::StepToBlockNumConverter>(),
         make_blocks_index_builders_factory(),
     };
 }

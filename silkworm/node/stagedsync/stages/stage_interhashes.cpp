@@ -28,6 +28,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 
@@ -37,6 +38,7 @@ using namespace silkworm::db;
 using datastore::kvdb::Collector;
 using datastore::kvdb::from_slice;
 using datastore::kvdb::to_slice;
+using silkworm::db::state::AccountCodec;
 
 Stage::Result InterHashes::forward(RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
@@ -270,7 +272,7 @@ trie::PrefixSet InterHashes::collect_account_changes(RWTxn& txn, BlockNum from, 
             } else {
                 auto ps_data{plain_state->find(db::to_slice(address), false)};
                 if (ps_data && !ps_data.value.empty()) {
-                    const auto account{Account::from_encoded_storage(from_slice(ps_data.value))};
+                    const auto account{AccountCodec::from_encoded_storage(from_slice(ps_data.value))};
                     success_or_throw(account);
                     plainstate_account.emplace(*account);
                 }
@@ -287,7 +289,7 @@ trie::PrefixSet InterHashes::collect_account_changes(RWTxn& txn, BlockNum from, 
                 // happened (with possible recreation). If they don't match delete from TrieStorage all hashed addresses
                 // + incarnation
                 if (!changeset_value_view.empty()) {
-                    const auto changeset_account{Account::from_encoded_storage(changeset_value_view)};
+                    const auto changeset_account{AccountCodec::from_encoded_storage(changeset_value_view)};
                     success_or_throw(changeset_account);
                     if (changeset_account->incarnation) {
                         if (plainstate_account == std::nullopt ||
@@ -307,7 +309,7 @@ trie::PrefixSet InterHashes::collect_account_changes(RWTxn& txn, BlockNum from, 
                         if (changeset_value_view.empty()) {
                             deleted_ts_prefixes.insert(address.bytes);
                         } else {
-                            const auto changeset_account{Account::from_encoded_storage(changeset_value_view)};
+                            const auto changeset_account{AccountCodec::from_encoded_storage(changeset_value_view)};
                             success_or_throw(changeset_account);
                             if (changeset_account->incarnation > plainstate_account->incarnation) {
                                 deleted_ts_prefixes.insert(

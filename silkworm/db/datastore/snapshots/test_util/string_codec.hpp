@@ -24,7 +24,7 @@
 
 namespace silkworm::snapshots {
 
-struct StringCodec : public Encoder, public Decoder {
+struct StringCodec : public Codec {
     std::string value;
     Bytes word;
 

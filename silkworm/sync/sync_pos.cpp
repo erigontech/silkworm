@@ -83,37 +83,41 @@ Task<void> PoSSync::download_blocks() {
     asio::steady_timer timer(executor);
 
     // main loop
-    while (true) {
-        Blocks blocks;
+    try {
+        while (true) {
+            Blocks blocks;
 
-        // wait for a batch of blocks
-        bool present = downloading_queue.try_pop(blocks);
-        if (!present) {
-            // a trick to avoid busy waiting
-            timer.expires_after(100ms);
-            co_await timer.async_wait(asio::use_awaitable);
-            continue;
+            // wait for a batch of blocks
+            bool present = downloading_queue.try_pop(blocks);
+            if (!present) {
+                // a trick to avoid busy waiting
+                timer.expires_after(100ms);
+                co_await timer.async_wait(asio::use_awaitable);
+                continue;
+            }
+
+            // compute head of chain applying fork choice rule
+            std::ranges::for_each(blocks, [&, this](const auto& block) {
+                block->td = chain_fork_view_.add(block->header);
+                block_progress = std::max(block_progress, block->header.number);
+            });
+
+            // insert blocks into database
+            const auto insert_result{co_await exec_engine_->insert_blocks(to_plain_blocks(blocks))};
+            if (!insert_result) {
+                SILK_ERROR << "PoSSync: cannot insert " << blocks.size() << " blocks, error=" << insert_result.status;
+                continue;
+            }
+
+            downloaded_headers.set(block_progress);
+            SILK_INFO
+                << "PoSSync: Downloading progress: +" << downloaded_headers.delta() << " blocks downloaded, "
+                << downloaded_headers.high_res_throughput<seconds_t>() << " headers/secs"
+                << ", last=" << downloaded_headers.get()
+                << ", lap.duration=" << StopWatch::format(timing.since_start());
         }
-
-        // compute head of chain applying fork choice rule
-        std::ranges::for_each(blocks, [&, this](const auto& block) {
-            block->td = chain_fork_view_.add(block->header);
-            block_progress = std::max(block_progress, block->header.number);
-        });
-
-        // insert blocks into database
-        const auto insert_result{co_await exec_engine_->insert_blocks(to_plain_blocks(blocks))};
-        if (!insert_result) {
-            SILK_ERROR << "PoSSync: cannot insert " << blocks.size() << " blocks, error=" << insert_result.status;
-            continue;
-        }
-
-        downloaded_headers.set(block_progress);
-        SILK_INFO
-            << "PoSSync: Downloading progress: +" << downloaded_headers.delta() << " blocks downloaded, "
-            << downloaded_headers.high_res_throughput<seconds_t>() << " headers/secs"
-            << ", last=" << downloaded_headers.get()
-            << ", lap.duration=" << StopWatch::format(timing.since_start());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "PoSSync: exiting download_blocks loop exception=" << e.what();
     }
 }
 

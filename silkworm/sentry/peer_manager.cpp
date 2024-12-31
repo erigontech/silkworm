@@ -42,14 +42,22 @@ Task<void> PeerManager::run(
 
     need_peers_notifier_.notify();
 
-    auto run =
-        run_in_strand(server.peer_channel()) &&
-        run_in_strand(client_peer_channel_) &&
-        discover_peers(discovery, std::move(protocol), std::move(client_factory)) &&
-        connect_peer_tasks_.wait() &&
-        drop_peer_tasks_.wait() &&
-        peer_tasks_.wait();
-    co_await concurrency::spawn_task(strand_, std::move(run));
+    try {
+        auto run =
+            run_in_strand(server.peer_channel()) &&
+            run_in_strand(client_peer_channel_) &&
+            discover_peers(discovery, std::move(protocol), std::move(client_factory)) &&
+            connect_peer_tasks_.wait() &&
+            drop_peer_tasks_.wait() &&
+            peer_tasks_.wait();
+        co_await concurrency::spawn_task(strand_, std::move(run));
+    } catch (const boost::system::system_error& ex) {
+        SILK_WARN_M("sentry") << "PeerManager::run ex=" << ex.what();
+        if (ex.code() == boost::system::errc::operation_canceled) {
+            SILK_WARN_M("sentry") << "PeerManager::run operation_canceled";
+        }
+        throw;
+    }
 }
 
 Task<void> PeerManager::run_in_strand(concurrency::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel) {

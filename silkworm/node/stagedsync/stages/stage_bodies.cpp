@@ -57,15 +57,8 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
 
     auto validation_result = ValidationResult::kOk;
 
-    SILK_INFO << "BodyDataModel::update_tables chain_config=" << chain_config_.to_json().dump();
-
     // Body validation
     if (block_num > preverified_block_num_) {
-        SILK_INFO << "BodyDataModel::update_tables block_num=" << block_num << " block_hash=" << to_hex(block_hash)
-                  << " #transactions=" << block.transactions.size();
-        if (!block.transactions.empty()) {
-            SILK_INFO << "BodyDataModel::update_tables transactions[0].chain_id=" << block.transactions[0].chain_id.value_or(-1);
-        }
         // Here we skip a full body pre-validation like
         // validation_result = rule_set_->pre_validate_block_body(block, chain_state_);
         // because we assume that the sync (BlockExchange) has already checked transaction & ommers root hash
@@ -81,8 +74,6 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
     //       of the headers by the sync (BlockExchange)
 
     if (validation_result != ValidationResult::kOk) {
-        SILK_WARN << "BodyDataModel::update_tables block_num=" << block_num << " block_hash=" << to_hex(block_hash)
-                  << " validation_result=" << magic_enum::enum_name(validation_result);
         unwind_needed_ = true;
         unwind_point_ = block_num - 1;
         bad_block_ = block_hash;
@@ -113,9 +104,7 @@ BodiesStage::BodiesStage(
     : Stage(sync_context, db::stages::kBlockBodiesKey),
       chain_config_(std::move(chain_config)),
       data_model_factory_(std::move(data_model_factory)),
-      last_pre_validated_block_(std::move(last_pre_validated_block)) {
-    SILK_INFO << "BodiesStage::BodiesStage chain_config=" << chain_config_.to_json().dump();
-}
+      last_pre_validated_block_(std::move(last_pre_validated_block)) {}
 
 Stage::Result BodiesStage::forward(db::RWTxn& tx) {
     using std::shared_ptr;

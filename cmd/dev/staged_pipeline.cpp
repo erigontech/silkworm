@@ -247,9 +247,7 @@ void set_stage_progress(datastore::kvdb::EnvConfig& config, const std::string& s
 static stagedsync::BodiesStageFactory make_bodies_stage_factory(
     const ChainConfig& chain_config,
     db::DataModelFactory data_model_factory) {
-    SILK_INFO << "make_bodies_stage_factory chain_config=" << chain_config.to_json().dump();
     return [chain_config, data_model_factory = std::move(data_model_factory)](stagedsync::SyncContext* sync_context) {
-        SILK_INFO << "make_bodies_stage_factory::lambda chain_config=" << chain_config.to_json().dump();
         return std::make_unique<stagedsync::BodiesStage>(
             sync_context,
             chain_config,
@@ -510,7 +508,6 @@ void forward(datastore::kvdb::EnvConfig& config, BlockNum forward_point, const b
 
     const auto datadir_path = std::filesystem::path{config.path}.parent_path();
     SILK_INFO << "Forward: datadir=" << datadir_path.string();
-    SILK_INFO << "Forward: chain_config=" << chain_config->to_json().dump();
 
     db::DataModelFactory data_model_factory{data_store.ref()};
 
@@ -544,7 +541,6 @@ void forward(datastore::kvdb::EnvConfig& config, BlockNum forward_point, const b
     ensure(forward_result == stagedsync::Stage::Result::kSuccess,
            [&]() { return "forward failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(forward_result)}; });
 
-    SILK_INFO << "Forward END: chain_config=" << settings.chain_config->to_json().dump();
     std::cout << "\n Staged pipeline forward up to block: " << forward_point << " completed\n";
 }
 
@@ -580,7 +576,6 @@ void bisect_pipeline(datastore::kvdb::EnvConfig& config, BlockNum start, BlockNu
 
     const auto datadir_path = std::filesystem::path{config.path}.parent_path();
     SILK_INFO << "Bisect: datadir=" << datadir_path.string();
-    SILK_INFO << "Bisect: chain_config=" << chain_config->to_json().dump();
 
     db::DataModelFactory data_model_factory{data_store.ref()};
 

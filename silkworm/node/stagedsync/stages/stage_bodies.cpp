@@ -57,6 +57,8 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
 
     auto validation_result = ValidationResult::kOk;
 
+    SILK_INFO << "BodyDataModel::update_tables chain_config=" << chain_config_.to_json().dump();
+
     // Body validation
     if (block_num > preverified_block_num_) {
         SILK_INFO << "BodyDataModel::update_tables block_num=" << block_num << " block_hash=" << to_hex(block_hash)

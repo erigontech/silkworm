@@ -74,6 +74,8 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
     //       of the headers by the sync (BlockExchange)
 
     if (validation_result != ValidationResult::kOk) {
+        SILK_WARN << "BodyDataModel::update_tables block_num=" << block_num << " block_hash=" << to_hex(block_hash)
+                  << " validation_result=" << magic_enum::enum_name(validation_result);
         unwind_needed_ = true;
         unwind_point_ = block_num - 1;
         bad_block_ = block_hash;

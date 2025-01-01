@@ -247,7 +247,9 @@ void set_stage_progress(datastore::kvdb::EnvConfig& config, const std::string& s
 static stagedsync::BodiesStageFactory make_bodies_stage_factory(
     const ChainConfig& chain_config,
     db::DataModelFactory data_model_factory) {
+    SILK_INFO << "make_bodies_stage_factory chain_config=" << chain_config.to_json().dump();
     return [chain_config, data_model_factory = std::move(data_model_factory)](stagedsync::SyncContext* sync_context) {
+        SILK_INFO << "make_bodies_stage_factory::lambda chain_config=" << chain_config.to_json().dump();
         return std::make_unique<stagedsync::BodiesStage>(
             sync_context,
             chain_config,

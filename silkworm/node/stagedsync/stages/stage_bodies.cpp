@@ -59,6 +59,11 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
 
     // Body validation
     if (block_num > preverified_block_num_) {
+        SILK_INFO << "BodyDataModel::update_tables block_num=" << block_num << " block_hash=" << to_hex(block_hash)
+                  << " #transactions=" << block.transactions.size();
+        if (!block.transactions.empty()) {
+            SILK_INFO << "BodyDataModel::update_tables transactions[0].chain_id=" << block.transactions[0].chain_id.value_or(-1);
+        }
         // Here we skip a full body pre-validation like
         // validation_result = rule_set_->pre_validate_block_body(block, chain_state_);
         // because we assume that the sync (BlockExchange) has already checked transaction & ommers root hash

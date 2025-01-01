@@ -114,7 +114,7 @@ BodiesStage::BodiesStage(
       chain_config_(chain_config),
       data_model_factory_(std::move(data_model_factory)),
       last_pre_validated_block_(std::move(last_pre_validated_block)) {
-    SILK_INFO << "BodyDataModel::BodiesStage chain_config=" << chain_config_.to_json().dump();
+    SILK_INFO << "BodiesStage::BodiesStage chain_config=" << chain_config_.to_json().dump();
 }
 
 Stage::Result BodiesStage::forward(db::RWTxn& tx) {

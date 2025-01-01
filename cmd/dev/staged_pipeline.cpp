@@ -544,6 +544,7 @@ void forward(datastore::kvdb::EnvConfig& config, BlockNum forward_point, const b
     ensure(forward_result == stagedsync::Stage::Result::kSuccess,
            [&]() { return "forward failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(forward_result)}; });
 
+    SILK_INFO << "Forward END: chain_config=" << settings.chain_config->to_json().dump();
     std::cout << "\n Staged pipeline forward up to block: " << forward_point << " completed\n";
 }
 

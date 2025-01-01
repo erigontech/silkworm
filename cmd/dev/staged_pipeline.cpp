@@ -508,6 +508,7 @@ void forward(datastore::kvdb::EnvConfig& config, BlockNum forward_point, const b
 
     const auto datadir_path = std::filesystem::path{config.path}.parent_path();
     SILK_INFO << "Forward: datadir=" << datadir_path.string();
+    SILK_INFO << "Forward: chain_config=" << chain_config->to_json().dump();
 
     db::DataModelFactory data_model_factory{data_store.ref()};
 
@@ -576,6 +577,7 @@ void bisect_pipeline(datastore::kvdb::EnvConfig& config, BlockNum start, BlockNu
 
     const auto datadir_path = std::filesystem::path{config.path}.parent_path();
     SILK_INFO << "Bisect: datadir=" << datadir_path.string();
+    SILK_INFO << "Bisect: chain_config=" << chain_config->to_json().dump();
 
     db::DataModelFactory data_model_factory{data_store.ref()};
 

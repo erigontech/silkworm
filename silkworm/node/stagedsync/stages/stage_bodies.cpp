@@ -107,11 +107,11 @@ bool BodiesStage::BodyDataModel::get_canonical_block(BlockNum block_num, Block& 
 
 BodiesStage::BodiesStage(
     SyncContext* sync_context,
-    const ChainConfig& chain_config,
+    ChainConfig chain_config,
     db::DataModelFactory data_model_factory,
     std::function<BlockNum()> last_pre_validated_block)
     : Stage(sync_context, db::stages::kBlockBodiesKey),
-      chain_config_(chain_config),
+      chain_config_(std::move(chain_config)),
       data_model_factory_(std::move(data_model_factory)),
       last_pre_validated_block_(std::move(last_pre_validated_block)) {
     SILK_INFO << "BodiesStage::BodiesStage chain_config=" << chain_config_.to_json().dump();

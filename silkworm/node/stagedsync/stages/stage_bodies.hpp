@@ -33,7 +33,7 @@ class BodiesStage : public Stage {
   public:
     BodiesStage(
         SyncContext* sync_context,
-        const ChainConfig& chain_config,
+        ChainConfig chain_config,
         db::DataModelFactory data_model_factory,
         std::function<BlockNum()> last_pre_validated_block);
     BodiesStage(const BodiesStage&) = delete;  // not copyable
@@ -47,7 +47,7 @@ class BodiesStage : public Stage {
   private:
     std::vector<std::string> get_log_progress() override;  // thread safe
 
-    const ChainConfig& chain_config_;
+    ChainConfig chain_config_;
     db::DataModelFactory data_model_factory_;
     std::function<BlockNum()> last_pre_validated_block_;
     std::atomic<BlockNum> current_block_num_{0};

@@ -290,7 +290,7 @@ void StateTransition::run() {
             auto block = get_block(state, config);
             auto txn = get_transaction(expected_sub_state);
 
-            ExecutionProcessor processor{block, *rule_set, state, config};
+            ExecutionProcessor processor{block, *rule_set, state, config, true};
             Receipt receipt;
 
             const evmc_revision rev{config.revision(block.header.number, block.header.timestamp)};

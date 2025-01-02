@@ -34,8 +34,8 @@ using boost::asio::awaitable;
 
 class LogsWalker {
   public:
-    explicit LogsWalker(BlockCache& block_cache, db::kv::api::Transaction& tx, ethbackend::BackEnd& backend, WorkerPool& workers)
-        : block_cache_(block_cache), tx_(tx), block_reader_(*tx.create_storage(), tx), backend_{backend}, workers_{workers} {}
+    explicit LogsWalker(BlockCache& block_cache, db::kv::api::Transaction& tx, const db::chain::ChainStorage& chain_storage, ethbackend::BackEnd& backend, WorkerPool& workers)
+        : block_cache_(block_cache), tx_(tx), block_reader_(chain_storage, tx), backend_{backend}, workers_{workers} {}
 
     LogsWalker(const LogsWalker&) = delete;
     LogsWalker& operator=(const LogsWalker&) = delete;

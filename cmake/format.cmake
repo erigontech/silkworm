@@ -35,4 +35,4 @@ list(FILTER SRC EXCLUDE REGEX "silkworm/core/chain/dao.hpp$")
 list(FILTER SRC EXCLUDE REGEX "silkworm/rpc/json_rpc/specification.cpp\$")
 list(FILTER SRC EXCLUDE REGEX "silkworm/sync/internals/preverified_hashes/preverified_hashes_[a-z]+.cpp\$")
 
-execute_process(COMMAND ${CLANG_FORMAT} -style=file -i ${SRC})
+execute_process(COMMAND ${CLANG_FORMAT} -style=file -i ${SRC} COMMAND_ERROR_IS_FATAL ANY)

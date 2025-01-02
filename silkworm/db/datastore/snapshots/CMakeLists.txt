@@ -38,6 +38,7 @@ set(LIBS_PUBLIC
     Microsoft.GSL::GSL
     silkworm_core
     silkworm_infra
+    silkworm_datastore_common
     silkworm_bittorrent
 )
 # cmake-format: on

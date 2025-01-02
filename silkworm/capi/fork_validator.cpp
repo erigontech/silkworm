@@ -17,6 +17,7 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/environment.hpp>
+#include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
 #include <silkworm/node/stagedsync/stages_factory_impl.hpp>
 
@@ -124,10 +125,12 @@ SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_en
     SILK_INFO << "Starting fork validator";
     set_node_settings(handle, *settings, mdbx_env);
 
-    silkworm::datastore::kvdb::EnvUnmanaged unmanaged_env{mdbx_env};
-    silkworm::datastore::kvdb::RWAccess rw_access{unmanaged_env};
+    handle->chaindata = std::make_unique<silkworm::datastore::kvdb::DatabaseUnmanaged>(
+        silkworm::db::DataStore::make_chaindata_database(silkworm::datastore::kvdb::EnvUnmanaged{mdbx_env}));
+    auto& chaindata = *handle->chaindata;
+
     silkworm::db::DataStoreRef data_store{
-        rw_access,
+        chaindata.ref(),
         *handle->blocks_repository,
         *handle->state_repository,
     };
@@ -139,7 +142,7 @@ SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_en
         data_model_factory,
         /* log_timer_factory = */ std::nullopt,
         make_stages_factory(handle->node_settings, data_model_factory),
-        rw_access);
+        chaindata.access_rw());
 
     SILK_DEBUG << "Execution engine created";
 

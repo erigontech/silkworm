@@ -22,16 +22,8 @@ find_package(magic_enum REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(tomlplusplus REQUIRED)
 
-# cmake-format: off
-set(BACKEND_KV_SERVER_SRC
-        backend_kv_server.cpp
-        ../common/db_max_readers_option.cpp
-        ../common/db_max_readers_option.hpp
-        )
-# cmake-format: on
-
-add_executable(backend_kv_server "${BACKEND_KV_SERVER_SRC}")
-target_link_libraries(backend_kv_server PRIVATE silkworm_node silkworm_sync cmd_common)
+add_executable(backend_kv_server backend_kv_server.cpp)
+target_link_libraries(backend_kv_server PRIVATE silkworm_db_cli silkworm_node silkworm_sync)
 
 add_executable(check_blockhashes check_blockhashes.cpp)
 target_link_libraries(check_blockhashes PRIVATE silkworm_node CLI11::CLI11)
@@ -43,13 +35,13 @@ add_executable(check_hashstate check_hashstate.cpp)
 target_link_libraries(check_hashstate PRIVATE silkworm_node CLI11::CLI11)
 
 add_executable(check_log_indices check_log_indices.cpp)
-target_link_libraries(check_log_indices PRIVATE silkworm_node cborcpp cmd_common CLI11::CLI11)
+target_link_libraries(check_log_indices PRIVATE silkworm_infra_cli silkworm_node cborcpp CLI11::CLI11)
 
 add_executable(check_pow check_pow.cpp)
 target_link_libraries(check_pow PRIVATE silkworm_node CLI11::CLI11)
 
 add_executable(check_senders check_senders.cpp)
-target_link_libraries(check_senders PRIVATE silkworm_node cmd_common)
+target_link_libraries(check_senders PRIVATE silkworm_infra_cli silkworm_node)
 
 add_executable(check_tx_lookup check_tx_lookup.cpp)
 target_link_libraries(check_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
@@ -70,11 +62,11 @@ target_link_libraries(kzg_g2_uncompress silkworm_core blst::blst)
 add_executable(scan_txs scan_txs.cpp)
 target_link_libraries(scan_txs PRIVATE silkworm_node CLI11::CLI11 absl::time)
 
-add_executable(snapshots snapshots.cpp)
-target_link_libraries(snapshots PRIVATE absl::strings cmd_common magic_enum::magic_enum silkworm_node)
+add_executable(snapshots "${SILKWORM_MAIN_DIR}/silkworm/db/cli/snapshots.cpp")
+target_link_libraries(snapshots PRIVATE absl::strings silkworm_infra_cli magic_enum::magic_enum silkworm_node)
 
 add_executable(db_toolbox db_toolbox.cpp)
-target_link_libraries(db_toolbox PRIVATE silkworm_node cmd_common CLI11::CLI11 magic_enum::magic_enum)
+target_link_libraries(db_toolbox PRIVATE silkworm_node silkworm_infra_cli CLI11::CLI11 magic_enum::magic_enum)
 
 add_executable(staged_pipeline staged_pipeline.cpp)
-target_link_libraries(staged_pipeline PRIVATE silkworm_node cmd_common CLI11::CLI11 magic_enum::magic_enum)
+target_link_libraries(staged_pipeline PRIVATE silkworm_node silkworm_infra_cli CLI11::CLI11 magic_enum::magic_enum)

@@ -39,12 +39,17 @@ void from_json(const nlohmann::json& json, DebugConfig& tc) {
     json.at("disableStorage").get_to(tc.disable_storage);
     json.at("disableMemory").get_to(tc.disable_memory);
     json.at("disableStack").get_to(tc.disable_stack);
+
+    if (json.count("NoRefunds") != 0) {
+        json.at("NoRefunds").get_to(tc.no_refunds);
+    }
 }
 
 std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
     out << "disableStorage: " << std::boolalpha << tc.disable_storage;
     out << " disableMemory: " << std::boolalpha << tc.disable_memory;
     out << " disableStack: " << std::boolalpha << tc.disable_stack;
+    out << " NoRefunds: " << std::boolalpha << tc.no_refunds;
 
     return out;
 }
@@ -212,10 +217,9 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     logs_.push_back(log);
 }
 
-void DebugTracer::on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
+void DebugTracer::on_precompiled_run(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     SILK_DEBUG << "DebugTracer::on_precompiled_run:"
-               << " status: " << result.status_code
-               << ", gas: " << std::dec << gas;
+               << " status: " << result.status_code;
 
     if (logs_.size() > 1) {
         flush_logs();
@@ -376,10 +380,11 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash&
     rpc::Transaction transaction{call.to_transaction()};
 
     const auto& block = block_with_hash->block;
-    const auto block_num = block.header.number;
+    const auto block_num = block.header.number + 1;
 
     stream.write_field("result");
     stream.open_object();
+    // trace_call semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number + 1
     co_await execute(stream, storage, block_num, block, transaction, /* index */ 0);
     stream.close_object();
 
@@ -397,10 +402,11 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
     } else {
         const auto& block = tx_with_block->block_with_hash->block;
         const auto& transaction = tx_with_block->transaction;
-        const auto block_num = block.header.number - 1;
+        const auto block_num = block.header.number;
 
         stream.write_field("result");
         stream.open_object();
+        // trace_transaction semantics: we must execute the txn from the state at the current block
         co_await execute(stream, storage, block_num, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
         stream.close_object();
     }
@@ -434,9 +440,15 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
 
     const auto chain_config = co_await storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
+
+    execution::StateFactory state_factory{tx_};
+    const auto txn_id = co_await state_factory.user_txn_id_at(block_num);
+
     co_await async_task(workers_.executor(), [&]() -> void {
-        auto state = execution::StateFactory{tx_}.create_state(current_executor, storage, block_num - 1);
+        auto state = state_factory.create_state(current_executor, storage, txn_id);
         EVMExecutor executor{block, chain_config, workers_, state};
+
+        bool refunds = !config_.no_refunds;
 
         for (std::uint64_t idx = 0; idx < transactions.size(); ++idx) {
             rpc::Transaction txn{block.transactions[idx]};
@@ -451,7 +463,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
             stream.open_array();
 
             Tracers tracers{debug_tracer};
-            const auto execution_result = executor.call(block, txn, tracers, /* refund */ false, /* gasBailout */ false);
+            const auto execution_result = executor.call(block, txn, tracers, refunds, /* gasBailout */ false);
 
             debug_tracer->flush_logs();
             stream.close_array();
@@ -477,7 +489,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
 
     auto transaction_index = static_cast<std::int32_t>(block.transactions.size());
 
-    co_await execute(stream, storage, block.header.number, block, transaction, transaction_index);
+    co_await execute(stream, storage, block.header.number + 1, block, transaction, transaction_index);
     co_return;
 }
 
@@ -498,12 +510,12 @@ Task<void> DebugExecutor::execute(
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     // We must do the execution at the state after the txn identified by the given index within the given block
-    // at the state after the block identified by the given block_num, i.e. at the start of the next block (block_num + 1)
-    const auto first_txn_num_in_block = co_await tx_.first_txn_num_in_block(block_num + 1);
+    // at the state after the block identified by the given block_num
+    execution::StateFactory state_factory{tx_};
+    const auto txn_id = co_await state_factory.user_txn_id_at(block_num, static_cast<uint32_t>(index));
 
     co_await async_task(workers_.executor(), [&]() {
-        const auto txn_id = first_txn_num_in_block + 1 + static_cast<uint64_t>(index);  // + 1 for system txn in the beginning of block
-        const auto state = execution::StateFactory{tx_}.create_state_txn(current_executor, storage, txn_id);
+        const auto state = state_factory.create_state(current_executor, storage, txn_id);
 
         EVMExecutor executor{block, chain_config, workers_, state};
 
@@ -512,8 +524,9 @@ Task<void> DebugExecutor::execute(
         stream.write_field("structLogs");
         stream.open_array();
 
+        bool refunds = !config_.no_refunds;
         Tracers tracers{debug_tracer};
-        const auto execution_result = executor.call(block, transaction, tracers);
+        const auto execution_result = executor.call(block, transaction, tracers, refunds);
 
         debug_tracer->flush_logs();
         stream.close_array();
@@ -551,12 +564,11 @@ Task<void> DebugExecutor::execute(
 
     // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
     // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
-    const auto first_txn_num_in_block = co_await tx_.first_txn_num_in_block(block.header.number + 1);
+    execution::StateFactory state_factory{tx_};
+    const auto txn_id = co_await state_factory.user_txn_id_at(block.header.number, static_cast<uint32_t>(transaction_index));
 
     co_await async_task(workers_.executor(), [&]() {
-        const auto txn_id = first_txn_num_in_block + 1 + static_cast<uint64_t>(transaction_index);  // + 1 for system txn in the beginning of block
-
-        auto state = execution::StateFactory{tx_}.create_state_txn(current_executor, storage, txn_id);
+        auto state = state_factory.create_state(current_executor, storage, txn_id);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         for (const auto& bundle : bundles) {
@@ -583,6 +595,7 @@ Task<void> DebugExecutor::execute(
             }
 
             stream.open_array();
+            bool refunds = !config_.no_refunds;
 
             for (const auto& call : bundle.transactions) {
                 silkworm::Transaction txn{call.to_transaction()};
@@ -594,7 +607,7 @@ Task<void> DebugExecutor::execute(
                 auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
                 Tracers tracers{debug_tracer};
 
-                const auto execution_result = executor.call(block_context.block_with_hash->block, txn, tracers, /* refund */ false, /* gasBailout */ false);
+                const auto execution_result = executor.call(block_context.block_with_hash->block, txn, tracers, refunds, /* gasBailout */ false);
 
                 debug_tracer->flush_logs();
                 stream.close_array();

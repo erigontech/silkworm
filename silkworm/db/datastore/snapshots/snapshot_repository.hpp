@@ -46,11 +46,15 @@ struct IndexBuilder;
 //! - segments have [from:to) semantic
 class SnapshotRepository {
   public:
+    using Timestamp = datastore::Timestamp;
+    using Step = datastore::Step;
+    using StepRange = datastore::StepRange;
+
     SnapshotRepository(
         std::filesystem::path dir_path,
         bool open,
         Schema::RepositoryDef schema,
-        std::unique_ptr<StepToTimestampConverter> step_converter,
+        std::unique_ptr<datastore::StepToTimestampConverter> step_converter,
         std::unique_ptr<IndexBuildersFactory> index_builders_factory);
 
     SnapshotRepository(SnapshotRepository&&) = default;
@@ -60,7 +64,6 @@ class SnapshotRepository {
     const Schema::RepositoryDef& schema() const { return schema_; };
 
     void reopen_folder();
-    void close();
 
     void add_snapshot_bundle(SnapshotBundle bundle);
 
@@ -129,7 +132,7 @@ class SnapshotRepository {
     Schema::RepositoryDef schema_;
 
     //! Converts timestamp units to steps
-    std::unique_ptr<StepToTimestampConverter> step_converter_;
+    std::unique_ptr<datastore::StepToTimestampConverter> step_converter_;
 
     //! Creates index builders
     std::unique_ptr<IndexBuildersFactory> index_builders_factory_;

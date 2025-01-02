@@ -150,20 +150,18 @@ Task<std::optional<TransactionNums>> PaginatedTransactionInfoIterator::next() {
     }
     const auto tnx_id = static_cast<TxnId>(next_id.value());
 
-    if (min_txn_num_ == 0 || (ascending_ && next_id > max_txn_num_) || (!ascending_ && next_id < min_txn_num_)) {
+    bool block_changed{false};
+    if (max_txn_num_ == 0 || (ascending_ && tnx_id > max_txn_num_) || (!ascending_ && tnx_id < min_txn_num_)) {
         const auto block_num_opt = co_await db::txn::block_num_from_tx_num(tx_, tnx_id, provider_);
         if (!block_num_opt) {
             SILK_DEBUG << "No block found for txn_id " << tnx_id;
             co_return std::nullopt;
         }
         block_num_ = block_num_opt.value();
-        block_changed_ = true;
-    }
-
-    if (block_changed_) {
         max_txn_num_ = co_await db::txn::max_tx_num(tx_, block_num_, provider_);
         min_txn_num_ = co_await db::txn::min_tx_num(tx_, block_num_, provider_);
-        block_changed_ = false;
+
+        block_changed = true;
     }
 
     const TransactionNums txn_nums{
@@ -171,7 +169,7 @@ Task<std::optional<TransactionNums>> PaginatedTransactionInfoIterator::next() {
         .block_num = block_num_,
         .txn_index = tnx_id - min_txn_num_ - 1,
         .final_txn = tnx_id == max_txn_num_,
-        .block_changed = block_changed_};
+        .block_changed = block_changed};
 
     SILK_DEBUG << "txn_id: " << txn_nums.txn_id
                << ", block_num: " << txn_nums.block_num

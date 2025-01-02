@@ -71,7 +71,7 @@ SnapshotSync::SnapshotSync(
       data_store_{std::move(data_store)},
       client_{settings_.bittorrent_settings},
       snapshot_freezer_{
-          data_store_.chaindata,
+          data_store_.chaindata.access_ro(),
           data_store_.blocks_repository,
           stage_scheduler,
           tmp_dir_path,
@@ -108,7 +108,7 @@ Task<void> SnapshotSync::setup_and_run() {
         co_return;
     }
 
-    [[maybe_unused]] auto snapshot_merged_subscription = snapshot_merger_.on_snapshot_merged([this](StepRange range) {
+    [[maybe_unused]] auto snapshot_merged_subscription = snapshot_merger_.on_snapshot_merged([this](datastore::StepRange range) {
         this->seed_frozen_bundle(range);
     });
 
@@ -138,7 +138,7 @@ Task<void> SnapshotSync::setup() {
     blocks_repository().reopen_folder();
 
     // Update chain and stage progresses in database according to available snapshots
-    datastore::kvdb::RWTxnManaged rw_txn = data_store_.chaindata.start_rw_tx();
+    datastore::kvdb::RWTxnManaged rw_txn = data_store_.chaindata.access_rw().start_rw_tx();
     update_database(rw_txn, blocks_repository().max_block_available(), [this] { return is_stopping_latch_.try_wait(); });
     rw_txn.commit_and_stop();
 
@@ -294,7 +294,7 @@ void SnapshotSync::seed_frozen_local_snapshots() {
     }
 }
 
-void SnapshotSync::seed_frozen_bundle(StepRange range) {
+void SnapshotSync::seed_frozen_bundle(datastore::StepRange range) {
     bool is_frozen = range.size() >= kMaxMergerSnapshotSize;
     auto bundle = blocks_repository().find_bundle(range.start);
     if (bundle && (bundle->step_range() == range) && is_frozen) {

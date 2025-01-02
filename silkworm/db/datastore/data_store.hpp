@@ -20,7 +20,7 @@
 #include <memory>
 
 #include "common/entity_name.hpp"
-#include "kvdb/mdbx.hpp"
+#include "kvdb/database.hpp"
 #include "schema.hpp"
 #include "snapshots/snapshot_repository.hpp"
 
@@ -30,27 +30,21 @@ class DataStore {
   public:
     DataStore(
         Schema schema,
-        mdbx::env_managed chaindata_env,
+        std::map<EntityName, std::unique_ptr<kvdb::Database>> databases,
         std::map<EntityName, std::unique_ptr<snapshots::SnapshotRepository>> repositories)
         : schema_{std::move(schema)},
-          chaindata_env_{std::move(chaindata_env)},
+          databases_{std::move(databases)},
           repositories_{std::move(repositories)} {}
 
-    void close() {
-        chaindata_env_.close();
-        for (auto& entry : repositories_)
-            entry.second->close();
-    }
-
     const Schema& schema() const { return schema_; }
-    datastore::kvdb::ROAccess chaindata() const { return datastore::kvdb::ROAccess{chaindata_env_}; }
-    datastore::kvdb::RWAccess chaindata_rw() const { return datastore::kvdb::RWAccess{chaindata_env_}; }
 
+    kvdb::Database& default_database() const { return database(kvdb::Schema::kDefaultEntityName); }
+    kvdb::Database& database(const EntityName& name) const { return *databases_.at(name); }
     snapshots::SnapshotRepository& repository(const EntityName& name) const { return *repositories_.at(name); }
 
   private:
     Schema schema_;
-    mdbx::env_managed chaindata_env_;
+    std::map<EntityName, std::unique_ptr<kvdb::Database>> databases_;
     std::map<EntityName, std::unique_ptr<snapshots::SnapshotRepository>> repositories_;
 };
 

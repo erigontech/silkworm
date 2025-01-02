@@ -251,7 +251,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
         for (auto tracer : tracers_) {
             const ByteView empty_code{};  // Any precompile code is empty
             tracer.get().on_execution_start(rev, message, empty_code);
-            tracer.get().on_precompiled_run(res.raw(), message.gas, state_);
+            tracer.get().on_precompiled_run(res.raw(), state_);
             tracer.get().on_execution_end(res.raw(), state_);
         }
     } else {

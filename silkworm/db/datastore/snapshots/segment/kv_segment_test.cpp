@@ -25,7 +25,7 @@
 
 namespace silkworm::snapshots::segment {
 
-struct CharCodec : public Encoder, public Decoder {
+struct CharCodec : public Codec {
     char value{};
     Bytes word;
 
@@ -42,6 +42,7 @@ struct CharCodec : public Encoder, public Decoder {
 };
 
 TEST_CASE("KVSegmentFile") {
+    using namespace datastore;
     TemporaryDirectory tmp_dir;
     auto path = SnapshotPath::make(tmp_dir.path(), std::nullopt, SnapshotPath::FilenameFormat::kE2, kSnapshotV1, StepRange{Step{0}, Step{1}}, "headers", ".seg");
     static constexpr seg::CompressionKind kCompressionKind = seg::CompressionKind::kKeys;

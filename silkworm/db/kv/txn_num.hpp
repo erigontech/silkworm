@@ -84,7 +84,6 @@ class PaginatedTransactionInfoIterator : public kv::api::PaginatedIterator<Trans
     BlockNum block_num_{0};
     TxNum min_txn_num_{0};
     TxNum max_txn_num_{0};
-    bool block_changed_{true};
 };
 
 kv::api::PaginatedStream<TransactionNums> make_txn_nums_stream(PaginatedTimestampStream stream,

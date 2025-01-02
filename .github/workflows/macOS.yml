@@ -47,8 +47,8 @@ jobs:
 
     - name: Install Prerequisites
       run: |
-        pip3 install --user --break-system-packages --no-warn-script-location conan==1.64.1 chardet
-        conan_path="$(python -m site --user-base)/bin"
+        pip3 install --user --break-system-packages --no-warn-script-location conan==2.10.2 chardet
+        conan_path="$(python3 -m site --user-base)/bin"
         echo "$conan_path" >> $GITHUB_PATH
         "$conan_path/conan" --version
 

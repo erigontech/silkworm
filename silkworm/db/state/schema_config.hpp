@@ -17,9 +17,13 @@
 #pragma once
 
 #include "../datastore/common/entity_name.hpp"
-#include "../datastore/domain.hpp"
-#include "../datastore/inverted_index.hpp"
+#include "../datastore/kvdb/database.hpp"
+#include "../datastore/kvdb/domain.hpp"
+#include "../datastore/kvdb/inverted_index.hpp"
+#include "../datastore/kvdb/schema.hpp"
+#include "../datastore/snapshots/domain.hpp"
 #include "../datastore/snapshots/index_builders_factory.hpp"
+#include "../datastore/snapshots/inverted_index.hpp"
 #include "../datastore/snapshots/schema.hpp"
 #include "../datastore/snapshots/snapshot_repository.hpp"
 
@@ -28,6 +32,7 @@ namespace silkworm::db::state {
 inline constexpr datastore::EntityName kStateRepositoryName{"State"};
 
 snapshots::Schema::RepositoryDef make_state_repository_schema();
+datastore::kvdb::Schema::DatabaseDef make_state_database_schema();
 
 std::unique_ptr<snapshots::IndexBuildersFactory> make_state_index_builders_factory();
 
@@ -52,16 +57,31 @@ inline constexpr std::string_view kInvIdxLogAddressTag{"logaddrs"};
 struct BundleDataRef {
     const snapshots::SnapshotBundle& bundle;
 
-    datastore::Domain accounts_domain() const { return {bundle.domain(kDomainNameAccounts)}; }
-    datastore::Domain storage_domain() const { return {bundle.domain(kDomainNameStorage)}; }
-    datastore::Domain code_domain() const { return {bundle.domain(kDomainNameCode)}; }
-    datastore::Domain commitment_domain() const { return {bundle.domain(kDomainNameCommitment)}; }
-    datastore::Domain receipts_domain() const { return {bundle.domain(kDomainNameReceipts)}; }
+    snapshots::Domain accounts_domain() const { return {bundle.domain(kDomainNameAccounts)}; }
+    snapshots::Domain storage_domain() const { return {bundle.domain(kDomainNameStorage)}; }
+    snapshots::Domain code_domain() const { return {bundle.domain(kDomainNameCode)}; }
+    snapshots::Domain commitment_domain() const { return {bundle.domain(kDomainNameCommitment)}; }
+    snapshots::Domain receipts_domain() const { return {bundle.domain(kDomainNameReceipts)}; }
 
-    datastore::InvertedIndex log_address_inverted_index() const { return {bundle.inverted_index(kInvIdxNameLogAddress)}; }
-    datastore::InvertedIndex log_topics_inverted_index() const { return {bundle.inverted_index(kInvIdxNameLogTopics)}; }
-    datastore::InvertedIndex traces_from_inverted_index() const { return {bundle.inverted_index(kInvIdxNameTracesFrom)}; }
-    datastore::InvertedIndex traces_to_inverted_index() const { return {bundle.inverted_index(kInvIdxNameTracesTo)}; }
+    snapshots::InvertedIndex log_address_inverted_index() const { return {bundle.inverted_index(kInvIdxNameLogAddress)}; }
+    snapshots::InvertedIndex log_topics_inverted_index() const { return {bundle.inverted_index(kInvIdxNameLogTopics)}; }
+    snapshots::InvertedIndex traces_from_inverted_index() const { return {bundle.inverted_index(kInvIdxNameTracesFrom)}; }
+    snapshots::InvertedIndex traces_to_inverted_index() const { return {bundle.inverted_index(kInvIdxNameTracesTo)}; }
+};
+
+struct StateDatabaseRef {
+    const datastore::kvdb::DatabaseRef& database;
+
+    datastore::kvdb::Domain accounts_domain() const { return {database.domain(kDomainNameAccounts)}; }
+    datastore::kvdb::Domain storage_domain() const { return {database.domain(kDomainNameStorage)}; }
+    datastore::kvdb::Domain code_domain() const { return {database.domain(kDomainNameCode)}; }
+    datastore::kvdb::Domain commitment_domain() const { return {database.domain(kDomainNameCommitment)}; }
+    datastore::kvdb::Domain receipts_domain() const { return {database.domain(kDomainNameReceipts)}; }
+
+    datastore::kvdb::InvertedIndex log_address_inverted_index() const { return {database.inverted_index(kInvIdxNameLogAddress)}; }
+    datastore::kvdb::InvertedIndex log_topics_inverted_index() const { return {database.inverted_index(kInvIdxNameLogTopics)}; }
+    datastore::kvdb::InvertedIndex traces_from_inverted_index() const { return {database.inverted_index(kInvIdxNameTracesFrom)}; }
+    datastore::kvdb::InvertedIndex traces_to_inverted_index() const { return {database.inverted_index(kInvIdxNameTracesTo)}; }
 };
 
 }  // namespace silkworm::db::state

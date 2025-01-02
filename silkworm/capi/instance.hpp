@@ -22,17 +22,32 @@
 
 #include <boost/asio/cancellation_signal.hpp>
 
-#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
-#include <silkworm/rpc/daemon.hpp>
+#include <silkworm/node/common/node_settings.hpp>
+
+namespace silkworm::snapshots {
+class SnapshotRepository;
+}  // namespace silkworm::snapshots
+
+namespace silkworm::rpc {
+class Daemon;
+}  // namespace silkworm::rpc
+
+namespace silkworm::stagedsync {
+class ExecutionEngine;
+}  // namespace silkworm::stagedsync
+
+namespace silkworm::datastore::kvdb {
+class DatabaseUnmanaged;
+}  // namespace silkworm::datastore::kvdb
 
 struct SilkwormInstance {
     silkworm::log::Settings log_settings;
     silkworm::concurrency::ContextPoolSettings context_pool_settings;
     std::filesystem::path data_dir_path;
     silkworm::NodeSettings node_settings;
+    std::unique_ptr<silkworm::datastore::kvdb::DatabaseUnmanaged> chaindata;
     std::unique_ptr<silkworm::snapshots::SnapshotRepository> blocks_repository;
     std::unique_ptr<silkworm::snapshots::SnapshotRepository> state_repository;
     std::unique_ptr<silkworm::rpc::Daemon> rpcdaemon;

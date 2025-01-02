@@ -29,6 +29,7 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/data_store.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/common/node_settings.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
@@ -41,6 +42,7 @@ using namespace silkworm;
 using namespace silkworm::db;
 using namespace silkworm::datastore::kvdb;
 using namespace evmc::literals;
+using silkworm::db::state::AccountCodec;
 
 static ethash::hash256 keccak256(const evmc::address& address) {
     return silkworm::keccak256(address.bytes);
@@ -91,7 +93,7 @@ TEST_CASE("Sync Stages") {
         node_settings.data_directory->snapshots().path(),
     };
 
-    auto txn = data_store.chaindata_rw().start_rw_tx();
+    auto txn = data_store.chaindata().access_rw().start_rw_tx();
     table::check_or_create_chaindata_tables(txn);
     txn.commit_and_renew();
     const auto initial_tx_sequence{read_map_sequence(txn, table::kBlockTransactions.name)};
@@ -422,7 +424,7 @@ TEST_CASE("Sync Stages") {
         auto current_record = plain_state_cursor->current(/*throw_notfound=*/false);
         REQUIRE(current_record);
         REQUIRE(from_slice(current_record.key) == ByteView{sender.bytes});
-        auto decoded_account = Account::from_encoded_storage(from_slice(current_record.value));
+        auto decoded_account = AccountCodec::from_encoded_storage(from_slice(current_record.value));
         REQUIRE(decoded_account);
         REQUIRE(decoded_account->nonce == 3);
         auto receipts_cursor = txn.ro_cursor(table::kBlockReceipts);
@@ -461,7 +463,7 @@ TEST_CASE("Sync Stages") {
             current_record = plain_state_cursor->current(/*throw_notfound=*/false);
             REQUIRE(current_record);
             REQUIRE(from_slice(current_record.key) == ByteView{sender.bytes});
-            decoded_account = Account::from_encoded_storage(from_slice(current_record.value));
+            decoded_account = AccountCodec::from_encoded_storage(from_slice(current_record.value));
             REQUIRE(decoded_account);
             REQUIRE(decoded_account->nonce == 2);
             receipts_cursor = txn.ro_cursor(table::kBlockReceipts);
@@ -499,7 +501,7 @@ TEST_CASE("Sync Stages") {
             current_record = plain_state_cursor->current(/*throw_notfound=*/false);
             REQUIRE(current_record);
             REQUIRE(from_slice(current_record.key) == ByteView{sender.bytes});
-            decoded_account = Account::from_encoded_storage(from_slice(current_record.value));
+            decoded_account = AccountCodec::from_encoded_storage(from_slice(current_record.value));
             REQUIRE(decoded_account);
             REQUIRE(decoded_account->nonce == 3);
             receipts_cursor = txn.ro_cursor(table::kBlockReceipts);
@@ -569,7 +571,7 @@ TEST_CASE("Sync Stages") {
             REQUIRE(hashed_accounts_table.seek(to_slice(hashed_sender.bytes)));
             {
                 auto account_encoded{from_slice(hashed_accounts_table.current().value)};
-                auto account{Account::from_encoded_storage(account_encoded)};
+                auto account = AccountCodec::from_encoded_storage(account_encoded);
                 CHECK(account->nonce == 3);
                 CHECK(account->balance < kEther);
             }
@@ -610,7 +612,7 @@ TEST_CASE("Sync Stages") {
             REQUIRE(hashed_accounts_table.seek(to_slice(hashed_sender.bytes)));
             {
                 auto account_encoded{from_slice(hashed_accounts_table.current().value)};
-                auto account{Account::from_encoded_storage(account_encoded)};
+                auto account = AccountCodec::from_encoded_storage(account_encoded);
                 CHECK(account->nonce == 1);
                 CHECK(account->balance == kEther);
                 CHECK(stages::read_stage_progress(txn, stages::kHashStateKey) == unwind_to);

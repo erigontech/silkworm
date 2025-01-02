@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-#include "step.hpp"
+#include "../../common/step.hpp"
 
 namespace silkworm::snapshots {
 
@@ -31,6 +31,8 @@ inline constexpr uint8_t kSnapshotV1{1};
 
 class SnapshotPath {
   public:
+    using StepRange = datastore::StepRange;
+
     enum class FilenameFormat {
         kE2,
         kE3,

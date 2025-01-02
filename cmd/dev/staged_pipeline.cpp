@@ -41,6 +41,7 @@
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/infra/cli/common.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/environment.hpp>
@@ -53,8 +54,6 @@
 #include <silkworm/node/stagedsync/stages/stage_interhashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 #include <silkworm/node/stagedsync/stages_factory_impl.hpp>
-
-#include "../common/common.hpp"
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -255,7 +254,7 @@ static stagedsync::BodiesStageFactory make_bodies_stage_factory(
             data_model_factory,
             [] { return 0; });
     };
-};
+}
 
 static stagedsync::StageContainerFactory make_stages_factory(
     const NodeSettings& node_settings,
@@ -282,18 +281,15 @@ void debug_unwind(datastore::kvdb::EnvConfig& config, BlockNum height, uint32_t 
     Environment::set_start_at_stage(start_at_stage);
     Environment::set_stop_before_stage(stop_before_stage);
 
-    auto env = silkworm::datastore::kvdb::open_env(config);
+    auto data_directory = std::make_unique<DataDirectory>(datadir_path);
+    db::DataStore data_store{config, data_directory->snapshots().path()};
 
-    datastore::kvdb::ROTxnManaged ro_txn{env};
+    datastore::kvdb::ROTxnManaged ro_txn = data_store.chaindata().access_ro().start_ro_tx();
     const auto chain_config = db::read_chain_config(ro_txn);
     ensure(chain_config.has_value(), "Uninitialized Silkworm db or unknown/custom chain");
     ro_txn.abort();
 
-    auto data_directory = std::make_unique<DataDirectory>(datadir_path);
-    auto blocks_repository = db::blocks::make_blocks_repository(data_directory->snapshots().path(), /*open=*/false);
-    auto state_repository = db::state::make_state_repository(data_directory->snapshots().path(), /*open=*/false);
-    db::DataStoreRef data_store{datastore::kvdb::RWAccess{env}, blocks_repository, state_repository};
-    db::DataModelFactory data_model_factory{data_store};
+    db::DataModelFactory data_model_factory{data_store.ref()};
 
     // We need full snapshot sync to take place to have database tables properly updated
     snapshots::SnapshotSettings snapshot_settings{
@@ -308,7 +304,7 @@ void debug_unwind(datastore::kvdb::EnvConfig& config, BlockNum height, uint32_t 
     db::SnapshotSync snapshot_sync{
         std::move(snapshot_settings),
         chain_config->chain_id,
-        data_store,
+        data_store.ref(),
         std::filesystem::path{},
         empty_scheduler};
 
@@ -325,7 +321,7 @@ void debug_unwind(datastore::kvdb::EnvConfig& config, BlockNum height, uint32_t 
     snap_sync_future.get();
 
     // Commit is enabled by default in RWTxn(Managed), so we need to check here
-    RWTxnManaged txn{env};
+    RWTxnManaged txn = data_store.chaindata().access_rw().start_rw_tx();
     if (dry) {
         txn.disable_commit();
     } else {
@@ -374,6 +370,7 @@ void debug_unwind(datastore::kvdb::EnvConfig& config, BlockNum height, uint32_t 
 
     // Unwind has just set progress for pre-Execution stages back to unwind_point even if it is within the snapshots
     // We need to reset progress for such stages to the max block in snapshots to avoid database update on next start
+    auto& blocks_repository = data_store.blocks_repository();
     db::stages::write_stage_progress(txn, db::stages::kHeadersKey, blocks_repository.max_block_available());
     db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, blocks_repository.max_block_available());
     db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, blocks_repository.max_block_available());
@@ -387,8 +384,10 @@ void unwind(datastore::kvdb::EnvConfig& config, BlockNum unwind_point, const boo
 
     config.readonly = false;
 
-    auto env{silkworm::datastore::kvdb::open_env(config)};
-    RWTxnManaged txn{env};
+    auto data_directory = std::make_unique<DataDirectory>();
+    db::DataStore data_store{config, data_directory->snapshots().path()};
+
+    RWTxnManaged txn = data_store.chaindata().access_rw().start_rw_tx();
 
     // Commit is enabled by default in RWTxn(Managed), so we need to check here
     if (dry) {
@@ -403,11 +402,7 @@ void unwind(datastore::kvdb::EnvConfig& config, BlockNum unwind_point, const boo
     const auto chain_config = db::read_chain_config(txn);
     ensure(chain_config.has_value(), "Not an initialized Silkworm db or unknown/custom chain");
 
-    auto data_directory = std::make_unique<DataDirectory>();
-    auto blocks_repository = db::blocks::make_blocks_repository(data_directory->snapshots().path(), /*open=*/true);
-    auto state_repository = db::state::make_state_repository(data_directory->path(), /*open=*/true);
-    db::DataStoreRef data_store{datastore::kvdb::RWAccess{env}, blocks_repository, state_repository};
-    db::DataModelFactory data_model_factory{data_store};
+    db::DataModelFactory data_model_factory{data_store.ref()};
 
     boost::asio::io_context io_context;
 
@@ -489,11 +484,14 @@ void forward(datastore::kvdb::EnvConfig& config, BlockNum forward_point, const b
 
     config.readonly = false;
 
+    Environment::set_stop_at_block(forward_point);
     Environment::set_start_at_stage(start_at_stage);
     Environment::set_stop_before_stage(stop_before_stage);
 
-    auto env = silkworm::datastore::kvdb::open_env(config);
-    RWTxnManaged txn{env};
+    auto data_directory = std::make_unique<DataDirectory>();
+    db::DataStore data_store{config, data_directory->snapshots().path()};
+
+    RWTxnManaged txn = data_store.chaindata().access_rw().start_rw_tx();
 
     // Commit is enabled by default in RWTxn(Managed), so we need to check here
     if (dry) {
@@ -511,11 +509,7 @@ void forward(datastore::kvdb::EnvConfig& config, BlockNum forward_point, const b
     const auto datadir_path = std::filesystem::path{config.path}.parent_path();
     SILK_INFO << "Forward: datadir=" << datadir_path.string();
 
-    auto data_directory = std::make_unique<DataDirectory>();
-    auto blocks_repository = db::blocks::make_blocks_repository(data_directory->snapshots().path(), /*open=*/true);
-    auto state_repository = db::state::make_state_repository(data_directory->path(), /*open=*/true);
-    db::DataStoreRef data_store{datastore::kvdb::RWAccess{env}, blocks_repository, state_repository};
-    db::DataModelFactory data_model_factory{data_store};
+    db::DataModelFactory data_model_factory{data_store.ref()};
 
     boost::asio::io_context io_context;
 
@@ -562,8 +556,10 @@ void bisect_pipeline(datastore::kvdb::EnvConfig& config, BlockNum start, BlockNu
     Environment::set_start_at_stage(start_at_stage);
     Environment::set_stop_before_stage(stop_before_stage);
 
-    auto env = silkworm::datastore::kvdb::open_env(config);
-    RWTxnManaged txn{env};
+    auto data_directory = std::make_unique<DataDirectory>();
+    db::DataStore data_store{config, data_directory->snapshots().path()};
+
+    RWTxnManaged txn = data_store.chaindata().access_rw().start_rw_tx();
 
     // Commit is enabled by default in RWTxn(Managed), so we need to check here
     if (dry) {
@@ -581,11 +577,7 @@ void bisect_pipeline(datastore::kvdb::EnvConfig& config, BlockNum start, BlockNu
     const auto datadir_path = std::filesystem::path{config.path}.parent_path();
     SILK_INFO << "Bisect: datadir=" << datadir_path.string();
 
-    auto data_directory = std::make_unique<DataDirectory>();
-    auto blocks_repository = db::blocks::make_blocks_repository(data_directory->snapshots().path(), /*open=*/true);
-    auto state_repository = db::state::make_state_repository(data_directory->path(), /*open=*/true);
-    db::DataStoreRef data_store{datastore::kvdb::RWAccess{env}, blocks_repository, state_repository};
-    db::DataModelFactory data_model_factory{data_store};
+    db::DataModelFactory data_model_factory{data_store.ref()};
 
     boost::asio::io_context io_context;
 

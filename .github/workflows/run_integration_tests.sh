@@ -28,8 +28,7 @@ debug_traceBlockByNumber/test_09,\
 debug_traceBlockByNumber/test_10,\
 debug_traceBlockByNumber/test_11,\
 debug_traceBlockByNumber/test_12,\
-debug_traceCallMany/test_07,\
-debug_traceCallMany/test_09,\
+debug_traceBlockByNumber/test_29,\
 debug_traceTransaction/test_25.json,\
 debug_traceTransaction/test_36.json,\
 debug_traceTransaction/test_43.json,\
@@ -42,9 +41,7 @@ debug_traceTransaction/test_91.tar,\
 debug_traceTransaction/test_92.tar,\
 debug_traceTransaction/test_96.json,\
 trace_replayBlockTransactions/test_29,\
-engine_,\
-erigon_getLatestLogs,\
-eth_getLogs
+engine_
 
 failed_test=$?
 

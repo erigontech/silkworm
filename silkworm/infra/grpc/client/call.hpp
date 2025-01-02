@@ -57,7 +57,7 @@ Task<Response> unary_rpc(
     agrpc::GrpcContext& grpc_context,
     boost::asio::cancellation_slot* cancellation_slot = nullptr) {
     grpc::ClientContext client_context;
-    client_context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(60));
+    client_context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(120));
     if (cancellation_slot) {
         cancellation_slot->assign([&client_context](boost::asio::cancellation_type /*type*/) {
             client_context.TryCancel();

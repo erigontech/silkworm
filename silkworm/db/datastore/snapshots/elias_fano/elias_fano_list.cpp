@@ -80,7 +80,7 @@ EliasFanoList32::EliasFanoList32(uint64_t count, uint64_t max_value, std::span<c
     std::copy(data.begin(), data.end(), reinterpret_cast<uint8_t*>(data_.data()));
 }
 
-uint64_t EliasFanoList32::get(uint64_t i) const {
+uint64_t EliasFanoList32::at(size_t i) const {
     uint64_t lower = i * l_;
     size_t idx64 = lower / 64;
     uint64_t shift = lower % 64;

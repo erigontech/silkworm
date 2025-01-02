@@ -17,6 +17,7 @@
 #include "elias_fano_list.hpp"
 
 #include <algorithm>
+#include <ranges>
 #include <span>
 #include <sstream>
 #include <vector>
@@ -108,7 +109,7 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
         CHECK(ef_list.size() == ef_test.offsets.size());
 
         for (uint64_t i{0}; i < ef_test.offsets.size(); ++i) {
-            const uint64_t x = ef_list.get(i);
+            const uint64_t x = ef_list.at(i);
             CHECK(x == ef_test.offsets[i]);
         }
 
@@ -125,10 +126,13 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
         std::span<uint8_t> data{ef_bytes.data() + kParamsSize, ef_bytes.size() - kParamsSize};
         EliasFanoList32 ef_list_copy{ef_test.offsets.size(), ef_test.expected_u - 1, data};
         for (uint64_t i{0}; i < ef_test.offsets.size(); ++i) {
-            const uint64_t x = ef_list_copy.get(i);
+            const uint64_t x = ef_list_copy.at(i);
             CHECK(x == ef_test.offsets[i]);
         }
     }
 }
+
+static_assert(IndexedListConcept<const EliasFanoList32>);
+static_assert(std::ranges::random_access_range<const EliasFanoList32>);
 
 }  // namespace silkworm::snapshots::elias_fano

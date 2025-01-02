@@ -684,7 +684,7 @@ class RecSplit {
     //! only access to the Elias-Fano structure containing all offsets
     size_t lookup_by_ordinal(Ordinal ord) const {
         SILKWORM_ASSERT(double_enum_index_);
-        return ef_offsets_->get(ord.value);
+        return ef_offsets_->at(ord.value);
     }
 
     std::optional<uint64_t> lookup_data_id_by_key(ByteView key) const {

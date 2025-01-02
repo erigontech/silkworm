@@ -98,7 +98,7 @@ std::optional<BTree::KeyValue> BTreeIndex::KeyValueIndex::lookup_key_value(DataI
     if (data_index >= data_offsets_->size()) {
         return std::nullopt;
     }
-    const auto data_offset = data_offsets_->get(data_index);
+    const auto data_offset = data_offsets_->at(data_index);
 
     segment::KVSegmentReader<RawDecoder<Bytes>, RawDecoder<Bytes>> reader{kv_segment_};
     auto data_it = reader.seek(data_offset);
@@ -114,7 +114,7 @@ std::optional<Bytes> BTreeIndex::KeyValueIndex::lookup_key(DataIndex data_index)
     if (data_index >= data_offsets_->size()) {
         return std::nullopt;
     }
-    const auto data_offset = data_offsets_->get(data_index);
+    const auto data_offset = data_offsets_->at(data_index);
 
     segment::KVSegmentKeysReader<RawDecoder<Bytes>> reader{kv_segment_};
     auto data_it = reader.seek(data_offset);

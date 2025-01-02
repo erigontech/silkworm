@@ -49,6 +49,7 @@
 #include <span>
 
 #include "../common/encoding/sequence.hpp"
+#include "list_iterator.hpp"
 
 namespace silkworm::snapshots::elias_fano {
 
@@ -56,6 +57,7 @@ namespace silkworm::snapshots::elias_fano {
 class EliasFanoList32 {
   public:
     using Uint64Sequence = silkworm::snapshots::encoding::Uint64Sequence;
+    using value_type = uint64_t;
 
     //! Create a new 32-bit EF list from the given encoded data (i.e. data plus data header)
     static EliasFanoList32 from_encoded_data(std::span<const uint8_t> encoded_data);
@@ -73,15 +75,17 @@ class EliasFanoList32 {
 
     size_t max() const { return u_ - 1; }
 
-    size_t min() const { return get(0); }
+    size_t min() const { return at(0); }
 
     const Uint64Sequence& data() const { return data_; }
 
     size_t encoded_data_size() const { return kCountLength + kULength + data_.size() * sizeof(uint64_t); }
 
-    uint64_t get(uint64_t i) const;
+    uint64_t at(size_t i) const;
+    uint64_t operator[](size_t i) const { return at(i); }
 
     void add_offset(uint64_t offset);
+    void push_back(uint64_t offset) { add_offset(offset); }
 
     void build();
 
@@ -96,6 +100,10 @@ class EliasFanoList32 {
     static EliasFanoList32 empty_list() {
         return EliasFanoList32{};
     }
+
+    using Iterator = ListIterator<EliasFanoList32, value_type>;
+    Iterator begin() const { return Iterator{*this, 0}; }
+    Iterator end() const { return Iterator{*this, size()}; }
 
   private:
     EliasFanoList32() = default;

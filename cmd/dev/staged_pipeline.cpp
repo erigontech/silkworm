@@ -626,8 +626,9 @@ void bisect_pipeline(datastore::kvdb::EnvConfig& config, BlockNum start, BlockNu
                 right_point = (median_point + end) >> 1;
             }
         } else if (stage_pipeline.unwind_point()) {
-            SILK_INFO << "Bisect: median_point=" << median_point << " unwind_point=" << *stage_pipeline.unwind_point();
-            const auto unwind_point = std::min(median_point, *stage_pipeline.unwind_point());
+            const auto pipeline_unwind_point = *stage_pipeline.unwind_point();
+            SILK_INFO << "Bisect: left=" << left_point << " median=" << median_point << " unwind=" << pipeline_unwind_point;
+            const auto unwind_point = std::min(median_point, std::max(left_point, pipeline_unwind_point));
             SILK_INFO << "Bisect: unwind down to block=" << unwind_point << " START";
             const auto unwind_result = stage_pipeline.unwind(txn, unwind_point);
             ensure(unwind_result == stagedsync::Stage::Result::kSuccess,

@@ -358,13 +358,13 @@ void debug_unwind(datastore::kvdb::EnvConfig& config, BlockNum height, uint32_t 
     const auto forward_result = stage_pipeline.forward(txn, forward_target);
     SILK_INFO << "Debug unwind: forward to=" << forward_target << " END";
     ensure(forward_result == stagedsync::Stage::Result::kStoppedByEnv,
-           [&]() { return "Debug unwind: forward failed " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(forward_result)}; });
+           [&]() { return "Debug unwind: forward failed " + std::string{magic_enum::enum_name(forward_result)}; });
 
     const auto unwind_point = height - step;
     SILK_INFO << "Debug unwind: unwind down to block=" << unwind_point << " START";
     const auto unwind_result = stage_pipeline.unwind(txn, unwind_point);
     ensure(unwind_result == stagedsync::Stage::Result::kSuccess,
-           [&]() { return "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(unwind_result)}; });
+           [&]() { return "unwind failed: " + std::string{magic_enum::enum_name(unwind_result)}; });
     SILK_INFO << "Debug unwind: unwind down to block=" << unwind_point << " END";
     SILK_INFO << "Debug unwind: forward+unwind success up to block=" << height;
 
@@ -431,7 +431,7 @@ void unwind(datastore::kvdb::EnvConfig& config, BlockNum unwind_point, const boo
     const auto unwind_result = stage_pipeline.unwind(txn, unwind_point);
 
     ensure(unwind_result == stagedsync::Stage::Result::kSuccess,
-           [&]() { return "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(unwind_result)}; });
+           [&]() { return "unwind failed: " + std::string{magic_enum::enum_name(unwind_result)}; });
 
     std::cout << "\n Staged pipeline unwind up to block: " << unwind_point << " completed\n";
 
@@ -539,7 +539,7 @@ void forward(datastore::kvdb::EnvConfig& config, BlockNum forward_point, const b
 
     const auto forward_result = stage_pipeline.forward(txn, forward_point);
     ensure(forward_result == stagedsync::Stage::Result::kSuccess,
-           [&]() { return "forward failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(forward_result)}; });
+           [&]() { return "forward failed: " + std::string{magic_enum::enum_name(forward_result)}; });
 
     std::cout << "\n Staged pipeline forward up to block: " << forward_point << " completed\n";
 }
@@ -610,29 +610,35 @@ void bisect_pipeline(datastore::kvdb::EnvConfig& config, BlockNum start, BlockNu
     SILK_INFO << "Bisect: unwind down to block=" << initial_unwind_point << " START";
     const auto first_unwind_result = stage_pipeline.unwind(txn, initial_unwind_point);
     ensure(first_unwind_result == stagedsync::Stage::Result::kSuccess,
-           [&]() { return "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(first_unwind_result)}; });
+           [&]() { return "unwind failed: " + std::string{magic_enum::enum_name(first_unwind_result)}; });
     SILK_INFO << "Bisect: unwind down to block=" << initial_unwind_point << " END";
 
     uint64_t left_point = start, right_point = end;
     while (left_point < right_point) {
-        uint64_t median_point = (left_point + right_point) >> 1;
+        Environment::set_stop_at_block(right_point);
+        const uint64_t median_point = (left_point + right_point) >> 1;
         SILK_INFO << "Bisect: forward from=" << left_point << " to=" << right_point << " START";
         const auto forward_result = stage_pipeline.forward(txn, right_point);
         SILK_INFO << "Bisect: forward from=" << left_point << " to=" << right_point << " END";
-        if (forward_result == stagedsync::Stage::Result::kSuccess) {
+        if (forward_result == stagedsync::Stage::Result::kSuccess || forward_result == stagedsync::Stage::Result::kStoppedByEnv) {
             left_point = right_point;
             if (right_point < end) {
                 right_point = (median_point + end) >> 1;
             }
-        } else {
-            SILKWORM_ASSERT(stage_pipeline.unwind_point());
+        } else if (stage_pipeline.unwind_point()) {
             const auto unwind_point = std::min(median_point, *stage_pipeline.unwind_point());
             SILK_INFO << "Bisect: unwind down to block=" << unwind_point << " START";
             const auto unwind_result = stage_pipeline.unwind(txn, unwind_point);
             ensure(unwind_result == stagedsync::Stage::Result::kSuccess,
-                   [&]() { return "unwind failed: " + std::string{magic_enum::enum_name<stagedsync::Stage::Result>(unwind_result)}; });
+                   [&]() { return "unwind failed: " + std::string{magic_enum::enum_name(unwind_result)}; });
             SILK_INFO << "Bisect: unwind down to block=" << unwind_point << " END";
+            left_point = unwind_point;
             right_point = (unwind_point + right_point) >> 1;
+        } else {
+            if (forward_result != stagedsync::Stage::Result::kAborted) {
+                SILK_ERROR << "Bisect: unexpected forward failure w/o unwind point: " << magic_enum::enum_name(forward_result);
+            }
+            break;
         }
     }
 

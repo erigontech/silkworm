@@ -24,7 +24,7 @@
 
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
-#include "../elias_fano/elias_fano.hpp"
+#include "../elias_fano/elias_fano_list.hpp"
 #include "../segment/kv_segment_reader.hpp"
 #include "btree.hpp"
 

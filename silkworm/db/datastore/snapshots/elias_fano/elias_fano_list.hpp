@@ -60,25 +60,18 @@ class EliasFanoList32 {
     //! Create a new 32-bit EF list from the given encoded data (i.e. data plus data header)
     static EliasFanoList32 from_encoded_data(std::span<const uint8_t> encoded_data);
 
-    //! Create an empty new 32-bit EF list prepared for the given data sequence length and max value
-    //! \param sequence_length the length of the data sequence
-    //! \param max_value the max value in the data sequence
-    EliasFanoList32(uint64_t sequence_length, uint64_t max_value);
+    //! Create an empty new 32-bit EF list prepared for the given sequence size and max value
+    EliasFanoList32(uint64_t count, uint64_t max_value);
 
     //! Create a new 32-bit EF list from an existing data sequence
-    //! \param count the number of EF data points
-    //! \param u the strict upper bound on the EF data points, i.e. max value plus one
+    //! \param count
+    //! \param max_value
     //! \param data the existing data sequence (portion exceeding the total words will be ignored)
-    EliasFanoList32(uint64_t count, uint64_t u, std::span<const uint8_t> data);
+    EliasFanoList32(uint64_t count, uint64_t max_value, std::span<const uint8_t> data);
 
-    size_t sequence_length() const {
-        if (u_ == 0) return 0;
-        return count_ + 1;
-    }
+    size_t size() const { return count_; }
 
-    size_t count() const { return count_; }
-
-    size_t max() const { return max_value_; }
+    size_t max() const { return u_ - 1; }
 
     size_t min() const { return get(0); }
 
@@ -96,7 +89,7 @@ class EliasFanoList32 {
 
     bool operator==(const EliasFanoList32& other) const {
         return (count_ == other.count_) &&
-               (max_value_ == other.max_value_) &&
+               (u_ == other.u_) &&
                (data_ == other.data_);
     }
 
@@ -119,9 +112,9 @@ class EliasFanoList32 {
     std::span<uint64_t> jump_;
     uint64_t lower_bits_mask_{0};
     uint64_t count_{0};
+    //! The strict upper bound on the EF data points, i.e. max + 1
     uint64_t u_{0};
     uint64_t l_{0};
-    uint64_t max_value_{0};
     uint64_t i_{0};
     Uint64Sequence data_;
 };

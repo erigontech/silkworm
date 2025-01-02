@@ -105,8 +105,7 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
 
         CHECK(ef_list.min() == ef_test.offsets.at(0));
         CHECK(ef_list.max() == max_offset);
-        CHECK(ef_list.count() == ef_test.offsets.size() - 1);
-        CHECK(ef_list.sequence_length() == ef_test.offsets.size());
+        CHECK(ef_list.size() == ef_test.offsets.size());
 
         for (uint64_t i{0}; i < ef_test.offsets.size(); ++i) {
             const uint64_t x = ef_list.get(i);
@@ -124,7 +123,7 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
         // Decode monotone ascending integer sequence from Elias-Fano representation and compare with original
         constexpr size_t kParamsSize{2 * sizeof(uint64_t)};  // count + u length in bytes
         std::span<uint8_t> data{ef_bytes.data() + kParamsSize, ef_bytes.size() - kParamsSize};
-        EliasFanoList32 ef_list_copy{ef_test.offsets.size() - 1, ef_test.expected_u, data};
+        EliasFanoList32 ef_list_copy{ef_test.offsets.size(), ef_test.expected_u - 1, data};
         for (uint64_t i{0}; i < ef_test.offsets.size(); ++i) {
             const uint64_t x = ef_list_copy.get(i);
             CHECK(x == ef_test.offsets[i]);

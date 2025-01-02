@@ -79,7 +79,7 @@ class BTreeIndex {
     std::shared_ptr<EliasFanoList32> data_offsets() const { return data_offsets_; }
 
     //! Return the number of keys included into this index
-    size_t key_count() const { return data_offsets_->sequence_length(); };
+    size_t key_count() const { return data_offsets_->size(); };
 
     const std::filesystem::path& path() const { return file_path_; }
 

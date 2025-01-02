@@ -339,13 +339,9 @@ class RecSplit {
             check_minimum_length(offset + kEliasFano32CountLength + kEliasFano32ULength);
 
             // Read Elias-Fano index for offsets
-            const uint64_t count = endian::load_big_u64(address + offset);
-            offset += kEliasFano32CountLength;
-            const uint64_t u = endian::load_big_u64(address + offset);
-            offset += kEliasFano32ULength;
-            auto remaining_data = encoded_file_->region().subspan(offset);
-            ef_offsets_ = std::make_unique<EliasFano>(count, u, remaining_data);
-            offset += ef_offsets_->data().size() * sizeof(uint64_t);
+            auto ef_offsets = EliasFano::from_encoded_data(encoded_file_->region().subspan(offset));
+            offset += ef_offsets.encoded_data_size();
+            ef_offsets_ = std::make_unique<EliasFano>(std::move(ef_offsets));
 
             if (less_false_positives_) {
                 // Read 1-byte-per-key existence filter used to reduce false positives
@@ -510,7 +506,7 @@ class RecSplit {
         // Write out Elias-Fano code for offsets (if any)
         if (double_enum_index_) {
             index_output_stream << *ef_offsets_;
-            SILK_TRACE << "[index] written EF code for offsets [size: " << ef_offsets_->count() - 1 << "]";
+            SILK_TRACE << "[index] written EF code for offsets [size: " << ef_offsets_->size() << "]";
 
             // Write out existence filter (if any)
             if (less_false_positives_) {

@@ -57,27 +57,23 @@
 #include "elias_fano_common.hpp"
 
 namespace silkworm::snapshots::elias_fano {
-
 EliasFanoList32 EliasFanoList32::from_encoded_data(std::span<const uint8_t> encoded_data) {
     ensure(encoded_data.size() >= kCountLength + kULength, "EliasFanoList32::from_encoded_data data too short");
-    const uint64_t count = endian::load_big_u64(encoded_data.data());
+    const uint64_t last = endian::load_big_u64(encoded_data.data());
     const uint64_t u = endian::load_big_u64(encoded_data.subspan(kCountLength).data());
     const auto remaining_data = encoded_data.subspan(kCountLength + kULength);
-    return EliasFanoList32{count, u, remaining_data};
+    return EliasFanoList32{last + 1, u - 1, remaining_data};
 }
 
-EliasFanoList32::EliasFanoList32(uint64_t sequence_length, uint64_t max_value)
-    : count_(sequence_length - 1),
-      u_(max_value + 1),
-      max_value_(max_value) {
-    ensure(sequence_length > 0, "sequence length is zero");
+EliasFanoList32::EliasFanoList32(uint64_t count, uint64_t max_value)
+    : count_{count},
+      u_{max_value + 1} {
     derive_fields();
 }
 
-EliasFanoList32::EliasFanoList32(uint64_t count, uint64_t u, std::span<const uint8_t> data)
-    : count_(count),
-      u_(u),
-      max_value_(u - 1) {
+EliasFanoList32::EliasFanoList32(uint64_t count, uint64_t max_value, std::span<const uint8_t> data)
+    : count_{count},
+      u_{max_value + 1} {
     const auto total_words = derive_fields();
     SILKWORM_ASSERT(total_words * sizeof(uint64_t) <= data.size());
     data = data.subspan(0, total_words * sizeof(uint64_t));
@@ -160,9 +156,9 @@ void EliasFanoList32::build() {
 std::ostream& operator<<(std::ostream& os, const EliasFanoList32& ef) {
     Bytes uint64_buffer(8, '\0');
 
-    endian::store_big_u64(uint64_buffer.data(), ef.count_);
+    endian::store_big_u64(uint64_buffer.data(), ef.count_ - 1);
     os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
-    SILK_DEBUG << "[index] written EF code count: " << ef.count_;
+    SILK_DEBUG << "[index] written EF code count: " << ef.count_ - 1;
 
     endian::store_big_u64(uint64_buffer.data(), ef.u_);
     os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
@@ -173,11 +169,12 @@ std::ostream& operator<<(std::ostream& os, const EliasFanoList32& ef) {
 }
 
 uint64_t EliasFanoList32::derive_fields() {
-    l_ = u_ / (count_ + 1) == 0 ? 0 : 63 ^ static_cast<uint64_t>(std::countl_zero(u_ / (count_ + 1)));
+    ensure(count_ > 0, "EliasFanoList32 size is zero");
+    l_ = (u_ / count_ == 0) ? 0 : (63 ^ static_cast<uint64_t>(std::countl_zero(u_ / count_)));
     lower_bits_mask_ = (uint64_t{1} << l_) - 1;
 
-    uint64_t words_lower_bits = ((count_ + 1) * l_ + 63) / 64 + 1;
-    uint64_t words_upper_bits = ((count_ + 1) + (u_ >> l_) + 63) / 64;
+    uint64_t words_lower_bits = (count_ * l_ + 63) / 64 + 1;
+    uint64_t words_upper_bits = (count_ + (u_ >> l_) + 63) / 64;
     uint64_t jump_words = jump_size_words();
     uint64_t total_words = words_lower_bits + words_upper_bits + jump_words;
     data_.resize(total_words);
@@ -189,9 +186,9 @@ uint64_t EliasFanoList32::derive_fields() {
 }
 
 uint64_t EliasFanoList32::jump_size_words() const {
-    uint64_t size = ((count_ + 1) / kSuperQ) * kSuperQSize32;  // Whole blocks
-    if ((count_ + 1) % kSuperQ != 0) {
-        size += 1 + (((count_ + 1) % kSuperQ + kQ - 1) / kQ + 3) / 2;  // Partial block
+    uint64_t size = (count_ / kSuperQ) * kSuperQSize32;  // Whole blocks
+    if (count_ % kSuperQ != 0) {
+        size += 1 + ((count_ % kSuperQ + kQ - 1) / kQ + 3) / 2;  // Partial block
     }
     return size;
 }

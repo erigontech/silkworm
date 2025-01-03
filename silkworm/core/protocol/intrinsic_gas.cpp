@@ -42,6 +42,10 @@ intx::uint128 intrinsic_gas(const UnsignedTransaction& txn, const evmc_revision 
         if (contract_creation && rev >= EVMC_SHANGHAI) {
             gas += num_words(data_len) * fee::kInitCodeWordCost;
         }
+
+        // EIP-7623: Increase calldata cost
+        const intx::uint128 floor_cost = fee::kGTransaction + (zero_bytes + non_zero_bytes * 4) * fee::kTotalCostFloorPerToken;
+        gas = std::max(gas, floor_cost);
     }
 
     // EIP-2930: Optional access lists

@@ -634,8 +634,7 @@ void bisect_pipeline(datastore::kvdb::EnvConfig& config, BlockNum start, BlockNu
             ensure(unwind_result == stagedsync::Stage::Result::kSuccess,
                    [&]() { return "unwind failed: " + std::string{magic_enum::enum_name(unwind_result)}; });
             SILK_INFO << "Bisect: unwind down to block=" << unwind_point << " END";
-            left_point = unwind_point;
-            right_point = (unwind_point + right_point) >> 1;
+            right_point = unwind_point;
         } else {
             if (forward_result != stagedsync::Stage::Result::kAborted) {
                 SILK_ERROR << "Bisect: unexpected forward failure w/o unwind point: " << magic_enum::enum_name(forward_result);

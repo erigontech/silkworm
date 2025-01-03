@@ -613,7 +613,8 @@ void bisect_pipeline(datastore::kvdb::EnvConfig& config, BlockNum start, BlockNu
            [&]() { return "unwind failed: " + std::string{magic_enum::enum_name(first_unwind_result)}; });
     SILK_INFO << "Bisect: unwind down to block=" << initial_unwind_point << " END";
 
-    uint64_t left_point = start, right_point = end;
+    BlockNum left_point = start, right_point = end;
+    std::optional<BlockNum> first_broken_point;
     while (left_point < right_point) {
         Environment::set_stop_at_block(right_point);
         const uint64_t median_point = (left_point + right_point) >> 1;
@@ -623,9 +624,10 @@ void bisect_pipeline(datastore::kvdb::EnvConfig& config, BlockNum start, BlockNu
         if (forward_result == stagedsync::Stage::Result::kSuccess || forward_result == stagedsync::Stage::Result::kStoppedByEnv) {
             left_point = right_point;
             if (right_point < end) {
-                right_point = (median_point + end) >> 1;
+                right_point = (right_point + first_broken_point.value_or(end)) >> 1;
             }
         } else if (stage_pipeline.unwind_point()) {
+            first_broken_point = right_point;
             const auto pipeline_unwind_point = *stage_pipeline.unwind_point();
             SILK_INFO << "Bisect: left=" << left_point << " median=" << median_point << " unwind=" << pipeline_unwind_point;
             const auto unwind_point = std::min(median_point, std::max(left_point, pipeline_unwind_point));

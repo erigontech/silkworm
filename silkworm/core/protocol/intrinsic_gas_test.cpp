@@ -75,8 +75,8 @@ namespace protocol {
             .max_priority_fee_per_gas = 30000000000,
             .max_fee_per_gas = 30000000000,
             .gas_limit = 25748100,
-            .data = calldata,
-            .value = 2 * kEther};
+            .value = 2 * kEther,
+            .data = calldata};
 
         intx::uint128 g0{intrinsic_gas(txn, EVMC_PRAGUE)};
         // Calldata contains only 'ones' and the cost per EIP-7623 is higher

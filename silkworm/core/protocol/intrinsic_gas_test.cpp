@@ -64,6 +64,25 @@ namespace protocol {
         CHECK(g0 == fee::kGTransaction + 2 * fee::kAccessListAddressCost + 2 * fee::kAccessListStorageKeyCost);
     }
 
+    TEST_CASE("EIP-7623 intrinsic gas") {
+        // EIP-7623 rules should take precedence
+
+        const Bytes calldata = Bytes(22 * 1024, 1);
+        UnsignedTransaction txn{
+            .type = TransactionType::kDynamicFee,
+            .chain_id = kSepoliaConfig.chain_id,
+            .nonce = 7,
+            .max_priority_fee_per_gas = 30000000000,
+            .max_fee_per_gas = 30000000000,
+            .gas_limit = 25748100,
+            .data = calldata,
+            .value = 2 * kEther};
+
+        intx::uint128 g0{intrinsic_gas(txn, EVMC_PRAGUE)};
+        // Calldata contains only 'ones' and the cost per EIP-7623 is higher
+        CHECK(g0 == fee::kGTransaction + 4 * calldata.size() * fee::kTotalCostFloorPerToken);
+    }
+
 }  // namespace protocol
 
 }  // namespace silkworm

@@ -260,6 +260,25 @@ bool user_confirmation(const std::string& message = {"Confirm ?"}) {
     return matches[2].length() == 0;
 }
 
+void table_get(EnvConfig& config, const std::string& table, const std::optional<Bytes>& k, std::optional<BlockNum> block_num) {
+    ensure(k.has_value() || block_num.has_value(), "You must specify either --key or --block");
+    auto env = open_env(config);
+    auto txn = env.start_read();
+    ensure(has_map(txn, table.c_str()), [&table]() { return "Table " + table + " not found"; });
+    ::mdbx::map_handle table_map = txn.open_map(table);
+    const std::string_view key_identifier = block_num ? "block_key" : "key";
+    const Bytes key = k.value_or(block_key(*block_num));
+    ::mdbx::cursor_managed cursor = txn.open_cursor(table_map);
+    const auto result = cursor.find(to_slice(key), /*throw_notfound=*/false);
+    if (!result.done) {
+        std::cout << key_identifier << "=" << to_hex(key) << " not found\n";
+        return;
+    }
+    ensure(from_slice(result.key) == key, "key mismatch");
+    const ByteView value = from_slice(result.value);
+    std::cout << key_identifier << "=" << to_hex(key) << " has value: " << to_hex(value) << "\n";
+}
+
 void do_clear(EnvConfig& config, bool dry, bool always_yes, const std::vector<std::string>& table_names,
               bool drop) {
     config.readonly = false;
@@ -1526,6 +1545,23 @@ int main(int argc, char* argv[]) {
     // List migration keys
     auto cmd_migrations = app_main.add_subcommand("migrations", "List migrations");
 
+    // Get value of table row by provided hex key or computed block key
+    auto cmd_table_get = app_main.add_subcommand("table_get", "Get value provided the named table and the key");
+    auto cmd_table_get_table_opt =
+        cmd_table_get->add_option("--table", "Name of the table to read value from")
+            ->required();
+    auto cmd_table_get_key_opt =
+        cmd_table_get->add_option("--key", "The key to lookup as hex string")
+            ->check([&](const std::string& value) -> std::string {
+                const auto hex = silkworm::from_hex(value);
+                if (!hex) return "Value " + value + " is not a valid hex string";
+                return {};
+            });
+    auto cmd_table_get_block_opt =
+        cmd_table_get->add_option("--block", "Block number to compute the block key")
+            ->check(CLI::Range(0u, UINT32_MAX))
+            ->excludes(cmd_table_get_key_opt);
+
     // Clear table tool
     auto cmd_clear = app_main.add_subcommand("clear", "Empties or drops provided named table(s)");
     std::vector<std::string> cmd_clear_names;
@@ -1666,6 +1702,11 @@ int main(int argc, char* argv[]) {
             do_schema(src_config, static_cast<bool>(*cmd_schema_force_version_update_opt));
         } else if (*cmd_migrations) {
             do_migrations(src_config);
+        } else if (*cmd_table_get) {
+            table_get(src_config,
+                      cmd_table_get_table_opt->as<std::string>(),
+                      *cmd_table_get_key_opt ? from_hex(cmd_table_get_key_opt->as<std::string>()) : std::nullopt,
+                      *cmd_table_get_block_opt ? cmd_table_get_block_opt->as<std::optional<BlockNum>>() : std::nullopt);
         } else if (*cmd_clear) {
             do_clear(src_config, static_cast<bool>(*app_dry_opt), static_cast<bool>(*app_yes_opt), cmd_clear_names,
                      static_cast<bool>(*cmd_clear_drop_opt));

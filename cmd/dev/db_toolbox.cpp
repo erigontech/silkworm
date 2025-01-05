@@ -276,7 +276,18 @@ void table_get(EnvConfig& config, const std::string& table, const std::optional<
     }
     ensure(from_slice(result.key) == key, "key mismatch");
     const ByteView value = from_slice(result.value);
-    std::cout << key_identifier << "=" << to_hex(key) << " has value: " << to_hex(value) << "\n";
+    std::cout << key_identifier << "=" << to_hex(key) << " has value: " << to_hex(value);
+    if (const bool is_multi_value = txn.get_handle_info(table_map).flags & MDBX_DUPSORT; is_multi_value) {
+        while (true) {
+            if (const auto move_result = cursor.to_current_next_multi(/*throw_notfound=*/false); move_result.done) {
+                const ByteView next_value = from_slice(move_result.value);
+                std::cout << "," << to_hex(next_value);
+            } else {
+                break;
+            }
+        }
+    }
+    std::cout << "\n";
 }
 
 void do_clear(EnvConfig& config, bool dry, bool always_yes, const std::vector<std::string>& table_names,

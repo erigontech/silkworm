@@ -799,29 +799,41 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, ui
         const auto chain_storage = kv_transaction->create_storage();
         auto this_executor = co_await boost::asio::this_coro::executor;
         auto remote_state = std::make_unique<silkworm::execution::RemoteState>(this_executor, *kv_transaction, *chain_storage, 1, std::nullopt);
+
+        // auto a = hex_to_address("0x71562b71999873db5b286df957af199ec94617f7");
+        // auto acc = remote_state->read_account(a);
+
+        // if (acc) {
+        //     log::Info{"account", {"balance", std::to_string(acc->balance.num_bits)}};
+        // } else {
+        //     log::Info{"account not found"};
+        // }
+
         co_return remote_state;
         // co_return execution::StateFactory{*kv_transaction}.create_state(this_executor, *chain_storage, block.header.number);
         // co_return kv_transaction->create_state(this_executor, *chain_storage, block.header.number);
     });
 
-    // Hash h = evmc::bytes32{*from_hex("0x0a67937dc901730147bae17de95ae57cf20768933f0ea545e52c78af9a22c1edc")};
+    // auto b_hash = to_bytes32(*from_hex("0xe8b28e4882bcbd6293ef56433c69b34e9e3e5bf512a05ddbed6bb94aa65948f4"));
+    // auto b_number = BlockNum{2910651};
 
-    // auto h = evmc::bytes32{*from_hex("0xa67937dc901730147bae17de95ae57cf20768933f0ea545e52c78af9a22c1edc")}
-    // auto h2 = to_bytes32(*from_hex("0xa67937dc901730147bae17de95ae57cf20768933f0ea545e52c78af9a22c1edc"));
+    auto b_hash = to_bytes32(*from_hex("0x6f81fc8bb897eb2075ffa53a2b28c3216022fd1841d361af7908198f8ff2faa3"));
+    auto b_number = BlockNum{1};
 
-    // auto header = state->read_header(1, h2);
-    // if (header) {
-    //     log::Info{"header", {"number", std::to_string(header->number), "gas_used", std::to_string(header->gas_used)}};
-    // }
-    // else {
-    //     return SILKWORM_INVALID_BLOCK;
-    // }
+    auto header = state->read_header(b_number, b_hash);
+    if (header) {
+        log::Info{"JG header", {"number", std::to_string(header->number), "gas_used", std::to_string(header->gas_used)}};
+    } else {
+        log::Warning{"header not found"};
+        return SILKWORM_INVALID_BLOCK;
+    }
 
     auto a = hex_to_address("0x71562b71999873db5b286df957af199ec94617f7");
     auto acc = state->read_account(a);
-
     if (acc) {
-        log::Info{"account", {"balance", std::to_string(acc->balance.num_bits)}};
+        log::Info{"account2", {"balance", std::to_string(acc->balance.num_bits)}};
+    } else {
+        log::Info{"account2 not found"};
     }
 
     log::Info{"dupa blada, spadam"};

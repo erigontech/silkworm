@@ -178,6 +178,10 @@ struct SilkwormLibrary {
         return result;
     }
 
+    int exectute_single_tx(MDBX_txn* txn) const {
+        return silkworm_execute_tx(handle_, txn, 1, 1, nullptr, nullptr);
+    }
+
     int add_snapshot(SilkwormChainSnapshot* snapshot) const {
         return silkworm_add_snapshot(handle_, snapshot);
     }
@@ -985,6 +989,16 @@ static SilkwormRpcSettings make_rpc_settings_for_test(uint16_t api_listening_por
     (void)std::snprintf(settings.cors_domains[0], SILKWORM_RPC_SETTINGS_CORS_DOMAIN_SIZE, "*");
     settings.jwt_file_path[0] = '\0';
     return settings;
+}
+
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_tx: single", "[silkworm][capi]") {
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{env_path()};
+
+    RWTxnManaged external_txn{env};
+    auto result = silkworm_lib.exectute_single_tx(*external_txn);
+    CHECK_NOTHROW(external_txn.commit_and_stop());
+    CHECK(result == SILKWORM_OK);
 }
 
 static const SilkwormRpcSettings kInvalidRpcSettings{make_rpc_settings_for_test(10)};

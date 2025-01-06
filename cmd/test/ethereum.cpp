@@ -69,6 +69,8 @@ static const std::array kFailingTests{
     // in the result the non-empty storage remains unchanged.
     // This scenarion don't happen in real networks. The desired behavior for implementations
     // is still being discussed.
+    kBlockchainDir / "GeneralStateTests" / "stCreate2" / "create2collisionStorage.json",
+    kBlockchainDir / "GeneralStateTests" / "stCreate2" / "create2collisionStorageParis.json",
     kBlockchainDir / "GeneralStateTests" / "stCreate2" / "RevertInCreateInInitCreate2.json",
     kBlockchainDir / "GeneralStateTests" / "stCreate2" / "RevertInCreateInInitCreate2Paris.json",
     kBlockchainDir / "GeneralStateTests" / "stRevertTest" / "RevertInCreateInInit.json",
@@ -134,6 +136,14 @@ bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
     if (state.accounts().size() != expected.size()) {
         std::cout << "Account number mismatch: " << state.accounts().size() << " != " << expected.size()
                   << std::endl;
+
+        // Find and report accounts missing from the expected set.
+        for (const auto& [addr, _] : state.accounts()) {
+            if (const auto addr_hex = "0x" + hex(addr); !expected.contains(addr_hex)) {
+                std::cout << "Unexpected account: " << addr_hex << std::endl;
+            }
+        }
+
         return false;
     }
 
@@ -479,7 +489,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    size_t stack_size{40 * kMebi};
+    size_t stack_size{50 * kMebi};
 #ifdef NDEBUG
     stack_size = 16 * kMebi;
 #endif

@@ -39,6 +39,7 @@ struct Filter {
 
 struct LogFilterOptions {
     bool add_timestamp{false};
+    bool overwrite_log_index{false};
     std::uint64_t log_count{0};
     std::uint64_t block_count{0};
     bool ignore_topics_order{false};

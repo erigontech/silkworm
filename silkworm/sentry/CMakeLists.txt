@@ -69,3 +69,6 @@ silkworm_library(
   PUBLIC ${LIBS_PUBLIC}
   PRIVATE ${LIBS_PRIVATE}
 )
+
+# silkworm_sentry_cli depends on silkworm_sentry
+add_subdirectory(cli)

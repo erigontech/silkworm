@@ -148,4 +148,6 @@ Bytes storage_domain_key(const evmc::address& address, const evmc::bytes32& loca
 //! Build key for code domain given the target address and location
 Bytes code_domain_key(const evmc::address& address);
 
+//! Build key for topic domain given the target topic
+Bytes topic_domain_key(const evmc::bytes32& topic);
 }  // namespace silkworm::db

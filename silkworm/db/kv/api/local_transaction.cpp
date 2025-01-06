@@ -65,7 +65,7 @@ std::shared_ptr<chain::ChainStorage> LocalTransaction::create_storage() {
 }
 
 Task<TxnId> LocalTransaction::first_txn_num_in_block(BlockNum /*block_num*/) {
-    throw std::logic_error{"not yet implemented"};
+    throw std::logic_error{"LocalTransaction::first_txn_num_in_block: not yet implemented"};
 }
 
 Task<GetLatestResult> LocalTransaction::get_latest(GetLatestQuery /*query*/) {

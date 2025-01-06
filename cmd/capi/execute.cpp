@@ -33,12 +33,11 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
+#include <silkworm/infra/cli/common.hpp>
+#include <silkworm/infra/cli/shutdown_signal.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/daemon.hpp>
-
-#include "../common/common.hpp"
-#include "../common/shutdown_signal.hpp"
 
 using namespace silkworm;
 using namespace silkworm::snapshots;
@@ -316,9 +315,9 @@ int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, const 
 
     // Execute blocks
     if (settings.use_internal_txn) {
-        return execute_with_internal_txn(handle, settings, data_store.chaindata_rw());
+        return execute_with_internal_txn(handle, settings, data_store.chaindata().access_rw());
     }
-    return execute_with_external_txn(handle, settings, data_store.chaindata_rw().start_rw_tx());
+    return execute_with_external_txn(handle, settings, data_store.chaindata().access_rw().start_rw_tx());
 }
 
 int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, const DataDirectory& data_dir) {

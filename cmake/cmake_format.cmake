@@ -38,4 +38,7 @@ file(
 list(PREPEND SRC "${CMAKE_CURRENT_LIST_DIR}/../CMakeLists.txt")
 list(FILTER SRC EXCLUDE REGEX "third_party/.+/(.+/)+CMakeLists.txt$")
 
-execute_process(COMMAND "${CMAKE_FORMAT}" --in-place "--config-file=${CMAKE_CURRENT_LIST_DIR}/cmake_format.yaml" ${SRC})
+execute_process(
+  COMMAND "${CMAKE_FORMAT}" --in-place "--config-file=${CMAKE_CURRENT_LIST_DIR}/cmake_format.yaml" ${SRC}
+  COMMAND_ERROR_IS_FATAL ANY
+)

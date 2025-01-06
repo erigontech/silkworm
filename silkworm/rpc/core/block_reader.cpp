@@ -21,7 +21,10 @@
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/db/kv/state_reader.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/execution/state_factory.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
@@ -53,10 +56,13 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOr
 
     SILK_TRACE << "read_balance_changes: block_num: " << block_num;
 
-    StateReader state_reader{transaction_, block_num + 1};
-
     const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_num);
     const auto end_txn_number = co_await transaction_.first_txn_num_in_block(block_num + 1);
+
+    execution::StateFactory state_factory{transaction_};
+    const auto txn_id = co_await state_factory.user_txn_id_at(block_num + 1);
+
+    StateReader state_reader{transaction_, txn_id};
 
     db::kv::api::HistoryRangeQuery query{
         .table = db::table::kAccountDomain,
@@ -72,7 +78,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOr
         intx::uint256 current_balance{0};
 
         if (!value->second.empty()) {
-            const auto account{Account::from_encoded_storage_v3(value->second)};
+            const auto account{db::state::AccountCodec::from_encoded_storage_v3(value->second)};
             if (account) {
                 old_balance = account->balance;
             }
@@ -149,6 +155,9 @@ Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const std::string& bl
     } else if (is_valid_hex(block_id)) {
         block_num = static_cast<BlockNum>(std::stol(block_id, nullptr, 16));
         check_if_latest = latest_required;
+    } else if (is_valid_dec(block_id)) {
+        block_num = static_cast<BlockNum>(std::stol(block_id, nullptr, 10));
+        check_if_latest = latest_required;
     } else {
         throw std::invalid_argument("get_block_num::Invalid Block Id");
     }
@@ -180,6 +189,12 @@ Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const BlockNumOrHash&
     } else {
         throw std::invalid_argument("Invalid Block Number or Hash");
     }
+}
+
+Task<BlockNum> BlockReader::get_block_num(const Hash& hash) {
+    auto bn = co_await chain_storage_.read_block_num(hash);
+    ensure(bn != 0, "get_block_num: block with hash not found");
+    co_return *bn;
 }
 
 Task<BlockNum> BlockReader::get_current_block_num() {

@@ -88,10 +88,7 @@ class TempChainDataStore : public TempChainData {
     TempChainDataStore()
         : data_store_{
               move_env(),
-              blocks::make_blocks_repository(
-                  data_dir_.snapshots().path()),
-              state::make_state_repository(
-                  data_dir_.snapshots().path()),
+              data_dir_.snapshots().path(),
           } {}
     ~TempChainDataStore() override {
         // need to destroy a started RWTxn in the base class before destroying env_managed inside the data_store_
@@ -102,10 +99,10 @@ class TempChainDataStore : public TempChainData {
     db::DataStore* operator->() { return &data_store_; }
 
     datastore::kvdb::ROAccess chaindata() const override {
-        return data_store_.chaindata();
+        return data_store_.chaindata().access_ro();
     }
     datastore::kvdb::RWAccess chaindata_rw() const override {
-        return data_store_.chaindata_rw();
+        return data_store_.chaindata().access_rw();
     }
 
     db::DataModelFactory data_model_factory() {

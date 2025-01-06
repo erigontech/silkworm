@@ -281,7 +281,6 @@ struct BackEndE2ETest {
         server->join();
     }
 
-    rpc::Grpc2SilkwormLogGuard grpc2silkworm_log_guard;
     std::unique_ptr<remote::ETHBACKEND::Stub> ethbackend_stub;
     std::unique_ptr<BackEndClient> backend_client;
     rpc::ServerSettings srv_config;
@@ -299,7 +298,7 @@ namespace silkworm::ethbackend::grpc::server {
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("BackEndServer", "[silkworm][node][rpc]") {
-    rpc::Grpc2SilkwormLogGuard log_guard;
+    log::init();
     rpc::ServerSettings srv_config;
     srv_config.address_uri = kTestAddressUri;
     TemporaryDirectory tmp_dir;
@@ -388,6 +387,7 @@ TEST_CASE("BackEndServer", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("BackEndServer E2E: empty node settings", "[silkworm][node][rpc]") {
+    log::init();
     BackEndE2ETest test;
     auto backend_client = *test.backend_client;
 
@@ -441,6 +441,7 @@ TEST_CASE("BackEndServer E2E: empty node settings", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("BackEndServer E2E: mainnet chain with zero etherbase", "[silkworm][node][rpc]") {
+    log::init();
     NodeSettings node_settings;
     node_settings.chain_config = kMainnetConfig;
     node_settings.etherbase = evmc::address{};

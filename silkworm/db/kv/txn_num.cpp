@@ -152,4 +152,50 @@ Task<std::optional<BlockNum>> block_num_from_tx_num(kv::api::Transaction& tx,
     co_return block_num;
 }
 
+Task<std::optional<TransactionNums>> PaginatedTransactionInfoIterator::next() {
+    auto next_id = co_await stream_->next();
+    if (!next_id) {
+        SILK_DEBUG << "No more values";
+        co_return std::nullopt;
+    }
+    const auto tnx_id = static_cast<TxnId>(next_id.value());
+
+    bool block_changed{false};
+    if (max_txn_num_ == 0 || (ascending_ && tnx_id > max_txn_num_) || (!ascending_ && tnx_id < min_txn_num_)) {
+        const auto block_num_opt = co_await db::txn::block_num_from_tx_num(tx_, tnx_id, provider_);
+        if (!block_num_opt) {
+            SILK_DEBUG << "No block found for txn_id " << tnx_id;
+            co_return std::nullopt;
+        }
+        block_num_ = block_num_opt.value();
+        max_txn_num_ = co_await db::txn::max_tx_num(tx_, block_num_, provider_);
+        min_txn_num_ = co_await db::txn::min_tx_num(tx_, block_num_, provider_);
+
+        block_changed = true;
+    }
+
+    const TransactionNums txn_nums{
+        .txn_id = tnx_id,
+        .block_num = block_num_,
+        .txn_index = tnx_id - min_txn_num_ - 1,
+        .final_txn = tnx_id == max_txn_num_,
+        .block_changed = block_changed};
+
+    SILK_DEBUG << "txn_id: " << txn_nums.txn_id
+               << ", block_num: " << txn_nums.block_num
+               << ", tnx_index: " << txn_nums.txn_index
+               << ", max_tnx_num: " << max_txn_num_
+               << ", min_txn_num: " << min_txn_num_
+               << ", final txn: " << txn_nums.final_txn;
+
+    co_return txn_nums;
+}
+
+kv::api::PaginatedStream<TransactionNums> make_txn_nums_stream(PaginatedTimestampStream stream,
+                                                               bool ascending,
+                                                               kv::api::Transaction& tx,
+                                                               db::chain::CanonicalBodyForStorageProvider& provider) {
+    return std::make_unique<PaginatedTransactionInfoIterator>(std::move(stream), ascending, tx, provider);
+}
+
 }  // namespace silkworm::db::txn

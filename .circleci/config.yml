@@ -85,8 +85,8 @@ commands:
       - run:
           name: "Install Conan"
           command: |
-            pip3 install --user --no-warn-script-location conan==1.64.1
-            conan_path="$(python -m site --user-base)/bin"
+            pip3 install --user --no-warn-script-location conan==2.10.2
+            conan_path="$(python3 -m site --user-base)/bin"
             echo "export \"PATH=$conan_path:\$PATH\"" >> "$BASH_ENV"
             "$conan_path/conan" --version
 
@@ -109,7 +109,7 @@ commands:
           command: |
             if [[ "<<parameters.compiler_id>>" == "clang" ]]
             then
-                conan_profile=linux_x64_clang_13_release
+                conan_profile=linux_x64_clang_16_release
             else
                 conan_profile=linux_x64_gcc_11_release
             fi
@@ -128,7 +128,7 @@ commands:
           name: "Save Conan cache"
           key: *conan-cache-key
           paths:
-            - ~/.conan
+            - ~/.conan2
 
   build_fuzzer:
     steps:
@@ -146,7 +146,7 @@ commands:
       - run:
           name: "CMake Fuzzer"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_13_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
+          command: cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
       - run:
           name: "Build Fuzzer"
           command: |
@@ -155,6 +155,9 @@ commands:
 
   test:
     parameters:
+      sanitizer:
+        type: string
+        default: ""
       ethereum_tests:
         type: boolean
         default: true
@@ -164,7 +167,7 @@ commands:
           command: make "SILKWORM_BUILD_DIR=$HOME/build" run_smoke_tests
       - run:
           name: "Unit tests"
-          command: make "SILKWORM_BUILD_DIR=$HOME/build" run_unit_tests
+          command: make "SILKWORM_BUILD_DIR=$HOME/build" SILKWORM_CLANG_COVERAGE=OFF SILKWORM_SANITIZE=<<parameters.sanitizer>> "SILKWORM_PROJECT_DIR=$HOME/project" run_unit_tests
       - when:
           condition: <<parameters.ethereum_tests>>
           steps:
@@ -195,7 +198,7 @@ commands:
 jobs:
   lint:
     machine:
-      image: ubuntu-2204:2023.04.2    
+      image: ubuntu-2404:2024.05.1
     steps:
       - add_ssh_keys:
           fingerprints:
@@ -204,33 +207,11 @@ jobs:
       - run:
           name: "Format"
           working_directory: ~/project
-          command: |
-            sudo pip3 install cmake-format==0.6.13
-            make fmt
-            if ! git diff --exit-code
-            then
-                commit_message="make fmt"
-                head_commit_message="$(git log -1 --pretty=%B)"
-
-                if [[ "$head_commit_message" == "$commit_message" ]]
-                then
-                    echo "The formatting style is not compliant, although it was formatted. Try to run 'make fmt' locally and push the changes."
-                    exit 1
-                else
-                    git config user.name GitHub
-                    git config user.email noreply@github.com
-                    git commit --all --message="$commit_message"
-                    git config push.autoSetupRemote true
-                    git push
-
-                    echo "The formatting style was not compliant, but it is fixed now. A new workflow will start soon, wait for it..."
-                    exit 2
-                fi
-            fi
+          command: ./tools/lint/ci_format.sh
       - run:
-          name: "Copyright"
+          name: "Lint"
           working_directory: ~/project
-          command: cmake -P cmake/copyright.cmake
+          command: make lint
 
   linux-gcc-thread-sanitizer:
     environment:
@@ -248,7 +229,8 @@ jobs:
           compiler_id: gcc
           compiler_version: <<pipeline.parameters.gcc_version_latest>>
           build_type: Debug
-      - test
+      - test:
+          sanitizer: thread
 
   linux-release:
     parameters:
@@ -288,7 +270,8 @@ jobs:
           build_type: Debug
           compiler_id: clang
           compiler_version: 17
-      - test
+      - test:
+          sanitizer: address,undefined
 
   linux-clang-coverage:
     environment:
@@ -394,7 +377,7 @@ jobs:
     environment:
       WASI_SDK_VERSION: 20
     machine:
-      image: ubuntu-2204:2023.04.2
+      image: ubuntu-2404:2024.05.1
     steps:
       - checkout_with_submodules:
           ethereum_tests: false
@@ -409,7 +392,10 @@ jobs:
           name: "Install dependencies"
           command: |
             sudo apt-get update
-            sudo apt-get install -y texinfo libtinfo5
+            sudo apt-get install -y texinfo
+            # https://askubuntu.com/questions/1531760/how-to-install-libtinfo5-on-ubuntu24-04
+            wget https://security.ubuntu.com/ubuntu/pool/universe/n/ncurses/libtinfo5_6.3-2ubuntu0.1_amd64.deb
+            sudo apt-get install ./libtinfo5_6.3-2ubuntu0.1_amd64.deb
       - install_conan
       - run:
           name: "Install Wasmer"
@@ -436,7 +422,7 @@ jobs:
       - run:
           name: "Core unit tests"
           working_directory: ~/build
-          command: wasmer cmd/test/core_test --stack-size 16777216
+          command: wasmer silkworm/core/silkworm_core_test --stack-size 16777216
 
 parameters:
   clang_version_min:

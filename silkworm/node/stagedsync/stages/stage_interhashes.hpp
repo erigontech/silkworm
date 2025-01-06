@@ -54,17 +54,17 @@ class InterHashes final : public Stage {
     trie::PrefixSet collect_storage_changes(db::RWTxn& txn, BlockNum from, BlockNum to,
                                             absl::btree_map<evmc::address, ethash_hash256>& hashed_addresses);
 
-    //! \brief Erigon's RegenerateIntermediateHashes
+    //! \brief Erigon RegenerateIntermediateHashes
     //! \remarks might throw WrongRoot
     //! \return the state root
     Stage::Result regenerate_intermediate_hashes(
         db::RWTxn& txn,
         const evmc::bytes32* expected_root = nullptr);
 
-    //! \brief Erigon's IncrementIntermediateHashes
+    //! \brief Erigon IncrementIntermediateHashes
     //! \remarks might throw
     //! \return the state root
-    Stage::Result increment_intermediate_hashes(
+    [[maybe_unused]] Stage::Result increment_intermediate_hashes(
         db::RWTxn& txn,
         BlockNum from,
         BlockNum to,

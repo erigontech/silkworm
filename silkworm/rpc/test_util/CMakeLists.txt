@@ -14,17 +14,13 @@
    limitations under the License.
 ]]
 
-set(TARGET silkworm_rpcdaemon_test_util)
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 find_package(Boost REQUIRED COMPONENTS headers)
 find_package(GTest REQUIRED)
 
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
-
-add_library(${TARGET} ${SRC})
-
-target_link_libraries(
-  ${TARGET}
+silkworm_library(
+  silkworm_rpcdaemon_test_util
   PUBLIC silkworm_infra silkworm_rpcdaemon
   PRIVATE silkworm_db_test_util Boost::headers glaze::glaze GTest::gmock
 )

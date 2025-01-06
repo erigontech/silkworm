@@ -71,27 +71,7 @@ namespace {
 
     /// Checks the result of the transaction execution in evmone (APIv2)
     /// against the result produced by Silkworm.
-    void check_evm1_execution_result(const evmone::state::TransactionReceipt& evm1_receipt,
-                                     const Receipt& receipt, const CallResult& vm_res,
-                                     uint64_t gas_used, const IntraBlockState& state) {
-        if (static_cast<uint64_t>(evm1_receipt.gas_used) != gas_used) {
-            std::cerr << "g: " << evm1_receipt.gas_used << ", silkworm: " << gas_used << "\n";
-            SILKWORM_ASSERT(static_cast<uint64_t>(evm1_receipt.gas_used) == gas_used);
-        }
-
-        SILKWORM_ASSERT(receipt.logs.size() == evm1_receipt.logs.size());
-        for (size_t i = 0; i < receipt.logs.size(); ++i) {
-            const auto& e1l = evm1_receipt.logs[i];
-            const auto& exp = receipt.logs[i];
-            SILKWORM_ASSERT(e1l.addr == exp.address);
-            SILKWORM_ASSERT(e1l.topics.size() == exp.topics.size());
-            for (size_t j = 0; j < exp.topics.size(); ++j) {
-                SILKWORM_ASSERT(e1l.topics[j] == exp.topics[j]);
-            }
-            SILKWORM_ASSERT(e1l.data == exp.data);
-        }
-
-        const auto& state_diff = evm1_receipt.state_diff;
+    void check_evm1_execution_result(const evmone::state::StateDiff& state_diff, const IntraBlockState& state) {
         for (const auto& entry : state_diff.modified_accounts) {
             if (std::ranges::find(state_diff.deleted_accounts, entry.addr) != state_diff.deleted_accounts.end()) {
                 continue;
@@ -121,21 +101,12 @@ namespace {
                 SILKWORM_ASSERT(state.get_code(m.addr) == m.code);
             }
         }
-
-        if (evm1_receipt.status == EVMC_FAILURE) {  // imprecise error code
-            SILKWORM_ASSERT(!receipt.success);
-        } else if (evm1_receipt.status != EVMC_OUT_OF_GAS && vm_res.status != EVMC_PRECOMPILE_FAILURE) {
-            if (evm1_receipt.status != vm_res.status) {
-                std::cerr << "e1: " << evm1_receipt.status << ", silkworm: " << vm_res.status << "\n";
-            }
-            SILKWORM_ASSERT(evm1_receipt.status == vm_res.status);
-        }
     }
 }  // namespace
 
 ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::RuleSet& rule_set, State& state,
-                                       const ChainConfig& config)
-    : state_{state}, rule_set_{rule_set}, evm_{block, state_, config} {
+                                       const ChainConfig& config, bool evm1_v2)
+    : state_{state}, rule_set_{rule_set}, evm_{block, state_, config}, evm1_v2_{evm1_v2} {
     evm_.beneficiary = rule_set.get_beneficiary(block.header);
     evm_.transfer = rule_set.transfer_func();
 
@@ -193,11 +164,46 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     // This must be done before the Silkworm execution so that the state is unmodified.
     // evmone will not modify the state itself: state is read-only and the state modifications
     // are provided as the state diff in the returned receipt.
-    const auto evm1_receipt = evmone::state::transition(
+    auto evm1_receipt = evmone::state::transition(
         evm1_state_view, evm1_block_, evm1_block_hashes, evm1_txn, rev, evm_.vm(), static_cast<int64_t>(execution_gas_limit));
 
-    // Optimization: since receipt.logs might have some capacity, let's reuse it.
-    std::swap(receipt.logs, state_.logs());
+    const auto gas_used = static_cast<uint64_t>(evm1_receipt.gas_used);
+    cumulative_gas_used_ += gas_used;
+
+    // Prepare the receipt using the result from evmone.
+    receipt.type = txn.type;
+    receipt.success = evm1_receipt.status == EVMC_SUCCESS;
+    receipt.cumulative_gas_used = cumulative_gas_used_;
+    receipt.logs.clear();  // can be dirty
+    receipt.logs.reserve(evm1_receipt.logs.size());
+    for (auto& [addr, data, topics] : evm1_receipt.logs)
+        receipt.logs.emplace_back(Log{addr, std::move(topics), std::move(data)});
+    receipt.bloom = logs_bloom(receipt.logs);
+
+    if (evm1_v2_) {
+        // Apply the state diff produced by evmone APIv2 to the state and skip the Silkworm execution.
+        const auto& state_diff = evm1_receipt.state_diff;
+        for (const auto& m : state_diff.modified_accounts) {
+            if (!m.code.empty()) {
+                state_.create_contract(m.addr);
+                state_.set_code(m.addr, m.code);
+            }
+
+            auto& acc = state_.get_or_create_object(m.addr);
+            acc.current->nonce = m.nonce;
+            acc.current->balance = m.balance;
+
+            auto& storage = state_.storage_[m.addr];
+            for (const auto& [k, v] : m.modified_storage) {
+                storage.committed[k].original = v;
+            }
+        }
+
+        for (const auto& a : state_diff.deleted_accounts) {
+            state_.destruct(a);
+        }
+        return;
+    }
 
     state_.clear_journal_and_substate();
 
@@ -226,8 +232,10 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     state_.subtract_from_balance(*sender, txn.total_blob_gas() * blob_gas_price);
 
     const CallResult vm_res = evm_.execute(txn, execution_gas_limit);
+    SILKWORM_ASSERT((vm_res.status == EVMC_SUCCESS) == receipt.success);
+    SILKWORM_ASSERT(state_.logs().size() == receipt.logs.size());
 
-    const uint64_t gas_used{txn.gas_limit - refund_gas(txn, effective_gas_price, vm_res.gas_left, vm_res.gas_refund)};
+    refund_gas(txn, effective_gas_price, vm_res.gas_left, vm_res.gas_refund);
 
     // award the fee recipient
     const intx::uint256 amount{txn.priority_fee_per_gas(base_fee_per_gas) * gas_used};
@@ -247,15 +255,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     state_.finalize_transaction(rev);
 
-    cumulative_gas_used_ += gas_used;
-
-    receipt.type = txn.type;
-    receipt.success = vm_res.status == EVMC_SUCCESS;
-    receipt.cumulative_gas_used = cumulative_gas_used_;
-    receipt.bloom = logs_bloom(state_.logs());
-    std::swap(receipt.logs, state_.logs());
-
-    check_evm1_execution_result(evm1_receipt, receipt, vm_res, gas_used, state_);
+    check_evm1_execution_result(evm1_receipt.state_diff, state_);
 }
 
 CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<std::shared_ptr<EvmTracer>>& tracers, bool bailout, bool refund) noexcept {

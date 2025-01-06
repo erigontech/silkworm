@@ -27,6 +27,7 @@
 #include <silkworm/core/execution/processor.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/execution/block/block_executor.hpp>
@@ -566,20 +567,23 @@ void Execution::revert_state(ByteView key, ByteView value, RWCursorDupSort& plai
                              RWCursor& plain_code_table) {
     if (key.size() == kAddressLength) {
         if (!value.empty()) {
-            const auto account_res{Account::from_encoded_storage(value)};
+            const auto account_res = db::state::AccountCodec::from_encoded_storage(value);
             SILKWORM_ASSERT(account_res);
             Account account{*account_res};
             if (account.incarnation > 0 && account.code_hash == kEmptyHash) {
                 Bytes code_hash_key(kAddressLength + kIncarnationLength, '\0');
                 std::memcpy(&code_hash_key[0], &key[0], kAddressLength);
                 endian::store_big_u64(&code_hash_key[kAddressLength], account.incarnation);
-                auto new_code_hash = plain_code_table.find(to_slice(code_hash_key));
-                std::memcpy(&account.code_hash.bytes[0], new_code_hash.value.data(), kHashLength);
+                const auto new_code_hash = plain_code_table.find(to_slice(code_hash_key), /*throw_notfound=*/false);
+                if (new_code_hash.done) {
+                    SILKWORM_ASSERT(new_code_hash.value.size() >= kHashLength);
+                    std::memcpy(&account.code_hash.bytes[0], new_code_hash.value.data(), kHashLength);
+                }
             }
             // cleaning up contract codes
             auto state_account_encoded{plain_state_table.find(to_slice(key), /*throw_notfound=*/false)};
             if (state_account_encoded) {
-                const auto state_incarnation{Account::incarnation_from_encoded_storage(from_slice(state_account_encoded.value))};
+                const auto state_incarnation = db::state::AccountCodec::incarnation_from_encoded_storage(from_slice(state_account_encoded.value));
                 SILKWORM_ASSERT(state_incarnation);
                 // cleanup each code incarnation
                 for (uint64_t i = *state_incarnation; i > account.incarnation; --i) {
@@ -589,7 +593,7 @@ void Execution::revert_state(ByteView key, ByteView value, RWCursorDupSort& plai
                     plain_code_table.erase(to_slice(key_hash));
                 }
             }
-            auto new_encoded_account{account.encode_for_storage(false)};
+            Bytes new_encoded_account = db::state::AccountCodec::encode_for_storage(account);
             plain_state_table.erase(to_slice(key), /*whole_multivalue=*/true);
             plain_state_table.upsert(to_slice(key), to_slice(new_encoded_account));
         } else {

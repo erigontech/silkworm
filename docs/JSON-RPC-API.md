@@ -98,7 +98,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | debug_getBadBlocks                         |      No      |            data not available             |             |             |
 | debug_getRawBlock                          |     Yes      |   can be optimized to avoid re-encoding   |             |             |
 | debug_getRawHeader                         |     Yes      |                                           |             |             |
-| debug_getRawReceipts                       |      No      |         see eth_getBlockReceipts          |             |             |
+| debug_getRawReceipts                       |     Yes      |                                           |             |             |
 | debug_getRawTransaction                    |     Yes      |                                           |             |             |
 | debug_storageRangeAt                       |     Yes      |                                           |     Yes     |             |
 | debug_traceBlockByHash                     |     Yes      |            uses JSON streaming            |     Yes     |             |

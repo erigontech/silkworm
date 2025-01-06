@@ -208,6 +208,7 @@ using KvServer = db::kv::grpc::server::KvServer;
 
 struct KvEnd2EndTest {
     explicit KvEnd2EndTest() {
+        log::init();
         std::shared_ptr<grpc::Channel> channel =
             grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
         kv_stub = remote::KV::NewStub(channel);
@@ -261,7 +262,6 @@ struct KvEnd2EndTest {
         server->join();
     }
 
-    rpc::Grpc2SilkwormLogGuard grpc2silkworm_log_guard;
     std::unique_ptr<remote::KV::Stub> kv_stub;
     std::unique_ptr<KvClient> kv_client;
     rpc::ServerSettings srv_config;
@@ -279,7 +279,7 @@ namespace silkworm::db::kv::grpc::server {
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("KvServer", "[silkworm][node][rpc]") {
-    rpc::Grpc2SilkwormLogGuard log_guard;
+    log::init();
     rpc::ServerSettings srv_config;
     srv_config.address_uri = kTestAddressUri;
     TemporaryDirectory tmp_dir;

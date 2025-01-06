@@ -23,6 +23,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/datastore/kvdb/etl_mdbx_collector.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
@@ -31,6 +32,7 @@
 namespace silkworm::trie {
 
 using namespace silkworm::db;
+using namespace silkworm::db::state;
 using namespace silkworm::datastore::kvdb;
 using datastore::kvdb::Collector;
 
@@ -387,7 +389,7 @@ TEST_CASE("Account and storage trie") {
     HashBuilder hb;
 
     const evmc::bytes32 key1{0xB000000000000000000000000000000000000000000000000000000000000000_bytes32};
-    const Account a1{0, 3 * kEther};
+    const AccountEncodable a1{0, 3 * kEther};
     hashed_accounts.upsert(to_slice(key1), to_slice(a1.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(key1.bytes), a1.rlp(/*storage_root=*/kEmptyRoot));
 
@@ -395,7 +397,7 @@ TEST_CASE("Account and storage trie") {
     const evmc::address address2{0x7db3e81b72d2695e19764583f6d219dbee0f35ca_address};
     const auto key2{keccak256(address2)};
     REQUIRE((key2.bytes[0] == 0xB0 && key2.bytes[1] == 0x40));
-    const Account a2{0, 1 * kEther};
+    const AccountEncodable a2{0, 1 * kEther};
     hashed_accounts.upsert(to_slice(key2.bytes), to_slice(a2.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(key2.bytes), a2.rlp(/*storage_root=*/kEmptyRoot));
 
@@ -404,7 +406,7 @@ TEST_CASE("Account and storage trie") {
     const auto key3{keccak256(address3)};
     REQUIRE((key3.bytes[0] == 0xB0 && key3.bytes[1] == 0x41));
     const evmc::bytes32 code_hash{0x5be74cad16203c4905c068b012a2e9fb6d19d036c410f16fd177f337541440dd_bytes32};
-    const Account a3{0, 2 * kEther, code_hash, kDefaultIncarnation};
+    const AccountEncodable a3{0, 2 * kEther, code_hash, kDefaultIncarnation};
     hashed_accounts.upsert(to_slice(key3.bytes), to_slice(a3.encode_for_storage()));
 
     Bytes storage_key{storage_prefix(key3.bytes, kDefaultIncarnation)};
@@ -413,17 +415,17 @@ TEST_CASE("Account and storage trie") {
     hb.add_leaf(unpack_nibbles(key3.bytes), a3.rlp(storage_root));
 
     const evmc::bytes32 key4a{0xB1A0000000000000000000000000000000000000000000000000000000000000_bytes32};
-    const Account a4a{0, 4 * kEther};
+    const AccountEncodable a4a{0, 4 * kEther};
     hashed_accounts.upsert(to_slice(key4a), to_slice(a4a.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(key4a.bytes), a4a.rlp(/*storage_root=*/kEmptyRoot));
 
     const evmc::bytes32 key5{0xB310000000000000000000000000000000000000000000000000000000000000_bytes32};
-    const Account a5{0, 8 * kEther};
+    const AccountEncodable a5{0, 8 * kEther};
     hashed_accounts.upsert(to_slice(key5), to_slice(a5.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(key5.bytes), a5.rlp(/*storage_root=*/kEmptyRoot));
 
     const evmc::bytes32 key6{0xB340000000000000000000000000000000000000000000000000000000000000_bytes32};
-    const Account a6{0, 1 * kEther};
+    const AccountEncodable a6{0, 1 * kEther};
     hashed_accounts.upsert(to_slice(key6), to_slice(a6.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(key6.bytes), a6.rlp(/*storage_root=*/kEmptyRoot));
 
@@ -491,7 +493,7 @@ TEST_CASE("Account and storage trie") {
     const auto key4b{keccak256(address4b)};
     REQUIRE(key4b.bytes[0] == key4a.bytes[0]);
 
-    const Account a4b{0, 5 * kEther};
+    const AccountEncodable a4b{0, 5 * kEther};
     hashed_accounts.upsert(to_slice(key4b.bytes), to_slice(a4b.encode_for_storage()));
 
     PrefixSet account_changes{};
@@ -595,7 +597,7 @@ TEST_CASE("Account and storage trie") {
 }
 
 TEST_CASE("Account trie around extension node") {
-    const Account account_one_ether{0, 1 * kEther};
+    const AccountEncodable account_one_ether{0, 1 * kEther};
 
     const std::vector<evmc::bytes32> keys{
         0x30af561000000000000000000000000000000000000000000000000000000000_bytes32,
@@ -673,7 +675,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
     // ------------------------------------------------------------------------------
 
     // Start with 3n accounts at genesis, each holding 1 ETH
-    const Account one_eth{0, 1 * kEther};
+    const AccountEncodable one_eth{0, 1 * kEther};
     for (size_t i{0}, e{3 * n}; i < e; ++i) {
         const evmc::address address{int_to_address(i)};
         const auto hash{keccak256(address)};
@@ -684,7 +686,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
     (void)regenerate_intermediate_hashes(txn, context.dir().temp().path());
 
     // Double the balance of the first third of the accounts
-    const Account two_eth{0, 2 * kEther};
+    const AccountEncodable two_eth{0, 2 * kEther};
     for (size_t i{0}; i < n; ++i) {
         const evmc::address address{int_to_address(i)};
         const auto hash{keccak256(address)};
@@ -766,14 +768,14 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
     const uint64_t incarnation1{3};
     const uint64_t incarnation2{1};
 
-    const Account account1{
+    const AccountEncodable account1{
         5,                                                                           // nonce
         7 * kEther,                                                                  // balance
         0x5e3c5ae99a1c6785210d0d233641562557ad763e18907cca3a8d42bd0a0b4ecb_bytes32,  // code_hash
         incarnation1,                                                                // incarnation
     };
 
-    const Account account2{
+    const AccountEncodable account2{
         1,                                                                           // nonce
         13 * kEther,                                                                 // balance
         0x3a9c1d84e48734ae951e023197bda6d03933a4ca44124a2a544e227aa93efe75_bytes32,  // code_hash

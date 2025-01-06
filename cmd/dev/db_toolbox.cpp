@@ -44,6 +44,7 @@
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/infra/cli/common.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -53,8 +54,6 @@
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
-
-#include "../common/common.hpp"
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -1461,10 +1460,10 @@ void do_freeze(EnvConfig& config, const DataDirectory& data_dir, bool keep_block
         config,
         data_dir.snapshots().path(),
     };
-    StageSchedulerAdapter stage_scheduler{data_store.chaindata_rw()};
+    StageSchedulerAdapter stage_scheduler{data_store.chaindata().access_rw()};
 
     Freezer freezer{
-        data_store.chaindata(),
+        data_store.chaindata().access_ro(),
         data_store.ref().blocks_repository,
         stage_scheduler,
         data_dir.temp().path(),

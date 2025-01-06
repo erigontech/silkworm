@@ -35,7 +35,7 @@ class ExecutionProcessor {
     ExecutionProcessor(const ExecutionProcessor&) = delete;
     ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-    ExecutionProcessor(const Block& block, protocol::RuleSet& rule_set, State& state, const ChainConfig& config);
+    ExecutionProcessor(const Block& block, protocol::RuleSet& rule_set, State& state, const ChainConfig& config, bool evm1_v2);
 
     /**
      * Execute a transaction, but do not write to the DB yet.
@@ -86,6 +86,10 @@ class ExecutionProcessor {
     protocol::RuleSet& rule_set_;
     EVM evm_;
     evmone::state::BlockInfo evm1_block_;
+
+    //! Execute transactions using evmone APIv2 only and apply the result state diff to the state.
+    //! TODO: This flag currently has no effect.
+    bool evm1_v2_ = false;
 };
 
 }  // namespace silkworm

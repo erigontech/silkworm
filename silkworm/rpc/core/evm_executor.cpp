@@ -26,7 +26,6 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
-#include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
@@ -267,18 +266,18 @@ ExecutionResult EVMExecutor::call_with_receipt(
 
     const auto exec_result = call(block, txn, tracers, refund, gas_bailout);
 
-    const auto& logs = execution_processor_.intra_block_state().logs();
+    auto& logs = execution_processor_.intra_block_state().logs();
 
     receipt.success = exec_result.success();
     receipt.bloom = logs_bloom(logs);
     receipt.gas_used = txn.gas_limit - exec_result.gas_left;
-    receipt.type = static_cast<uint8_t>(txn.type);
-    for (const auto& log : logs) {
+    receipt.type = txn.type;
+    for (auto& log : logs) {
         Log rpc_log;
         rpc_log.address = log.address;
-        rpc_log.data = log.data;
-        rpc_log.topics = log.topics;
-        receipt.logs.push_back(rpc_log);
+        rpc_log.data = std::move(log.data);
+        rpc_log.topics = std::move(log.topics);
+        receipt.logs.push_back(std::move(rpc_log));
     }
 
     SILK_DEBUG << "EVMExecutor::call call_result: " << exec_result.error_message() << " #data: " << exec_result.data.size() << " end";
@@ -292,13 +291,14 @@ Task<ExecutionResult> EVMExecutor::call(
     WorkerPool& workers,
     const silkworm::Block& block,
     const silkworm::Transaction& txn,
+    const TxnId txn_id,
     StateFactory state_factory,
     const Tracers& tracers,
     bool refund,
     bool gas_bailout) {
     auto this_executor = co_await boost::asio::this_coro::executor;
     const auto execution_result = co_await async_task(workers.executor(), [&]() -> ExecutionResult {
-        auto state = state_factory(this_executor, block.header.number, chain_storage);
+        auto state = state_factory(this_executor, txn_id, chain_storage);
         EVMExecutor executor{block, config, workers, state};
         return executor.call(block, txn, tracers, refund, gas_bailout);
     });

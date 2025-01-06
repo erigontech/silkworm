@@ -97,6 +97,7 @@ void MergeRuleSet::initialize(EVM& evm) {
         system_txn.data = Bytes{ByteView{*header.parent_beacon_block_root}};
         system_txn.set_sender(kSystemAddress);
         evm.execute(system_txn, kSystemCallGasLimit);
+        evm.state().destruct_touched_dead();
     }
 
     if (evm.revision() >= EVMC_PRAGUE) {
@@ -107,6 +108,7 @@ void MergeRuleSet::initialize(EVM& evm) {
         system_txn.data = Bytes{ByteView{header.parent_hash}};
         system_txn.set_sender(kSystemAddress);
         evm.execute(system_txn, kSystemCallGasLimit);
+        evm.state().destruct_touched_dead();
     }
 }
 
@@ -122,6 +124,7 @@ ValidationResult MergeRuleSet::finalize(IntraBlockState& state, const Block& blo
         for (const Withdrawal& w : *block.withdrawals) {
             const auto amount_in_wei{intx::uint256{w.amount} * intx::uint256{kGiga}};
             state.add_to_balance(w.address, amount_in_wei);
+            state.destruct_touched_dead();
         }
     }
 

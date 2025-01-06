@@ -16,7 +16,7 @@
 
 include(${CMAKE_CURRENT_LIST_DIR}/compiler_settings_sanitize.cmake)
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+if(MSVC)
 
   message("MSVC_VERSION = ${MSVC_VERSION}")
   message("MSVC_CXX_ARCHITECTURE_ID = ${MSVC_CXX_ARCHITECTURE_ID}")

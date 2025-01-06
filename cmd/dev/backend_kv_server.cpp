@@ -33,7 +33,10 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/chain_head.hpp>
+#include <silkworm/db/cli/db_max_readers_option.hpp>
 #include <silkworm/db/datastore/kvdb/mdbx.hpp>
+#include <silkworm/infra/cli/common.hpp>
+#include <silkworm/infra/cli/shutdown_signal.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
@@ -45,10 +48,6 @@
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/multi_sentry_client.hpp>
 #include <silkworm/sentry/session_sentry_client.hpp>
-
-#include "../common/common.hpp"
-#include "../common/db_max_readers_option.hpp"
-#include "../common/shutdown_signal.hpp"
 
 using namespace silkworm;
 using namespace silkworm::cmd::common;

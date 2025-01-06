@@ -26,6 +26,7 @@
 #include <silkworm/db/datastore/kvdb/bitmap.hpp>
 #include <silkworm/db/prune_mode.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
@@ -571,7 +572,7 @@ TEST_CASE("Account history", "[db][access_layer]") {
     // Account change set for block_num
     Bytes acs_key{block_key(block_num)};
     Bytes acs_data{ByteView{account_address}};
-    acs_data.append(account.encode_for_storage());
+    acs_data.append(state::AccountCodec::encode_for_storage(account));
     acs_cursor->upsert(to_slice(acs_key), to_slice(acs_data));
 
     Bytes ah_key{account_history_key(account_address, UINT64_MAX)};

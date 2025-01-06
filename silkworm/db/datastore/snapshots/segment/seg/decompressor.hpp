@@ -202,7 +202,7 @@ class Decompressor {
         //! Extract one *compressed* word from current offset in the file and append it to buffer
         //! After extracting current word, move at the beginning of the next one
         //! @return the next word position
-        uint64_t next(Bytes& buffer);
+        uint64_t next_compressed(Bytes& buffer);
 
         //! Extract one *uncompressed* word from current offset in the file and append it to buffer
         //! After extracting current word, move at the beginning of the next one
@@ -211,7 +211,7 @@ class Decompressor {
 
         //! Move at the offset of the next *compressed* word skipping current one
         //! @return the next word position
-        uint64_t skip();
+        uint64_t skip_compressed();
 
         //! Move at the offset of the next *uncompressed* word skipping current one
         //! @return the next word position
@@ -219,7 +219,7 @@ class Decompressor {
 
         //! Move at the offset of the next word skipping current one using skip() or skip_uncompressed() as necessary
         //! @return the next word position
-        uint64_t skip_auto();
+        uint64_t skip();
 
         //! Reset to the specified offset in the data stream
         void reset(uint64_t data_offset);

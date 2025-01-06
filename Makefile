@@ -27,6 +27,6 @@ run_smoke_tests:
 	@cmake/run_smoke_tests.sh $(SILKWORM_BUILD_DIR)
 
 run_unit_tests:
-	@cmake/run_unit_tests.sh $(SILKWORM_BUILD_DIR) $(SILKWORM_CLANG_COVERAGE)
+	@cmake/run_unit_tests.sh $(SILKWORM_BUILD_DIR) $(SILKWORM_CLANG_COVERAGE) $(SILKWORM_SANITIZE) $(SILKWORM_PROJECT_DIR)
 
 test: run_smoke_tests run_unit_tests

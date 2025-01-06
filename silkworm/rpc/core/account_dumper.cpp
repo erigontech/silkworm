@@ -24,6 +24,7 @@
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/db/kv/state_reader.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
@@ -78,7 +79,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
             break;
         }
 
-        auto account{Account::from_encoded_storage_v3(value->second)};
+        auto account{db::state::AccountCodec::from_encoded_storage_v3(value->second)};
         success_or_throw(account);
 
         dump_account.balance = account->balance;

@@ -92,6 +92,7 @@ class EVMExecutor {
         WorkerPool& workers,
         const silkworm::Block& block,
         const silkworm::Transaction& txn,
+        TxnId txnId,
         StateFactory state_factory,
         const Tracers& tracers = {},
         bool refund = true,
@@ -103,7 +104,7 @@ class EVMExecutor {
           workers_{workers},
           state_{std::move(state)},
           rule_set_{protocol::rule_set_factory(config)},
-          execution_processor_{block, *rule_set_, *state_, config} {
+          execution_processor_{block, *rule_set_, *state_, config, false} {
         SILKWORM_ASSERT(rule_set_);
         if (!has_service<AnalysisCacheService>(workers_)) {
             make_service<AnalysisCacheService>(workers_);
@@ -131,15 +132,7 @@ class EVMExecutor {
 
     void reset();
 
-    const IntraBlockState& intra_block_state() const { return execution_processor_.intra_block_state(); }
-
   private:
-    struct PreCheckResult {
-        std::string pre_check_error;
-        PreCheckErrorCode pre_check_error_code;
-    };
-    static std::optional<PreCheckResult> pre_check(const EVM& evm, const silkworm::Transaction& txn,
-                                                   const intx::uint256& base_fee_per_gas, const intx::uint128& g0);
     const silkworm::ChainConfig& config_;
     WorkerPool& workers_;
     std::shared_ptr<State> state_;

@@ -44,7 +44,7 @@ KVSegmentFileReader::Iterator& KVSegmentFileReader::Iterator::operator++() {
         if (decoder) {
             ++it_;
         } else {
-            it_.skip_auto();
+            it_.skip();
         }
 
         if (has_next) {
@@ -64,7 +64,7 @@ KVSegmentFileReader::Iterator& KVSegmentFileReader::Iterator::operator++() {
 KVSegmentFileReader::Iterator& KVSegmentFileReader::Iterator::operator+=(size_t count) {
     count *= 2;
     while ((count > 2) && it_.has_next()) {
-        it_.skip_auto();
+        it_.skip();
         --count;
     }
     if (count >= 2) {
@@ -98,7 +98,7 @@ KVSegmentFileReader::Iterator KVSegmentFileReader::begin(std::shared_ptr<Decoder
         value_decoder->decode_word(*it);
         value_decoder->check_sanity_with_metadata(path_);
     } else {
-        it.skip_auto();
+        it.skip();
     }
 
     return KVSegmentFileReader::Iterator{std::move(it), std::move(key_decoder), std::move(value_decoder), path()};
@@ -140,7 +140,7 @@ KVSegmentFileReader::Iterator KVSegmentFileReader::seek(
         value_decoder->decode_word(*it);
         value_decoder->check_sanity_with_metadata(path_);
     } else {
-        it.skip_auto();
+        it.skip();
     }
 
     return KVSegmentFileReader::Iterator{std::move(it), std::move(key_decoder), std::move(value_decoder), path()};

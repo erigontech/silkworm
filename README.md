@@ -98,7 +98,7 @@ or AppleClang ([Xcode](https://developer.apple.com/xcode/) >= 15)
 
 Conan requires Python, and can be installed using:
 
-    pip3 install --user conan==1.64.1 chardet
+    pip3 install --user conan==2.10.2 chardet
 
 On Linux the conan binary gets installed into `$HOME/.local/bin` which is typically in PATH already.
 On macOS need to add the binary to PATH manually:
@@ -122,9 +122,7 @@ will use "debug" configuration builds of dependencies.
 
 See available profiles in [cmake/profiles](cmake/profiles).
 
-The conan packages could also be pre-installed using [conan install](https://docs.conan.io/1/reference/commands/consumer/install.html):
-
-    conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/macos_arm64_clang_13_debug .
+During the cmake configuration step `conan_provider.cmake` runs a [conan install](https://docs.conan.io/2/reference/commands/install.html) command that downloads packages and builds some of them from source if needed. The exact arguments to this command are printed in the build log.
 
 
 Then run the build itself

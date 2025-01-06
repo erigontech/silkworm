@@ -37,8 +37,10 @@ class TriggersStage : public Stage, public datastore::StageScheduler {
 
     bool stop() override;
 
-  private:
+  protected:
     boost::asio::io_context ioc_;
+
+  private:
     db::RWTxn* current_tx_{};
 };
 

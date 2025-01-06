@@ -21,8 +21,8 @@
 
 #include <boost/signals2.hpp>
 
+#include "common/step.hpp"
 #include "data_migration.hpp"
-#include "snapshots/common/step.hpp"
 #include "snapshots/snapshot_repository.hpp"
 #include "snapshots/snapshot_size.hpp"
 
@@ -36,7 +36,7 @@ class SnapshotMerger : public DataMigration {
         : snapshots_(snapshots),
           tmp_dir_path_(std::move(tmp_dir_path)) {}
 
-    boost::signals2::scoped_connection on_snapshot_merged(const std::function<void(snapshots::StepRange)>& callback);
+    boost::signals2::scoped_connection on_snapshot_merged(const std::function<void(StepRange)>& callback);
 
   private:
     static constexpr size_t kBatchSize = 10;
@@ -51,7 +51,7 @@ class SnapshotMerger : public DataMigration {
 
     snapshots::SnapshotRepository& snapshots_;
     std::filesystem::path tmp_dir_path_;
-    boost::signals2::signal<void(snapshots::StepRange)> on_snapshot_merged_signal_;
+    boost::signals2::signal<void(StepRange)> on_snapshot_merged_signal_;
 };
 
 }  // namespace silkworm::datastore

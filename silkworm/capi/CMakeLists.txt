@@ -31,35 +31,31 @@ set(PRIVATE_LIBS
     silkworm_rpcdaemon
 )
 
-# Temporarily skip unit test runner for silkworm_capi target in ASAN build (failures after PR #1879)
-if(SILKWORM_SANITIZE)
-  set(NO_TEST "NO_TEST")
-endif()
-
 # cmake-format: off
 silkworm_library(
   ${TARGET}
   PUBLIC ${PUBLIC_LIBS}
   PRIVATE ${PRIVATE_LIBS}
   TYPE SHARED
-  ${NO_TEST}
+  NO_TEST
 )
 # cmake-format: on
 
-if(NOT NO_TEST)
-  target_link_libraries(
-    silkworm_capi_test
-    PRIVATE silkworm_core
-            silkworm_db
-            silkworm_infra
-            silkworm_rpcdaemon
-            silkworm_node
-            silkworm_db_test_util
-  )
-endif()
+# cmake-format: off
+# unit tests and cmd will use a static library version
+# to avoid ODR violations when identical symbols are mixed into both .dll and .exe
+silkworm_library(
+  ${TARGET}_static
+  PUBLIC ${PUBLIC_LIBS}
+  PRIVATE ${PRIVATE_LIBS}
+  TYPE STATIC
+)
+# cmake-format: on
 
 # Remove custom stack_size linker option for this target
 get_target_property(LINK_OPTIONS ${TARGET} LINK_OPTIONS)
 list(REMOVE_ITEM LINK_OPTIONS "-Wl,-stack_size")
 list(REMOVE_ITEM LINK_OPTIONS "-Wl,${SILKWORM_STACK_SIZE}")
 set_target_properties(${TARGET} PROPERTIES LINK_OPTIONS "${LINK_OPTIONS}")
+
+target_link_libraries(silkworm_capi_static_test PRIVATE silkworm_db_test_util silkworm_node)

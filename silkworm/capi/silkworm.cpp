@@ -56,6 +56,8 @@
 #include <silkworm/node/execution/block/block_executor.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/kv/remote_database.hpp>
+#include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/rpc/daemon.hpp>
 
 #include "common.hpp"
 #include "instance.hpp"
@@ -621,9 +623,13 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
     try {
         // Wrap MDBX env into an internal *unmanaged* env, i.e. MDBX env is only used but its lifecycle is untouched
         datastore::kvdb::EnvUnmanaged unmanaged_env{mdbx_env};
-        datastore::kvdb::RWAccess rw_access{unmanaged_env};
-        auto txn = rw_access.start_rw_tx();
         const auto env_path = unmanaged_env.get_path();
+        handle->chaindata = std::make_unique<datastore::kvdb::DatabaseUnmanaged>(
+            db::DataStore::make_chaindata_database(std::move(unmanaged_env)));
+        auto& chaindata = *handle->chaindata;
+
+        datastore::kvdb::RWAccess rw_access = chaindata.access_rw();
+        auto txn = rw_access.start_rw_tx();
 
         db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->blocks_repository})};
         state_buffer.set_memory_limit(batch_size);
@@ -632,7 +638,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         [[maybe_unused]] auto _ = gsl::finally([&block_buffer] { block_buffer.terminate_and_release_all(); });
 
         db::DataStoreRef data_store{
-            rw_access,
+            chaindata.ref(),
             *handle->blocks_repository,
             *handle->state_repository,
         };
@@ -640,7 +646,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 
         BlockProvider block_provider{
             &block_buffer,
-            datastore::kvdb::ROAccess{unmanaged_env},
+            chaindata.access_ro(),
             std::move(data_model_factory),
             start_block,
             max_block,

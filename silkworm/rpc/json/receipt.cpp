@@ -35,7 +35,7 @@ void to_json(nlohmann::json& json, const Receipt& receipt) {
     } else {
         json["to"] = nlohmann::json{};
     }
-    json["type"] = to_quantity(receipt.type ? receipt.type.value() : 0);
+    json["type"] = to_quantity(static_cast<uint8_t>(receipt.type));
     json["gasUsed"] = to_quantity(receipt.gas_used);
     json["cumulativeGasUsed"] = to_quantity(receipt.cumulative_gas_used);
     json["effectiveGasPrice"] = to_quantity(receipt.effective_gas_price);

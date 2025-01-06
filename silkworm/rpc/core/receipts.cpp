@@ -32,13 +32,21 @@ namespace silkworm::rpc::core {
 
 using ethdb::walk;
 
-Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockWithHash& block_with_hash, const db::chain::ChainStorage& chain_storage, WorkerPool& workers) {
+static constexpr int kGasPerBlob = 0x20000;
+
+Task<Receipts> get_receipts(db::kv::api::Transaction& tx,
+                            const silkworm::BlockWithHash& block_with_hash,
+                            const db::chain::ChainStorage& chain_storage,
+                            WorkerPool& workers,
+                            bool extended_receipt_info) {
     if (block_with_hash.block.transactions.empty()) {
         co_return Receipts{};
     }
 
     const evmc::bytes32 block_hash = block_with_hash.hash;
-    uint64_t block_num = block_with_hash.block.header.number;
+    const BlockNum block_num = block_with_hash.block.header.number;
+
+    // Try to read receipts from storage, if not present regenerate them
     auto raw_receipts = co_await read_receipts(tx, block_num);
     if (!raw_receipts || raw_receipts->empty()) {
         raw_receipts = co_await generate_receipts(tx, block_with_hash.block, chain_storage, workers);
@@ -46,16 +54,21 @@ Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockW
             co_return Receipts{};
         }
     }
-
     auto& receipts = *raw_receipts;
-    auto& header = block_with_hash.block.header;
 
-    // Add derived fields to the receipts
-    auto& transactions = block_with_hash.block.transactions;
+    const auto& transactions = block_with_hash.block.transactions;
     SILK_DEBUG << "#transactions=" << block_with_hash.block.transactions.size() << " #receipts=" << receipts.size();
     if (transactions.size() != receipts.size()) {
-        throw std::runtime_error{"#transactions and #receipts do not match in read_receipts"};
+        throw std::runtime_error{"#transactions and #receipts do not match in get_receipts"};
     }
+
+    if (!extended_receipt_info) {
+        co_return receipts;
+    }
+
+    // Add derived fields to the receipts
+    const auto& header = block_with_hash.block.header;
+
     uint32_t log_index{0};
     for (size_t i{0}; i < receipts.size(); ++i) {
         // The tx hash can be calculated by the tx content itself
@@ -87,7 +100,7 @@ Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockW
 
         receipts[i].from = transactions[i].sender();
         receipts[i].to = transactions[i].to;
-        receipts[i].type = static_cast<uint8_t>(transactions[i].type);
+        receipts[i].type = transactions[i].type;
 
         // The derived fields of receipt are taken from block and transaction
         for (size_t j{0}; j < receipts[i].logs.size(); ++j) {
@@ -100,13 +113,13 @@ Task<Receipts> get_receipts(db::kv::api::Transaction& tx, const silkworm::BlockW
         }
     }
 
-    co_return *raw_receipts;
+    co_return receipts;
 }
 
 Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, BlockNum block_num) {
     const auto block_key = db::block_key(block_num);
     const auto data = co_await tx.get_one(db::table::kBlockReceiptsName, block_key);
-    SILK_TRACE << "read_raw_receipts data: " << silkworm::to_hex(data);
+    SILK_TRACE << "read_receipts data: " << silkworm::to_hex(data);
     if (data.empty()) {
         co_return std::nullopt;
     }
@@ -142,7 +155,8 @@ Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, BlockN
     co_return receipts;
 }
 
-Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx, const silkworm::Block& block,
+Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx,
+                                                const silkworm::Block& block,
                                                 const db::chain::ChainStorage& chain_storage,
                                                 WorkerPool& workers) {
     auto block_num = block.header.number;
@@ -152,10 +166,14 @@ Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx, co
 
     const auto chain_config = co_await chain_storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
-    const auto receipts = co_await async_task(workers.executor(), [&]() -> Receipts {
-        auto state = execution::StateFactory{tx}.create_state(current_executor, chain_storage, block_num - 1);
 
-        auto curr_state = execution::StateFactory{tx}.create_state(current_executor, chain_storage, block_num - 1);
+    execution::StateFactory state_factory{tx};
+    const auto txn_id = co_await state_factory.user_txn_id_at(block_num);
+
+    const auto receipts = co_await async_task(workers.executor(), [&]() -> Receipts {
+        auto state = state_factory.create_state(current_executor, chain_storage, txn_id);
+
+        auto curr_state = state_factory.create_state(current_executor, chain_storage, txn_id);
         EVMExecutor executor{block, chain_config, workers, state};
 
         Receipts rpc_receipts;

@@ -16,11 +16,13 @@
 
 #pragma once
 
+#include "kvdb/schema.hpp"
 #include "snapshots/schema.hpp"
 
 namespace silkworm::datastore {
 
 struct Schema {
+    kvdb::Schema kvdb;
     snapshots::Schema snapshots;
 };
 

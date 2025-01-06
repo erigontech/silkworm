@@ -14,12 +14,12 @@
    limitations under the License.
 ]]
 
-set(TARGET silkworm_infra_test_util)
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 find_package(Boost REQUIRED COMPONENTS headers)
 
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
-
-add_library(${TARGET} ${SRC})
-
-target_link_libraries(${TARGET} PUBLIC silkworm_infra Boost::headers)
+silkworm_library(
+  silkworm_infra_test_util
+  PUBLIC silkworm_infra Boost::headers
+  PRIVATE ""
+)

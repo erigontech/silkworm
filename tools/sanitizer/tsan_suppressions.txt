@@ -1,0 +1,5 @@
+# ThreadSanitizer suppressions file for project Silkworm.
+
+# MDBX is not compatible with ThreadSanitizer, see warning in mdbx.c:861
+# "libmdbx don't compatible with ThreadSanitizer, you will get a lot of false-positive issues."
+race:mdbx

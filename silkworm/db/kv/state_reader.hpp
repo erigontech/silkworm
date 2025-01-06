@@ -34,7 +34,7 @@ namespace silkworm::db::kv {
 
 class StateReader {
   public:
-    StateReader(kv::api::Transaction& tx, std::optional<BlockNum> block_num, std::optional<TxnId> txn_id = std::nullopt);
+    StateReader(kv::api::Transaction& tx, TxnId txn_id);
 
     StateReader(const StateReader&) = delete;
     StateReader& operator=(const StateReader&) = delete;
@@ -49,8 +49,7 @@ class StateReader {
 
   private:
     kv::api::Transaction& tx_;
-    std::optional<BlockNum> block_num_;
-    mutable std::optional<TxnId> txn_number_;
+    TxnId txn_number_;
 };
 
 }  // namespace silkworm::db::kv

@@ -40,13 +40,13 @@ Stage::Result TriggersStage::forward(db::RWTxn& tx) {
 }
 
 Task<void> TriggersStage::schedule(std::function<void(db::RWTxn&)> callback) {
-    auto task_caller = [this, c = std::move(callback)]() -> Task<void> {
-        db::RWTxn* tx = this->current_tx_;
+    auto task_caller = [](auto* self, auto trigger) -> Task<void> {
+        db::RWTxn* tx = self->current_tx_;
         SILKWORM_ASSERT(tx);
-        c(*tx);
+        trigger(*tx);
         co_return;
     };
-    return concurrency::spawn_task(ioc_, task_caller());
+    return concurrency::spawn_task(ioc_, task_caller(this, std::move(callback)));
 }
 
 bool TriggersStage::stop() {

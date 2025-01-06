@@ -14,28 +14,7 @@
    limitations under the License.
 ]]
 
-find_package(Catch2 REQUIRED)
 find_package(magic_enum REQUIRED)
-
-# Silkworm Core Tests
-file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
-if(SILKWORM_WASM_API)
-  # Stub clang exception handlers on WASM after Catch2 3.x due to https://github.com/WebAssembly/wasi-sdk/issues/329
-  add_executable(core_test "${SILKWORM_MAIN_SRC_DIR}/wasm/exception_handling_stub.cpp" ${SILKWORM_CORE_TESTS})
-  # Skip generation of RPATH linker option for wasm-ld present by default after building Catch2 v3.6.0 from sources
-  set_target_properties(core_test PROPERTIES SKIP_BUILD_RPATH TRUE)
-else()
-  add_executable(core_test ${SILKWORM_CORE_TESTS})
-endif()
-target_link_libraries(core_test silkworm_core Catch2::Catch2WithMain)
-
-if(SILKWORM_CORE_ONLY)
-  if(MSVC)
-    target_compile_options(core_test PRIVATE /EHa- /EHsc)
-  else()
-    target_compile_options(core_test PRIVATE -fno-exceptions)
-  endif()
-endif()
 
 if(NOT SILKWORM_CORE_ONLY)
 
@@ -80,9 +59,9 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(ethereum PRIVATE silkworm_infra evmc::loader CLI11::CLI11 magic_enum::magic_enum)
 
   # BE&KV Tests
-  add_executable(backend_kv_test "backend_kv_test.cpp" "../common/shutdown_signal.hpp" "../common/shutdown_signal.cpp")
-  target_link_libraries(backend_kv_test PRIVATE silkworm_node CLI11::CLI11 magic_enum::magic_enum)
+  add_executable(backend_kv_test backend_kv_test.cpp)
+  target_link_libraries(backend_kv_test PRIVATE silkworm_infra_cli silkworm_node CLI11::CLI11 magic_enum::magic_enum)
 
-  add_executable(sentry_client_test "sentry_client_test.cpp")
+  add_executable(sentry_client_test sentry_client_test.cpp)
   target_link_libraries(sentry_client_test PRIVATE silkworm_sentry)
 endif()

@@ -40,7 +40,7 @@ void InboundGetBlockHeaders::execute(db::DataStoreRef db, HeaderChain&, BodySequ
     if (bs.max_block_in_output() == 0)  // skip requests in the first sync even if we already saved some headers
         return;
 
-    datastore::kvdb::ROTxnManaged tx = db.chaindata.start_ro_tx();
+    datastore::kvdb::ROTxnManaged tx = db.chaindata.access_ro().start_ro_tx();
     db::DataModel data_model{tx, db.blocks_repository};
     HeaderRetrieval header_retrieval(data_model);
 

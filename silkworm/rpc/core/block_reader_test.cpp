@@ -152,7 +152,8 @@ TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
     SECTION("block_num in dec") {
         static const std::string kBlockIdDec = "67890";
         auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kBlockIdDec, /*latest_required=*/false), boost::asio::use_future);
-        REQUIRE_THROWS(result.get());
+        auto [block_num, ignore] = result.get();
+        CHECK(block_num == 67890);
     }
 
     SECTION("block_num in hex & latest true") {

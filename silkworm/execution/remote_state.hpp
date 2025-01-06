@@ -39,9 +39,8 @@ class AsyncRemoteState {
     explicit AsyncRemoteState(
         db::kv::api::Transaction& tx,
         const db::chain::ChainStorage& storage,
-        std::optional<BlockNum> block_num,
-        std::optional<TxnId> txn_id = std::nullopt)
-        : storage_(storage), state_reader_(tx, block_num ? *block_num + 1 : block_num, txn_id) {}
+        TxnId txn_id)
+        : storage_(storage), state_reader_(tx, txn_id) {}
 
     Task<std::optional<Account>> read_account(const evmc::address& address) const noexcept;
 
@@ -76,8 +75,8 @@ class RemoteState : public State {
         boost::asio::any_io_executor& executor,
         db::kv::api::Transaction& tx,
         const db::chain::ChainStorage& storage,
-        std::optional<BlockNum> block_num, std::optional<TxnId> txn_id = std::nullopt)
-        : executor_(executor), async_state_{tx, storage, block_num, txn_id} {}
+        TxnId txn_id)
+        : executor_(executor), async_state_{tx, storage, txn_id} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 

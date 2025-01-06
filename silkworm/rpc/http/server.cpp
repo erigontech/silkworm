@@ -108,11 +108,4 @@ Task<void> Server::run() {
     SILK_DEBUG << "Server::run exiting...";
 }
 
-void Server::stop() {
-    // The server is stopped by cancelling all outstanding asynchronous operations.
-    SILK_DEBUG << "Server::stop started...";
-    acceptor_.close();
-    SILK_DEBUG << "Server::stop completed";
-}
-
 }  // namespace silkworm::rpc::http

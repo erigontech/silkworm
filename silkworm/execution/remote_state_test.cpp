@@ -54,8 +54,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             .WillRepeatedly(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
-        const BlockNum block_num = 1'000'000;
-        AsyncRemoteState state{transaction, chain_storage, block_num, std::nullopt};
+        const TxnId txn_id = 244087591818874;
+        AsyncRemoteState state{transaction, chain_storage, txn_id};
         const auto code_read{spawn_and_wait(state.read_code(address, kEmptyHash))};
         CHECK(code_read.empty());
     }
@@ -73,8 +73,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             co_return response;
         }));
 
-        const BlockNum block_num = 1'000'000;
-        AsyncRemoteState state{transaction, chain_storage, block_num};
+        const TxnId txn_id = 244087591818874;
+        AsyncRemoteState state{transaction, chain_storage, txn_id};
         const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         const auto code_read{spawn_and_wait(state.read_code(address, code_hash))};
         CHECK(code_read == ByteView{kCode});
@@ -101,9 +101,6 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("read_storage with empty response from db") {
-        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
-            co_return 0;
-        }));
         EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
@@ -280,8 +277,8 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 .value = Bytes{}};
             co_return response;
         }));
-        const BlockNum block_num = 1'000'000;
-        AsyncRemoteState state{transaction, chain_storage, block_num};
+        const TxnId txn_id = 244087591818874;
+        AsyncRemoteState state{transaction, chain_storage, txn_id};
         const auto account_read{spawn_and_wait(state.read_account(address))};
         CHECK(account_read == std::nullopt);
     }
@@ -296,9 +293,9 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 .value = Bytes{}};
             co_return response;
         }));
-        const BlockNum block_num = 1'000'000;
+        const TxnId txn_id = 244087591818874;
+        AsyncRemoteState state{transaction, chain_storage, txn_id};
         const evmc::bytes32 code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        AsyncRemoteState state{transaction, chain_storage, block_num};
         const auto code_read{spawn_and_wait(state.read_code(address, code_hash))};
         CHECK(code_read.empty());
     }
@@ -313,16 +310,16 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
                 .value = Bytes{}};
             co_return response;
         }));
-        const BlockNum block_num = 1'000'000;
         const evmc::bytes32 location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        AsyncRemoteState state{transaction, chain_storage, block_num};
+        const TxnId txn_id = 244087591818874;
+        AsyncRemoteState state{transaction, chain_storage, txn_id};
         const auto storage_read{spawn_and_wait(state.read_storage(address, 0, location))};
         CHECK(storage_read == 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32);
     }
 
     SECTION("AsyncRemoteState::previous_incarnation returns ok") {
-        const BlockNum block_num = 1'000'000;
-        AsyncRemoteState state{transaction, chain_storage, block_num};
+        const TxnId txn_id = 244087591818874;
+        AsyncRemoteState state{transaction, chain_storage, txn_id};
         const auto prev_incarnation{spawn_and_wait(state.previous_incarnation(address))};
         CHECK(prev_incarnation == 0);
     }
@@ -335,16 +332,17 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("AsyncRemoteState::current_canonical_block returns ok") {
-        const BlockNum block_num = 1'000'000;
-        AsyncRemoteState state{transaction, chain_storage, block_num};
+        const TxnId txn_id = 244087591818874;
+        AsyncRemoteState state{transaction, chain_storage, txn_id};
         const auto current_canonical_block{spawn_and_wait(state.current_canonical_block())};
         CHECK(current_canonical_block == 0);
     }
 
     SECTION("AsyncRemoteState::total_difficulty with empty response from chain storage") {
+        const TxnId txn_id = 244087591818874;
         const BlockNum block_num = 1'000'000;
+        AsyncRemoteState state{transaction, chain_storage, txn_id};
         const Hash block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        AsyncRemoteState state{transaction, chain_storage, block_num};
         EXPECT_CALL(chain_storage, read_total_difficulty(block_hash, block_num))
             .WillOnce(Invoke([](Unused, Unused) -> Task<std::optional<intx::uint256>> { co_return std::nullopt; }));
         const auto total_difficulty{spawn_and_wait(state.total_difficulty(block_num, block_hash))};
@@ -352,9 +350,10 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("AsyncRemoteState::read_header with empty response from chain storage") {
+        const TxnId txn_id = 244087591818874;
         const BlockNum block_num = 1'000'000;
+        AsyncRemoteState state{transaction, chain_storage, txn_id};
         const Hash block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        AsyncRemoteState state{transaction, chain_storage, block_num};
         EXPECT_CALL(chain_storage, read_header(block_num, block_hash))
             .WillOnce(Invoke([](Unused, Unused) -> Task<std::optional<BlockHeader>> { co_return std::nullopt; }));
         const auto block_header{spawn_and_wait(state.read_header(block_num, block_hash))};
@@ -362,9 +361,10 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("AsyncRemoteState::read_body with empty response from from chain storage") {
-        const BlockNum block_num = 1'000'000;
         const Hash block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        AsyncRemoteState state{transaction, chain_storage, block_num};
+        const TxnId txn_id = 244087591818874;
+        const BlockNum block_num = 1'000'000;
+        AsyncRemoteState state{transaction, chain_storage, txn_id};
         BlockBody body;
         EXPECT_CALL(chain_storage, read_body(block_hash, block_num, body))
             .WillOnce(Invoke([](Unused, Unused, Unused) -> Task<bool> { co_return true; }));
@@ -378,10 +378,11 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
             .WillRepeatedly(InvokeWithoutArgs([=]() -> Task<Bytes> {
                 co_return Bytes{};
             }));
+        const TxnId txn_id = 244087591818874;
         const BlockNum block_num = 1'000'000;
         EXPECT_CALL(chain_storage, read_canonical_header_hash(block_num))
             .WillOnce(Invoke([](Unused) -> Task<std::optional<Hash>> { co_return std::nullopt; }));
-        AsyncRemoteState state{transaction, chain_storage, block_num};
+        AsyncRemoteState state{transaction, chain_storage, txn_id};
         const auto canonical_hash{spawn_and_wait(state.canonical_hash(block_num))};
         CHECK(canonical_hash == std::nullopt);
     }

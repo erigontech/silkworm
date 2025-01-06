@@ -69,8 +69,8 @@ std::optional<SnapshotPath> SnapshotPath::parse(
         return std::nullopt;
     }
     StepRange step_range{
-        Step{static_cast<size_t>(step_start)},
-        Step{static_cast<size_t>(step_end)},
+        datastore::Step{static_cast<size_t>(step_start)},
+        datastore::Step{static_cast<size_t>(step_end)},
     };
 
     std::optional<std::string> sub_dir_name;

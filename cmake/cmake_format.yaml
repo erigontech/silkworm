@@ -15,6 +15,13 @@ parse:
         PUBLIC: '*'
         PRIVATE: '*'
         TYPE: '*'
+    execute_process:
+      flags:
+        - OUTPUT_STRIP_TRAILING_WHITESPACE
+      kwargs:
+        COMMAND_ERROR_IS_FATAL: '*'
+        RESULT_VARIABLE: '*'
+        OUTPUT_VARIABLE: '*'
 
 format:
   line_width: 120

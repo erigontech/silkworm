@@ -40,7 +40,7 @@ void InboundGetBlockBodies::execute(db::DataStoreRef db, HeaderChain&, BodySeque
     if (bs.max_block_in_output() == 0)
         return;
 
-    datastore::kvdb::ROTxnManaged tx = db.chaindata.start_ro_tx();
+    datastore::kvdb::ROTxnManaged tx = db.chaindata.access_ro().start_ro_tx();
     BodyRetrieval body_retrieval{tx};
 
     BlockBodiesPacket66 reply;

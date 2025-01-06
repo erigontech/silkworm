@@ -138,7 +138,7 @@ int Daemon::run(const DaemonSettings& settings) {
             });
 
             // At startup check that chain configuration is valid
-            datastore::kvdb::ROTxnManaged ro_txn = data_store->chaindata().start_ro_tx();
+            datastore::kvdb::ROTxnManaged ro_txn = data_store->chaindata().access_ro().start_ro_tx();
             db::DataModel data_access = db::DataModelFactory{data_store->ref()}(ro_txn);
             if (const auto chain_config{data_access.read_chain_config()}; !chain_config) {
                 throw std::runtime_error{"invalid chain configuration"};
@@ -353,7 +353,7 @@ void Daemon::start() {
     // Put the interface logs into the data folder
     std::filesystem::path data_folder{};
     if (data_store_) {
-        datastore::kvdb::RWAccess& chaindata = data_store_->chaindata;
+        datastore::kvdb::RWAccess chaindata = data_store_->chaindata.access_rw();
         mdbx::env& chaindata_env = *chaindata;
         auto chaindata_path = chaindata_env.get_path();
         // Trick to remove any empty filename because MDBX chaindata path ends with '/'
@@ -399,10 +399,6 @@ void Daemon::stop() {
     state_changes_stream_->close();
 
     context_pool_.stop();
-
-    for (auto& service : rpc_services_) {
-        service->stop();
-    }
 }
 
 void Daemon::join() {

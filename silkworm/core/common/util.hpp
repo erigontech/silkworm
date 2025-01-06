@@ -58,6 +58,11 @@ inline bool is_valid_hex(std::string_view s) {
     return std::regex_match(s.data(), kHexRegex);
 }
 
+inline bool is_valid_dec(std::string_view s) {
+    static const std::regex kHexRegex("^[0-9]+$");
+    return std::regex_match(s.data(), kHexRegex);
+}
+
 inline bool is_valid_hash(std::string_view s) {
     if (s.length() != 2 + kHashLength * 2) {
         return false;

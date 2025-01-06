@@ -16,23 +16,11 @@
 
 #pragma once
 
-#include <optional>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 
-#include <silkworm/core/common/bytes.hpp>
-#include <silkworm/core/common/bytes_to_string.hpp>
-#include <silkworm/core/common/util.hpp>
-
 namespace silkworm::test_util {
 
-inline std::string ascii_from_hex(std::string_view hex) {
-    const std::optional<Bytes> bytes{from_hex(hex)};
-    if (!bytes) {
-        throw std::runtime_error{"ascii_from_hex"};
-    }
-    return std::string{byte_view_to_string_view(*bytes)};
-}
+std::string ascii_from_hex(std::string_view hex);
 
 }  // namespace silkworm::test_util

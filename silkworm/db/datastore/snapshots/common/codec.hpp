@@ -44,4 +44,8 @@ concept DecoderConcept =
     std::derived_from<TDecoder, Decoder> &&
     requires(TDecoder decoder) { decoder.value; };
 
+struct Codec : public Encoder, public Decoder {
+    ~Codec() override = default;
+};
+
 }  // namespace silkworm::snapshots

@@ -131,7 +131,7 @@ TEST_CASE("decode receipts from CBOR 1", "[rpc][ethdb][cbor]") {
     Receipts receipts{};
     CHECK_NOTHROW(cbor_decode(*silkworm::from_hex("818400f60101"), receipts));
     CHECK(receipts.size() == 1);
-    CHECK(receipts[0].type == 0);
+    CHECK(receipts[0].type == TransactionType::kLegacy);
     CHECK(receipts[0].success == 1);
     CHECK(receipts[0].cumulative_gas_used == 1);
 }
@@ -144,10 +144,10 @@ TEST_CASE("decode receipts from CBOR 2", "[rpc][ethdb][cbor]") {
                                   "8400f60101"),
                               receipts));
     CHECK(receipts.size() == 2);
-    CHECK(receipts[0].type == 0);
+    CHECK(receipts[0].type == TransactionType::kLegacy);
     CHECK(receipts[0].success == 1);
     CHECK(receipts[0].cumulative_gas_used == 1);
-    CHECK(receipts[1].type == 0);
+    CHECK(receipts[1].type == TransactionType::kLegacy);
     CHECK(receipts[1].success == 1);
     CHECK(receipts[1].cumulative_gas_used == 1);
 }

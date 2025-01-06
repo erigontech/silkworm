@@ -44,6 +44,26 @@ snapshots::Schema::RepositoryDef make_state_repository_schema() {
     return schema;
 }
 
+datastore::kvdb::Schema::DatabaseDef make_state_database_schema() {
+    datastore::kvdb::Schema::DatabaseDef schema;
+
+    schema.domain(kDomainNameAccounts);
+    schema.domain(kDomainNameStorage);
+    schema.domain(kDomainNameCode)
+        .enable_large_values()
+        .values_disable_multi_value();
+    schema.domain(kDomainNameCommitment)
+        .without_history();
+    schema.domain(kDomainNameReceipts);
+
+    schema.inverted_index(kInvIdxNameLogAddress);
+    schema.inverted_index(kInvIdxNameLogTopics);
+    schema.inverted_index(kInvIdxNameTracesFrom);
+    schema.inverted_index(kInvIdxNameTracesTo);
+
+    return schema;
+}
+
 std::unique_ptr<snapshots::IndexBuildersFactory> make_state_index_builders_factory() {
     return std::make_unique<StateIndexBuildersFactory>(make_state_repository_schema());
 }
@@ -53,7 +73,7 @@ snapshots::SnapshotRepository make_state_repository(std::filesystem::path dir_pa
         std::move(dir_path),
         open,
         make_state_repository_schema(),
-        std::make_unique<snapshots::StepToTxnIdConverter>(),
+        std::make_unique<datastore::StepToTxnIdConverter>(),
         make_state_index_builders_factory(),
     };
 }

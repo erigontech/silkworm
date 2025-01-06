@@ -25,6 +25,7 @@
 namespace silkworm::snapshots::segment {
 
 TEST_CASE("SegmentFile") {
+    using namespace datastore;
     TemporaryDirectory tmp_dir;
     auto path = SnapshotPath::make(tmp_dir.path(), std::nullopt, SnapshotPath::FilenameFormat::kE2, kSnapshotV1, StepRange{Step{0}, Step{1}}, "headers", ".seg");
 

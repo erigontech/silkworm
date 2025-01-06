@@ -72,20 +72,16 @@ Stage::Result BlockHashes::forward(db::RWTxn& txn) {
         txn.commit_and_renew();
 
     } catch (const mdbx::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
     } catch (const StageError& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<Stage::Result>(ex.err());
     } catch (const std::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kUnexpectedError;
     } catch (...) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", "undefined"});
         ret = Stage::Result::kUnexpectedError;
     }
 
@@ -122,20 +118,16 @@ Stage::Result BlockHashes::unwind(db::RWTxn& txn) {
         txn.commit_and_renew();
 
     } catch (const mdbx::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
     } catch (const StageError& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<Stage::Result>(ex.err());
     } catch (const std::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kUnexpectedError;
     } catch (...) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", "undefined"});
         ret = Stage::Result::kUnexpectedError;
     }
 
@@ -171,10 +163,11 @@ void BlockHashes::collect_and_load(db::RWTxn& txn, const BlockNum from, const Bl
     auto expected_block_num{from + 1};
     auto header_key{db::block_key(expected_block_num)};
     auto canon_hashes_cursor = txn.rw_cursor(db::table::kCanonicalHashes);
-    auto data{canon_hashes_cursor->find(datastore::kvdb::to_slice(header_key), /*throw_notfound=*/false)};
+    auto data = canon_hashes_cursor->find(datastore::kvdb::to_slice(header_key), /*throw_notfound=*/false);
     while (data.done) {
         reached_block_num_ = endian::load_big_u64(static_cast<uint8_t*>(data.key.data()));
         if (reached_block_num_ > to) {
+            --reached_block_num_;
             break;
         }
 

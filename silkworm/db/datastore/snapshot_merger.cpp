@@ -136,7 +136,7 @@ void SnapshotMerger::commit(std::shared_ptr<DataMigrationResult> result) {
     on_snapshot_merged_signal_(bundle.step_range());
 }
 
-boost::signals2::scoped_connection SnapshotMerger::on_snapshot_merged(const std::function<void(snapshots::StepRange)>& callback) {
+boost::signals2::scoped_connection SnapshotMerger::on_snapshot_merged(const std::function<void(StepRange)>& callback) {
     return on_snapshot_merged_signal_.connect(callback);
 }
 

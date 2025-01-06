@@ -14,9 +14,7 @@
    limitations under the License.
 ]]
 
-add_subdirectory(test_util)
-
-set(TARGET silkworm_infra)
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
@@ -27,18 +25,10 @@ find_package(GTest REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(spdlog REQUIRED)
 
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
-list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
-list(FILTER SRC EXCLUDE REGEX "_benchmark\\.cpp$")
-list(FILTER SRC EXCLUDE REGEX "test_util/")
-
-add_library(${TARGET} "${SRC}")
-
-target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
-
 set(LIBS_PUBLIC
     silkworm_core
     silkworm_interfaces
+    absl::log
     absl::strings
     asio-grpc::asio-grpc
     Boost::headers
@@ -56,14 +46,17 @@ set(LIBS_PRIVATE
 )
 # cmake-format: on
 
-target_link_libraries(
-  ${TARGET}
-  PUBLIC "${LIBS_PUBLIC}"
-  PRIVATE "${LIBS_PRIVATE}"
+silkworm_library(
+  silkworm_infra
+  PUBLIC ${LIBS_PUBLIC}
+  PRIVATE ${LIBS_PRIVATE}
 )
 
+# silkworm_infra_cli depends on silkworm_infra
+add_subdirectory(cli)
+
+# silkworm_infra_test_util depends on silkworm_infra
+add_subdirectory(test_util)
+
 # unit tests
-set(TEST_TARGET ${TARGET}_test)
-file(GLOB_RECURSE TEST_SRC CONFIGURE_DEPENDS "*_test.cpp")
-add_executable(${TEST_TARGET} ${TEST_SRC})
-target_link_libraries(${TEST_TARGET} PRIVATE ${TARGET} Catch2::Catch2WithMain GTest::gmock silkworm_infra_test_util)
+target_link_libraries(silkworm_infra_test PRIVATE GTest::gmock silkworm_infra_test_util)

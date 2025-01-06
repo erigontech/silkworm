@@ -100,7 +100,7 @@ HeadersStage::HeadersStage(
     const auto stop_at_block = Environment::get_stop_at_block();
     if (stop_at_block.has_value()) {
         forced_target_block_ = stop_at_block;
-        log::Info(log_prefix_) << "env var STOP_AT_BLOCK set, target block=" << forced_target_block_.value();
+        SILK_DEBUG_M(log_prefix_, {"target=", std::to_string(*forced_target_block_)}) << " env var STOP_AT_BLOCK set";
     }
 }
 

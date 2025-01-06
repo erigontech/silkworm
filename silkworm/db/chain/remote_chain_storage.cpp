@@ -19,12 +19,12 @@
 #include <utility>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
-
-#include "chain.hpp"
 
 namespace silkworm::db::chain {
 
@@ -201,17 +201,53 @@ Task<bool> RemoteChainStorage::read_rlp_transactions(BlockNum block_num, const e
     }
     rlp_txs.reserve(block.transactions.size());
     for (const auto& transaction : block.transactions) {
-        rlp::encode(rlp_txs.emplace_back(), transaction);
+        rlp::encode(rlp_txs.emplace_back(), transaction, /*wrap_eip2718_into_string=*/false);
     }
     co_return true;
 }
 
-Task<bool> RemoteChainStorage::read_rlp_transaction(const evmc::bytes32& /*txn_hash*/, Bytes& /*rlp_tx*/) const {
-    throw std::logic_error{"RemoteChainStorage::read_rlp_transaction not implemented"};
+Task<bool> RemoteChainStorage::read_rlp_transaction(const evmc::bytes32& txn_hash, Bytes& rlp_tx) const {
+    auto block_num = co_await providers_.block_num_from_txn_hash(txn_hash.bytes);
+    if (!block_num) {
+        co_return false;
+    }
+
+    const auto block_hash = co_await providers_.canonical_block_hash_from_number(*block_num);
+    if (!block_hash) {
+        co_return false;
+    }
+
+    Block block;
+    const bool success = co_await providers_.block(*block_num, block_hash->bytes, /*.read_senders=*/false, block);
+    if (!success) {
+        co_return false;
+    }
+    for (const auto& transaction : block.transactions) {
+        Bytes rlp;
+        if (transaction.hash() == txn_hash) {
+            rlp::encode(rlp, transaction, /*wrap_eip2718_into_string=*/false);
+            rlp_tx = rlp;
+            co_return true;
+        }
+    }
+    co_return false;
 }
 
 Task<std::optional<intx::uint256>> RemoteChainStorage::read_total_difficulty(const Hash& hash, BlockNum block_num) const {
-    co_return co_await db::chain::read_total_difficulty(tx_, hash, block_num);
+    const auto block_key = db::block_key(block_num, hash.bytes);
+    SILK_TRACE << "read_total_difficulty block_key: " << to_hex(block_key);
+    const auto result{co_await tx_.get_one(table::kDifficultyName, block_key)};
+    if (result.empty()) {
+        co_return std::nullopt;
+    }
+    ByteView value{result};
+    intx::uint256 total_difficulty{0};
+    auto decoding_result{rlp::decode(value, total_difficulty)};
+    if (!decoding_result) {
+        throw std::runtime_error{"cannot RLP-decode total difficulty value in read_total_difficulty"};
+    }
+    SILK_DEBUG << "read_total_difficulty canonical total difficulty: " << total_difficulty;
+    co_return total_difficulty;
 }
 
 Task<std::optional<BlockNum>> RemoteChainStorage::read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
@@ -231,6 +267,21 @@ Task<std::optional<Transaction>> RemoteChainStorage::read_transaction_by_idx_in_
         co_return std::nullopt;
     }
     co_return body.transactions[txn_id];
+}
+
+Task<std::pair<std::optional<BlockHeader>, std::optional<Hash>>> RemoteChainStorage::read_head_header_and_hash() const {
+    const auto value = co_await tx_.get_one(table::kHeadHeaderName, string_to_bytes(table::kHeadHeaderName));
+    if (value.empty()) {
+        throw std::runtime_error{"empty head header hash value in read_head_header_hash"};
+    }
+    const auto head_header_hash{to_bytes32(value)};
+    SILK_DEBUG << "head header hash: " << to_hex(head_header_hash);
+
+    auto header = co_await read_header(head_header_hash);
+
+    Hash header_hash{head_header_hash};
+
+    co_return std::pair{std::move(header), std::move(header_hash)};
 }
 
 }  // namespace silkworm::db::chain

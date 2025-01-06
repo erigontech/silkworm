@@ -30,6 +30,7 @@ namespace silkworm::rpc {
 
 struct Receipt {
     /* raw fields */
+    TransactionType type{TransactionType::kLegacy};  // EIP-2718
     bool success{false};
     uint64_t cumulative_gas_used{0};
     silkworm::Bloom bloom{};
@@ -44,10 +45,9 @@ struct Receipt {
     uint32_t tx_index{0};
     std::optional<evmc::address> from;
     std::optional<evmc::address> to;
-    std::optional<uint8_t> type{std::nullopt};  // EIP-2718
     intx::uint256 effective_gas_price{0};
-    std::optional<uint64_t> blob_gas_used{std::nullopt};          // EIP-4844
-    std::optional<intx::uint<256>> blob_gas_price{std::nullopt};  // EIP-4844
+    std::optional<uint64_t> blob_gas_used{std::nullopt};        // EIP-4844
+    std::optional<intx::uint256> blob_gas_price{std::nullopt};  // EIP-4844
 };
 
 std::ostream& operator<<(std::ostream& out, const Receipt& r);

@@ -4,15 +4,16 @@ set -e
 set -o pipefail
 
 clion="/Applications/CLion.app"
-clion_tidy="$clion/Contents/bin/clang/mac/aarch64/clang-tidy"
+clion_tidy="$clion/Contents/bin/clang/mac/aarch64/bin/clang-tidy"
 clion_builtin_includes="$clion/Contents/bin/lldb/mac/aarch64/LLDB.framework/Resources/Clang/include"
 
 function install_clion_tidy {
 	target_dir="$1"
+	version=$("$clion_tidy" --version | grep version | awk '{ print($NF) }' | cut -d '.' -f 1)
 	mkdir -p "$target_dir/bin"
 	cp "$clion_tidy" "$target_dir/bin"
-	mkdir -p "$target_dir/lib/clang/19"
-	cp -R "$clion_builtin_includes" "$target_dir/lib/clang/19"
+	mkdir -p "$target_dir/lib/clang/$version"
+	cp -R "$clion_builtin_includes" "$target_dir/lib/clang/$version"
 }
 
 script_dir=$(dirname "${BASH_SOURCE[0]}")

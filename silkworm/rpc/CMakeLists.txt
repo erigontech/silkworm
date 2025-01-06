@@ -16,8 +16,6 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
-add_subdirectory(test_util)
-
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
 find_package(Boost REQUIRED COMPONENTS headers container)
@@ -59,6 +57,12 @@ silkworm_library(
   PUBLIC ${SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES}
   PRIVATE ${SILKWORM_RPCDAEMON_PRIVATE_LIBRARIES}
 )
+
+# silkworm_rpcdaemon_cli depends on silkworm_rpcdaemon
+add_subdirectory(cli)
+
+# silkworm_rpcdaemon_test_util depends on silkworm_rpcdaemon
+add_subdirectory(test_util)
 
 target_link_libraries(
   silkworm_rpcdaemon_test PRIVATE silkworm_infra_test_util silkworm_rpcdaemon_test_util GTest::gmock

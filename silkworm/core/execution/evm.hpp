@@ -27,6 +27,7 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/common/object_pool.hpp>
 #include <silkworm/core/common/util.hpp>
@@ -62,8 +63,7 @@ class EvmTracer {
     virtual void on_pre_check_failed(const evmc_result& /*result*/, const evmc_message& /*msg*/) noexcept {};
     virtual void on_creation_completed(const evmc_result& /*result*/, const IntraBlockState& /*intra_block_state*/) noexcept {}
 
-    virtual void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/,
-                                    const IntraBlockState& /*intra_block_state*/) noexcept {}
+    virtual void on_precompiled_run(const evmc_result& /*result*/, const IntraBlockState& /*intra_block_state*/) noexcept {}
 
     virtual void on_reward_granted(const CallResult& /*result*/, const IntraBlockState& /*intra_block_state*/) noexcept {}
 
@@ -155,9 +155,12 @@ class EVM {
     std::vector<evmc::bytes32> block_hashes_{};
     EvmTracers tracers_;
 
-    // evmone is defined as static since it's' stateless and doesn't have to be recreated every time EVM class is created
-    // However, since evmone is not thread safe it should be unique per thread
-    SILKWORM_THREAD_LOCAL static evmc::VM evm1_;
+    // evmone is defined as static since it's stateless and doesn't have to be recreated every time EVM class is created
+#ifdef __wasm__
+    static evmc::VM evm1_;  // we cannot use SILKWORM_THREAD_LOCAL i.e. static in WASM (duplicate-decl-specifier)
+#else
+    SILKWORM_THREAD_LOCAL static evmc::VM evm1_;  // since evmone is not thread safe it should be unique per thread
+#endif  // __wasm__
 };
 
 class EvmHost : public evmc::Host {

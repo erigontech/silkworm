@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
             data_dir.snapshots().path(),
         };
 
-        auto txn = data_store.chaindata_rw().start_rw_tx();
+        auto txn = data_store.chaindata().access_rw().start_rw_tx();
         auto chain_config{db::read_chain_config(txn)};
         if (!chain_config) {
             throw std::runtime_error("Unable to retrieve chain config");
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
             db::Buffer buffer{txn, std::make_unique<db::BufferFullDataModel>(access_layer)};
             buffer.set_historical_block(block_num);
 
-            ExecutionProcessor processor{block, *rule_set, buffer, *chain_config};
+            ExecutionProcessor processor{block, *rule_set, buffer, *chain_config, true};
             processor.evm().analysis_cache = &analysis_cache;
 
             if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {

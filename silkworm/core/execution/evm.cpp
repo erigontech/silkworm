@@ -59,7 +59,11 @@ class DelegatingTracer : public evmone::Tracer {
     IntraBlockState& intra_block_state_;
 };
 
+#ifdef __wasm__
+evmc::VM EVM::evm1_{evmc_create_evmone()};  // we cannot use SILKWORM_THREAD_LOCAL i.e. static in WASM (duplicate-decl-specifier)
+#else
 SILKWORM_THREAD_LOCAL evmc::VM EVM::evm1_{evmc_create_evmone()};
+#endif  // __wasm__
 
 EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept
     : beneficiary{block.header.beneficiary},
@@ -247,7 +251,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
         for (auto tracer : tracers_) {
             const ByteView empty_code{};  // Any precompile code is empty
             tracer.get().on_execution_start(rev, message, empty_code);
-            tracer.get().on_precompiled_run(res.raw(), message.gas, state_);
+            tracer.get().on_precompiled_run(res.raw(), state_);
             tracer.get().on_execution_end(res.raw(), state_);
         }
     } else {

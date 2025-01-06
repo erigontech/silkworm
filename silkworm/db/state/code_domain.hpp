@@ -16,12 +16,17 @@
 
 #pragma once
 
+#include <silkworm/db/datastore/kvdb/domain.hpp>
 #include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 
-#include "address_decoder.hpp"
+#include "address_codecs.hpp"
 
 namespace silkworm::db::state {
+
+using CodeDomainGetLatestQuery = datastore::kvdb::DomainGetLatestQuery<AddressKVDBEncoder, datastore::kvdb::RawDecoder<ByteView>>;
+using CodeDomainPutQuery = datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>;
+using CodeDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>;
 
 using CodeDomainKVSegmentReader = snapshots::segment::KVSegmentReader<AddressDecoder, snapshots::RawDecoder<Bytes>>;
 

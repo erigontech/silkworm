@@ -197,7 +197,7 @@ NodeImpl::NodeImpl(
           data_model_factory(),
           make_log_timer_factory(context_pool.any_executor(), settings_.node_settings.sync_loop_log_interval_seconds),
           make_stages_factory(settings_.node_settings, data_model_factory(), *this),
-          data_store_.chaindata_rw(),
+          data_store_.chaindata().access_rw(),
       },
       execution_service_{std::make_shared<execution::api::ActiveDirectService>(execution_engine_, execution_ioc_)},
       execution_server_{make_execution_server_settings(settings_.node_settings.exec_api_address), execution_service_},
@@ -215,7 +215,7 @@ NodeImpl::NodeImpl(
               settings.node_settings.remote_sentry_addresses,
               context_pool.as_executor_pool(),
               context_pool,
-              make_sentry_eth_status_data_provider(data_store_.chaindata(), chain_config()))},
+              make_sentry_eth_status_data_provider(data_store_.chaindata().access_ro(), chain_config()))},
       chain_sync_{
           context_pool.any_executor(),
           data_store(),
@@ -226,7 +226,7 @@ NodeImpl::NodeImpl(
           make_sync_engine_rpc_settings(settings.rpcdaemon_settings, settings.log_settings.log_verbosity),
       },
       resource_usage_log_{*settings_.node_settings.data_directory} {
-    backend_ = std::make_unique<EthereumBackEnd>(settings_.node_settings, data_store_.chaindata(), std::get<0>(sentry_));
+    backend_ = std::make_unique<EthereumBackEnd>(settings_.node_settings, data_store_.chaindata().access_ro(), std::get<0>(sentry_));
     backend_->set_node_name(settings_.node_settings.build_info.node_name);
     backend_kv_rpc_server_ = std::make_unique<BackEndKvServer>(settings_.server_settings, *backend_);
     bittorrent_client_ = std::make_unique<snapshots::bittorrent::BitTorrentClient>(settings_.snapshot_settings.bittorrent_settings);

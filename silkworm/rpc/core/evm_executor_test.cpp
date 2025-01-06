@@ -111,9 +111,6 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
 
     SECTION("failed if transaction cost greater user amount") {
         auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
-        EXPECT_CALL(transaction, first_txn_num_in_block(6'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
-            co_return 244087591818873;
-        }));
         EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
@@ -137,9 +134,6 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
 
     SECTION("doesn't fail if transaction cost greater user amount && gasBailout == true") {
         auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
-        EXPECT_CALL(transaction, first_txn_num_in_block(6'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
-            co_return 244087591818873;
-        }));
         EXPECT_CALL(transaction, get_as_of(_)).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
@@ -172,9 +166,6 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
 
     SECTION("call returns SUCCESS") {
         auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
-        EXPECT_CALL(transaction, first_txn_num_in_block(6'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
-            co_return 244087591818873;
-        }));
         EXPECT_CALL(transaction, get_as_of(_)).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,

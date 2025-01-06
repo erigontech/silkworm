@@ -24,15 +24,9 @@ if(NOT SILKWORM_CORE_ONLY)
   # Benchmarks
   add_subdirectory(benchmark)
 
-  find_package(absl REQUIRED)
-  find_package(CLI11 REQUIRED)
-
   if(SILKWORM_USE_MIMALLOC)
     find_package(mimalloc REQUIRED)
   endif()
-
-  # Common modules for commands
-  add_subdirectory(common)
 
   # State transition and fuzzy tests runner tool
   add_subdirectory(state-transition)
@@ -43,37 +37,31 @@ if(NOT SILKWORM_CORE_ONLY)
   # Silkworm runnable components
 
   # [=] "all-in-one" Silkworm component
-  set(SILKWORM_CMD_SRC
-      silkworm.cpp
-      common/db_max_readers_option.cpp
-      common/db_max_readers_option.hpp
-      common/node_options.cpp
-      common/node_options.hpp
-      common/rpcdaemon_options.cpp
-      common/rpcdaemon_options.hpp
-      common/sentry_options.cpp
-      common/sentry_options.hpp
-      common/snapshot_options.cpp
-      common/snapshot_options.hpp
+  # cmake-format: off
+  set(SILKWORM_LIBRARIES
+      silkworm_node
+      silkworm_db_cli
+      silkworm_node_cli
+      silkworm_rpcdaemon_cli
+      silkworm_sentry_cli
+      $<$<BOOL:${MSVC}>:Kernel32.lib>
   )
-  set(SILKWORM_LIBRARIES silkworm_node cmd_common $<$<BOOL:${MSVC}>:Kernel32.lib>)
-  add_executable(silkworm "${SILKWORM_CMD_SRC}")
+  # cmake-format: on
+  add_executable(silkworm silkworm.cpp)
   target_link_libraries(silkworm PRIVATE ${SILKWORM_LIBRARIES})
 
   # [=] standalone RpcDaemon component
-  set(RPCDAEMON_CMD_SRC rpcdaemon.cpp common/rpcdaemon_options.cpp common/rpcdaemon_options.hpp)
-  set(RPCDAEMON_LIBRARIES silkworm_rpcdaemon absl::flags_parse cmd_common)
+  set(RPCDAEMON_LIBRARIES silkworm_rpcdaemon silkworm_rpcdaemon_cli)
   if(SILKWORM_USE_MIMALLOC)
     list(APPEND RPCDAEMON_LIBRARIES mimalloc-static)
   endif()
 
-  add_executable(rpcdaemon "${RPCDAEMON_CMD_SRC}")
+  add_executable(rpcdaemon rpcdaemon.cpp)
   target_include_directories(rpcdaemon PUBLIC ${CMAKE_SOURCE_DIR})
   target_link_libraries(rpcdaemon PRIVATE ${RPCDAEMON_LIBRARIES})
 
   # [=] standalone Sentry component
-  set(SENTRY_CMD_SRC sentry.cpp common/sentry_options.cpp common/sentry_options.hpp)
-  add_executable(sentry "${SENTRY_CMD_SRC}")
-  target_link_libraries(sentry PRIVATE silkworm_sentry cmd_common)
+  add_executable(sentry sentry.cpp)
+  target_link_libraries(sentry PRIVATE silkworm_sentry silkworm_sentry_cli)
 
 endif()

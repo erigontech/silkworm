@@ -14,16 +14,13 @@
    limitations under the License.
 ]]
 
-set(TARGET silkworm_db_test_util)
+include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 find_package(GTest REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
-add_library(${TARGET} ${SRC})
-
-target_link_libraries(
-  ${TARGET}
+silkworm_library(
+  silkworm_db_test_util
   PUBLIC silkworm_core silkworm_infra silkworm_db GTest::gmock
   PRIVATE nlohmann_json::nlohmann_json
 )

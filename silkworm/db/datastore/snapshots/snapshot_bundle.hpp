@@ -50,9 +50,11 @@ struct SnapshotBundleData {
 SnapshotBundleData open_bundle_data(
     const Schema::RepositoryDef& schema,
     const std::filesystem::path& dir_path,
-    StepRange step_range);
+    datastore::StepRange step_range);
 
 struct SnapshotBundlePaths {
+    using StepRange = datastore::StepRange;
+
     SnapshotBundlePaths(
         Schema::RepositoryDef schema,
         std::filesystem::path dir_path,
@@ -74,6 +76,8 @@ struct SnapshotBundlePaths {
 };
 
 struct SnapshotBundle {
+    using StepRange = datastore::StepRange;
+
     SnapshotBundle(StepRange step_range, SnapshotBundleData data)
         : step_range_{step_range},
           data_{std::move(data)} {

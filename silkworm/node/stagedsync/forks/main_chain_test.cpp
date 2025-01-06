@@ -156,8 +156,6 @@ TEST_CASE("MainChain transaction handling") {
 }
 
 TEST_CASE("MainChain") {
-    silkworm::test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
-
     asio::io_context ioc;
     asio::executor_work_guard<decltype(ioc.get_executor())> work{ioc.get_executor()};
 

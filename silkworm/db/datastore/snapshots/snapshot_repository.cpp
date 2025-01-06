@@ -26,6 +26,7 @@
 namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
+using namespace datastore;
 
 SnapshotRepository::SnapshotRepository(
     std::filesystem::path dir_path,
@@ -65,12 +66,6 @@ void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
 size_t SnapshotRepository::bundles_count() const {
     std::scoped_lock lock(*bundles_mutex_);
     return bundles_->size();
-}
-
-void SnapshotRepository::close() {
-    SILK_TRACE << "Close snapshot repository folder: " << dir_path_.string();
-    std::scoped_lock lock(*bundles_mutex_);
-    bundles_ = std::make_shared<Bundles>();
 }
 
 BlockNum SnapshotRepository::max_block_available() const {

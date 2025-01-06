@@ -88,17 +88,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -173,6 +173,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
                 co_return kZeroHeaderHash;
             }));
+        EXPECT_CALL(transaction, first_txn_num_in_block(_)).WillOnce(Invoke([]() -> Task<TxnId> {
+            co_return 244087591818873;
+        }));
         EXPECT_CALL(transaction, get_one(table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
                 co_return kConfigValue;
@@ -206,17 +209,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
 
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
@@ -325,17 +328,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -435,17 +438,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -550,17 +553,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -666,17 +669,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -769,17 +772,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -883,17 +886,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         db::kv::api::GetAsOfQuery query1{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query2{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfQuery query3{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-            .timestamp = 244087591818873,
+            .timestamp = 244087591818874,
         };
         EXPECT_CALL(backend, get_block_hash_from_block_num(_))
             .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -967,17 +970,17 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     db::kv::api::GetAsOfQuery query1{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(account_history_key1)),
-        .timestamp = 244087591818873,
+        .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfQuery query2{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(account_history_key2)),
-        .timestamp = 244087591818873,
+        .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfQuery query3{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(bytes_to_address(account_history_key3)),
-        .timestamp = 244087591818873,
+        .timestamp = 244087591818874,
     };
     EXPECT_CALL(backend, get_block_hash_from_block_num(_))
         .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<evmc::bytes32>> {
@@ -1084,7 +1087,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugConfig") {
 
         std::ostringstream os;
         os << config;
-        CHECK(os.str() == "disableStorage: true disableMemory: false disableStack: true");
+        CHECK(os.str() == "disableStorage: true disableMemory: false disableStack: true NoRefunds: false");
     }
 }
 

@@ -151,4 +151,8 @@ Task<std::optional<Transaction>> LocalChainStorage::read_transaction_by_idx_in_b
     throw std::runtime_error{"not yet implemented"};
 }
 
+Task<std::pair<std::optional<BlockHeader>, std::optional<Hash>>> LocalChainStorage::read_head_header_and_hash() const {
+    co_return data_model_.read_head_header_and_hash();
+}
+
 }  // namespace silkworm::db::chain

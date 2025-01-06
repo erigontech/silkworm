@@ -47,7 +47,7 @@ inline ValidationResult execute_block(
     if (!rule_set) {
         return ValidationResult::kUnknownProtocolRuleSet;
     }
-    ExecutionProcessor processor{block, *rule_set, state, chain_config};
+    ExecutionProcessor processor{block, *rule_set, state, chain_config, true};
 
     if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {
         return res;

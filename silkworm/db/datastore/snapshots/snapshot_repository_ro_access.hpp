@@ -35,6 +35,7 @@ struct SnapshotBundle;
 
 struct SnapshotRepositoryROAccess {
     using Timestamp = datastore::Timestamp;
+    using TimestampRange = datastore::TimestampRange;
     using Step = datastore::Step;
     using StepRange = datastore::StepRange;
     using Bundles = std::map<Step, std::shared_ptr<SnapshotBundle>>;
@@ -74,7 +75,14 @@ struct SnapshotRepositoryROAccess {
     virtual std::shared_ptr<SnapshotBundle> find_bundle(Timestamp t) const = 0;
     virtual std::shared_ptr<SnapshotBundle> find_bundle(Step step) const = 0;
 
+    //! Bundles fully contained within a given range: range_start <= first_start < last_end <= range_end
     virtual std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(StepRange range) const = 0;
+
+    //! Bundles having some steps within a given range: first_start <= range_start < range_end <= last_end
+    virtual std::vector<std::shared_ptr<SnapshotBundle>> bundles_intersecting_range(StepRange range, bool ascending) const = 0;
+
+    //! Bundles having some timestamps within a given range
+    virtual std::vector<std::shared_ptr<SnapshotBundle>> bundles_intersecting_range(TimestampRange range, bool ascending) const = 0;
 };
 
 }  // namespace silkworm::snapshots

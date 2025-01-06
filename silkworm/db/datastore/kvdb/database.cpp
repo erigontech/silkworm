@@ -44,6 +44,17 @@ DatabaseRef::EntitiesMap make_entities(
     return results;
 }
 
+void Database::create_tables() {
+    RWTxnManaged tx = access_rw().start_rw_tx();
+    for (auto& entity : entities_) {
+        for (auto& entry : entity.second) {
+            MapConfig& map_config = entry.second;
+            tx->create_map(map_config.name, map_config.key_mode, map_config.value_mode);
+        }
+    }
+    tx.commit_and_stop();
+}
+
 Domain DatabaseRef::domain(datastore::EntityName name) const {
     auto& entity = entities_.at(name);
     auto& domain_def = dynamic_cast<Schema::DomainDef&>(*schema_.entities().at(name));

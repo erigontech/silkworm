@@ -28,7 +28,7 @@ struct InvertedIndex {
 
     template <DecoderConcept TKeyDecoder>
     segment::KVSegmentReader<TKeyDecoder, elias_fano::EliasFanoDecoder> kv_segment_reader() {
-        return {kv_segment};
+        return segment::KVSegmentReader<TKeyDecoder, elias_fano::EliasFanoDecoder>{kv_segment};
     }
 };
 

@@ -26,7 +26,6 @@
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/ethbackend/backend.hpp>
 #include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/json/stream.hpp>
 
@@ -43,8 +42,7 @@ class TraceRpcApi {
           block_cache_{must_use_shared_service<BlockCache>(ioc_)},
           state_cache_{must_use_shared_service<db::kv::api::StateCache>(ioc_)},
           database_{must_use_private_service<ethdb::Database>(ioc_)},
-          workers_{workers},
-          backend_{must_use_private_service<ethbackend::BackEnd>(ioc_)} {}
+          workers_{workers} {}
 
     virtual ~TraceRpcApi() = default;
 
@@ -70,7 +68,6 @@ class TraceRpcApi {
     db::kv::api::StateCache* state_cache_;
     ethdb::Database* database_;
     WorkerPool& workers_;
-    ethbackend::BackEnd* backend_;
 
     friend class silkworm::rpc::json_rpc::RequestHandler;
 };

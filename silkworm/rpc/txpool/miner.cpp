@@ -26,17 +26,11 @@ namespace silkworm::rpc::txpool {
 namespace proto = ::txpool;
 using Stub = proto::Mining::StubInterface;
 
-Miner::Miner(boost::asio::io_context& ioc, const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context)
-    : Miner(ioc.get_executor(), ::txpool::Mining::NewStub(channel), grpc_context) {}
+Miner::Miner(const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context)
+    : Miner(proto::Mining::NewStub(channel), grpc_context) {}
 
-Miner::Miner(boost::asio::io_context::executor_type executor, std::unique_ptr<Stub> stub, agrpc::GrpcContext& grpc_context)
-    : executor_(std::move(executor)), stub_(std::move(stub)), grpc_context_(grpc_context) {
-    SILK_TRACE << "Miner::ctor " << this;
-}
-
-Miner::~Miner() {
-    SILK_TRACE << "Miner::dtor " << this;
-}
+Miner::Miner(std::unique_ptr<Stub> stub, agrpc::GrpcContext& grpc_context)
+    : stub_(std::move(stub)), grpc_context_(grpc_context) {}
 
 Task<WorkResult> Miner::get_work() {
     const auto start_time = clock_time::now();

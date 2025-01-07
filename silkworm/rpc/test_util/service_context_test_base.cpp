@@ -40,11 +40,11 @@ ServiceContextTestBase::ServiceContextTestBase()
     add_shared_service<engine::ExecutionEngine>(ioc_, std::make_shared<ExecutionEngineMock>());
     auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(ioc_)};
     auto grpc_channel{::grpc::CreateChannel("localhost:12345", ::grpc::InsecureChannelCredentials())};
-    auto backend{std::make_unique<ethbackend::RemoteBackEnd>(ioc_, grpc_channel, grpc_context_)};
+    auto backend{std::make_unique<ethbackend::RemoteBackEnd>(grpc_channel, grpc_context_)};
     add_private_service<ethdb::Database>(ioc_, std::make_unique<ethdb::kv::RemoteDatabase>(backend.get(), state_cache, grpc_context_, grpc_channel));
     add_private_service<ethbackend::BackEnd>(ioc_, std::move(backend));
-    add_private_service<txpool::Miner>(ioc_, std::make_unique<txpool::Miner>(ioc_, grpc_channel, grpc_context_));
-    add_private_service<txpool::TransactionPool>(ioc_, std::make_unique<txpool::TransactionPool>(ioc_, grpc_channel, grpc_context_));
+    add_private_service<txpool::Miner>(ioc_, std::make_unique<txpool::Miner>(grpc_channel, grpc_context_));
+    add_private_service<txpool::TransactionPool>(ioc_, std::make_unique<txpool::TransactionPool>(grpc_channel, grpc_context_));
 }
 
 }  // namespace silkworm::rpc::test_util

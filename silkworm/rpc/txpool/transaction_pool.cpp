@@ -28,22 +28,11 @@ namespace silkworm::rpc::txpool {
 namespace proto = ::txpool;
 using Stub = proto::Txpool::StubInterface;
 
-TransactionPool::TransactionPool(
-    boost::asio::io_context& ioc,
-    const std::shared_ptr<grpc::Channel>& channel,
-    agrpc::GrpcContext& grpc_context)
-    : TransactionPool(ioc.get_executor(), ::txpool::Txpool::NewStub(channel, grpc::StubOptions()), grpc_context) {}
+TransactionPool::TransactionPool(const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context)
+    : TransactionPool(proto::Txpool::NewStub(channel, grpc::StubOptions()), grpc_context) {}
 
-TransactionPool::TransactionPool(boost::asio::io_context::executor_type executor,
-                                 std::unique_ptr<Stub> stub,
-                                 agrpc::GrpcContext& grpc_context)
-    : executor_(std::move(executor)), stub_(std::move(stub)), grpc_context_(grpc_context) {
-    SILK_TRACE << "TransactionPool::ctor " << this;
-}
-
-TransactionPool::~TransactionPool() {
-    SILK_TRACE << "TransactionPool::dtor " << this;
-}
+TransactionPool::TransactionPool(std::unique_ptr<Stub> stub, agrpc::GrpcContext& grpc_context)
+    : stub_(std::move(stub)), grpc_context_(grpc_context) {}
 
 Task<OperationResult> TransactionPool::add_transaction(const silkworm::ByteView& rlp_tx) {
     const auto start_time = clock_time::now();

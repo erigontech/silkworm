@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
 
         kv::api::CoherentStateCache state_cache;
         auto channel{::grpc::CreateChannel(target, ::grpc::InsecureChannelCredentials())};
-        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(*ioc, channel, *grpc_context)};
+        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(channel, *grpc_context)};
         auto database = std::make_unique<ethdb::kv::RemoteDatabase>(backend.get(), &state_cache, *grpc_context, channel);
 
         auto context_pool_thread = std::thread([&]() { context_pool.run(); });

@@ -35,16 +35,11 @@ namespace silkworm::rpc::ethbackend {
 namespace proto = ::remote;
 using Stub = proto::ETHBACKEND::StubInterface;
 
-RemoteBackEnd::RemoteBackEnd(
-    boost::asio::io_context& ioc,
-    const std::shared_ptr<grpc::Channel>& channel,
-    agrpc::GrpcContext& grpc_context)
-    : RemoteBackEnd(ioc.get_executor(), ::remote::ETHBACKEND::NewStub(channel), grpc_context) {}
+RemoteBackEnd::RemoteBackEnd(const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context)
+    : RemoteBackEnd(proto::ETHBACKEND::NewStub(channel), grpc_context) {}
 
-RemoteBackEnd::RemoteBackEnd(boost::asio::io_context::executor_type executor,
-                             std::unique_ptr<Stub> stub,
-                             agrpc::GrpcContext& grpc_context)
-    : executor_(std::move(executor)), stub_(std::move(stub)), grpc_context_(grpc_context) {}
+RemoteBackEnd::RemoteBackEnd(std::unique_ptr<Stub> stub, agrpc::GrpcContext& grpc_context)
+    : stub_(std::move(stub)), grpc_context_(grpc_context) {}
 
 Task<evmc::address> RemoteBackEnd::etherbase() {
     const auto start_time = clock_time::now();

@@ -17,29 +17,20 @@
 #pragma once
 
 #include <silkworm/db/datastore/snapshots/basic_queries.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_repository_ro_access.hpp>
 
 #include "../schema_config.hpp"
 #include "body_segment.hpp"
 
 namespace silkworm::snapshots {
 
-using BodyFindByBlockNumQuery = FindByIdQuery<BodySegmentReader>;
+using BodyFindByBlockNumSegmentQuery = FindByIdSegmentQuery<BodySegmentReader, &db::blocks::kBodySegmentAndIdxNames>;
 
-class BodyFindByBlockNumMultiQuery {
-  public:
-    // TODO: use a sub-interface of SnapshotRepository
-    explicit BodyFindByBlockNumMultiQuery(SnapshotRepository& repository)
-        : repository_{repository} {}
-
+struct BodyFindByBlockNumQuery : public FindByTimestampMapQuery<BodyFindByBlockNumSegmentQuery> {
+    using FindByTimestampMapQuery::FindByTimestampMapQuery;
     std::optional<BlockBodyForStorage> exec(BlockNum block_num) {
-        const auto [segment_and_index, _] = repository_.find_segment(db::blocks::kBodySegmentAndIdxNames, block_num);
-        if (!segment_and_index) return std::nullopt;
-        return BodyFindByBlockNumQuery{*segment_and_index}.exec(block_num);
+        return FindByTimestampMapQuery::exec(block_num, block_num);
     }
-
-  private:
-    SnapshotRepository& repository_;
 };
 
 }  // namespace silkworm::snapshots

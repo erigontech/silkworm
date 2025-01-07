@@ -31,7 +31,7 @@ std::pair<uint64_t, uint64_t> TransactionIndex::compute_txs_amount(
     SnapshotPath bodies_segment_path,
     std::optional<MemoryMappedRegion> bodies_segment_region) {
     segment::SegmentFileReader body_segment{std::move(bodies_segment_path), bodies_segment_region};
-    auto result = BodyTxsAmountQuery{body_segment}.exec();
+    auto result = BodyTxsAmountSegmentQuery{body_segment}.exec();
     return {result.first_tx_id, result.count};
 }
 

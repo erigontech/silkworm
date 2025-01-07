@@ -24,7 +24,7 @@
 namespace silkworm::snapshots::elias_fano {
 
 struct EliasFanoDecoder : public snapshots::Decoder {
-    std::optional<EliasFanoList32> value;
+    EliasFanoList32 value{EliasFanoList32::empty_list()};
 
     ~EliasFanoDecoder() override = default;
 

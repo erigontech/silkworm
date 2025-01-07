@@ -29,22 +29,21 @@
 
 #include "../common/entity_name.hpp"
 #include "common/snapshot_path.hpp"
-#include "common/util/iterator/map_values_view.hpp"
-#include "index_builder.hpp"
-#include "index_builders_factory.hpp"
 #include "segment_and_accessor_index.hpp"
 #include "snapshot_bundle.hpp"
+#include "snapshot_repository_ro_access.hpp"
 
 namespace silkworm::snapshots {
 
 struct IndexBuilder;
+struct IndexBuildersFactory;
 
 //! Read-only repository for all snapshot files.
 //! @details Some simplifications are currently in place:
 //! - all snapshots of given blocks range must exist (to make such range available)
 //! - gaps in blocks range are not allowed
 //! - segments have [from:to) semantic
-class SnapshotRepository {
+class SnapshotRepository : public SnapshotRepositoryROAccess {
   public:
     using Timestamp = datastore::Timestamp;
     using Step = datastore::Step;
@@ -60,6 +59,8 @@ class SnapshotRepository {
     SnapshotRepository(SnapshotRepository&&) = default;
     SnapshotRepository& operator=(SnapshotRepository&&) noexcept = default;
 
+    ~SnapshotRepository() override = default;
+
     const std::filesystem::path& path() const { return dir_path_; }
     const Schema::RepositoryDef& schema() const { return schema_; };
 
@@ -70,51 +71,31 @@ class SnapshotRepository {
     //! Replace bundles whose ranges are contained within the given bundle
     void replace_snapshot_bundles(SnapshotBundle bundle);
 
-    size_t bundles_count() const;
+    size_t bundles_count() const override;
 
-    //! All types of .seg and .idx files are available up to this block number
-    BlockNum max_block_available() const;
-    Timestamp max_timestamp_available() const;
+    BlockNum max_block_available() const override;
+    Timestamp max_timestamp_available() const override;
 
     std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
     void build_indexes(const SnapshotBundlePaths& bundle) const;
 
-    using Bundles = std::map<Step, std::shared_ptr<SnapshotBundle>>;
-
-    template <class TBaseView>
-    class BundlesView : public std::ranges::view_interface<BundlesView<TBaseView>> {
-      public:
-        BundlesView(
-            TBaseView base_view,
-            std::shared_ptr<Bundles> bundles)
-            : base_view_(std::move(base_view)),
-              bundles_(std::move(bundles)) {}
-
-        auto begin() const { return base_view_.begin(); }
-        auto end() const { return base_view_.end(); }
-
-      private:
-        TBaseView base_view_;
-        std::shared_ptr<Bundles> bundles_{};
-    };
-
-    auto view_bundles() const {
+    BundlesView<MapValuesView<Bundles::key_type, Bundles::mapped_type>> view_bundles() const override {
         std::scoped_lock lock(*bundles_mutex_);
         return BundlesView{make_map_values_view(*bundles_), bundles_};
     }
-
-    auto view_bundles_reverse() const {
+    BundlesView<MapValuesViewReverse<Bundles::key_type, Bundles::mapped_type>> view_bundles_reverse() const override {
         std::scoped_lock lock(*bundles_mutex_);
         return BundlesView{std::ranges::reverse_view(make_map_values_view(*bundles_)), bundles_};
     }
 
     std::pair<std::optional<SegmentAndAccessorIndex>, std::shared_ptr<SnapshotBundle>> find_segment(
-        std::array<datastore::EntityName, 3> names,
-        Timestamp t) const;
-    std::shared_ptr<SnapshotBundle> find_bundle(Step step) const;
+        const SegmentAndAccessorIndexNames& names,
+        Timestamp t) const override;
+    std::shared_ptr<SnapshotBundle> find_bundle(Timestamp t) const override;
+    std::shared_ptr<SnapshotBundle> find_bundle(Step step) const override;
 
-    std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(StepRange range) const;
+    std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(StepRange range) const override;
 
   private:
     Step max_end_step() const;

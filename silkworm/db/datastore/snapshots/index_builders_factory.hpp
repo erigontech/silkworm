@@ -16,14 +16,11 @@
 
 #pragma once
 
-#include <filesystem>
-#include <functional>
 #include <memory>
 #include <vector>
 
 #include "common/snapshot_path.hpp"
 #include "index_builder.hpp"
-#include "snapshot_bundle.hpp"
 
 namespace silkworm::snapshots {
 

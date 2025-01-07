@@ -24,7 +24,7 @@
 
 namespace silkworm::snapshots {
 
-TxsAndBodiesQuery::Iterator::Iterator(
+TxsAndBodiesSegmentQuery::Iterator::Iterator(
     std::shared_ptr<seg::Decompressor> txs_decoder,
     seg::Decompressor::Iterator tx_it,
     std::shared_ptr<seg::Decompressor> bodies_decoder,
@@ -48,7 +48,7 @@ TxsAndBodiesQuery::Iterator::Iterator(
     value_.tx_buffer = *tx_it_;
 }
 
-void TxsAndBodiesQuery::Iterator::skip_bodies_until_tx_id(uint64_t tx_id) {
+void TxsAndBodiesSegmentQuery::Iterator::skip_bodies_until_tx_id(uint64_t tx_id) {
     while (!(tx_id < value_.body.base_txn_id + value_.body.txn_count)) {
         ++body_it_;
         if (body_it_ == bodies_decoder_->end()) {
@@ -60,7 +60,7 @@ void TxsAndBodiesQuery::Iterator::skip_bodies_until_tx_id(uint64_t tx_id) {
     }
 }
 
-TxsAndBodiesQuery::Iterator& TxsAndBodiesQuery::Iterator::operator++() {
+TxsAndBodiesSegmentQuery::Iterator& TxsAndBodiesSegmentQuery::Iterator::operator++() {
     // check if already at the end
     if (!txs_decoder_) {
         return *this;
@@ -92,14 +92,14 @@ TxsAndBodiesQuery::Iterator& TxsAndBodiesQuery::Iterator::operator++() {
     return *this;
 }
 
-bool operator==(const TxsAndBodiesQuery::Iterator& lhs, const TxsAndBodiesQuery::Iterator& rhs) {
+bool operator==(const TxsAndBodiesSegmentQuery::Iterator& lhs, const TxsAndBodiesSegmentQuery::Iterator& rhs) {
     return (lhs.txs_decoder_ == rhs.txs_decoder_) &&
            (!lhs.txs_decoder_ || (lhs.tx_it_ == rhs.tx_it_)) &&
            (lhs.bodies_decoder_ == rhs.bodies_decoder_) &&
            (!lhs.bodies_decoder_ || (lhs.body_it_ == rhs.body_it_));
 }
 
-void TxsAndBodiesQuery::Iterator::decode_body_rlp(ByteView body_rlp, BlockBodyForStorage& body) {
+void TxsAndBodiesSegmentQuery::Iterator::decode_body_rlp(ByteView body_rlp, BlockBodyForStorage& body) {
     auto decode_result = decode_stored_block_body(body_rlp, body);
     if (!decode_result) {
         std::stringstream error;
@@ -112,8 +112,8 @@ void TxsAndBodiesQuery::Iterator::decode_body_rlp(ByteView body_rlp, BlockBodyFo
     }
 }
 
-TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::begin() const {
-    std::string log_title = "TxsAndBodiesQuery for: " + txs_segment_path_.path().string();
+TxsAndBodiesSegmentQuery::Iterator TxsAndBodiesSegmentQuery::begin() const {
+    std::string log_title = "TxsAndBodiesSegmentQuery for: " + txs_segment_path_.path().string();
 
     auto txs_decoder = std::make_shared<seg::Decompressor>(txs_segment_path_.path(), txs_segment_region_);
 
@@ -128,7 +128,7 @@ TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::begin() const {
 
     auto bodies_decoder = std::make_shared<seg::Decompressor>(bodies_segment_path_.path(), bodies_segment_region_);
 
-    TxsAndBodiesQuery::Iterator it{
+    TxsAndBodiesSegmentQuery::Iterator it{
         txs_decoder,
         txs_decoder->begin(),
         bodies_decoder,
@@ -146,7 +146,7 @@ TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::begin() const {
     return it;
 }
 
-TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::end() const {
+TxsAndBodiesSegmentQuery::Iterator TxsAndBodiesSegmentQuery::end() const {
     return Iterator{
         {},
         seg::Decompressor::Iterator::make_end(),
@@ -155,7 +155,7 @@ TxsAndBodiesQuery::Iterator TxsAndBodiesQuery::end() const {
         std::numeric_limits<uint64_t>::max(),
         first_tx_id_,
         expected_tx_count_,
-        "TxsAndBodiesQuery::end",
+        "TxsAndBodiesSegmentQuery::end",
     };
 }
 

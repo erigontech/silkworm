@@ -78,7 +78,7 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][ind
     SegmentFileReader header_segment{header_segment_path};
 
     AccessorIndex idx_header_hash{header_segment_path.related_path_ext(db::blocks::kIdxExtension)};
-    HeaderFindByBlockNumQuery header_by_number{{header_segment, idx_header_hash}};
+    HeaderFindByBlockNumSegmentQuery header_by_number{{header_segment, idx_header_hash}};
 
     CHECK(!header_by_number.exec(1'500'011));
     CHECK(header_by_number.exec(1'500'012));
@@ -118,7 +118,7 @@ TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]"
     SegmentFileReader body_segment{body_segment_path};
 
     AccessorIndex idx_body_number{body_segment_path.related_path_ext(db::blocks::kIdxExtension)};
-    BodyFindByBlockNumQuery body_by_number{{body_segment, idx_body_number}};
+    BodyFindByBlockNumSegmentQuery body_by_number{{body_segment, idx_body_number}};
 
     CHECK(!body_by_number.exec(1'500'011));
     CHECK(body_by_number.exec(1'500'012));
@@ -144,7 +144,7 @@ TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index
     SegmentFileReader txn_segment{txn_segment_path};
 
     AccessorIndex idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
-    TransactionFindByIdQuery txn_by_id{{txn_segment, idx_txn_hash}};
+    TransactionFindByIdSegmentQuery txn_by_id{{txn_segment, idx_txn_hash}};
 
     const auto transaction = txn_by_id.exec(7'341'272);
     CHECK(transaction.has_value());
@@ -170,10 +170,10 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
     SegmentFileReader txn_segment{txn_segment_path};
 
     AccessorIndex idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
-    TransactionFindByIdQuery txn_by_id{{txn_segment, idx_txn_hash}};
+    TransactionFindByIdSegmentQuery txn_by_id{{txn_segment, idx_txn_hash}};
 
     AccessorIndex idx_txn_hash_2_block{txn_segment_path.related_path(std::string{db::blocks::kIdxTxnHash2BlockTag}, db::blocks::kIdxExtension)};
-    TransactionBlockNumByTxnHashQuery block_num_by_txn_hash{idx_txn_hash_2_block, TransactionFindByHashQuery{{txn_segment, idx_txn_hash}}};
+    TransactionBlockNumByTxnHashSegmentQuery block_num_by_txn_hash{idx_txn_hash_2_block, TransactionFindByHashSegmentQuery{{txn_segment, idx_txn_hash}}};
 
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
     auto transaction = txn_by_id.exec(7'341'269);  // known txn id in block 1'500'012
@@ -208,21 +208,21 @@ TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index
     SegmentFileReader txn_segment{txn_segment_path};
 
     AccessorIndex idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
-    TransactionRangeFromIdQuery query{{txn_segment, idx_txn_hash}};
+    TransactionRangeFromIdSegmentQuery query{{txn_segment, idx_txn_hash}};
 
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
-    CHECK(query.exec_into_vector(7'341'263, 0).empty());
-    CHECK(query.exec_into_vector(7'341'263, 7).size() == 7);
+    CHECK(query.exec(7'341'263, 0)->empty());
+    CHECK(query.exec(7'341'263, 7)->size() == 7);
 
     // block 1'500'013: base_txn_id is 7'341'272, txn_count is 1
-    CHECK(query.exec_into_vector(7'341'272, 0).empty());
-    CHECK(query.exec_into_vector(7'341'272, 1).size() == 1);
+    CHECK(query.exec(7'341'272, 0)->empty());
+    CHECK(query.exec(7'341'272, 1)->size() == 1);
 
     // invalid base_txn_id returns empty
-    CHECK(query.exec_into_vector(0, 1).empty());
-    CHECK(query.exec_into_vector(10'000'000, 1).empty());
-    CHECK(query.exec_into_vector(7'341'261, 1).empty());  // before the first system tx
-    CHECK(query.exec_into_vector(7'341'274, 1).empty());  // after the last system tx
+    CHECK_FALSE(query.exec(0, 1));
+    CHECK_FALSE(query.exec(10'000'000, 1));
+    CHECK_FALSE(query.exec(7'341'261, 1));  // before the first system tx
+    CHECK_FALSE(query.exec(7'341'274, 1));  // after the last system tx
 }
 
 TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][index]") {
@@ -237,21 +237,21 @@ TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][i
     SegmentFileReader txn_segment{txn_segment_path};
 
     AccessorIndex idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
-    TransactionPayloadRlpRangeFromIdQuery query{{txn_segment, idx_txn_hash}};
+    TransactionPayloadRlpRangeFromIdSegmentQuery query{{txn_segment, idx_txn_hash}};
 
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
-    CHECK(query.exec_into_vector(7'341'263, 0).empty());
-    CHECK(query.exec_into_vector(7'341'263, 7).size() == 7);
+    CHECK(query.exec(7'341'263, 0)->empty());
+    CHECK(query.exec(7'341'263, 7)->size() == 7);
 
     // block 1'500'013: base_txn_id is 7'341'272, txn_count is 1
-    CHECK(query.exec_into_vector(7'341'272, 0).empty());
-    CHECK(query.exec_into_vector(7'341'272, 1).size() == 1);
+    CHECK(query.exec(7'341'272, 0)->empty());
+    CHECK(query.exec(7'341'272, 1)->size() == 1);
 
     // invalid base_txn_id returns empty
-    CHECK(query.exec_into_vector(0, 1).empty());
-    CHECK(query.exec_into_vector(10'000'000, 1).empty());
-    CHECK(query.exec_into_vector(7'341'261, 1).empty());  // before the first system tx
-    CHECK(query.exec_into_vector(7'341'274, 1).empty());  // after the last system tx
+    CHECK_FALSE(query.exec(0, 1));
+    CHECK_FALSE(query.exec(10'000'000, 1));
+    CHECK_FALSE(query.exec(7'341'261, 1));  // before the first system tx
+    CHECK_FALSE(query.exec(7'341'274, 1));  // after the last system tx
 }
 
 TEST_CASE("slice_tx_payload", "[silkworm][node][snapshot]") {

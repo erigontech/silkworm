@@ -1,0 +1,80 @@
+/*
+   Copyright 2024 The Silkworm Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#pragma once
+
+#include <array>
+#include <map>
+#include <memory>
+#include <optional>
+#include <ranges>
+#include <utility>
+#include <vector>
+
+#include "../common/entity_name.hpp"
+#include "../common/step.hpp"
+#include "common/util/iterator/map_values_view.hpp"
+#include "segment_and_accessor_index.hpp"
+
+namespace silkworm::snapshots {
+
+struct SnapshotBundle;
+
+struct SnapshotRepositoryROAccess {
+    using Timestamp = datastore::Timestamp;
+    using Step = datastore::Step;
+    using StepRange = datastore::StepRange;
+    using Bundles = std::map<Step, std::shared_ptr<SnapshotBundle>>;
+
+    template <class TBaseView>
+    class BundlesView : public std::ranges::view_interface<BundlesView<TBaseView>> {
+      public:
+        BundlesView(
+            TBaseView base_view,
+            std::shared_ptr<Bundles> bundles)
+            : base_view_(std::move(base_view)),
+              bundles_(std::move(bundles)) {}
+
+        auto begin() const { return base_view_.begin(); }
+        auto end() const { return base_view_.end(); }
+
+      private:
+        TBaseView base_view_;
+        std::shared_ptr<Bundles> bundles_{};
+    };
+
+    virtual ~SnapshotRepositoryROAccess() = default;
+
+    virtual size_t bundles_count() const = 0;
+
+    //! All types of .seg and .idx files are available up to this block number
+    virtual BlockNum max_block_available() const = 0;
+    //! All types of .seg and .idx files are available up to this timestamp
+    virtual Timestamp max_timestamp_available() const = 0;
+
+    virtual BundlesView<MapValuesView<Bundles::key_type, Bundles::mapped_type>> view_bundles() const = 0;
+    virtual BundlesView<MapValuesViewReverse<Bundles::key_type, Bundles::mapped_type>> view_bundles_reverse() const = 0;
+
+    virtual std::pair<std::optional<SegmentAndAccessorIndex>, std::shared_ptr<SnapshotBundle>> find_segment(
+        const SegmentAndAccessorIndexNames& names,
+        Timestamp t) const = 0;
+    virtual std::shared_ptr<SnapshotBundle> find_bundle(Timestamp t) const = 0;
+    virtual std::shared_ptr<SnapshotBundle> find_bundle(Step step) const = 0;
+
+    virtual std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(StepRange range) const = 0;
+};
+
+}  // namespace silkworm::snapshots

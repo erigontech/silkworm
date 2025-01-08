@@ -65,13 +65,18 @@ std::optional<Config> Config::from_json(const nlohmann::json& json) noexcept {
         const BlockNum from{std::stoull(item.key(), nullptr, 0)};
         period.emplace_back(from, item.value().get<uint64_t>());
     }
+    SILKWORM_ASSERT(period.size() <= config.period.max_size());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
     config.period = {period.begin(), period.end()};
+#pragma GCC diagnostic pop
 
     std::vector<std::pair<BlockNum, uint64_t>> sprint;
     for (const auto& item : json["sprint"].items()) {
         const BlockNum from{std::stoull(item.key(), nullptr, 0)};
         sprint.emplace_back(from, item.value().get<uint64_t>());
     }
+    SILKWORM_ASSERT(sprint.size() <= config.sprint.max_size());
     config.sprint = {sprint.begin(), sprint.end()};
 
     config.validator_contract = hex_to_address(json["validatorContract"].get<std::string>(), /*return_zero_on_err=*/true);

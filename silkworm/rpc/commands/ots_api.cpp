@@ -71,7 +71,7 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
 
     SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -117,7 +117,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
 
     SILK_DEBUG << "block_id: " << block_id;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -166,7 +166,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
 
     SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -215,7 +215,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
 
     SILK_DEBUG << "block_id: " << block_id << " page_number: " << page_number << " page_size: " << page_size;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -288,7 +288,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
     const auto nonce = params[1].get<uint64_t>();
 
     SILK_DEBUG << "sender: " << sender << ", nonce: " << nonce;
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         auto key = db::code_domain_key(sender);
@@ -434,7 +434,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
 
     SILK_DEBUG << "contract_address: " << contract_address;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -594,7 +594,7 @@ Task<void> OtsRpcApi::handle_ots_trace_transaction(const nlohmann::json& request
 
     SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -640,7 +640,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& req
 
     SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -686,7 +686,7 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
 
     SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -749,7 +749,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
     if (block_num > 0) {
         --block_num;
     }
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
     try {
         auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
 
@@ -799,7 +799,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
         co_return;
     }
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);

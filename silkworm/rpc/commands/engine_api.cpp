@@ -338,7 +338,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v2(const nlohmann::json& requ
         co_return;
     }
     auto payload = params[0].get<ExecutionPayload>();
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
 #ifndef BUILD_COVERAGE
     try {
@@ -401,7 +401,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v3(const nlohmann::json& requ
     auto payload = params[0].get<ExecutionPayload>();
     auto expected_blob_versioned_hashes = params[1].get<std::vector<Hash>>();
     auto parent_beacon_block_root = params[2].get<evmc::bytes32>();
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
 #ifndef BUILD_COVERAGE
     try {
@@ -456,7 +456,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v4(const nlohmann::json& requ
     auto expected_blob_versioned_hashes = params[1].get<std::vector<Hash>>();
     auto parent_beacon_block_root = params[2].get<evmc::bytes32>();
     auto execution_requests = params[3].get<std::vector<Bytes>>();
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
 #ifndef BUILD_COVERAGE
     try {
@@ -655,7 +655,7 @@ Task<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1(cons
         co_return;
     }
     const auto cl_configuration = params[0].get<TransitionConfiguration>();
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
 #ifndef BUILD_COVERAGE
     try {
@@ -762,7 +762,7 @@ EngineRpcApi::ValidationError EngineRpcApi::validate_payload_attributes_v3(const
 }
 
 Task<std::optional<silkworm::ChainConfig>> EngineRpcApi::read_chain_config() {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
     const auto storage{tx->create_storage()};
     auto config{co_await storage->read_chain_config()};
     co_await tx->close();

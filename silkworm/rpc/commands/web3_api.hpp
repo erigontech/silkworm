@@ -23,7 +23,6 @@
 
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
-#include <silkworm/rpc/ethdb/database.hpp>
 
 namespace silkworm::rpc::json_rpc {
 class RequestHandler;
@@ -34,8 +33,7 @@ namespace silkworm::rpc::commands {
 class Web3RpcApi {
   public:
     explicit Web3RpcApi(boost::asio::io_context& ioc)
-        : database_{must_use_private_service<ethdb::Database>(ioc)},
-          backend_{must_use_private_service<ethbackend::BackEnd>(ioc)} {}
+        : backend_{must_use_private_service<ethbackend::BackEnd>(ioc)} {}
     virtual ~Web3RpcApi() = default;
 
     Web3RpcApi(const Web3RpcApi&) = delete;
@@ -47,7 +45,6 @@ class Web3RpcApi {
     Task<void> handle_web3_sha3(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    ethdb::Database* database_;
     ethbackend::BackEnd* backend_;
 
     friend class silkworm::rpc::json_rpc::RequestHandler;

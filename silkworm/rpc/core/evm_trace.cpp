@@ -1791,7 +1791,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
             ++block_num;
             try {
                 block_with_hash = co_await core::read_block_by_number(block_cache_, storage, block_num);
-            } catch (const std::invalid_argument &iv) {
+            } catch (const std::invalid_argument& iv) {
                 block_with_hash = nullptr;
             }
         }

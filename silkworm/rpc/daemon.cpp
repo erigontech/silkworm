@@ -254,9 +254,9 @@ void Daemon::add_private_services() {
 
         auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(ioc)};
 
-        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(ioc, grpc_channel, grpc_context)};
-        auto tx_pool{std::make_unique<txpool::TransactionPool>(ioc, grpc_channel, grpc_context)};
-        auto miner{std::make_unique<txpool::Miner>(ioc, grpc_channel, grpc_context)};
+        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(grpc_channel, grpc_context)};
+        auto tx_pool{std::make_unique<txpool::TransactionPool>(grpc_channel, grpc_context)};
+        auto miner{std::make_unique<txpool::Miner>(grpc_channel, grpc_context)};
         std::unique_ptr<ethdb::Database> database;
         if (data_store_) {
             database = std::make_unique<ethdb::file::LocalDatabase>(*data_store_, state_cache);

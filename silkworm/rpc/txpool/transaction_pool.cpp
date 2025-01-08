@@ -20,35 +20,26 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/grpc/client/unary_rpc.hpp>
+#include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 
 namespace silkworm::rpc::txpool {
 
-TransactionPool::TransactionPool(
-    boost::asio::io_context& ioc,
-    const std::shared_ptr<grpc::Channel>& channel,
-    agrpc::GrpcContext& grpc_context)
-    : TransactionPool(ioc.get_executor(), ::txpool::Txpool::NewStub(channel, grpc::StubOptions()), grpc_context) {}
+namespace proto = ::txpool;
+using Stub = proto::Txpool::StubInterface;
 
-TransactionPool::TransactionPool(boost::asio::io_context::executor_type executor,
-                                 std::unique_ptr<::txpool::Txpool::StubInterface> stub,
-                                 agrpc::GrpcContext& grpc_context)
-    : executor_(std::move(executor)), stub_(std::move(stub)), grpc_context_(grpc_context) {
-    SILK_TRACE << "TransactionPool::ctor " << this;
-}
+TransactionPool::TransactionPool(const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context)
+    : TransactionPool(proto::Txpool::NewStub(channel, grpc::StubOptions()), grpc_context) {}
 
-TransactionPool::~TransactionPool() {
-    SILK_TRACE << "TransactionPool::dtor " << this;
-}
+TransactionPool::TransactionPool(std::unique_ptr<Stub> stub, agrpc::GrpcContext& grpc_context)
+    : stub_(std::move(stub)), grpc_context_(grpc_context) {}
 
 Task<OperationResult> TransactionPool::add_transaction(const silkworm::ByteView& rlp_tx) {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "TransactionPool::add_transaction rlp_tx=" << silkworm::to_hex(rlp_tx);
     ::txpool::AddRequest request;
     request.add_rlp_txs(rlp_tx.data(), rlp_tx.size());
-    UnaryRpc<&::txpool::Txpool::StubInterface::AsyncAdd> add_transaction_rpc{*stub_, grpc_context_};
-    const auto reply = co_await add_transaction_rpc.finish_on(executor_, request);
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncAdd, *stub_, request, grpc_context_);
     const auto imported_size = reply.imported_size();
     const auto errors_size = reply.errors_size();
     SILK_DEBUG << "TransactionPool::add_transaction imported_size=" << imported_size << " errors_size=" << errors_size;
@@ -91,8 +82,7 @@ Task<std::optional<silkworm::Bytes>> TransactionPool::get_transaction(const evmc
     ::types::H256* hash_h256{request.add_hashes()};
     hash_h256->set_allocated_hi(hi);  // take ownership
     hash_h256->set_allocated_lo(lo);  // take ownership
-    UnaryRpc<&::txpool::Txpool::StubInterface::AsyncTransactions> get_transactions_rpc{*stub_, grpc_context_};
-    const auto reply = co_await get_transactions_rpc.finish_on(executor_, request);
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncTransactions, *stub_, request, grpc_context_);
     const auto rlp_txs_size = reply.rlp_txs_size();
     SILK_DEBUG << "TransactionPool::get_transaction rlp_txs_size=" << rlp_txs_size;
     if (rlp_txs_size == 1) {
@@ -111,8 +101,7 @@ Task<std::optional<uint64_t>> TransactionPool::nonce(const evmc::address& addres
     SILK_DEBUG << "TransactionPool::nonce address=" << address;
     ::txpool::NonceRequest request;
     request.set_allocated_address(h160_from_address(address).release());
-    UnaryRpc<&::txpool::Txpool::StubInterface::AsyncNonce> nonce_rpc{*stub_, grpc_context_};
-    const auto reply = co_await nonce_rpc.finish_on(executor_, request);
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncNonce, *stub_, request, grpc_context_);
     SILK_DEBUG << "TransactionPool::nonce found:" << reply.found() << " nonce: " << reply.nonce() << " t=" << clock_time::since(start_time);
     co_return reply.found() ? std::optional<uint64_t>{reply.nonce()} : std::nullopt;
 }
@@ -120,9 +109,8 @@ Task<std::optional<uint64_t>> TransactionPool::nonce(const evmc::address& addres
 Task<StatusInfo> TransactionPool::get_status() {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "TransactionPool::get_status";
-    ::txpool::StatusRequest request;
-    UnaryRpc<&::txpool::Txpool::StubInterface::AsyncStatus> status_rpc{*stub_, grpc_context_};
-    const auto reply = co_await status_rpc.finish_on(executor_, request);
+    const ::txpool::StatusRequest request;
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncStatus, *stub_, request, grpc_context_);
     StatusInfo status_info{
         .queued_count = reply.queued_count(),
         .pending_count = reply.pending_count(),
@@ -134,9 +122,8 @@ Task<StatusInfo> TransactionPool::get_status() {
 Task<TransactionsInPool> TransactionPool::get_transactions() {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "TransactionPool::get_transactions";
-    ::txpool::AllRequest request;
-    UnaryRpc<&::txpool::Txpool::StubInterface::AsyncAll> all_rpc{*stub_, grpc_context_};
-    const auto reply = co_await all_rpc.finish_on(executor_, request);
+    const ::txpool::AllRequest request;
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncAll, *stub_, request, grpc_context_);
     TransactionsInPool transactions_in_pool;
     const auto txs_size = reply.txs_size();
     for (int i = 0; i < txs_size; ++i) {

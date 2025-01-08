@@ -21,7 +21,6 @@
 #include <vector>
 
 #include <agrpc/grpc_context.hpp>
-#include <boost/asio/io_context.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
@@ -33,12 +32,8 @@ namespace silkworm::rpc::ethbackend {
 
 class RemoteBackEnd final : public BackEnd {
   public:
-    RemoteBackEnd(boost::asio::io_context& ioc, const std::shared_ptr<grpc::Channel>& channel,
-                  agrpc::GrpcContext& grpc_context);
-    RemoteBackEnd(boost::asio::io_context::executor_type executor,
-                  std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub,
-                  agrpc::GrpcContext& grpc_context);
-    ~RemoteBackEnd() override = default;
+    RemoteBackEnd(const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context);
+    RemoteBackEnd(std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub, agrpc::GrpcContext& grpc_context);
 
     Task<evmc::address> etherbase() override;
     Task<uint64_t> protocol_version() override;
@@ -57,7 +52,6 @@ class RemoteBackEnd final : public BackEnd {
     static std::vector<Bytes> decode(const ::google::protobuf::RepeatedPtrField<std::string>& grpc_txs);
     static std::vector<Withdrawal> decode(const ::google::protobuf::RepeatedPtrField<::types::Withdrawal>& grpc_withdrawals);
 
-    boost::asio::io_context::executor_type executor_;
     std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub_;
     agrpc::GrpcContext& grpc_context_;
 };

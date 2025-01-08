@@ -251,7 +251,7 @@ int ethbackend_coroutines(const std::string& target) {
         const auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
 
         // Etherbase
-        ethbackend::RemoteBackEnd eth_backend{*ioc, channel, *grpc_context};
+        ethbackend::RemoteBackEnd eth_backend{channel, *grpc_context};
         boost::asio::co_spawn(*ioc, ethbackend_etherbase(eth_backend), [&](std::exception_ptr) {
             context_pool.stop();
         });
@@ -995,7 +995,7 @@ int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_fu
         };
 
         // ETHBACKEND
-        ethbackend::RemoteBackEnd eth_backend{*ioc, channel_factory(), *grpc_context};
+        ethbackend::RemoteBackEnd eth_backend{channel_factory(), *grpc_context};
         // DB KV API client
         CoherentStateCache state_cache;
         db::kv::grpc::client::RemoteClient client{channel_factory,

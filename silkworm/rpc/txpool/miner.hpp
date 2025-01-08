@@ -22,8 +22,6 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <agrpc/grpc_context.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/use_awaitable.hpp>
 #include <evmc/evmc.hpp>
 #include <grpcpp/grpcpp.h>
 #include <intx/intx.hpp>
@@ -50,11 +48,8 @@ struct MiningResult {
 
 class Miner final {
   public:
-    Miner(boost::asio::io_context& ioc, const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context);
-    Miner(boost::asio::io_context::executor_type executor, std::unique_ptr<::txpool::Mining::StubInterface> stub,
-          agrpc::GrpcContext& grpc_context);
-
-    ~Miner();
+    Miner(const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context);
+    Miner(std::unique_ptr<::txpool::Mining::StubInterface> stub, agrpc::GrpcContext& grpc_context);
 
     Task<WorkResult> get_work();
 
@@ -67,7 +62,6 @@ class Miner final {
     Task<MiningResult> get_mining();
 
   private:
-    boost::asio::io_context::executor_type executor_;
     std::unique_ptr<::txpool::Mining::StubInterface> stub_;
     agrpc::GrpcContext& grpc_context_;
 };

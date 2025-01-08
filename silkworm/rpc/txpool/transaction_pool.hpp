@@ -25,8 +25,6 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <agrpc/grpc_context.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/use_awaitable.hpp>
 #include <evmc/evmc.hpp>
 #include <grpcpp/grpcpp.h>
 
@@ -65,15 +63,8 @@ using TransactionsInPool = std::vector<TransactionInfo>;
 
 class TransactionPool final {
   public:
-    explicit TransactionPool(
-        boost::asio::io_context& ioc,
-        const std::shared_ptr<grpc::Channel>& channel,
-        agrpc::GrpcContext& grpc_context);
-
-    explicit TransactionPool(boost::asio::io_context::executor_type executor, std::unique_ptr<::txpool::Txpool::StubInterface> stub,
-                             agrpc::GrpcContext& grpc_context);
-
-    ~TransactionPool();
+    TransactionPool(const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context);
+    TransactionPool(std::unique_ptr<::txpool::Txpool::StubInterface> stub, agrpc::GrpcContext& grpc_context);
 
     Task<OperationResult> add_transaction(const silkworm::ByteView& rlp_tx);
     Task<std::optional<silkworm::Bytes>> get_transaction(const evmc::bytes32& tx_hash);
@@ -82,7 +73,6 @@ class TransactionPool final {
     Task<TransactionsInPool> get_transactions();
 
   private:
-    boost::asio::io_context::executor_type executor_;
     std::unique_ptr<::txpool::Txpool::StubInterface> stub_;
     agrpc::GrpcContext& grpc_context_;
 };

@@ -540,6 +540,11 @@ void PooledCursor::update(const Slice& key, const Slice& value) {
     ::mdbx::cursor::update(key, value);
 }
 
+void PooledCursor::append(const Slice& key, const Slice& value) {
+    Slice value_out = value;
+    ::mdbx::error::success_or_throw(::mdbx::cursor::put(key, &value_out, MDBX_put_flags_t::MDBX_APPENDDUP));
+}
+
 bool PooledCursor::erase() {
     return ::mdbx::cursor::erase(/*whole_multivalue =*/false);
 }

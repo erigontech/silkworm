@@ -44,9 +44,9 @@ struct InvertedIndexPutQuery {
         ts_encoder.value = timestamp;
         Slice ts_slice = ts_encoder.encode();
 
-        tx.rw_cursor(entity.keys_table)->insert(ts_slice, key_slice);
+        tx.rw_cursor(entity.keys_table)->upsert(ts_slice, key_slice);
         if (with_index_update) {
-            tx.rw_cursor(entity.index_table)->insert(key_slice, ts_slice);
+            tx.rw_cursor(entity.index_table)->upsert(key_slice, ts_slice);
         }
     }
 };

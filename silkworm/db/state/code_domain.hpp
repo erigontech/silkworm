@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/db/datastore/kvdb/domain.hpp>
+#include <silkworm/db/datastore/kvdb/domain_queries.hpp>
 #include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 

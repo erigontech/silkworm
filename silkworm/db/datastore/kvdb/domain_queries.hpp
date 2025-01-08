@@ -16,16 +16,7 @@
 
 #pragma once
 
-#include <optional>
-
-#include "history.hpp"
-
-namespace silkworm::datastore::kvdb {
-
-struct Domain {
-    const MapConfig& values_table;
-    bool has_large_values;
-    std::optional<History> history;
-};
-
-}  // namespace silkworm::datastore::kvdb
+#include "domain_delete_query.hpp"
+#include "domain_get_latest_query.hpp"
+#include "domain_put_latest_query.hpp"
+#include "domain_put_query.hpp"

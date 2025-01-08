@@ -1,0 +1,47 @@
+/*
+   Copyright 2024 The Silkworm Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#pragma once
+
+#include "../common/step.hpp"
+#include "domain.hpp"
+#include "domain_codecs.hpp"
+#include "mdbx.hpp"
+
+namespace silkworm::datastore::kvdb {
+
+template <EncoderConcept TKeyEncoder, EncoderConcept TValueEncoder>
+struct DomainPutLatestQuery {
+    RWTxn& tx;
+    Domain entity;
+
+    using TKey = decltype(TKeyEncoder::value);
+    using TValue = decltype(TValueEncoder::value);
+
+    void exec(const TKey& key, const TValue& value, Step step) {
+        DomainKeyEncoder<TKeyEncoder> key_encoder{entity.has_large_values};
+        key_encoder.value.key.value = key;
+        key_encoder.value.timestamp.value = step;
+
+        DomainValueEncoder<TValueEncoder> value_encoder{entity.has_large_values};
+        value_encoder.value.value.value = value;
+        value_encoder.value.timestamp.value = step;
+
+        tx.rw_cursor(entity.values_table)->insert(key_encoder.encode(), value_encoder.encode());
+    }
+};
+
+}  // namespace silkworm::datastore::kvdb

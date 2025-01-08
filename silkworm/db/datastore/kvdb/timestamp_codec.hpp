@@ -16,16 +16,11 @@
 
 #pragma once
 
-#include <optional>
-
-#include "history.hpp"
+#include "big_endian_codec.hpp"
 
 namespace silkworm::datastore::kvdb {
 
-struct Domain {
-    const MapConfig& values_table;
-    bool has_large_values;
-    std::optional<History> history;
-};
+using TimestampEncoder = BigEndianU64Codec;
+using TimestampDecoder = BigEndianU64Codec;
 
 }  // namespace silkworm::datastore::kvdb

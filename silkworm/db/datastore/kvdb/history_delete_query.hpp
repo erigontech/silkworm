@@ -16,16 +16,21 @@
 
 #pragma once
 
-#include <optional>
-
-#include "history.hpp"
+#include "history_put_query.hpp"
 
 namespace silkworm::datastore::kvdb {
 
-struct Domain {
-    const MapConfig& values_table;
-    bool has_large_values;
-    std::optional<History> history;
+template <EncoderConcept TKeyEncoder>
+struct HistoryDeleteQuery {
+    RWTxn& tx;
+    History entity;
+
+    using TKey = decltype(TKeyEncoder::value);
+
+    void exec(const TKey& key, Timestamp timestamp) {
+        HistoryPutQuery<TKeyEncoder, RawEncoder<ByteView>> query{tx, entity};
+        query.exec(key, ByteView{}, timestamp);
+    }
 };
 
 }  // namespace silkworm::datastore::kvdb

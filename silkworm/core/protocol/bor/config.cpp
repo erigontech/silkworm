@@ -70,6 +70,7 @@ std::optional<Config> Config::from_json(const nlohmann::json& json) noexcept {
     }
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
+    // silence misdiagnostics in gcc 14
     config.period = {period.begin(), period.end()};
 #pragma GCC diagnostic pop
 

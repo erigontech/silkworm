@@ -251,8 +251,8 @@ void Daemon::add_private_services() {
         auto& ioc = *context.ioc();
         auto& grpc_context{*context.grpc_context()};
 
-        add_private_service<db::kv::api::Client>(ioc, make_kv_client(context));
         add_private_service<ethbackend::BackEnd>(ioc, std::make_unique<ethbackend::RemoteBackEnd>(grpc_channel, grpc_context));
+        add_private_service<db::kv::api::Client>(ioc, make_kv_client(context));
         add_private_service(ioc, std::make_unique<txpool::TransactionPool>(grpc_channel, grpc_context));
         add_private_service(ioc, std::make_unique<txpool::Miner>(grpc_channel, grpc_context));
     }
@@ -285,7 +285,7 @@ std::unique_ptr<db::kv::api::Client> Daemon::make_kv_client(rpc::ClientContext& 
     auto& grpc_context = *context.grpc_context();
     auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(ioc)};
     auto* backend{must_use_private_service<rpc::ethbackend::BackEnd>(ioc)};
-    if (!data_store_) {
+    if (settings_.standalone) {
         return std::make_unique<db::kv::grpc::client::RemoteClient>(
             create_channel_, grpc_context, state_cache, ethdb::kv::make_backend_providers(backend));
     }

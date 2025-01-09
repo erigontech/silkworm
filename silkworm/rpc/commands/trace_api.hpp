@@ -22,11 +22,11 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/block_cache.hpp>
+#include <silkworm/db/kv/api/client.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/json/stream.hpp>
 
 namespace silkworm::rpc::json_rpc {
@@ -41,7 +41,7 @@ class TraceRpcApi {
         : ioc_{ioc},
           block_cache_{must_use_shared_service<BlockCache>(ioc_)},
           state_cache_{must_use_shared_service<db::kv::api::StateCache>(ioc_)},
-          database_{must_use_private_service<ethdb::Database>(ioc_)},
+          database_{must_use_private_service<db::kv::api::Client>(ioc)->service()},
           workers_{workers} {}
 
     virtual ~TraceRpcApi() = default;
@@ -66,7 +66,7 @@ class TraceRpcApi {
     boost::asio::io_context& ioc_;
     BlockCache* block_cache_;
     db::kv::api::StateCache* state_cache_;
-    ethdb::Database* database_;
+    std::shared_ptr<db::kv::api::Service> database_;
     WorkerPool& workers_;
 
     friend class silkworm::rpc::json_rpc::RequestHandler;

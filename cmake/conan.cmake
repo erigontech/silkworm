@@ -77,7 +77,7 @@ endmacro()
 # unset(CONAN_COMMAND CACHE)
 find_program(
   CONAN_COMMAND "conan"
-  PATHS /opt/conan2/bin
+  PATHS /opt/conan2/bin /opt/homebrew/opt/conan@2/bin
   NO_DEFAULT_PATH
 )
 if(NOT CONAN_COMMAND)

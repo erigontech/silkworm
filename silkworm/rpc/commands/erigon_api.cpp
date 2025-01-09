@@ -36,7 +36,7 @@ namespace silkworm::rpc::commands {
 
 // https://eth.wiki/json-rpc/API#erigon_cachecheck
 Task<void> ErigonRpcApi::handle_erigon_cache_check(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         reply = make_json_content(request, to_quantity(0));
@@ -65,7 +65,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohma
 
     SILK_DEBUG << "block_num_or_hash: " << block_num_or_hash;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -114,7 +114,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
     const auto timestamp = static_cast<uint64_t>(std::stol(block_timestamp.substr(begin, end - begin + 1), nullptr, 0));
 
     // Open a new remote database transaction (no need to close if code throws before the end)
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -181,7 +181,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
     const auto block_hash = params[0].get<evmc::bytes32>();
     SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -236,7 +236,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::json& 
     const auto block_hash = params[0].get<evmc::bytes32>();
     SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -281,7 +281,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
         co_return;
     }
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -351,7 +351,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
     }
     SILK_DEBUG << "filter: {" << filter << "}, options: {" << options << "}";
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         auto storage = tx->create_storage();
@@ -401,7 +401,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
     const auto block_hash = params[0].get<evmc::bytes32>();
     SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -438,7 +438,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
 
 // https://eth.wiki/json-rpc/API#erigon_forks
 Task<void> ErigonRpcApi::handle_erigon_forks(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -474,7 +474,7 @@ Task<void> ErigonRpcApi::handle_erigon_block_num(const nlohmann::json& request, 
     }
     SILK_DEBUG << "block: " << block_id;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();

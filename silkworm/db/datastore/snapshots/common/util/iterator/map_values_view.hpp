@@ -80,19 +80,7 @@ class MapValuesView : std::ranges::view_interface<MapValuesView<TMapKey, TMapVal
 namespace silkworm::map_values_view::builtin {
 
 template <typename TMapKey, typename TMapValue>
-class MapValuesView : public std::ranges::view_interface<MapValuesView<TMapKey, TMapValue>> {
-  public:
-    using Map = std::map<TMapKey, TMapValue>;
-
-    explicit MapValuesView(const Map& map)
-        : base_view_{std::views::values(map)} {}
-
-    auto begin() const { return base_view_.begin(); }
-    auto end() const { return base_view_.end(); }
-
-  private:
-    decltype(std::views::values([]() -> const Map& { throw 1; }())) base_view_;
-};
+using MapValuesView = std::ranges::values_view<std::ranges::views::all_t<const std::map<TMapKey, TMapValue>&>>;
 
 }  // namespace silkworm::map_values_view::builtin
 

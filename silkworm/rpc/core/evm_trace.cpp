@@ -36,7 +36,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/json/call.hpp>
 #include <silkworm/rpc/json/types.hpp>
@@ -1766,34 +1765,26 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     } catch (const std::invalid_argument& iv) {
         block_with_hash = nullptr;
     }
-    rpc::BlockReader block_reader{chain_storage_, tx_};
-    auto latest_block_number = co_await block_reader.get_latest_block_num();
+    while (block_num <= trace_filter.to_block.number()) {
+        if (!block_with_hash) {
+            break;
+        }
+        const Block block{block_with_hash, false};
+        SILK_TRACE << "TraceCallExecutor::trace_filter: processing "
+                   << " block_num: " << block_num
+                   << " block: " << block;
 
-    if (trace_filter.to_block.number() < latest_block_number) {
-        latest_block_number = trace_filter.to_block.number();
-    }
+        co_await trace_block(*block_with_hash, filter, &stream);
 
-    if (block_with_hash) {
-        while (block_num <= latest_block_number) {
-            if (block_with_hash) {
-                const Block block{block_with_hash, false};
-                SILK_TRACE << "TraceCallExecutor::trace_filter: processing "
-                           << " block_num: " << block_num - 1
-                           << " block: " << block;
+        if (filter.count == 0) {
+            break;
+        }
 
-                co_await trace_block(*block_with_hash, filter, &stream);
-
-                if (filter.count == 0) {
-                    break;
-                }
-            }
-
-            ++block_num;
-            try {
-                block_with_hash = co_await core::read_block_by_number(block_cache_, storage, block_num);
-            } catch (const std::invalid_argument& iv) {
-                block_with_hash = nullptr;
-            }
+        ++block_num;
+        try {
+            block_with_hash = co_await core::read_block_by_number(block_cache_, storage, block_num);
+        } catch (const std::invalid_argument& iv) {
+            block_with_hash = nullptr;
         }
     }
 

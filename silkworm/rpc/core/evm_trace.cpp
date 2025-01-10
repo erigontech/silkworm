@@ -1766,9 +1766,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
             break;
         }
         const Block block{block_with_hash, false};
-        SILK_TRACE << "TraceCallExecutor::trace_filter: processing "
-                   << " block_num: " << block_num
-                   << " block: " << block;
+        SILK_TRACE << "TraceCallExecutor::trace_filter: processing block_num: " << block_num << " block: " << block;
 
         co_await trace_block(*block_with_hash, filter, &stream);
 
@@ -1776,7 +1774,8 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
             break;
         }
 
-        block_with_hash = co_await core::read_block_by_number(block_cache_, storage, ++block_num);
+        ++block_num;
+        block_with_hash = co_await core::read_block_by_number(block_cache_, storage, block_num);
     }
 
     stream.close_array();

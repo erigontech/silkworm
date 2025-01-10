@@ -29,7 +29,7 @@
 namespace silkworm {
 
 // SmallMap is a constexpr-friendly immutable map suitable for a small number of elements.
-template <std::totally_ordered Key, std::default_initializable T, size_t max_size = 8>
+template <std::totally_ordered Key, std::default_initializable T, size_t maximum_size = 8>
 class SmallMap {
   public:
     using ValueType = std::pair<Key, T>;
@@ -37,7 +37,7 @@ class SmallMap {
     constexpr SmallMap() noexcept = default;
 
     constexpr SmallMap(std::initializer_list<ValueType> init) : size_(init.size()) {
-        SILKWORM_ASSERT(size_ <= max_size);
+        SILKWORM_ASSERT(size_ <= maximum_size);
         for (size_t i{0}; i < size_; ++i) {
             data_[i] = *(std::data(init) + i);
         }
@@ -47,14 +47,14 @@ class SmallMap {
     template <std::input_iterator InputIt>
     constexpr SmallMap(InputIt first, InputIt last) {
         for (InputIt it{first}; it != last; ++it) {
-            SILKWORM_ASSERT(size_ < max_size);
+            SILKWORM_ASSERT(size_ < maximum_size);
             data_[size_++] = *it;
         }
         sort();
     }
 
     constexpr SmallMap(const SmallMap& other) : size_{other.size_} {
-        for (size_t i{0}; i < max_size; ++i) {
+        for (size_t i{0}; i < maximum_size; ++i) {
             data_[i] = other.data_[i];
         }
     }
@@ -63,7 +63,7 @@ class SmallMap {
             return *this;
         }
         size_ = other.size_;
-        for (size_t i{0}; i < max_size; ++i) {
+        for (size_t i{0}; i < maximum_size; ++i) {
             data_[i] = other.data_[i];
         }
         return *this;
@@ -75,6 +75,10 @@ class SmallMap {
 
     constexpr size_t size() const noexcept {
         return size_;
+    }
+
+    static constexpr size_t max_size() noexcept {
+        return maximum_size;
     }
 
     constexpr auto begin() const noexcept {
@@ -110,7 +114,7 @@ class SmallMap {
                   [](const ValueType& a, const ValueType& b) { return a.first < b.first; });
     }
 
-    std::array<ValueType, max_size> data_{};
+    std::array<ValueType, maximum_size> data_{};
     size_t size_{0};
 };
 

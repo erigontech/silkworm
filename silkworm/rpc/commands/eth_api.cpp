@@ -32,7 +32,6 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/db/kv/state_reader.hpp>
-#include <silkworm/db/util.hpp>
 #include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -56,7 +55,7 @@ using db::kv::StateReader;
 
 // https://eth.wiki/json-rpc/API#eth_blocknumber
 Task<void> EthereumRpcApi::handle_eth_block_num(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
     const auto chain_storage = tx->create_storage();
     rpc::BlockReader block_reader{*chain_storage, *tx};
 
@@ -76,7 +75,7 @@ Task<void> EthereumRpcApi::handle_eth_block_num(const nlohmann::json& request, n
 
 // https://eth.wiki/json-rpc/API#eth_chainid
 Task<void> EthereumRpcApi::handle_eth_chain_id(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -109,7 +108,7 @@ Task<void> EthereumRpcApi::handle_eth_protocol_version(const nlohmann::json& req
 
 // https://eth.wiki/json-rpc/API#eth_syncing
 Task<void> EthereumRpcApi::handle_eth_syncing(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
     const auto chain_storage = tx->create_storage();
     rpc::BlockReader block_reader{*chain_storage, *tx};
 
@@ -144,7 +143,7 @@ Task<void> EthereumRpcApi::handle_eth_syncing(const nlohmann::json& request, nlo
 
 // https://eth.wiki/json-rpc/API#eth_gasprice
 Task<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -193,7 +192,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& re
     auto full_tx = params[1].get<bool>();
     SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash) << " full_tx: " << std::boolalpha << full_tx;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -232,7 +231,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& 
     auto full_tx = params[1].get<bool>();
     SILK_DEBUG << "block_id: " << block_id << " full_tx: " << std::boolalpha << full_tx;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -273,7 +272,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(const 
     auto block_hash = params[0].get<evmc::bytes32>();
     SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -309,7 +308,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number(cons
     const auto block_id = params[0].get<std::string>();
     SILK_DEBUG << "block_id: " << block_id;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -349,7 +348,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(const nl
     const auto index = params[1].get<std::string>();
     SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash) << " index: " << index;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -401,7 +400,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_by_block_num_and_index(const nlo
     const auto index = params[1].get<std::string>();
     SILK_DEBUG << "block_id: " << block_id << " index: " << index;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -454,7 +453,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const nlohma
     auto block_hash = params[0].get<evmc::bytes32>();
     SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -491,7 +490,7 @@ Task<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_num(const nlohman
     const auto block_id = params[0].get<std::string>();
     SILK_DEBUG << "block_id: " << block_id;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -528,7 +527,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohmann::js
     auto transaction_hash = params[0].get<evmc::bytes32>();
     SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -582,7 +581,7 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_hash(const nlohmann
     const auto transaction_hash = params[0].get<evmc::bytes32>();
     SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -629,7 +628,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_index(co
     const auto index = params[1].get<std::string>();
     SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash) << " index: " << index;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -676,7 +675,7 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_hash_and_inde
     const auto index = params[1].get<std::string>();
     SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash) << " index: " << index;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -725,7 +724,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_by_block_num_and_index(con
     const auto index = params[1].get<std::string>();
     SILK_DEBUG << "block_id: " << block_id << " index: " << index;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -776,7 +775,7 @@ Task<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_num_and_index
     const auto index = params[1].get<std::string>();
     SILK_DEBUG << "block_id: " << block_id << " index: " << index;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -825,7 +824,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
     }
     auto transaction_hash = params[0].get<evmc::bytes32>();
     SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -886,7 +885,7 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
     const auto call = params[0].get<Call>();
     SILK_DEBUG << "call: " << call;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
     const auto chain_storage{tx->create_storage()};
     rpc::BlockReader block_reader{*chain_storage, *tx};
 
@@ -963,7 +962,7 @@ Task<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request,
     const auto block_id = params[1].get<std::string>();
     SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -1006,7 +1005,7 @@ Task<void> EthereumRpcApi::handle_eth_get_code(const nlohmann::json& request, nl
     const auto block_id = params[1].get<std::string>();
     SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -1051,7 +1050,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json
     const auto block_id = params[1].get<std::string>();
     SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -1103,7 +1102,7 @@ Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& reque
     const auto block_id = params[2].get<std::string>();
     SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -1153,7 +1152,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
     const auto block_id = params[1].get<std::string>();
     SILK_DEBUG << "call: " << call << " block_id: " << block_id;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -1242,7 +1241,7 @@ Task<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& request, n
                << " accounts_overrides #" << accounts_overrides.size()
                << " timeout: " << timeout.value_or(0);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         call::CallExecutor executor{*tx, *block_cache_, workers_};
@@ -1266,7 +1265,7 @@ Task<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& request, n
 
 // https://eth.wiki/json-rpc/API#eth_maxpriorityfeepergas
 Task<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         tx->set_state_cache_enabled(/*cache_enabled=*/true);  // always at latest block
@@ -1314,7 +1313,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
 
     SILK_DEBUG << "call: " << call << " block_num_or_hash: " << block_num_or_hash << " optimize: " << optimize_gas;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -1427,7 +1426,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
 
     SILK_DEBUG << "block_num_or_hash: " << block_num_or_hash << " timeout: " << timeout;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -1526,7 +1525,7 @@ Task<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& request, 
         co_return;
     }
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         auto storage = tx->create_storage();
@@ -1559,7 +1558,7 @@ Task<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& request, 
 
 // https://eth.wiki/json-rpc/API#eth_newblockfilter
 Task<void> EthereumRpcApi::handle_eth_new_block_filter(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         reply = make_json_content(request, to_quantity(0));
@@ -1576,7 +1575,7 @@ Task<void> EthereumRpcApi::handle_eth_new_block_filter(const nlohmann::json& req
 
 // https://eth.wiki/json-rpc/API#eth_newpendingtransactionfilter
 Task<void> EthereumRpcApi::handle_eth_new_pending_transaction_filter(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         reply = make_json_content(request, to_quantity(0));
@@ -1611,7 +1610,7 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json& requ
 
     auto& filter = filter_ref->get();
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         auto storage = tx->create_storage();
@@ -1662,7 +1661,7 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_changes(const nlohmann::json& r
     }
 
     auto& filter = filter_opt.value().get();
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         auto storage = tx->create_storage();
@@ -1732,7 +1731,7 @@ Task<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& request, st
     auto filter = params[0].get<Filter>();
     SILK_DEBUG << "filter: " << filter;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         auto storage = tx->create_storage();
@@ -1837,7 +1836,7 @@ Task<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json&
 
 // https://eth.wiki/json-rpc/API#eth_sendtransaction
 Task<void> EthereumRpcApi::handle_eth_send_transaction(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         reply = make_json_content(request, to_quantity(0));
@@ -1854,7 +1853,7 @@ Task<void> EthereumRpcApi::handle_eth_send_transaction(const nlohmann::json& req
 
 // https://eth.wiki/json-rpc/API#eth_signtransaction
 Task<void> EthereumRpcApi::handle_eth_sign_transaction(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         reply = make_json_content(request, to_quantity(0));
@@ -1871,7 +1870,7 @@ Task<void> EthereumRpcApi::handle_eth_sign_transaction(const nlohmann::json& req
 
 // https://eth.wiki/json-rpc/API#eth_getproof
 Task<void> EthereumRpcApi::handle_eth_get_proof(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         reply = make_json_content(request, to_quantity(0));
@@ -2022,7 +2021,7 @@ Task<void> EthereumRpcApi::handle_eth_submit_work(const nlohmann::json& request,
 
 // https://eth.wiki/json-rpc/API#eth_subscribe
 Task<void> EthereumRpcApi::handle_eth_subscribe(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         reply = make_json_content(request, to_quantity(0));
@@ -2039,7 +2038,7 @@ Task<void> EthereumRpcApi::handle_eth_subscribe(const nlohmann::json& request, n
 
 // https://eth.wiki/json-rpc/API#eth_unsubscribe
 Task<void> EthereumRpcApi::handle_eth_unsubscribe(const nlohmann::json& request, nlohmann::json& reply) {
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         reply = make_json_content(request, to_quantity(0));
@@ -2084,7 +2083,7 @@ Task<void> EthereumRpcApi::handle_eth_fee_history(const nlohmann::json& request,
     SILK_TRACE << "block_count: " << block_count << " newest_block: " << newest_block
                << " reward_percentiles size: " << reward_percentiles.size();
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -2135,7 +2134,7 @@ Task<void> EthereumRpcApi::handle_eth_base_fee(const nlohmann::json& request, nl
         co_return;
     }
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         intx::uint256 base_fee{0};
@@ -2180,7 +2179,7 @@ Task<void> EthereumRpcApi::handle_eth_blob_base_fee(const nlohmann::json& reques
         co_return;
     }
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         intx::uint256 blob_base_fee{0};
@@ -2226,7 +2225,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_receipts(const nlohmann::json& r
     const auto block_id = params[0].get<std::string>();
     SILK_DEBUG << "block_id: " << block_id;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};

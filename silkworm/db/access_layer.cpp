@@ -1266,29 +1266,15 @@ bool DataModel::read_block_from_snapshot(BlockNum block_num, Block& block) const
 }
 
 std::optional<BlockHeader> DataModel::read_header_from_snapshot(BlockNum block_num) const {
-    std::optional<BlockHeader> block_header;
-    // We know the header snapshot in advance: find it based on target block number
-    const auto [segment_and_index, _] = repository_.find_segment(blocks::kHeaderSegmentAndIdxNames, block_num);
-    if (segment_and_index) {
-        block_header = HeaderFindByBlockNumQuery{*segment_and_index}.exec(block_num);
-    }
-    return block_header;
+    return HeaderFindByBlockNumQuery{repository_}.exec(block_num);
 }
 
 std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash) const {
-    std::optional<BlockHeader> block_header;
-    // We don't know the header snapshot in advance: search for block hash in each header snapshot in reverse order
-    for (const auto& bundle_ptr : repository_.view_bundles_reverse()) {
-        const auto& bundle = *bundle_ptr;
-        auto segment_and_index = bundle.segment_and_accessor_index(blocks::kHeaderSegmentAndIdxNames);
-        block_header = HeaderFindByHashQuery{segment_and_index}.exec(hash);
-        if (block_header) break;
-    }
-    return block_header;
+    return HeaderFindByHashQuery{repository_}.exec(hash);
 }
 
 std::optional<BlockBodyForStorage> DataModel::read_body_for_storage_from_snapshot(BlockNum block_num) const {
-    return BodyFindByBlockNumMultiQuery{repository_}.exec(block_num);
+    return BodyFindByBlockNumQuery{repository_}.exec(block_num);
 }
 
 bool DataModel::read_body_from_snapshot(BlockNum block_num, BlockBody& body) const {
@@ -1310,14 +1296,7 @@ bool DataModel::read_body_from_snapshot(BlockNum block_num, BlockBody& body) con
 }
 
 bool DataModel::is_body_in_snapshot(BlockNum block_num) const {
-    // We know the body snapshot in advance: find it based on target block number
-    const auto [segment_and_index, _] = repository_.find_segment(blocks::kBodySegmentAndIdxNames, block_num);
-    if (segment_and_index) {
-        const auto stored_body = BodyFindByBlockNumQuery{*segment_and_index}.exec(block_num);
-        return stored_body.has_value();
-    }
-
-    return false;
+    return BodyFindByBlockNumQuery{repository_}.exec(block_num).has_value();
 }
 
 bool DataModel::read_transactions_from_snapshot(BlockNum block_num, uint64_t base_txn_id, uint64_t txn_count, std::vector<Transaction>& txs) const {
@@ -1325,31 +1304,27 @@ bool DataModel::read_transactions_from_snapshot(BlockNum block_num, uint64_t bas
         return true;
     }
 
-    const auto [segment_and_index, _] = repository_.find_segment(blocks::kTxnSegmentAndIdxNames, block_num);
-    if (!segment_and_index) return false;
+    auto txs_opt = TransactionRangeFromIdQuery{repository_}.exec(block_num, base_txn_id, txn_count);
+    if (!txs_opt) return false;
 
-    txs = TransactionRangeFromIdQuery{*segment_and_index}.exec_into_vector(base_txn_id, txn_count);
-
+    txs = std::move(*txs_opt);
     return true;
 }
 
 bool DataModel::read_rlp_transactions_from_snapshot(BlockNum block_num, std::vector<Bytes>& rlp_txs) const {
-    const auto [body_segment_and_index, _] = repository_.find_segment(blocks::kBodySegmentAndIdxNames, block_num);
-    if (body_segment_and_index) {
-        auto stored_body = BodyFindByBlockNumQuery{*body_segment_and_index}.exec(block_num);
-        if (!stored_body) return false;
+    auto stored_body = BodyFindByBlockNumQuery{repository_}.exec(block_num);
+    if (!stored_body) return false;
 
+    {
         // Skip first and last *system transactions* in block body
         const auto base_txn_id{stored_body->base_txn_id + 1};
         const auto txn_count{stored_body->txn_count >= 2 ? stored_body->txn_count - 2 : stored_body->txn_count};
-
         if (txn_count == 0) return true;
 
-        const auto [tx_segment_and_index, _2] = repository_.find_segment(blocks::kTxnSegmentAndIdxNames, block_num);
-        if (!tx_segment_and_index) return false;
+        auto txs_opt = TransactionPayloadRlpRangeFromIdQuery{repository_}.exec(block_num, base_txn_id, txn_count);
+        if (!txs_opt) return false;
 
-        rlp_txs = TransactionPayloadRlpRangeFromIdQuery{*tx_segment_and_index}.exec_into_vector(base_txn_id, txn_count);
-
+        rlp_txs = std::move(*txs_opt);
         return true;
     }
 
@@ -1382,7 +1357,7 @@ std::optional<BlockNum> DataModel::read_tx_lookup_from_db(const evmc::bytes32& t
 }
 
 std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const {
-    TransactionBlockNumByTxnHashMultiQuery query{repository_.view_bundles_reverse()};
+    TransactionBlockNumByTxnHashQuery query{repository_};
     return query.exec(tx_hash);
 }
 

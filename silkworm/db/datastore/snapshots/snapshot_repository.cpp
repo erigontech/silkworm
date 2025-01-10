@@ -23,6 +23,8 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
+#include "index_builders_factory.hpp"
+
 namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
@@ -91,9 +93,9 @@ Step SnapshotRepository::max_end_step() const {
 }
 
 std::pair<std::optional<SegmentAndAccessorIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(
-    std::array<datastore::EntityName, 3> names,
+    const SegmentAndAccessorIndexNames& names,
     Timestamp t) const {
-    auto bundle = find_bundle(step_converter_->step_from_timestamp(t));
+    auto bundle = find_bundle(t);
     if (bundle) {
         return {bundle->segment_and_accessor_index(names), bundle};
     }
@@ -152,6 +154,10 @@ void SnapshotRepository::reopen_folder() {
 
     SILK_INFO << "Total reopened bundles: " << bundles_count()
               << " max block available: " << max_block_available();
+}
+
+std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(Timestamp t) const {
+    return find_bundle(step_converter_->step_from_timestamp(t));
 }
 
 std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(Step step) const {

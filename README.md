@@ -227,6 +227,7 @@ If you want to contribute, you can read our [contribution guidelines](docs/CONTR
 Silkworm is licensed under the terms of the Apache license.
 See [LICENSE](LICENSE) for more information.
 
+Some files in [elias_fano](silkworm/db/datastore/snapshots/elias_fano) and [rec_split](silkworm/db/datastore/snapshots/rec_split) folders are licensed under the LGPL license.
 
 [Ethereum]: https://ethereum.org
 [Ethereum EL Tests]: https://github.com/ethereum/tests

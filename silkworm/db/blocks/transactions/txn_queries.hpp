@@ -21,62 +21,57 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/db/datastore/snapshots/basic_queries.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_repository_ro_access.hpp>
 
 #include "../schema_config.hpp"
 #include "txn_segment.hpp"
 
 namespace silkworm::snapshots {
 
-using TransactionFindByIdQuery = FindByIdQuery<TransactionSegmentReader>;
-using TransactionFindByHashQuery = FindByHashQuery<TransactionSegmentReader>;
-using TransactionRangeFromIdQuery = RangeFromIdQuery<TransactionSegmentReader>;
-using TransactionPayloadRlpRangeFromIdQuery = RangeFromIdQuery<TransactionSegmentPayloadRlpReader<Bytes>>;
+using TransactionFindByIdSegmentQuery = FindByIdSegmentQuery<TransactionSegmentReader, &db::blocks::kTxnSegmentAndIdxNames>;
+using TransactionFindByHashSegmentQuery = FindByHashSegmentQuery<TransactionSegmentReader, &db::blocks::kTxnSegmentAndIdxNames>;
 
-class TransactionBlockNumByTxnHashQuery {
+using TransactionRangeFromIdSegmentQuery = RangeFromIdSegmentQuery<TransactionSegmentReader, &db::blocks::kTxnSegmentAndIdxNames>;
+using TransactionRangeFromIdQuery = FindByTimestampMapQuery<TransactionRangeFromIdSegmentQuery>;
+
+using TransactionPayloadRlpRangeFromIdSegmentQuery = RangeFromIdSegmentQuery<TransactionSegmentPayloadRlpReader<Bytes>, &db::blocks::kTxnSegmentAndIdxNames>;
+using TransactionPayloadRlpRangeFromIdQuery = FindByTimestampMapQuery<TransactionPayloadRlpRangeFromIdSegmentQuery>;
+
+class TransactionBlockNumByTxnHashSegmentQuery {
   public:
-    TransactionBlockNumByTxnHashQuery(
+    TransactionBlockNumByTxnHashSegmentQuery(
         const rec_split::AccessorIndex& index,
-        TransactionFindByHashQuery cross_check_query)
+        TransactionFindByHashSegmentQuery cross_check_query)
         : index_(index),
           cross_check_query_(cross_check_query) {}
+
+    explicit TransactionBlockNumByTxnHashSegmentQuery(
+        const SnapshotBundle& bundle)
+        : TransactionBlockNumByTxnHashSegmentQuery{
+              make(db::blocks::BundleDataRef{*bundle})} {}
 
     std::optional<BlockNum> exec(const Hash& hash) {
         // Lookup the entire txn to check that the retrieved txn hash matches (no way to know if key exists in MPHF)
         const auto transaction = cross_check_query_.exec(hash);
-        auto result = transaction ? index_.lookup_ordinal_by_hash(hash) : std::nullopt;
+        auto result = transaction ? index_.lookup_by_key(hash) : std::nullopt;
         return result;
+    }
+
+    static TransactionBlockNumByTxnHashSegmentQuery make(db::blocks::BundleDataRef bundle) {
+        TransactionFindByHashSegmentQuery cross_check_query{
+            SegmentAndAccessorIndex{
+                bundle.txn_segment(),
+                bundle.idx_txn_hash(),
+            },
+        };
+        return {bundle.idx_txn_hash_2_block(), cross_check_query};
     }
 
   private:
     const rec_split::AccessorIndex& index_;
-    TransactionFindByHashQuery cross_check_query_;
+    TransactionFindByHashSegmentQuery cross_check_query_;
 };
 
-template <std::ranges::view TBundlesView, class TBundle = typename std::ranges::iterator_t<TBundlesView>::value_type>
-class TransactionBlockNumByTxnHashMultiQuery {
-  public:
-    explicit TransactionBlockNumByTxnHashMultiQuery(TBundlesView bundles)
-        : bundles_(std::move(bundles)) {}
-
-    std::optional<BlockNum> exec(const Hash& hash) {
-        for (const TBundle& bundle_ptr : bundles_) {
-            db::blocks::BundleDataRef bundle{**bundle_ptr};
-            const segment::SegmentFileReader& segment = bundle.txn_segment();
-            const rec_split::AccessorIndex& idx_txn_hash = bundle.idx_txn_hash();
-            const rec_split::AccessorIndex& idx_txn_hash_2_block = bundle.idx_txn_hash_2_block();
-
-            TransactionFindByHashQuery cross_check_query{{segment, idx_txn_hash}};
-            TransactionBlockNumByTxnHashQuery query{idx_txn_hash_2_block, cross_check_query};
-            auto block_num = query.exec(hash);
-            if (block_num) {
-                return block_num;
-            }
-        }
-        return std::nullopt;
-    }
-
-  private:
-    TBundlesView bundles_;
-};
+using TransactionBlockNumByTxnHashQuery = FindMapQuery<TransactionBlockNumByTxnHashSegmentQuery>;
 
 }  // namespace silkworm::snapshots

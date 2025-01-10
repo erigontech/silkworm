@@ -22,12 +22,12 @@
 #include <nlohmann/json.hpp>
 #include <tl/expected.hpp>
 
+#include <silkworm/db/kv/api/client.hpp>
 #include <silkworm/infra/common/application_info.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/engine/execution_engine.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
-#include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::json_rpc {
@@ -38,14 +38,14 @@ namespace silkworm::rpc::commands {
 
 class EngineRpcApi {
   public:
-    EngineRpcApi(ethdb::Database* database,
+    EngineRpcApi(std::shared_ptr<db::kv::api::Service> database,
                  engine::ExecutionEngine* engine,
                  ethbackend::BackEnd* backend,
                  ApplicationInfo build_info = {})
-        : database_{database}, engine_{engine}, backend_{backend}, build_info_{std::move(build_info)} {}
+        : database_{std::move(database)}, engine_{engine}, backend_{backend}, build_info_{std::move(build_info)} {}
     explicit EngineRpcApi(boost::asio::io_context& ioc, ApplicationInfo build_info = {})
         : EngineRpcApi(
-              must_use_private_service<ethdb::Database>(ioc),
+              must_use_private_service<db::kv::api::Client>(ioc)->service(),
               must_use_shared_service<engine::ExecutionEngine>(ioc),
               must_use_private_service<ethbackend::BackEnd>(ioc),
               std::move(build_info)) {}
@@ -89,7 +89,7 @@ class EngineRpcApi {
                                                    const ForkChoiceUpdatedReply& reply,
                                                    const std::optional<silkworm::ChainConfig>& config);
 
-    ethdb::Database* database_;
+    std::shared_ptr<db::kv::api::Service> database_;
     engine::ExecutionEngine* engine_;
     ethbackend::BackEnd* backend_;
     ApplicationInfo build_info_;

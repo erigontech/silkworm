@@ -19,12 +19,12 @@
 #include <string>
 #include <utility>
 
-#include <agrpc/test.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/empty_hashes.hpp>
+#include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_responder.hpp>
 #include <silkworm/infra/grpc/test_util/interfaces/mining_mock_fix24351.grpc.pb.h>
@@ -53,7 +53,7 @@ TEST_CASE_METHOD(MinerTest, "Miner::get_work", "[rpc][txpool][miner]") {
         CHECK(work_result.header_hash == 0x209f062567c161c5f71b3f57a7de277b0e95c3455050b152d785ad7524ef8ee7_bytes32);
         CHECK(work_result.seed_hash == 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347_bytes32);
         CHECK(work_result.target == 0xe7536c5b61ed0e0ab7f3ce7f085806d40f716689c0c086676757de401b595658_bytes32);
-        CHECK(work_result.block_num == *silkworm::from_hex("0x00000000"));
+        CHECK(work_result.block_num == *from_hex("0x00000000"));
     }
 
     SECTION("call get_work and get empty result") {
@@ -62,12 +62,12 @@ TEST_CASE_METHOD(MinerTest, "Miner::get_work", "[rpc][txpool][miner]") {
         CHECK(!work.header_hash);
         CHECK(!work.seed_hash);
         CHECK(!work.target);
-        CHECK(work.block_num == *silkworm::from_hex("0x"));
+        CHECK(work.block_num == *from_hex("0x"));
     }
 
     SECTION("call get_work and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&Miner::get_work>()), boost::system::system_error);
+        CHECK_THROWS_AS((run<&Miner::get_work>()), rpc::GrpcStatusError);
     }
 }
 
@@ -91,7 +91,7 @@ TEST_CASE_METHOD(MinerTest, "Miner::get_hashrate", "[rpc][txpool][miner]") {
 
     SECTION("call get_hashrate and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&Miner::get_hash_rate>()), boost::system::system_error);
+        CHECK_THROWS_AS((run<&Miner::get_hash_rate>()), rpc::GrpcStatusError);
     }
 }
 
@@ -126,7 +126,7 @@ TEST_CASE_METHOD(MinerTest, "Miner::get_mining", "[rpc][txpool][miner]") {
 
     SECTION("call get_mining and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&Miner::get_mining>()), boost::system::system_error);
+        CHECK_THROWS_AS((run<&Miner::get_mining>()), rpc::GrpcStatusError);
     }
 }
 
@@ -138,28 +138,28 @@ TEST_CASE_METHOD(MinerTest, "Miner::submit_work", "[rpc][txpool][miner]") {
         ::txpool::SubmitWorkReply response;
         response.set_ok(true);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
-        silkworm::Bytes block_nonce{};                 // don't care
-        evmc::bytes32 pow_hash{silkworm::kEmptyHash};  // don't care
-        evmc::bytes32 digest{silkworm::kEmptyHash};    // don't care
+        Bytes block_nonce{};                 // don't care
+        evmc::bytes32 pow_hash{kEmptyHash};  // don't care
+        evmc::bytes32 digest{kEmptyHash};    // don't care
         const auto ok = run<&Miner::submit_work>(block_nonce, pow_hash, digest);
         CHECK(ok);
     }
 
     SECTION("call submit_work and get empty result") {
-        silkworm::Bytes block_nonce{};                 // don't care
-        evmc::bytes32 pow_hash{silkworm::kEmptyHash};  // don't care
-        evmc::bytes32 digest{silkworm::kEmptyHash};    // don't care
+        Bytes block_nonce{};                 // don't care
+        evmc::bytes32 pow_hash{kEmptyHash};  // don't care
+        evmc::bytes32 digest{kEmptyHash};    // don't care
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
         const auto ok = run<&Miner::submit_work>(block_nonce, pow_hash, digest);
         CHECK(!ok);
     }
 
     SECTION("call submit_work and get error") {
-        silkworm::Bytes block_nonce{};                 // don't care
-        evmc::bytes32 pow_hash{silkworm::kEmptyHash};  // don't care
-        evmc::bytes32 digest{silkworm::kEmptyHash};    // don't care
+        Bytes block_nonce{};                 // don't care
+        evmc::bytes32 pow_hash{kEmptyHash};  // don't care
+        evmc::bytes32 digest{kEmptyHash};    // don't care
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&Miner::submit_work>(block_nonce, pow_hash, digest)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&Miner::submit_work>(block_nonce, pow_hash, digest)), rpc::GrpcStatusError);
     }
 }
 
@@ -171,25 +171,25 @@ TEST_CASE_METHOD(MinerTest, "Miner::submit_hash_rate", "[rpc][txpool][miner]") {
         ::txpool::SubmitHashRateReply response;
         response.set_ok(true);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
-        intx::uint256 rate{};                    // don't care
-        evmc::bytes32 id{silkworm::kEmptyHash};  // don't care
+        intx::uint256 rate{};          // don't care
+        evmc::bytes32 id{kEmptyHash};  // don't care
         const auto ok = run<&Miner::submit_hash_rate>(rate, id);
         CHECK(ok);
     }
 
     SECTION("call submit_hash_rate and get empty result") {
-        intx::uint256 rate{};                    // don't care
-        evmc::bytes32 id{silkworm::kEmptyHash};  // don't care
+        intx::uint256 rate{};          // don't care
+        evmc::bytes32 id{kEmptyHash};  // don't care
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
         const auto ok = run<&Miner::submit_hash_rate>(rate, id);
         CHECK(!ok);
     }
 
     SECTION("call submit_hash_rate and get error") {
-        intx::uint256 rate{};                    // don't care
-        evmc::bytes32 id{silkworm::kEmptyHash};  // don't care
+        intx::uint256 rate{};          // don't care
+        evmc::bytes32 id{kEmptyHash};  // don't care
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&Miner::submit_hash_rate>(rate, id)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&Miner::submit_hash_rate>(rate, id)), rpc::GrpcStatusError);
     }
 }
 #endif  // SILKWORM_SANITIZE

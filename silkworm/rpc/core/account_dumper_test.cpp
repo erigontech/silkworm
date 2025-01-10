@@ -26,7 +26,7 @@
 #include <silkworm/db/chain/chain_storage.hpp>
 #include <silkworm/db/kv/api/base_transaction.hpp>
 #include <silkworm/db/kv/api/cursor.hpp>
-#include <silkworm/rpc/ethdb/database.hpp>
+#include <silkworm/db/kv/api/service.hpp>
 #include <silkworm/rpc/test_util/dummy_transaction.hpp>
 
 namespace silkworm::rpc {
@@ -234,13 +234,18 @@ class DummyTransaction : public BaseTransaction {
     const nlohmann::json& json_;
 };
 
-class DummyDatabase : public ethdb::Database {
+class DummyDatabase : public db::kv::api::Service {
   public:
     explicit DummyDatabase(const nlohmann::json& json) : json_{json} {}
 
-    Task<std::unique_ptr<db::kv::api::Transaction>> begin() override {
+    Task<std::unique_ptr<db::kv::api::Transaction>> begin_transaction() override {
         auto txn = std::make_unique<DummyTransaction>(json_);
         co_return txn;
+    }
+
+    Task<db::kv::api::Version> version() override { co_return db::kv::api::kCurrentVersion; }
+    Task<void> state_changes(const db::kv::api::StateChangeOptions&, db::kv::api::StateChangeConsumer) override {
+        co_return;
     }
 
   private:

@@ -431,16 +431,16 @@ void open_index(const SnapshotSubcommandSettings& settings) {
     if (idx.double_enum_index()) {
         if (settings.lookup_block_num) {
             const uint64_t data_id{*settings.lookup_block_num};
-            const uint64_t enumeration{data_id - idx.base_data_id()};
-            if (enumeration < idx.key_count()) {
-                SILK_INFO << "Offset by ordinal lookup for " << data_id << ": " << idx.lookup_by_ordinal(enumeration);
+            auto offset = idx.lookup_by_data_id(data_id);
+            if (offset) {
+                SILK_INFO << "Offset by data id lookup for " << data_id << ": " << *offset;
             } else {
-                SILK_WARN << "Invalid absolute data number " << data_id << " for ordinal lookup";
+                SILK_WARN << "Invalid data id " << data_id;
             }
         } else {
             for (size_t i{0}; i < idx.key_count(); ++i) {
                 if (i % (idx.key_count() / 10) == 0) {
-                    SILK_INFO << "Offset by ordinal lookup for " << i << ": " << idx.lookup_by_ordinal(i)
+                    SILK_INFO << "Offset by ordinal lookup for " << i << ": " << idx.lookup_by_ordinal({i})
                               << " [existence filter: " << int{idx.existence_filter()[i]} << "]";
                 }
             }
@@ -686,7 +686,7 @@ void lookup_header_by_hash(const SnapshotSubcommandSettings& settings) {
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
         auto segment_and_index = bundle.segment_and_accessor_index(db::blocks::kHeaderSegmentAndIdxNames);
-        const auto header = HeaderFindByHashQuery{segment_and_index}.exec(*hash);
+        const auto header = HeaderFindByHashSegmentQuery{segment_and_index}.exec(*hash);
         if (header) {
             matching_header = header;
             matching_snapshot_path = segment_and_index.segment.path();
@@ -714,7 +714,7 @@ void lookup_header_by_number(const SnapshotSubcommandSettings& settings) {
     auto repository = make_repository(settings.settings);
     const auto [segment_and_index, _] = repository.find_segment(db::blocks::kHeaderSegmentAndIdxNames, block_num);
     if (segment_and_index) {
-        const auto header = HeaderFindByBlockNumQuery{*segment_and_index}.exec(block_num);
+        const auto header = HeaderFindByBlockNumSegmentQuery{*segment_and_index}.exec(block_num);
         ensure(header.has_value(),
                [&]() { return "lookup_header_by_number: " + std::to_string(block_num) + " NOT found in " + segment_and_index->segment.path().filename(); });
         SILK_INFO << "Lookup header number: " << block_num << " found in: " << segment_and_index->segment.path().filename();
@@ -754,7 +754,7 @@ void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum blo
 
     rec_split::AccessorIndex idx_body_number{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
 
-    const auto body = BodyFindByBlockNumQuery{{body_segment, idx_body_number}}.exec(block_num);
+    const auto body = BodyFindByBlockNumSegmentQuery{{body_segment, idx_body_number}}.exec(block_num);
     if (body) {
         SILK_INFO << "Lookup body number: " << block_num << " found in: " << body_segment.path().filename();
         if (settings.verbose) {
@@ -773,7 +773,7 @@ void lookup_body_in_all(const SnapshotSubcommandSettings& settings, BlockNum blo
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     const auto [segment_and_index, _] = repository.find_segment(db::blocks::kBodySegmentAndIdxNames, block_num);
     if (segment_and_index) {
-        const auto body = BodyFindByBlockNumQuery{*segment_and_index}.exec(block_num);
+        const auto body = BodyFindByBlockNumSegmentQuery{*segment_and_index}.exec(block_num);
         ensure(body.has_value(),
                [&]() { return "lookup_body: " + std::to_string(block_num) + " NOT found in " + segment_and_index->segment.path().filename(); });
         SILK_INFO << "Lookup body number: " << block_num << " found in: " << segment_and_index->segment.path().filename();
@@ -873,7 +873,7 @@ void lookup_txn_by_hash_in_one(const SnapshotSubcommandSettings& settings, const
     {
         rec_split::AccessorIndex idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
 
-        const auto transaction = TransactionFindByHashQuery{{txn_segment, idx_txn_hash}}.exec(hash);
+        const auto transaction = TransactionFindByHashSegmentQuery{{txn_segment, idx_txn_hash}}.exec(hash);
         if (transaction) {
             SILK_INFO << "Lookup txn hash: " << hash.to_hex() << " found in: " << txn_segment.path().filename();
             if (settings.verbose) {
@@ -895,7 +895,7 @@ void lookup_txn_by_hash_in_all(const SnapshotSubcommandSettings& settings, const
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
         auto segment_and_index = bundle.segment_and_accessor_index(db::blocks::kTxnSegmentAndIdxNames);
-        const auto transaction = TransactionFindByHashQuery{segment_and_index}.exec(hash);
+        const auto transaction = TransactionFindByHashSegmentQuery{segment_and_index}.exec(hash);
         if (transaction) {
             matching_snapshot_path = segment_and_index.segment.path();
             if (settings.verbose) {
@@ -935,7 +935,7 @@ void lookup_txn_by_id_in_one(const SnapshotSubcommandSettings& settings, uint64_
     {
         rec_split::AccessorIndex idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
 
-        const auto transaction = TransactionFindByIdQuery{{txn_segment, idx_txn_hash}}.exec(txn_id);
+        const auto transaction = TransactionFindByIdSegmentQuery{{txn_segment, idx_txn_hash}}.exec(txn_id);
         if (transaction) {
             SILK_INFO << "Lookup txn ID: " << txn_id << " found in: " << txn_segment.path().filename();
             if (settings.verbose) {
@@ -957,7 +957,7 @@ void lookup_txn_by_id_in_all(const SnapshotSubcommandSettings& settings, uint64_
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
         auto segment_and_index = bundle.segment_and_accessor_index(db::blocks::kTxnSegmentAndIdxNames);
-        const auto transaction = TransactionFindByIdQuery{segment_and_index}.exec(txn_id);
+        const auto transaction = TransactionFindByIdSegmentQuery{segment_and_index}.exec(txn_id);
         if (transaction) {
             matching_snapshot_path = segment_and_index.segment.path();
             if (settings.verbose) {

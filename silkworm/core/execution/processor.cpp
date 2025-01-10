@@ -259,6 +259,8 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 }
 
 CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<std::shared_ptr<EvmTracer>>& tracers, bool bailout, bool refund) noexcept {
+    SILKWORM_ASSERT(refund);
+    (void)refund;
     const std::optional<evmc::address> sender{txn.sender()};
     SILKWORM_ASSERT(sender);
 
@@ -294,6 +296,8 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
     if (refund && !bailout) {
         gas_used = txn.gas_limit - refund_gas(txn, effective_gas_price, result.gas_left, result.gas_refund);
         gas_left = txn.gas_limit - gas_used;
+    } else {
+        SILKWORM_ASSERT(bailout);
     }
 
     // Reward the fee recipient

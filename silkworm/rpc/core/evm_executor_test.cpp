@@ -150,7 +150,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
 
         EVMExecutor executor{block, *chain_config_ptr, workers, state};
-        const auto result = executor.call(block, txn, {}, false, /* gasBailout */ true);
+        const auto result = executor.call(block, txn, {}, true, /* gasBailout */ true);
         executor.reset();
         CHECK(result.error_code == 0);
     }

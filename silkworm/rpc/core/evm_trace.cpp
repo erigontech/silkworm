@@ -1759,33 +1759,23 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     filter.count = trace_filter.count;
 
     auto block_num = trace_filter.from_block.number();
-    std::shared_ptr<BlockWithHash> block_with_hash;
-    try {
-        block_with_hash = co_await core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, trace_filter.from_block);
-    } catch (const std::invalid_argument& iv) {
-        block_with_hash = nullptr;
-    }
+    auto block_with_hash = co_await core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, trace_filter.from_block);
 
     while (block_num <= trace_filter.to_block.number()) {
-        if (block_with_hash) {
-            const Block block{block_with_hash, false};
-            SILK_TRACE << "TraceCallExecutor::trace_filter: processing "
-                       << " block_num: " << block_num - 1
-                       << " block: " << block;
+        if (!block_with_hash) {
+            break;
+        }
+        const Block block{block_with_hash, false};
+        SILK_TRACE << "TraceCallExecutor::trace_filter: processing block_num: " << block_num << " block: " << block;
 
-            co_await trace_block(*block_with_hash, filter, &stream);
+        co_await trace_block(*block_with_hash, filter, &stream);
 
-            if (filter.count == 0) {
-                break;
-            }
+        if (filter.count == 0) {
+            break;
         }
 
         ++block_num;
-        try {
-            block_with_hash = co_await core::read_block_by_number(block_cache_, storage, block_num);
-        } catch (const std::invalid_argument& iv) {
-            block_with_hash = nullptr;
-        }
+        block_with_hash = co_await core::read_block_by_number(block_cache_, storage, block_num);
     }
 
     stream.close_array();

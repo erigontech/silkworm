@@ -101,6 +101,6 @@ MapValuesView<TMapKey, TMapValue> make_map_values_view(const std::map<TMapKey, T
 }
 
 template <typename TMapKey, typename TMapValue>
-using MapValuesViewReverse = decltype(std::ranges::reverse_view([]() -> MapValuesView<TMapKey, TMapValue>&& { throw 1; }()));
+using MapValuesViewReverse = std::ranges::reverse_view<MapValuesView<TMapKey, TMapValue>>;
 
 }  // namespace silkworm

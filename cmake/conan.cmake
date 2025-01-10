@@ -129,6 +129,7 @@ if(SILKWORM_SANITIZE_COMPILER_OPTIONS)
       "libtorrent/*"
       "protobuf/*"
   )
+  list(APPEND CONAN_BUILD "missing")
   # cmake-format: on
 
   format_list_as_json_array(CONAN_CXXFLAGS CONAN_CXXFLAGS_STR)

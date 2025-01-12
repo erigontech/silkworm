@@ -44,7 +44,7 @@ Stage::Result HashState::forward(RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
-        auto execution_stage_progress{stages::read_stage_progress(txn, stages::kExecutionKey)};
+        const auto execution_stage_progress{stages::read_stage_progress(txn, stages::kExecutionKey)};
         if (previous_progress == execution_stage_progress) {
             // Nothing to process
             return ret;
@@ -59,11 +59,10 @@ Stage::Result HashState::forward(RWTxn& txn) {
         }
         const BlockNum segment_width{execution_stage_progress - previous_progress};
         if (segment_width > stages::kSmallBlockSegmentWidth) {
-            log::Info(log_prefix_,
-                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
-                       "from", std::to_string(previous_progress),
-                       "to", std::to_string(execution_stage_progress),
-                       "span", std::to_string(segment_width)});
+            SILK_INFO_M(log_prefix_, {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                                      "from", std::to_string(previous_progress),
+                                      "to", std::to_string(execution_stage_progress),
+                                      "span", std::to_string(segment_width)});
         }
 
         reset_log_progress();
@@ -71,11 +70,11 @@ Stage::Result HashState::forward(RWTxn& txn) {
 
         if (!previous_progress || segment_width > stages::kLargeBlockSegmentWorthRegen) {
             // Clear any previous contents
-            log::Info(log_prefix_, {"clearing", table::kHashedAccounts.name});
+            SILK_INFO_M(log_prefix_, {"clearing", table::kHashedAccounts.name});
             txn->clear_map(table::kHashedAccounts.name);
-            log::Info(log_prefix_, {"clearing", table::kHashedStorage.name});
+            SILK_INFO_M(log_prefix_, {"clearing", table::kHashedStorage.name});
             txn->clear_map(table::kHashedStorage.name);
-            log::Info(log_prefix_, {"clearing", table::kHashedCodeHash.name});
+            SILK_INFO_M(log_prefix_, {"clearing", table::kHashedCodeHash.name});
             txn->clear_map(table::kHashedCodeHash.name);
             txn.commit_and_renew();
 
@@ -135,11 +134,10 @@ Stage::Result HashState::unwind(RWTxn& txn) {
         }
         const BlockNum segment_width{previous_progress - to};
         if (segment_width > stages::kSmallBlockSegmentWidth) {
-            log::Info(log_prefix_,
-                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
-                       "from", std::to_string(previous_progress),
-                       "to", std::to_string(to),
-                       "span", std::to_string(segment_width)});
+            SILK_INFO_M(log_prefix_, {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                                      "from", std::to_string(previous_progress),
+                                      "to", std::to_string(to),
+                                      "span", std::to_string(segment_width)});
         }
 
         success_or_throw(unwind_from_account_changeset(txn, previous_progress, to));
@@ -799,7 +797,7 @@ void HashState::write_changes_from_changed_addresses(RWTxn& txn, const ChangedAd
             // Update HashedAccounts table
             target_hashed_accounts->upsert(db::to_slice(address_hash), to_slice(current_encoded_value));
 
-            // Lookup value in PlainCodeHash for Contract
+            // Lookup value in PlainCodeHash for contract
             auto account = db::state::AccountCodec::from_encoded_storage(current_encoded_value);
             success_or_throw(account);
             if (account->incarnation != 0) {

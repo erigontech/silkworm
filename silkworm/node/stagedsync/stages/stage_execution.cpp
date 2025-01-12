@@ -29,6 +29,7 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/execution/block/block_executor.hpp>
 
@@ -48,11 +49,11 @@ Stage::Result Execution::forward(RWTxn& txn) {
 
         StopWatch commit_stopwatch;
         // Check stage boundaries from previous execution and previous stage execution
-        auto previous_progress{get_progress(txn)};
-        auto senders_stage_progress{stages::read_stage_progress(txn, stages::kSendersKey)};
+        const auto previous_progress{get_progress(txn)};
+        const auto senders_stage_progress{stages::read_stage_progress(txn, stages::kSendersKey)};
 
         // This is next stage probably needing full history
-        auto hashstate_stage_progress{stages::read_stage_progress(txn, stages::kHashStateKey)};
+        const auto hashstate_stage_progress{stages::read_stage_progress(txn, stages::kHashStateKey)};
 
         if (previous_progress == senders_stage_progress) {
             // Nothing to process
@@ -75,21 +76,21 @@ Stage::Result Execution::forward(RWTxn& txn) {
         progress_lock.unlock();
 
         block_num_ = previous_progress + 1;
-        BlockNum max_block_num{senders_stage_progress};
-        const BlockNum segment_width{senders_stage_progress - previous_progress};
+        const auto stop_at_block = Environment::get_stop_at_block();
+        const BlockNum max_block_num{stop_at_block ? *stop_at_block : senders_stage_progress};
+        const BlockNum segment_width{max_block_num - previous_progress};
         if (segment_width > stages::kSmallBlockSegmentWidth) {
-            log::Info(log_prefix_,
-                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
-                       "from", std::to_string(previous_progress),
-                       "to", std::to_string(senders_stage_progress),
-                       "span", std::to_string(segment_width)});
+            SILK_INFO_M(log_prefix_, {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                                      "from", std::to_string(previous_progress),
+                                      "to", std::to_string(max_block_num),
+                                      "span", std::to_string(segment_width)});
         }
 
         // Determine pruning thresholds on behalf of current db pruning mode and verify next stage(s) does not need
         // prune-able data
-        BlockNum prune_history{prune_mode_.history().value_from_head(senders_stage_progress)};
-        BlockNum prune_receipts{prune_mode_.receipts().value_from_head(senders_stage_progress)};
-        BlockNum prune_call_traces{prune_mode_.call_traces().value_from_head(senders_stage_progress)};
+        BlockNum prune_history{prune_mode_.history().value_from_head(max_block_num)};
+        BlockNum prune_receipts{prune_mode_.receipts().value_from_head(max_block_num)};
+        BlockNum prune_call_traces{prune_mode_.call_traces().value_from_head(max_block_num)};
         if (hashstate_stage_progress) {
             prune_history = std::min(prune_history, hashstate_stage_progress - 1);
             prune_receipts = std::min(prune_receipts, hashstate_stage_progress - 1);
@@ -121,7 +122,7 @@ Stage::Result Execution::forward(RWTxn& txn) {
             (void)commit_stopwatch.start(/*with_reset=*/true);
             txn.commit_and_renew();
             auto [_, duration]{commit_stopwatch.stop()};
-            log::Info(log_prefix_ + " commit", {"batch time", StopWatch::format(duration)});
+            SILK_INFO_M(log_prefix_ + " commit", {"batch time", StopWatch::format(duration)});
 
             // If we got an invalid block, now after persisting we can exit
             if (execution_result == Stage::Result::kInvalidBlock) {
@@ -132,20 +133,16 @@ Stage::Result Execution::forward(RWTxn& txn) {
         }
 
     } catch (const StageError& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kUnexpectedError;
     } catch (...) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", "undefined"});
         ret = Stage::Result::kUnexpectedError;
     }
 
@@ -199,7 +196,7 @@ void Execution::prefetch_blocks(RWTxn& txn, const BlockNum from, const BlockNum 
 
     if (sw) {
         auto [_, duration]{sw->lap()};
-        log::Trace("Fetched blocks", {"size", std::to_string(num_read), "in", StopWatch::format(duration)});
+        SILK_TRACE_M("Fetched blocks", {"size", std::to_string(num_read), "in", StopWatch::format(duration)});
     }
 }
 
@@ -211,10 +208,7 @@ Stage::Result Execution::execute_batch(RWTxn& txn, BlockNum max_block_num, Analy
     auto log_time{std::chrono::steady_clock::now()};
 
     try {
-        Buffer buffer{
-            txn,
-            std::make_unique<BufferFullDataModel>(data_model_factory_(txn)),
-        };
+        Buffer buffer{txn, std::make_unique<BufferFullDataModel>(data_model_factory_(txn))};
         buffer.set_prune_history_threshold(prune_history_threshold);
         buffer.set_memory_limit(batch_size_);
 
@@ -244,9 +238,9 @@ Stage::Result Execution::execute_batch(RWTxn& txn, BlockNum max_block_num, Analy
             const bool write_traces = block_num_ >= prune_call_traces_threshold;
             static constexpr bool kWriteChangeSets = true;
 
-            execution::block::BlockExecutor block_executor{&chain_config_, write_receipts, write_traces, kWriteChangeSets};
+            execution::block::BlockExecutor executor{&chain_config_, write_receipts, write_traces, kWriteChangeSets};
             try {
-                if (const ValidationResult res = block_executor.execute_single(block, buffer, analysis_cache); res != ValidationResult::kOk) {
+                if (const ValidationResult res = executor.execute_single(block, buffer, analysis_cache); res != ValidationResult::kOk) {
                     // Flush work done so far not to lose progress up to the previous valid block and to correctly trigger unwind
                     // This requires to commit in Execution::forward also for kInvalidBlock: unwind will remove last invalid block updates
                     if (write_receipts) {
@@ -258,11 +252,9 @@ Stage::Result Execution::execute_batch(RWTxn& txn, BlockNum max_block_num, Analy
                     sync_context_->unwind_point.emplace(block_num_ - 1u);
                     sync_context_->bad_block_hash.emplace(block.header.hash());
 
-                    // Display warning and return
-                    log::Warning(log_prefix_,
-                                 {"block", std::to_string(block_num_),
-                                  "hash", to_hex(block.header.hash().bytes, true),
-                                  "error", std::string(magic_enum::enum_name<ValidationResult>(res))});
+                    SILK_ERROR_M(log_prefix_, {"block", std::to_string(block_num_),
+                                               "hash", to_hex(block.header.hash().bytes, true),
+                                               "error", std::string(magic_enum::enum_name<ValidationResult>(res))});
 
                     prefetched_blocks_.clear();  // Must stay here to keep `block` reference valid
                     return Result::kInvalidBlock;
@@ -287,28 +279,23 @@ Stage::Result Execution::execute_batch(RWTxn& txn, BlockNum max_block_num, Analy
         // update block_num_ to point to the last successfully executed block
         --block_num_;
 
-        log::Trace(log_prefix_, {"buffer", "state", "size", human_size(buffer.current_batch_state_size())});
+        SILK_TRACE_M(log_prefix_, {"buffer", "state", "size", human_size(buffer.current_batch_state_size())});
         buffer.write_to_db();
 
     } catch (const StageError& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
     } catch (const DecodingException& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "decoding error", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "decoding error", std::string(ex.what())});
         return Stage::Result::kDecodingError;
     } catch (const std::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kUnexpectedError;
     } catch (...) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", "undefined"});
         ret = Stage::Result::kUnexpectedError;
     }
 
@@ -339,11 +326,10 @@ Stage::Result Execution::unwind(RWTxn& txn) {
         operation_ = OperationType::kUnwind;
         const BlockNum segment_width{previous_progress - to};
         if (segment_width > stages::kSmallBlockSegmentWidth) {
-            log::Info(log_prefix_,
-                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
-                       "from", std::to_string(previous_progress),
-                       "to", std::to_string(to),
-                       "span", std::to_string(segment_width)});
+            SILK_INFO_M(log_prefix_, {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                                      "from", std::to_string(previous_progress),
+                                      "to", std::to_string(to),
+                                      "span", std::to_string(segment_width)});
         }
 
         {
@@ -369,20 +355,16 @@ Stage::Result Execution::unwind(RWTxn& txn) {
         txn.commit_and_renew();
 
     } catch (const StageError& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kUnexpectedError;
     } catch (...) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", "undefined"});
         ret = Stage::Result::kUnexpectedError;
     }
 
@@ -419,12 +401,11 @@ Stage::Result Execution::prune(RWTxn& txn) {
         // Prune history of changes (changesets)
         if (const auto prune_threshold{prune_mode_.history().value_from_head(forward_progress)}; prune_threshold) {
             if (segment_width > stages::kSmallBlockSegmentWidth) {
-                log::Info(log_prefix_,
-                          {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
-                           "source", "history",
-                           "from", std::to_string(prune_progress),
-                           "to", std::to_string(forward_progress),
-                           "threshold", std::to_string(prune_threshold)});
+                SILK_INFO_M(log_prefix_, {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                                          "source", "history",
+                                          "from", std::to_string(prune_progress),
+                                          "to", std::to_string(forward_progress),
+                                          "threshold", std::to_string(prune_threshold)});
             }
 
             auto key{block_key(prune_threshold)};
@@ -438,10 +419,9 @@ Stage::Result Execution::prune(RWTxn& txn) {
             }
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
-                log::Trace(log_prefix_,
-                           {"source", table::kAccountChangeSet.name,
-                            "erased", std::to_string(erased),
-                            "elapsed", StopWatch::format(duration)});
+                SILK_TRACE_M(log_prefix_, {"source", table::kAccountChangeSet.name,
+                                           "erased", std::to_string(erased),
+                                           "elapsed", StopWatch::format(duration)});
             }
 
             source->bind(txn, table::kStorageChangeSet);
@@ -456,64 +436,58 @@ Stage::Result Execution::prune(RWTxn& txn) {
             }
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
-                log::Trace(log_prefix_,
-                           {"source", table::kStorageChangeSet.name,
-                            "erased", std::to_string(erased),
-                            "elapsed", StopWatch::format(duration)});
+                SILK_TRACE_M(log_prefix_, {"source", table::kStorageChangeSet.name,
+                                           "erased", std::to_string(erased),
+                                           "elapsed", StopWatch::format(duration)});
             }
         }
 
         // Prune receipts
         if (const auto prune_threshold{prune_mode_.receipts().value_from_head(forward_progress)}; prune_threshold) {
             if (segment_width > stages::kSmallBlockSegmentWidth) {
-                log::Info(log_prefix_,
-                          {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
-                           "source", "receipts",
-                           "from", std::to_string(prune_progress),
-                           "to", std::to_string(forward_progress),
-                           "threshold", std::to_string(prune_threshold)});
+                SILK_INFO_M(log_prefix_, {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                                          "source", "receipts",
+                                          "from", std::to_string(prune_progress),
+                                          "to", std::to_string(forward_progress),
+                                          "threshold", std::to_string(prune_threshold)});
             }
             auto key{block_key(prune_threshold)};
             auto source = txn.rw_cursor(table::kBlockReceipts);
             size_t erased = cursor_erase(*source, key, CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
-                log::Trace(log_prefix_,
-                           {"source", table::kBlockReceipts.name,
-                            "erased", std::to_string(erased),
-                            "elapsed", StopWatch::format(duration)});
+                SILK_TRACE_M(log_prefix_, {"source", table::kBlockReceipts.name,
+                                           "erased", std::to_string(erased),
+                                           "elapsed", StopWatch::format(duration)});
             }
 
             source->bind(txn, table::kLogs);
             erased = cursor_erase(*source, key, CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
-                log::Trace(log_prefix_,
-                           {"source", table::kLogs.name,
-                            "erased", std::to_string(erased),
-                            "elapsed", StopWatch::format(duration)});
+                SILK_TRACE_M(log_prefix_, {"source", table::kLogs.name,
+                                           "erased", std::to_string(erased),
+                                           "elapsed", StopWatch::format(duration)});
             }
         }
 
         // Prune call traces
         if (const auto prune_threshold{prune_mode_.call_traces().value_from_head(forward_progress)}; prune_threshold) {
             if (segment_width > stages::kSmallBlockSegmentWidth) {
-                log::Info(log_prefix_,
-                          {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
-                           "source", "call traces",
-                           "from", std::to_string(prune_progress),
-                           "to", std::to_string(forward_progress),
-                           "threshold", std::to_string(prune_threshold)});
+                SILK_INFO_M(log_prefix_, {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                                          "source", "call traces",
+                                          "from", std::to_string(prune_progress),
+                                          "to", std::to_string(forward_progress),
+                                          "threshold", std::to_string(prune_threshold)});
             }
             auto key{block_key(prune_threshold)};
             auto source = txn.rw_cursor_dup_sort(table::kCallTraceSet);
             size_t erased = cursor_erase(*source, key, CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
-                log::Trace(log_prefix_,
-                           {"source", table::kCallTraceSet.name,
-                            "erased", std::to_string(erased),
-                            "elapsed", StopWatch::format(duration)});
+                SILK_TRACE_M(log_prefix_, {"source", table::kCallTraceSet.name,
+                                           "erased", std::to_string(erased),
+                                           "elapsed", StopWatch::format(duration)});
             }
         }
 
@@ -521,20 +495,16 @@ Stage::Result Execution::prune(RWTxn& txn) {
         txn.commit_and_renew();
 
     } catch (const StageError& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = static_cast<Stage::Result>(ex.err());
     } catch (const mdbx::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
     } catch (const std::exception& ex) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kUnexpectedError;
     } catch (...) {
-        log::Error(log_prefix_,
-                   {"function", std::string(__FUNCTION__), "exception", "undefined"});
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", "undefined"});
         ret = Stage::Result::kUnexpectedError;
     }
 
@@ -570,6 +540,7 @@ void Execution::revert_state(ByteView key, ByteView value, RWCursorDupSort& plai
             const auto account_res = db::state::AccountCodec::from_encoded_storage(value);
             SILKWORM_ASSERT(account_res);
             Account account{*account_res};
+            // Recover the account contract hash
             if (account.incarnation > 0 && account.code_hash == kEmptyHash) {
                 Bytes code_hash_key(kAddressLength + kIncarnationLength, '\0');
                 std::memcpy(&code_hash_key[0], &key[0], kAddressLength);
@@ -585,12 +556,10 @@ void Execution::revert_state(ByteView key, ByteView value, RWCursorDupSort& plai
             if (state_account_encoded) {
                 const auto state_incarnation = db::state::AccountCodec::incarnation_from_encoded_storage(from_slice(state_account_encoded.value));
                 SILKWORM_ASSERT(state_incarnation);
-                // cleanup each code incarnation
+                // Cleanup each code incarnation
                 for (uint64_t i = *state_incarnation; i > account.incarnation; --i) {
-                    Bytes key_hash(kAddressLength + 8, '\0');
-                    std::memcpy(&key_hash[0], key.data(), kAddressLength);
-                    endian::store_big_u64(&key_hash[kAddressLength], i);
-                    plain_code_table.erase(to_slice(key_hash));
+                    Bytes storage_key = storage_prefix(key, i);
+                    plain_code_table.erase(to_slice(storage_key));
                 }
             }
             Bytes new_encoded_account = db::state::AccountCodec::encode_for_storage(account);
@@ -627,4 +596,5 @@ void Execution::unwind_state_from_changeset(ROCursor& source_changeset, RWCursor
         src_data = source_changeset.to_previous(/*throw_notfound*/ false);
     }
 }
+
 }  // namespace silkworm::stagedsync

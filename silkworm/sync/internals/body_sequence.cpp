@@ -3,13 +3,29 @@
 
 #include "body_sequence.hpp"
 
-#include <silkworm/core/common/random_number.hpp>
 #include <silkworm/core/protocol/validation.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/random_number.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {
+
+inline std::ostream& operator<<(std::ostream& os, const BlockBody& body) {
+    os << "#transactions=" << body.transactions.size() << " ";
+    os << "#ommers=" << body.ommers.size() << " ";
+    os << "#withdrawals=";
+    if (body.withdrawals) {
+        os << body.withdrawals->size();
+        for (const auto& w : *body.withdrawals) {
+            os << " index=" << w.index << ";";
+            os << " validator_index=" << w.validator_index << ";";
+            os << " address=" << w.address << ";";
+            os << " amount=" << w.amount;
+        }
+    }
+    return os;
+}
 
 void BodySequence::current_state(BlockNum max_in_db) {
     max_body_in_output_ = max_in_db;
@@ -54,14 +70,16 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
     auto matching_requests = body_requests_.find_by_request_id(packet.request_id);
 
     for (auto& body : packet.request) {
-        Hash oh = protocol::compute_ommers_hash(body);
-        Hash tr = protocol::compute_transaction_root(body);
+        const Hash oh = protocol::compute_ommers_hash(body);
+        const Hash tr = protocol::compute_transaction_root(body);
+        const std::optional<Hash> wr = protocol::compute_withdrawals_root(body);
 
         auto exact_request = body_requests_.end();  // = no request
 
-        auto r = std::find_if(matching_requests.begin(), matching_requests.end(), [&oh, &tr](const auto& elem) {
+        const auto r = std::find_if(matching_requests.begin(), matching_requests.end(), [&oh, &tr, &wr](const auto& elem) {
             const BodyRequest& request = elem->second;
-            return (request.header.ommers_hash == oh && request.header.transactions_root == tr);
+            const BlockHeader& header = request.header;
+            return (header.ommers_hash == oh && header.transactions_root == tr && header.withdrawals_root == wr);
         });
 
         if (r != matching_requests.end()) {
@@ -71,12 +89,13 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
             matching_requests.erase(r);
         } else {
             // not found, can be a response to "past" request upon same bodies?
-            exact_request = body_requests_.find_by_hash(oh, tr);
+            exact_request = body_requests_.find_by_hash(oh, tr, wr);
 
             if (exact_request == body_requests_.end()) {
                 // penalty = kBadBlockPenalty; // Erigon doesn't penalize the peer maybe because can be a late response but
                 //  todo: here we are sure it is not a late response, should we penalize the peer?
-                SILK_TRACE << "BodySequence: body rejected, no matching requests";
+                SILK_WARN << "BodySequence: rejected body from peer " << to_hex(human_readable_id(peer)) << ", no matching request: " << body
+                          << " oh=" << to_hex(oh) << " tr=" << to_hex(tr) << " wr=" << (wr ? to_hex(*wr) : "");
                 statistics_.reject_causes.not_requested += 1;
                 continue;
             }
@@ -345,13 +364,11 @@ std::list<BodySequence::IncreasingHeightOrderedRequestContainer::Iter> BodySeque
     return matching_requests;
 }
 
-BodySequence::IncreasingHeightOrderedRequestContainer::Iter BodySequence::IncreasingHeightOrderedRequestContainer::find_by_hash(Hash oh, Hash tr) {
-    auto r = std::find_if(begin(), end(), [&oh, &tr](const auto& elem) {
+BodySequence::IncreasingHeightOrderedRequestContainer::Iter BodySequence::IncreasingHeightOrderedRequestContainer::find_by_hash(Hash oh, Hash tr, std::optional<Hash> wr) {
+    return std::find_if(begin(), end(), [&oh, &tr, &wr](const auto& elem) {
         const BodyRequest& request = elem.second;
-        return (request.header.ommers_hash == oh && request.header.transactions_root == tr);
+        return (request.header.ommers_hash == oh && request.header.transactions_root == tr && request.header.withdrawals_root == wr);
     });
-
-    return r;
 }
 
 BlockNum BodySequence::IncreasingHeightOrderedRequestContainer::lowest_block() const {

@@ -9,7 +9,8 @@
 
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
-#include <silkworm/db/genesis.hpp>
+#include <silkworm/core/trie/vector_root.hpp>
+#include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/test_util/temp_chain_data.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/sync/sentry_client.hpp>
@@ -334,7 +335,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         auto& packet2 = get_bodies_msg2->packet();
 
-        REQUIRE(packet2.request.empty());  // no new request, max_header == 1 and we already requested body 1
+        REQUIRE(packet2.request.empty());  // no new request, max_header == 1, and we already requested body 1
         REQUIRE(bs.body_requests_.size() == 1);
 
         auto rs = bs.body_requests_.find(header1.number);
@@ -418,7 +419,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         auto& packet2 = get_bodies_msg2->packet();
 
-        REQUIRE(packet2.request.empty());  // no new request, max_header == 1 and we already requested body 1
+        REQUIRE(packet2.request.empty());  // no new request, max_header == 1, and we already requested body 1
         REQUIRE(bs.body_requests_.size() == 1);
     }
 
@@ -493,6 +494,85 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
 
         REQUIRE(bs.announced_blocks_.size() == 0);
     }
+}
+
+TEST_CASE_METHOD(BodySequenceForTest, "reject block body with invalid withdrawals") {
+    const Bytes encoded_header_21072002 = *from_hex(
+        "f90260a0e0a4eac8dd2fe1271a8a7d4eab99dfe456e97c63904c3d26d74de0bce6929d3fa01dcc4de8dec75d7aab85b567b6ccd41ad312"
+        "451b948a7413f0a142fd40d4934794afedf06777839d59eed3163cc3e0a5057b514399a00cc0db0367272cf732cadbf7ff0975e06679b6"
+        "d91cc45c08e5479073ea9520a2a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a056e81f171bcc55a6"
+        "ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421b9010000000000000000000000000000000000000000000000000000000000"
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "00000000000000008084014188828401c9c38080846720f66b99d883010d0c846765746888676f312e32312e36856c696e7578a0d99996"
+        "d768137199d2e7df9b78ca5523e688fdc43b3a0a9cfd2478ca243b052f8800000000000000008502fef7b251a0c18745982077dc6d0ad1"
+        "93a0142a55f5239d7c4f757a6b9bfaad89fcfa02886a808404b00000a045269c7f581f0bcbdb33f1209a82545194134960c55ccb5286ff"
+        "fa31219f36aa");
+    ByteView encoded_header_view = encoded_header_21072002;
+    BlockHeader header;
+    REQUIRE(rlp::decode(encoded_header_view, header));
+    REQUIRE(header.number == 21'072'002);
+
+    const Bytes encoded_invalid_body_21072002 = *from_hex(
+        "f9024a849b23ba7b02c0f90240e38403d933eb830d7ae894b9d7934878b5fb9610b3fe8a5e441e8fad7e293f840127a3f1e38403d933ec"
+        "830d7ae994b9d7934878b5fb9610b3fe8a5e441e8fad7e293f840126fa82e38403d933ed830d7aea94b9d7934878b5fb9610b3fe8a5e44"
+        "1e8fad7e293f84012650fee38403d933ee830d7aeb94b9d7934878b5fb9610b3fe8a5e441e8fad7e293f840126192ce38403d933ef830d"
+        "7aec94b9d7934878b5fb9610b3fe8a5e441e8fad7e293f840124ce1fe38403d933f0830d7aed94b9d7934878b5fb9610b3fe8a5e441e8f"
+        "ad7e293f840125293ce38403d933f1830d7aee94b9d7934878b5fb9610b3fe8a5e441e8fad7e293f840127ac27e38403d933f2830d7aef94b9d7934878b5fb9610b3fe8a5e441e8fad7e293f840128315ee38403d933f3830d7af094b9d7934878b5fb9610b3fe8a5e441e8fad7e293f8401280443e38403d933f4830d7af194b9d7934878b5fb9610b3fe8a5e441e8fad7e293f840127e8bae38403d933f5830d7af294b9d7934878b5fb9610b3fe8a5e441e8fad7e293f840126e7aee38403d933f6830d7af394b9d7934878b5fb9610b3fe8a5e441e8fad7e293f84012762d0e38403d933f7830d7af494b9d7934878b5fb9610b3fe8a5e441e8fad7e293f8401271437e38403d933f8830d7af594b9d7934878b5fb9610b3fe8a5e441e8fad7e293f840126aa33e38403d933f9830d7af694b9d7934878b5fb9610b3fe8a5e441e8fad7e293f840127809ae38403d933fa830d7af794b9d7934878b5fb9610b3fe8a5e441e8fad7e293f840127eb60");
+    ByteView encoded_invalid_body_view = encoded_invalid_body_21072002;
+    BlockBodyForStorage invalid_body;
+    REQUIRE(decode_stored_block_body(encoded_invalid_body_view, invalid_body));
+    REQUIRE(invalid_body.txn_count == 2);  // block 21072002 has 0 user + 2 system transactions
+    REQUIRE(invalid_body.withdrawals);
+
+    const std::vector<Withdrawal> withdrawals{*invalid_body.withdrawals};
+    static constexpr auto kEncoder = [](Bytes& to, const Withdrawal& w) { rlp::encode(to, w); };
+    REQUIRE(trie::root_hash(withdrawals, kEncoder) != *header.withdrawals_root);  // <- ensure reconstructed block 21072002 is INVALID
+
+    // Setting target
+    current_state(header.number - 1);
+    download_bodies({std::make_shared<BlockHeader>(header)});
+
+    const time_point_t tp = std::chrono::system_clock::now();
+
+    // Requesting
+    std::shared_ptr<OutboundMessage> message = request_bodies(tp);
+    REQUIRE(message != nullptr);
+
+    const auto get_bodies_msg = std::dynamic_pointer_cast<OutboundGetBlockBodies>(message);
+    REQUIRE(get_bodies_msg != nullptr);
+
+    const auto& packet = get_bodies_msg->packet();
+    const auto rs = body_requests_.find(header.number);
+    REQUIRE(rs != body_requests_.end());
+    const BodySequenceForTest::BodyRequest& request_status = rs->second;
+
+    // Accepting
+    Block invalid_block;
+    invalid_block.header = header;
+    invalid_block.withdrawals = invalid_body.withdrawals;
+
+    const PeerId peer_id{byte_ptr_cast("1")};
+    BlockBodiesPacket66 response_packet;
+    response_packet.request_id = packet.request_id;    // correct request-id
+    response_packet.request.push_back(invalid_block);  // wrong body
+
+    [[maybe_unused]] const auto penalty = accept_requested_bodies(response_packet, peer_id);
+
+    // REQUIRE(penalty == kBadBlockPenalty); // for now we choose to not penalize the peer
+    CHECK(!request_status.ready);
+    CHECK(request_status.block_num == 21072002);        // same as before
+    CHECK(request_status.block_hash == header.hash());  // same as before
+    CHECK(request_status.header == header);             // same as before
+
+    const auto& stats = statistics();
+    CHECK(stats.requested_items == 1);
+    CHECK(stats.received_items == 1);
+    CHECK(stats.accepted_items == 0);
+    CHECK(stats.rejected_items() == 1);
+    CHECK(stats.reject_causes.not_requested == 1);
 }
 
 }  // namespace silkworm

@@ -36,6 +36,11 @@ Stage::Result TriggersStage::forward(db::RWTxn& tx) {
     ioc_.restart();
     ioc_.run();
 
+    // Update its own progress to the previous stage progress to satisfy the execution pipeline constraints
+    const BlockNum previous_stage_progress = db::stages::read_stage_progress(tx, db::stages::kTxLookupKey);
+    update_progress(tx, previous_stage_progress);
+    tx.commit_and_renew();
+
     return Stage::Result::kSuccess;
 }
 

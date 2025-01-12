@@ -177,7 +177,7 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_b
             } /* clang-format on */
 
             const auto stage_head_number = read_stage_progress(cycle_txn, current_stage_name.data());
-            if (!stop_at_block && stage_head_number != target_block_num && current_stage_name != kTriggersStageKey) {
+            if (!stop_at_block && stage_head_number != target_block_num) {
                 SILK_ERROR_M(get_log_prefix(current_stage_name),
                              {"op", "Forward", "target", to_string(target_block_num), "reached", to_string(stage_head_number)});
                 throw std::logic_error("stage returned success with an block_num different from target=" +

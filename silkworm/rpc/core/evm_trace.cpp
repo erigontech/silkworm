@@ -804,7 +804,7 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
 
     current_depth_ = msg.depth;
 
-//    auto create = (!initial_ibs_.exists(recipient) && created_address_.find(recipient) == created_address_.end() && recipient != code_address);
+    //    auto create = (!initial_ibs_.exists(recipient) && created_address_.find(recipient) == created_address_.end() && recipient != code_address);
     const auto create = last_opcode_.value_or(0) == OP_CREATE || last_opcode_.value_or(0) == OP_CREATE2;
     start_gas_.push(msg.gas);
 

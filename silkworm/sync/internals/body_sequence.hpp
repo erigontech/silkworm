@@ -129,7 +129,7 @@ class BodySequence {
         using Iter = Impl::iterator;
 
         std::list<Iter> find_by_request_id(uint64_t request_id);
-        Iter find_by_hash(Hash oh, Hash tr);
+        Iter find_by_hash(Hash oh, Hash tr, std::optional<Hash> wr);
 
         BlockNum lowest_block() const;
         BlockNum max_block() const;

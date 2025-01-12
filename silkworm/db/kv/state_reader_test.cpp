@@ -50,10 +50,6 @@ class StateReaderTest : public silkworm::test_util::ContextTestBase {
 };
 
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
-    EXPECT_CALL(transaction_, first_txn_num_in_block(0)).WillOnce(Invoke([]() -> Task<TxnId> {
-        co_return 0;
-    }));
-
     SECTION("no account for history empty and current state empty") {
         EXPECT_CALL(transaction_, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
@@ -110,10 +106,6 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
 }
 
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
-    EXPECT_CALL(transaction_, first_txn_num_in_block(0)).WillOnce(Invoke([]() -> Task<TxnId> {
-        co_return 0;
-    }));
-
     SECTION("empty storage for history empty and current state empty") {
         EXPECT_CALL(transaction_, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
@@ -165,10 +157,6 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
     }
 
     SECTION("empty code found for code hash") {
-        EXPECT_CALL(transaction_, first_txn_num_in_block(0)).WillOnce(Invoke([]() -> Task<TxnId> {
-            co_return 0;
-        }));
-
         EXPECT_CALL(transaction_, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
@@ -186,10 +174,6 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
     }
 
     SECTION("non-empty code found for code hash") {
-        EXPECT_CALL(transaction_, first_txn_num_in_block(0)).WillOnce(Invoke([]() -> Task<TxnId> {
-            co_return 0;
-        }));
-
         EXPECT_CALL(transaction_, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,

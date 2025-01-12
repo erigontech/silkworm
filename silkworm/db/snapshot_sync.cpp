@@ -99,9 +99,9 @@ Task<void> SnapshotSync::run() {
     try {
         co_await (setup_and_run() && client_.async_run("bit-torrent"));
     } catch (const boost::system::system_error& ex) {
-        SILK_WARN_M("sentry") << "SnapshotSync::run ex=" << ex.what();
+        SILK_WARN_M("SnapshotSync") << "SnapshotSync::run ex=" << ex.what();
         if (ex.code() == boost::system::errc::operation_canceled) {
-            SILK_WARN_M("sentry") << "SnapshotSync::run operation_canceled";
+            SILK_WARN_M("SnapshotSync") << "SnapshotSync::run operation_canceled";
         }
         throw;
     }

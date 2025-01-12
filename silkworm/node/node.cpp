@@ -245,9 +245,9 @@ Task<void> NodeImpl::run() {
             snapshot_sync_.run() &&
             embedded_sentry_run_if_needed());
     } catch (const boost::system::system_error& ex) {
-        SILK_WARN_M("sentry") << "NodeImpl::run ex=" << ex.what();
+        SILK_WARN_M("node") << "NodeImpl::run ex=" << ex.what();
         if (ex.code() == boost::system::errc::operation_canceled) {
-            SILK_WARN_M("sentry") << "NodeImpl::run operation_canceled";
+            SILK_WARN_M("node") << "NodeImpl::run operation_canceled";
         }
         throw;
     }

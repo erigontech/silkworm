@@ -168,7 +168,6 @@ ValidationResult pre_validate_common_base(const Transaction& txn, evmc_revision 
     }
 
     if (revision >= EVMC_PRAGUE) {
-
     }
 
     if (intx::count_significant_bytes(txn.maximum_gas_cost()) > 32) {

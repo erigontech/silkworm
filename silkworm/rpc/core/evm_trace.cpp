@@ -825,7 +825,7 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
                  << " last_opcode_name: " << get_opcode_name(opcode_names_, last_opcode_.value_or(0)).value_or("UNDEFINED")
                  << " create: " << create;
 
-//        abort();
+        //        abort();
 
         created_address_.insert(recipient);
         trace_action.init = code;

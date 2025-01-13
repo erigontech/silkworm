@@ -43,7 +43,7 @@ class ExecutionProcessor {
      */
     void execute_transaction(const Transaction& txn, Receipt& receipt) noexcept;
 
-    CallResult call(const Transaction& txn, const std::vector<std::shared_ptr<EvmTracer>>& tracers, bool bailout, bool refund) noexcept;
+    CallResult call(const Transaction& txn, const std::vector<std::shared_ptr<EvmTracer>>& tracers, bool refund) noexcept;
 
     //! \brief Execute the block.
     //! \remarks Warning: This method does not verify state root; pre-Byzantium receipt root isn't validated either.

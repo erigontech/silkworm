@@ -99,8 +99,9 @@ Task<void> SnapshotSync::run() {
     try {
         co_await (setup_and_run() && client_.async_run("bit-torrent"));
     } catch (const boost::system::system_error& ex) {
-        SILK_WARN_M("SnapshotSync") << "SnapshotSync::run ex=" << ex.what();
+        SILK_ERROR_M("SnapshotSync") << "SnapshotSync::run ex=" << ex.what();
         if (ex.code() == boost::system::errc::operation_canceled) {
+            // TODO(canepat) demote to debug after https://github.com/erigontech/silkworm/issues/2333 is solved
             SILK_WARN_M("SnapshotSync") << "SnapshotSync::run operation_canceled";
         }
         throw;

@@ -245,8 +245,9 @@ Task<void> NodeImpl::run() {
             snapshot_sync_.run() &&
             embedded_sentry_run_if_needed());
     } catch (const boost::system::system_error& ex) {
-        SILK_WARN_M("node") << "NodeImpl::run ex=" << ex.what();
+        SILK_ERROR_M("node") << "NodeImpl::run ex=" << ex.what();
         if (ex.code() == boost::system::errc::operation_canceled) {
+            // TODO(canepat) demote to debug after https://github.com/erigontech/silkworm/issues/2333 is solved
             SILK_WARN_M("node") << "NodeImpl::run operation_canceled";
         }
         throw;

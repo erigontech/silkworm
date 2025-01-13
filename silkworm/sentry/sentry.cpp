@@ -176,8 +176,9 @@ Task<void> SentryImpl::run() {
     try {
         co_await (run_tasks() && run_grpc_server());
     } catch (const boost::system::system_error& ex) {
-        SILK_WARN_M("sentry") << "SentryImpl::run ex=" << ex.what();
+        SILK_ERROR_M("sentry") << "SentryImpl::run ex=" << ex.what();
         if (ex.code() == boost::system::errc::operation_canceled) {
+            // TODO(canepat) demote to debug after https://github.com/erigontech/silkworm/issues/2333 is solved
             SILK_WARN_M("sentry") << "SentryImpl::run operation_canceled";
         }
         throw;

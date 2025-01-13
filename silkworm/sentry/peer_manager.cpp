@@ -52,8 +52,9 @@ Task<void> PeerManager::run(
             peer_tasks_.wait();
         co_await concurrency::spawn_task(strand_, std::move(run));
     } catch (const boost::system::system_error& ex) {
-        SILK_WARN_M("sentry") << "PeerManager::run ex=" << ex.what();
+        SILK_ERROR_M("sentry") << "PeerManager::run ex=" << ex.what();
         if (ex.code() == boost::system::errc::operation_canceled) {
+            // TODO(canepat) demote to debug after https://github.com/erigontech/silkworm/issues/2333 is solved
             SILK_WARN_M("sentry") << "PeerManager::run operation_canceled";
         }
         throw;

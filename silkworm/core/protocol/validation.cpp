@@ -167,6 +167,10 @@ ValidationResult pre_validate_common_base(const Transaction& txn, evmc_revision 
         return ValidationResult::kIntrinsicGas;
     }
 
+    if (revision >= EVMC_PRAGUE) {
+
+    }
+
     if (intx::count_significant_bytes(txn.maximum_gas_cost()) > 32) {
         return ValidationResult::kInsufficientFunds;
     }
@@ -217,6 +221,11 @@ ValidationResult pre_validate_common_forks(const Transaction& txn, const evmc_re
             if (std::empty(txn.authorizations)) {
                 return ValidationResult::kEmptyAuthorizations;
             }
+        }
+
+        const auto floor_cost = protocol::floor_cost(txn);
+        if (txn.gas_limit < floor_cost) {
+            return ValidationResult::kFloorCost;
         }
     }
     return ValidationResult::kOk;

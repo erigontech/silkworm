@@ -110,6 +110,9 @@ enum class [[nodiscard]] ValidationResult {
     // EIP-7685: Requests root mismatch
     kRequestsRootMismatch,
 
+    // EIP-7623: Increase calldata cost
+    kFloorCost,
+
     // Bor validation errors. See https://github.com/erigontech/erigon/blob/main/consensus/bor/bor.go
     kMissingVanity,          // Block's extra-data section is shorter than 32 bytes, which is required to store the signer vanity
     kMissingSignature,       // Block's extra-data section doesn't seem to contain a 65 byte secp256k1 signature

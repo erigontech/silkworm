@@ -814,10 +814,6 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
     Trace& trace = traces_[index];
     trace.type = create ? "create" : "call";
 
-    SILK_LOG << "TraceTracer::on_execution_start:"
-             << " last_opcode_name: " << get_opcode_name(opcode_names_, last_opcode_.value_or(0)).value_or("UNDEFINED")
-             << " create: " << create;
-
     auto& trace_action = std::get<TraceAction>(trace.action);
     trace_action.from = sender;
     trace_action.gas = msg.gas;
@@ -825,7 +821,12 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
 
     trace.trace_result.emplace();
     if (create) {
-        abort();
+        SILK_LOG << "TraceTracer::on_execution_start:"
+                 << " last_opcode_name: " << get_opcode_name(opcode_names_, last_opcode_.value_or(0)).value_or("UNDEFINED")
+                 << " create: " << create;
+
+//        abort();
+
         created_address_.insert(recipient);
         trace_action.init = code;
         trace.trace_result->code.emplace();
@@ -1437,7 +1438,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
         for (size_t index = 0; index < transactions.size(); ++index) {
             const silkworm::Transaction& transaction{block.transactions[index]};
 
-            SILK_LOG << "trace_block_transactions: executing txn at index: " << std::dec << index;
+            SILK_LOG << "trace_block_transactions: executing txn at index: " << std::dec << index << ", hash: " << evmc::hex(transaction.hash());
 
             auto& result = trace_call_result.at(index);
             TraceCallTraces& traces = result.traces;

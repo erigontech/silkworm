@@ -19,7 +19,7 @@
 #include <optional>
 
 #include "../common/codec.hpp"
-#include "elias_fano.hpp"
+#include "elias_fano_list.hpp"
 
 namespace silkworm::snapshots::elias_fano {
 

@@ -51,12 +51,12 @@ BTreeIndex::BTreeIndex(
 
     // Read encoded Elias-Fano 32-bit list of integers representing data offsets
     data_offsets_ = std::make_shared<EliasFanoList32>(EliasFanoList32::from_encoded_data(memory_mapped_range));
-    ensure(data_offsets_->sequence_length() > 0, "BTreeIndex: invalid zero-length data offsets");
+    ensure(data_offsets_->size() > 0, "BTreeIndex: invalid zero-length data offsets");
 
     const auto encoded_nodes = memory_mapped_range.subspan(data_offsets_->encoded_data_size());
 
     btree_ = std::make_unique<BTree>(
-        data_offsets_->sequence_length(),
+        data_offsets_->size(),
         btree_fanout,
         encoded_nodes);
 }
@@ -95,10 +95,10 @@ std::optional<Bytes> BTreeIndex::get(ByteView key, const KVSegmentReader& kv_seg
 }
 
 std::optional<BTree::KeyValue> BTreeIndex::KeyValueIndex::lookup_key_value(DataIndex data_index) const {
-    if (data_index >= data_offsets_->sequence_length()) {
+    if (data_index >= data_offsets_->size()) {
         return std::nullopt;
     }
-    const auto data_offset = data_offsets_->get(data_index);
+    const auto data_offset = data_offsets_->at(data_index);
 
     segment::KVSegmentReader<RawDecoder<Bytes>, RawDecoder<Bytes>> reader{kv_segment_};
     auto data_it = reader.seek(data_offset);
@@ -111,10 +111,10 @@ std::optional<BTree::KeyValue> BTreeIndex::KeyValueIndex::lookup_key_value(DataI
 }
 
 std::optional<Bytes> BTreeIndex::KeyValueIndex::lookup_key(DataIndex data_index) const {
-    if (data_index >= data_offsets_->sequence_length()) {
+    if (data_index >= data_offsets_->size()) {
         return std::nullopt;
     }
-    const auto data_offset = data_offsets_->get(data_index);
+    const auto data_offset = data_offsets_->at(data_index);
 
     segment::KVSegmentKeysReader<RawDecoder<Bytes>> reader{kv_segment_};
     auto data_it = reader.seek(data_offset);
@@ -127,7 +127,7 @@ std::optional<Bytes> BTreeIndex::KeyValueIndex::lookup_key(DataIndex data_index)
 }
 
 bool BTreeIndex::Cursor::next() {
-    if (data_index_ + 1 >= index_->data_offsets_->sequence_length()) {
+    if (data_index_ + 1 >= index_->data_offsets_->size()) {
         return false;
     }
     ++data_index_;

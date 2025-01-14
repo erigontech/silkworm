@@ -24,7 +24,7 @@
 namespace silkworm::map_values_view::fallback {
 
 template <typename TMapKey, typename TMapValue>
-class MapValuesView : std::ranges::view_interface<MapValuesView<TMapKey, TMapValue>> {
+class MapValuesView : public std::ranges::view_interface<MapValuesView<TMapKey, TMapValue>> {
   public:
     using Map = std::map<TMapKey, TMapValue>;
 

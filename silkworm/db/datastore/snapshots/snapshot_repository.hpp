@@ -96,6 +96,8 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
     std::shared_ptr<SnapshotBundle> find_bundle(Step step) const override;
 
     std::vector<std::shared_ptr<SnapshotBundle>> bundles_in_range(StepRange range) const override;
+    std::vector<std::shared_ptr<SnapshotBundle>> bundles_intersecting_range(StepRange range, bool ascending) const override;
+    std::vector<std::shared_ptr<SnapshotBundle>> bundles_intersecting_range(TimestampRange range, bool ascending) const override;
 
   private:
     Step max_end_step() const;

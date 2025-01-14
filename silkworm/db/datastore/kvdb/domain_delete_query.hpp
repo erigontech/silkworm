@@ -16,16 +16,28 @@
 
 #pragma once
 
-#include <optional>
-
-#include "history.hpp"
+#include "domain_put_query.hpp"
 
 namespace silkworm::datastore::kvdb {
 
-struct Domain {
-    const MapConfig& values_table;
-    bool has_large_values;
-    std::optional<History> history;
+template <EncoderConcept TKeyEncoder, EncoderConcept TValueEncoder>
+struct DomainDeleteQuery {
+    RWTxn& tx;
+    Domain entity;
+
+    using TKey = decltype(TKeyEncoder::value);
+    using TValue = decltype(TValueEncoder::value);
+
+    void exec(
+        const TKey& key,
+        Timestamp timestamp,
+        const std::optional<TValue>& prev_value,
+        Step prev_step) {
+        if (prev_value) {
+            DomainPutQuery<TKeyEncoder, RawEncoder<ByteView>> query{tx, entity};
+            query.exec(key, ByteView{}, timestamp, prev_value, prev_step);
+        }
+    }
 };
 
 }  // namespace silkworm::datastore::kvdb

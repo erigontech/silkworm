@@ -17,8 +17,13 @@
 #include "local_transaction.hpp"
 
 #include <silkworm/db/chain/local_chain_storage.hpp>
+#include <silkworm/db/datastore/inverted_index_range_by_key_query.hpp>
+#include <silkworm/db/datastore/kvdb/raw_codec.hpp>
+#include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
 
 namespace silkworm::db::kv::api {
+
+using namespace silkworm::datastore;
 
 Task<void> LocalTransaction::open() {
     co_return;
@@ -83,7 +88,31 @@ Task<HistoryPointResult> LocalTransaction::history_seek(HistoryPointQuery /*quer
     co_return HistoryPointResult{};
 }
 
-Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery /*query*/) {
+Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery query) {
+    // TODO: convert query.table to II EntityName
+    datastore::EntityName inverted_index_name = state::kInvIdxNameLogAddress;
+    InvertedIndexRangeByKeyQuery<kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>> store_query{
+        inverted_index_name,
+        data_store_.chaindata,
+        txn_,
+        data_store_.state_repository,
+    };
+
+    // TODO: convert query from/to to ts_range
+    auto ts_range = datastore::TimestampRange{0, 10};
+    size_t limit = (query.limit == kUnlimited) ? std::numeric_limits<size_t>::max() : static_cast<size_t>(query.limit);
+
+    if (query.ascending_order) {
+        // TODO: this is just a test example, instead of direct iteration, apply page_size using std::views::chunk,
+        // TODO: save the range for future requests using page_token and return the first chunk
+        for ([[maybe_unused]] datastore::Timestamp t : store_query.exec<true>(query.key, ts_range) | std::views::take(limit)) {
+        }
+    } else {
+        // TODO: same, this is just a test example
+        for ([[maybe_unused]] datastore::Timestamp t : store_query.exec<false>(query.key, ts_range) | std::views::take(limit)) {
+        }
+    }
+
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     auto paginator = [](api::PaginatedTimestamps::PageToken) mutable -> Task<api::PaginatedTimestamps::PageResult> {
         co_return api::PaginatedTimestamps::PageResult{};

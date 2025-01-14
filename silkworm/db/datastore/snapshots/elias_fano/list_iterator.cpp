@@ -14,18 +14,8 @@
    limitations under the License.
 */
 
-#pragma once
+#include "list_iterator.hpp"
 
-#include <optional>
+namespace silkworm::snapshots::elias_fano {
 
-#include "history.hpp"
-
-namespace silkworm::datastore::kvdb {
-
-struct Domain {
-    const MapConfig& values_table;
-    bool has_large_values;
-    std::optional<History> history;
-};
-
-}  // namespace silkworm::datastore::kvdb
+}  // namespace silkworm::snapshots::elias_fano

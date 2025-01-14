@@ -667,6 +667,11 @@ void MemoryMutationCursor::update(const Slice& key, const Slice& value) {
     memory_mutation_.upsert(config_, key, value);
 }
 
+void MemoryMutationCursor::append(const Slice& key, const Slice& value) {
+    Slice value_out = value;
+    ::mdbx::error::success_or_throw(put(key, &value_out, MDBX_put_flags_t::MDBX_APPENDDUP));
+}
+
 bool MemoryMutationCursor::erase() {
     return erase(/*whole_multivalue=*/false);
 }

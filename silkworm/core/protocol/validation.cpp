@@ -240,6 +240,14 @@ ValidationResult validate_call_funds(const Transaction& txn, const EVM& evm, con
     if (txn.type != TransactionType::kLegacy && txn.type != TransactionType::kAccessList) {
         maximum_cost = txn.maximum_gas_cost();
     }
+
+    // EIP-7623 Increase calldata cost
+    if (evm.revision() >= EVMC_PRAGUE) {
+        const auto floor_cost = protocol::floor_cost(txn);
+        const intx::uint512 gas_limit = std::max(txn.gas_limit, floor_cost);
+        maximum_cost = std::max(maximum_cost, gas_limit * effective_gas_price);
+    }
+
     if (owned_funds < maximum_cost + txn.value) {
         return ValidationResult::kInsufficientFunds;
     }

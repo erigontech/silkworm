@@ -58,9 +58,9 @@ intx::uint128 intrinsic_gas(const UnsignedTransaction& txn, const evmc_revision 
 }
 
 // EIP-7623: Increase calldata cost
-intx::uint128 floor_cost(const UnsignedTransaction& txn) noexcept {
-    const intx::uint128 zero_bytes = std::ranges::count(txn.data, 0);
-    const intx::uint128 non_zero_bytes{txn.data.length() - zero_bytes};
+uint64_t floor_cost(const UnsignedTransaction& txn) noexcept {
+    const uint64_t zero_bytes = static_cast<uint64_t>(std::ranges::count(txn.data, 0));
+    const uint64_t non_zero_bytes{txn.data.length() - zero_bytes};
     return fee::kGTransaction + (zero_bytes + non_zero_bytes * 4) * fee::kTotalCostFloorPerToken;
 }
 

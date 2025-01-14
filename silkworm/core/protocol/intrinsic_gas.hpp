@@ -36,7 +36,7 @@ namespace protocol {
 
     // Returns the floor cost (valid since Pectra)
     // Refer to: EIP-7623: Increase calldata cost
-    intx::uint128 floor_cost(const UnsignedTransaction& txn) noexcept;
+    uint64_t floor_cost(const UnsignedTransaction& txn) noexcept;
 
 }  // namespace protocol
 

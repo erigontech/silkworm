@@ -939,6 +939,8 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
         is_precompile_ = false;
         return;
     }
+    if (index_stack_.empty())
+        return;
 
     if (index_stack_.empty()) {
         return;

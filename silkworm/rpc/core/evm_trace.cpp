@@ -804,8 +804,10 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
 
     current_depth_ = msg.depth;
 
-    //    auto create = (!initial_ibs_.exists(recipient) && created_address_.find(recipient) == created_address_.end() && recipient != code_address);
-    const auto create = last_opcode_.value_or(0) == OP_CREATE || last_opcode_.value_or(0) == OP_CREATE2;
+    auto create = (!initial_ibs_.exists(recipient) && created_address_.find(recipient) == created_address_.end() && recipient != code_address);
+    if (last_opcode_) {
+        create = create || last_opcode_.value() == OP_CREATE2 || last_opcode_.value() == OP_CREATE;
+    }
     start_gas_.push(msg.gas);
 
     size_t index = traces_.size();
@@ -825,7 +827,7 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
                  << " last_opcode_name: " << get_opcode_name(opcode_names_, last_opcode_.value_or(0)).value_or("UNDEFINED")
                  << " create: " << create;
 
-        //        abort();
+//        abort();
 
         created_address_.insert(recipient);
         trace_action.init = code;

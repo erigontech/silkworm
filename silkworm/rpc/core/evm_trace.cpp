@@ -823,12 +823,6 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
 
     trace.trace_result.emplace();
     if (create) {
-        SILK_LOG << "TraceTracer::on_execution_start:"
-                 << " last_opcode_name: " << get_opcode_name(opcode_names_, last_opcode_.value_or(0)).value_or("UNDEFINED")
-                 << " create: " << create;
-
-        //        abort();
-
         created_address_.insert(recipient);
         trace_action.init = code;
         trace.trace_result->code.emplace();
@@ -1421,7 +1415,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
     auto block_num = block.header.number;
     const auto& transactions = block.transactions;
 
-    SILK_LOG << "trace_block_transactions: block_num: " << std::dec << block_num << " #txns: " << transactions.size() << " config: " << config;
+    SILK_TRACE << "trace_block_transactions: block_num: " << std::dec << block_num << " #txns: " << transactions.size() << " config: " << config;
 
     const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
@@ -1443,8 +1437,6 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
         std::vector<TraceCallResult> trace_call_result(transactions.size());
         for (size_t index = 0; index < transactions.size(); ++index) {
             const silkworm::Transaction& transaction{block.transactions[index]};
-
-            SILK_LOG << "trace_block_transactions: executing txn at index: " << std::dec << index << ", hash: " << evmc::hex(transaction.hash());
 
             auto& result = trace_call_result.at(index);
             TraceCallTraces& traces = result.traces;

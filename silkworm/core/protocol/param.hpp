@@ -40,6 +40,8 @@ namespace fee {
 
     inline constexpr uint64_t kInitCodeWordCost{2};  // EIP-3860
 
+    inline constexpr uint64_t kTotalCostFloorPerToken{10};  // EIP-7623: Increase calldata cost
+
 }  // namespace fee
 
 inline constexpr uint64_t kMinGasLimit{5000};

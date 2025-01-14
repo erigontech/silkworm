@@ -60,7 +60,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
                << " quantity: " << quantity
                << " offset: " << (offset ? silkworm::to_hex(offset.value(), true) : "null");
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();

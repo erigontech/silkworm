@@ -23,6 +23,8 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
+#include "index_builders_factory.hpp"
+
 namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
@@ -91,9 +93,9 @@ Step SnapshotRepository::max_end_step() const {
 }
 
 std::pair<std::optional<SegmentAndAccessorIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(
-    std::array<datastore::EntityName, 3> names,
+    const SegmentAndAccessorIndexNames& names,
     Timestamp t) const {
-    auto bundle = find_bundle(step_converter_->step_from_timestamp(t));
+    auto bundle = find_bundle(t);
     if (bundle) {
         return {bundle->segment_and_accessor_index(names), bundle};
     }
@@ -120,7 +122,7 @@ void SnapshotRepository::reopen_folder() {
     if (file_ranges.empty()) return;
 
     // sort file_ranges by range.start
-    std::sort(file_ranges.begin(), file_ranges.end(), [](const StepRange& r1, const StepRange& r2) -> bool {
+    std::ranges::sort(file_ranges, [](const StepRange& r1, const StepRange& r2) -> bool {
         return r1.start < r2.start;
     });
 
@@ -154,6 +156,10 @@ void SnapshotRepository::reopen_folder() {
               << " max block available: " << max_block_available();
 }
 
+std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(Timestamp t) const {
+    return find_bundle(step_converter_->step_from_timestamp(t));
+}
+
 std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(Step step) const {
     // Search for target segment in reverse order (from the newest segment to the oldest one)
     for (const auto& bundle_ptr : this->view_bundles_reverse()) {
@@ -174,6 +180,30 @@ std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_in_rang
         }
     }
     return bundles;
+}
+
+std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_intersecting_range(StepRange range, bool ascending) const {
+    if (range.size() == 0) {
+        return {};
+    }
+    std::vector<std::shared_ptr<SnapshotBundle>> bundles;
+    for (const auto& bundle : view_bundles()) {
+        StepRange bundle_range = bundle->step_range();
+        if (range.contains_range(bundle_range) || bundle_range.contains(range.start) || bundle_range.contains(Step{range.end.value - 1})) {
+            bundles.push_back(bundle);
+        }
+    }
+    if (!ascending) {
+        std::ranges::reverse(bundles);
+    }
+    return bundles;
+}
+
+std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_intersecting_range(TimestampRange range, bool ascending) const {
+    if (range.size() == 0) {
+        return {};
+    }
+    return bundles_intersecting_range(step_converter_->step_range_from_timestamp_range(range), ascending);
 }
 
 SnapshotPathList SnapshotRepository::get_files(std::string_view ext) const {
@@ -198,7 +228,7 @@ SnapshotPathList SnapshotRepository::get_files(std::string_view ext) const {
     }
 
     // Order snapshot files by version/block-range/type
-    std::sort(snapshot_files.begin(), snapshot_files.end());
+    std::ranges::sort(snapshot_files, std::less{});
 
     return snapshot_files;
 }
@@ -241,8 +271,8 @@ SnapshotPathList SnapshotRepository::stale_index_paths() const {
     SnapshotBundlePaths some_bundle_paths{schema_, path(), {Step{0}, Step{1}}};
     auto accessor_index_file_ext = some_bundle_paths.accessor_index_paths().begin()->second.extension();
     auto all_files = get_files(accessor_index_file_ext);
-    std::copy_if(
-        all_files.begin(), all_files.end(),
+    std::ranges::copy_if(
+        all_files,
         std::back_inserter(results),
         [this](const SnapshotPath& index_path) { return this->is_stale_index_path(index_path); });
     return results;

@@ -88,9 +88,6 @@ class Daemon {
     //! The JSON RPC API services.
     std::vector<std::unique_ptr<http::Server>> rpc_services_;
 
-    //! The gRPC KV interface client.
-    std::unique_ptr<db::kv::api::Client> kv_client_;
-
     //! The stream handling StateChanges server-streaming RPC.
     std::unique_ptr<db::kv::StateChangesStream> state_changes_stream_;
 

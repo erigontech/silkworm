@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,23 +16,7 @@
 
 #pragma once
 
-#include <memory>
-
-#include <silkworm/infra/concurrency/task.hpp>
-
-#include <silkworm/db/kv/api/transaction.hpp>
-
-namespace silkworm::rpc::ethdb {
-
-class Database {
-  public:
-    Database() = default;
-    virtual ~Database() = default;
-
-    Database(const Database&) = delete;
-    Database& operator=(const Database&) = delete;
-
-    virtual Task<std::unique_ptr<db::kv::api::Transaction>> begin() = 0;
-};
-
-}  // namespace silkworm::rpc::ethdb
+#include "domain_delete_query.hpp"
+#include "domain_get_latest_query.hpp"
+#include "domain_put_latest_query.hpp"
+#include "domain_put_query.hpp"

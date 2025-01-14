@@ -21,10 +21,10 @@
 #include <ranges>
 #include <utility>
 
-namespace silkworm {
+namespace silkworm::map_values_view::fallback {
 
 template <typename TMapKey, typename TMapValue>
-class MapValuesView : std::ranges::view_interface<MapValuesView<TMapKey, TMapValue>> {
+class MapValuesView : public std::ranges::view_interface<MapValuesView<TMapKey, TMapValue>> {
   public:
     using Map = std::map<TMapKey, TMapValue>;
 
@@ -75,16 +75,32 @@ class MapValuesView : std::ranges::view_interface<MapValuesView<TMapKey, TMapVal
     Iterator end_;
 };
 
+}  // namespace silkworm::map_values_view::fallback
+
+namespace silkworm::map_values_view::builtin {
+
 template <typename TMapKey, typename TMapValue>
-auto make_map_values_view(const std::map<TMapKey, TMapValue>& map) {
-    // std::views::values is not present on clang 15
+using MapValuesView = std::ranges::values_view<std::ranges::views::all_t<const std::map<TMapKey, TMapValue>&>>;
+
+}  // namespace silkworm::map_values_view::builtin
+
+namespace silkworm {
+
+// std::views::values is not present on clang 15
 #if defined(__clang__) && (__clang_major__ <= 15) && !defined(__apple_build_version__)
-    return MapValuesView<TMapKey, TMapValue>{map};
+using silkworm::map_values_view::fallback::MapValuesView;
 #elif defined(__clang__) && (__clang_major__ <= 14) && defined(__apple_build_version__)  // clang 15 == Apple clang 14
-    return MapValuesView<TMapKey, TMapValue>{map};
+using silkworm::map_values_view::fallback::MapValuesView;
 #else
-    return std::views::values(map);
+using silkworm::map_values_view::builtin::MapValuesView;
 #endif
+
+template <typename TMapKey, typename TMapValue>
+MapValuesView<TMapKey, TMapValue> make_map_values_view(const std::map<TMapKey, TMapValue>& map) {
+    return MapValuesView<TMapKey, TMapValue>{map};
 }
+
+template <typename TMapKey, typename TMapValue>
+using MapValuesViewReverse = std::ranges::reverse_view<MapValuesView<TMapKey, TMapValue>>;
 
 }  // namespace silkworm

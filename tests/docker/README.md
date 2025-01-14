@@ -17,7 +17,7 @@ From time to time it is necessary to rebuild the whole docker image and refresh 
 ```bash
 ./run-docker.sh -r master
 ```
-Inside the Dockefile you can find a certain variations:
+Inside the Dockerfile you can find a certain variations:
 - build using different clang versions
 - build using local changes
 - run tests

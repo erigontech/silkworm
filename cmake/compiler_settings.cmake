@@ -79,11 +79,15 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
     add_link_options(-fprofile-instr-generate -fcoverage-mapping)
   endif()
 
-  # coroutines support
+  # configure libc++
   if(NOT SILKWORM_WASM_API)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-stdlib=libc++>)
-    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
-      add_compile_definitions($<$<COMPILE_LANGUAGE:CXX>:_LIBCPP_ENABLE_EXPERIMENTAL>)
+    # std::views::join is experimental on clang < 18 and Apple clang < 16
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 18)
+      add_compile_options(-fexperimental-library)
+    endif()
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
+      add_compile_options(-fexperimental-library)
     endif()
     link_libraries(c++)
     link_libraries(c++abi)

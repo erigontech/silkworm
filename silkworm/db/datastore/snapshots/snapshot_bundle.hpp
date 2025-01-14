@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <array>
 #include <filesystem>
 #include <functional>
 #include <vector>
@@ -75,7 +74,7 @@ struct SnapshotBundlePaths {
     StepRange step_range_;
 };
 
-struct SnapshotBundle {
+struct SnapshotBundle : public SegmentAndAccessorIndexProvider {
     using StepRange = datastore::StepRange;
 
     SnapshotBundle(StepRange step_range, SnapshotBundleData data)
@@ -90,7 +89,7 @@ struct SnapshotBundle {
               range,
               open_bundle_data(schema, dir_path, range),
           } {}
-    virtual ~SnapshotBundle();
+    ~SnapshotBundle() override;
 
     SnapshotBundle(SnapshotBundle&&) = default;
     SnapshotBundle& operator=(SnapshotBundle&&) noexcept = default;
@@ -105,7 +104,7 @@ struct SnapshotBundle {
         datastore::EntityName entity_name,
         datastore::EntityName index_name) const;
     SegmentAndAccessorIndex segment_and_accessor_index(
-        std::array<datastore::EntityName, 3> names) const {
+        const SegmentAndAccessorIndexNames& names) const override {
         return {
             segment(names[0], names[1]),
             accessor_index(names[0], names[2]),

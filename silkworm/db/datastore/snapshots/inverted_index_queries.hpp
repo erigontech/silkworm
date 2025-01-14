@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,19 +16,4 @@
 
 #pragma once
 
-#include <memory>
-
-#include <silkworm/infra/concurrency/task.hpp>
-
-#include <gmock/gmock.h>
-
-#include <silkworm/rpc/ethdb/database.hpp>
-
-namespace silkworm::rpc::test {
-
-class MockDatabase : public ethdb::Database {
-  public:
-    MOCK_METHOD((Task<std::unique_ptr<db::kv::api::Transaction>>), begin, ());
-};
-
-}  // namespace silkworm::rpc::test
+#include "inverted_index_range_by_key_query.hpp"

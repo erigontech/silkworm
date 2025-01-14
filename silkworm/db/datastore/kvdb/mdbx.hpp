@@ -175,6 +175,8 @@ class RWCursorDupSort : public RWCursor, public ROCursorDupSort {
   public:
     ~RWCursorDupSort() override = default;
 
+    virtual void append(const Slice& key, const Slice& value) = 0;
+
     //! \brief Remove all multi-values at the current cursor position.
     bool erase() override = 0;
     bool erase(bool whole_multivalue) override = 0;
@@ -503,6 +505,7 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
     void insert(const Slice& key, Slice value) override;
     void upsert(const Slice& key, const Slice& value) override;
     void update(const Slice& key, const Slice& value) override;
+    void append(const Slice& key, const Slice& value) override;
     bool erase() override;
     bool erase(bool whole_multivalue) override;
     bool erase(const Slice& key) override;

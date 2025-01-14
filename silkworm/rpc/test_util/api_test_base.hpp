@@ -54,7 +54,7 @@ class GrpcApiTestBase : public ServiceContextTestBase {
   public:
     template <auto method, typename... Args>
     auto run(Args&&... args) {
-        GrpcApi api{ioc_.get_executor(), std::move(stub_), grpc_context_};
+        GrpcApi api{std::move(stub_), grpc_context_};
         return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
     }
 

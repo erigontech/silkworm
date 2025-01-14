@@ -249,9 +249,9 @@ TEST_CASE("RecSplit8: double index lookup", "[silkworm][snapshots][recsplit]") {
 
     RecSplit8 rs2{settings.index_path};
     for (size_t i{0}; i < settings.keys_count; ++i) {
-        const auto [enumeration_index, found] = rs2.lookup("key " + std::to_string(i));
+        const auto enumeration_index = rs2.lookup_ordinal_by_key("key " + std::to_string(i));
+        REQUIRE(enumeration_index);
         CHECK(enumeration_index == i);
-        CHECK(found);
         CHECK(rs2.lookup_by_ordinal(enumeration_index) == i * 17);
     }
 }

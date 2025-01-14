@@ -75,6 +75,8 @@ class Database {
 
     DatabaseRef ref() const { return {env_, schema_, entities_}; }  // NOLINT(cppcoreguidelines-slicing)
 
+    void create_tables();
+
   private:
     mdbx::env_managed env_;
     Schema::DatabaseDef schema_;

@@ -26,27 +26,25 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/infra/common/clock_time.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/grpc/client/unary_rpc.hpp>
+#include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::ethbackend {
 
-RemoteBackEnd::RemoteBackEnd(
-    boost::asio::io_context& ioc,
-    const std::shared_ptr<grpc::Channel>& channel,
-    agrpc::GrpcContext& grpc_context)
-    : RemoteBackEnd(ioc.get_executor(), ::remote::ETHBACKEND::NewStub(channel), grpc_context) {}
+namespace proto = ::remote;
+using Stub = proto::ETHBACKEND::StubInterface;
 
-RemoteBackEnd::RemoteBackEnd(boost::asio::io_context::executor_type executor,
-                             std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub,
-                             agrpc::GrpcContext& grpc_context)
-    : executor_(std::move(executor)), stub_(std::move(stub)), grpc_context_(grpc_context) {}
+RemoteBackEnd::RemoteBackEnd(const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context)
+    : RemoteBackEnd(proto::ETHBACKEND::NewStub(channel), grpc_context) {}
+
+RemoteBackEnd::RemoteBackEnd(std::unique_ptr<Stub> stub, agrpc::GrpcContext& grpc_context)
+    : stub_(std::move(stub)), grpc_context_(grpc_context) {}
 
 Task<evmc::address> RemoteBackEnd::etherbase() {
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEtherbase> eb_rpc{*stub_, grpc_context_};
-    const auto reply = co_await eb_rpc.finish_on(executor_, ::remote::EtherbaseRequest{});
+    const proto::EtherbaseRequest request;
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncEtherbase, *stub_, request, grpc_context_);
     evmc::address evmc_address;
     if (reply.has_address()) {
         const auto& h160_address = reply.address();
@@ -58,8 +56,8 @@ Task<evmc::address> RemoteBackEnd::etherbase() {
 
 Task<uint64_t> RemoteBackEnd::protocol_version() {
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncProtocolVersion> pv_rpc{*stub_, grpc_context_};
-    const auto reply = co_await pv_rpc.finish_on(executor_, ::remote::ProtocolVersionRequest{});
+    const proto::ProtocolVersionRequest request;
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncProtocolVersion, *stub_, request, grpc_context_);
     const auto pv = reply.id();
     SILK_TRACE << "RemoteBackEnd::protocol_version version=" << pv << " t=" << clock_time::since(start_time);
     co_return pv;
@@ -67,8 +65,8 @@ Task<uint64_t> RemoteBackEnd::protocol_version() {
 
 Task<BlockNum> RemoteBackEnd::net_version() {
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncNetVersion> nv_rpc{*stub_, grpc_context_};
-    const auto reply = co_await nv_rpc.finish_on(executor_, ::remote::NetVersionRequest{});
+    const proto::NetVersionRequest request;
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncNetVersion, *stub_, request, grpc_context_);
     const auto nv = reply.id();
     SILK_TRACE << "RemoteBackEnd::net_version version=" << nv << " t=" << clock_time::since(start_time);
     co_return nv;
@@ -76,8 +74,8 @@ Task<BlockNum> RemoteBackEnd::net_version() {
 
 Task<std::string> RemoteBackEnd::client_version() {
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncClientVersion> cv_rpc{*stub_, grpc_context_};
-    const auto reply = co_await cv_rpc.finish_on(executor_, ::remote::ClientVersionRequest{});
+    const proto::ClientVersionRequest request;
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncClientVersion, *stub_, request, grpc_context_);
     const auto& cv = reply.node_name();
     SILK_TRACE << "RemoteBackEnd::client_version version=" << cv << " t=" << clock_time::since(start_time);
     co_return cv;
@@ -85,8 +83,8 @@ Task<std::string> RemoteBackEnd::client_version() {
 
 Task<uint64_t> RemoteBackEnd::net_peer_count() {
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncNetPeerCount> npc_rpc{*stub_, grpc_context_};
-    const auto reply = co_await npc_rpc.finish_on(executor_, ::remote::NetPeerCountRequest{});
+    const proto::NetPeerCountRequest request;
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncNetPeerCount, *stub_, request, grpc_context_);
     const auto count = reply.count();
     SILK_TRACE << "RemoteBackEnd::net_peer_count count=" << count << " t=" << clock_time::since(start_time);
     co_return count;
@@ -95,8 +93,8 @@ Task<uint64_t> RemoteBackEnd::net_peer_count() {
 Task<NodeInfos> RemoteBackEnd::engine_node_info() {
     NodeInfos node_info_list;
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncNodeInfo> ni_rpc{*stub_, grpc_context_};
-    const auto reply = co_await ni_rpc.finish_on(executor_, ::remote::NodesInfoRequest{});
+    const proto::NodesInfoRequest request;
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncNodeInfo, *stub_, request, grpc_context_);
     for (int i = 0; i < reply.nodes_info_size(); ++i) {
         NodeInfo node_info;
         const auto& backend_node_info = reply.nodes_info(i);
@@ -119,9 +117,8 @@ Task<NodeInfos> RemoteBackEnd::engine_node_info() {
 
 Task<PeerInfos> RemoteBackEnd::peers() {
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncPeers> peers_rpc{*stub_, grpc_context_};
-    ::google::protobuf::Empty request;
-    const auto reply = co_await peers_rpc.finish_on(executor_, request);
+    const ::google::protobuf::Empty request;
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncPeers, *stub_, request, grpc_context_);
     PeerInfos peer_infos;
     peer_infos.reserve(static_cast<size_t>(reply.peers_size()));
     for (const auto& peer : reply.peers()) {
@@ -145,11 +142,10 @@ Task<PeerInfos> RemoteBackEnd::peers() {
 
 Task<bool> RemoteBackEnd::get_block(BlockNum block_num, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) {
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncBlock> get_block_rpc{*stub_, grpc_context_};
     ::remote::BlockRequest request;
     request.set_block_height(block_num);
     request.set_allocated_block_hash(h256_from_bytes(hash).release());
-    const auto reply = co_await get_block_rpc.finish_on(executor_, request);
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncBlock, *stub_, request, grpc_context_);
     ByteView block_rlp{string_view_to_byte_view(reply.block_rlp())};
     SILK_DEBUG << "RemoteBackEnd::get_block block_num=" << block_num << " reply=" << reply.DebugString();
     if (const auto decode_result{rlp::decode(block_rlp, block)}; !decode_result) {
@@ -173,10 +169,9 @@ Task<bool> RemoteBackEnd::get_block(BlockNum block_num, const HashAsSpan& hash, 
 
 Task<std::optional<BlockNum>> RemoteBackEnd::get_block_num_from_txn_hash(const HashAsSpan& hash) {
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncTxnLookup> txn_lookup_rpc{*stub_, grpc_context_};
     ::remote::TxnLookupRequest request;
     request.set_allocated_txn_hash(h256_from_bytes(hash).release());
-    const auto reply = co_await txn_lookup_rpc.finish_on(executor_, request);
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncTxnLookup, *stub_, request, grpc_context_);
     if (reply.block_number() == 0) {
         co_return std::nullopt;
     }
@@ -187,10 +182,9 @@ Task<std::optional<BlockNum>> RemoteBackEnd::get_block_num_from_txn_hash(const H
 
 Task<std::optional<BlockNum>> RemoteBackEnd::get_block_num_from_hash(const HashAsSpan& hash) {
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncHeaderNumber> header_number_rpc{*stub_, grpc_context_};
     ::remote::HeaderNumberRequest request;
     request.set_allocated_hash(h256_from_bytes(hash).release());
-    const auto reply = co_await header_number_rpc.finish_on(executor_, request);
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHeaderNumber, *stub_, request, grpc_context_);
     if (!reply.has_number()) {
         co_return std::nullopt;
     }
@@ -201,10 +195,9 @@ Task<std::optional<BlockNum>> RemoteBackEnd::get_block_num_from_hash(const HashA
 
 Task<std::optional<evmc::bytes32>> RemoteBackEnd::get_block_hash_from_block_num(BlockNum block_num) {
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncCanonicalHash> canonical_hsh_rpc{*stub_, grpc_context_};
     ::remote::CanonicalHashRequest request;
     request.set_block_number(block_num);
-    const auto reply = co_await canonical_hsh_rpc.finish_on(executor_, request);
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncCanonicalHash, *stub_, request, grpc_context_);
     evmc::bytes32 hash;
     if (reply.has_hash() == 0) {
         co_return std::nullopt;
@@ -217,10 +210,9 @@ Task<std::optional<evmc::bytes32>> RemoteBackEnd::get_block_hash_from_block_num(
 
 Task<std::optional<Bytes>> RemoteBackEnd::canonical_body_for_storage(BlockNum block_num) {
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncCanonicalBodyForStorage> canonical_body_for_storage_rpc{*stub_, grpc_context_};
     ::remote::CanonicalBodyForStorageRequest request;
     request.set_blocknumber(block_num);
-    const auto reply = co_await canonical_body_for_storage_rpc.finish_on(executor_, request);
+    const auto reply = co_await rpc::unary_rpc(&Stub::AsyncCanonicalBodyForStorage, *stub_, request, grpc_context_);
     SILK_TRACE << "RemoteBackEnd::canonical_body_for_storage block_num=" << block_num
                << " t=" << clock_time::since(start_time);
     if (reply.body().empty()) {

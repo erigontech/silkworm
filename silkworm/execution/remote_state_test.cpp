@@ -63,9 +63,6 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     SECTION("read_code for non-empty hash") {
         static const Bytes kCode{*from_hex("0x0608")};
 
-        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
-            co_return 0;
-        }));
         EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
@@ -81,9 +78,6 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("read_code with empty response from db") {
-        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
-            co_return 0;
-        }));
         EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
@@ -118,9 +112,6 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("read_account with empty response from db") {
-        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
-            co_return 0;
-        }));
         EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = false,
@@ -268,9 +259,6 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     */
 
     SECTION("AsyncRemoteState::read_account for empty response from db") {
-        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
-            co_return 0;
-        }));
         EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = false,
@@ -284,9 +272,6 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("AsyncRemoteState::read_code with empty response from db") {
-        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
-            co_return 0;
-        }));
         EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
@@ -301,9 +286,6 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
     }
 
     SECTION("AsyncRemoteState::read_storage with empty response from db") {
-        EXPECT_CALL(transaction, first_txn_num_in_block(1'000'001)).WillOnce(Invoke([]() -> Task<TxnId> {
-            co_return 0;
-        }));
         EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,

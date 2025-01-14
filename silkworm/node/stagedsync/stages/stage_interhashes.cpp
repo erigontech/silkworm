@@ -66,11 +66,10 @@ Stage::Result InterHashes::forward(RWTxn& txn) {
         }
         const BlockNum segment_width{hashstate_stage_progress - previous_progress};
         if (segment_width > stages::kSmallBlockSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
-                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
-                       "from", std::to_string(previous_progress),
-                       "to", std::to_string(hashstate_stage_progress),
-                       "span", std::to_string(segment_width)});
+            SILK_INFO_M(log_prefix_ + " begin", {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                                                 "from", std::to_string(previous_progress),
+                                                 "to", std::to_string(hashstate_stage_progress),
+                                                 "span", std::to_string(segment_width)});
         }
 
         // Retrieve header's state_root at target block to be compared with the one computed here
@@ -148,11 +147,10 @@ Stage::Result InterHashes::unwind(RWTxn& txn) {
         }
         const BlockNum segment_width{previous_progress - to};
         if (segment_width > stages::kSmallBlockSegmentWidth) {
-            log::Info(log_prefix_ + " begin",
-                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
-                       "from", std::to_string(previous_progress),
-                       "to", std::to_string(to),
-                       "span", std::to_string(segment_width)});
+            SILK_INFO_M(log_prefix_ + " begin", {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                                                 "from", std::to_string(previous_progress),
+                                                 "to", std::to_string(to),
+                                                 "span", std::to_string(segment_width)});
         }
 
         // Retrieve header's state_root at target block to be compared with the one computed here
@@ -345,7 +343,7 @@ trie::PrefixSet InterHashes::collect_account_changes(RWTxn& txn, BlockNum from, 
 
     if (sw) {
         const auto [_, duration]{sw->stop()};
-        log::Trace(log_prefix_ + " gathered account changes", {"in", StopWatch::format(duration)});
+        SILK_TRACE_M(log_prefix_ + " gathered account changes", {"in", StopWatch::format(duration)});
     }
     return ret;
 }
@@ -427,7 +425,7 @@ trie::PrefixSet InterHashes::collect_storage_changes(RWTxn& txn, BlockNum from, 
 
     if (sw) {
         const auto [_, duration]{sw->stop()};
-        log::Trace(log_prefix_ + " gathered storage changes", {"in", StopWatch::format(duration)});
+        SILK_TRACE_M(log_prefix_ + " gathered storage changes", {"in", StopWatch::format(duration)});
     }
 
     return ret;
@@ -442,9 +440,9 @@ Stage::Result InterHashes::regenerate_intermediate_hashes(RWTxn& txn, const evmc
     Stage::Result ret{Stage::Result::kSuccess};
 
     try {
-        log::Info(log_prefix_, {"clearing", table::kTrieOfAccounts.name});
+        SILK_INFO_M(log_prefix_, {"clearing", table::kTrieOfAccounts.name});
         txn->clear_map(table::kTrieOfAccounts.name);
-        log::Info(log_prefix_, {"clearing", table::kTrieOfStorage.name});
+        SILK_INFO_M(log_prefix_, {"clearing", table::kTrieOfStorage.name});
         txn->clear_map(table::kTrieOfStorage.name);
         txn.commit_and_renew();
 

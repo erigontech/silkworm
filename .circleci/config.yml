@@ -117,7 +117,7 @@ commands:
             cp "cmake/profiles/$conan_profile" "$HOME/selected_conan_profile"
       - restore_cache:
           name: "Restore Conan cache"
-          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-<<parameters.compiler_id>>-<<parameters.compiler_version>>-{{checksum "../selected_conan_profile"}}-{{checksum "conanfile.py"}}
+          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-<<parameters.compiler_id>>-<<parameters.compiler_version>>-{{checksum "../selected_conan_profile"}}-{{checksum "conanfile.py"}}-{{checksum "cmake/conan.cmake"}}
       - build:
           build_type: <<parameters.build_type>>
           compiler_id: <<parameters.compiler_id>>

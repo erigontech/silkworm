@@ -77,7 +77,8 @@
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 #include "../common/util/bitmask_operators.hpp"
-#include "../elias_fano/elias_fano.hpp"
+#include "../elias_fano/double_elias_fano_list.hpp"
+#include "../elias_fano/elias_fano_list.hpp"
 #include "golomb_rice.hpp"
 #include "murmur_hash3.hpp"
 
@@ -338,13 +339,9 @@ class RecSplit {
             check_minimum_length(offset + kEliasFano32CountLength + kEliasFano32ULength);
 
             // Read Elias-Fano index for offsets
-            const uint64_t count = endian::load_big_u64(address + offset);
-            offset += kEliasFano32CountLength;
-            const uint64_t u = endian::load_big_u64(address + offset);
-            offset += kEliasFano32ULength;
-            auto remaining_data = encoded_file_->region().subspan(offset);
-            ef_offsets_ = std::make_unique<EliasFano>(count, u, remaining_data);
-            offset += ef_offsets_->data().size() * sizeof(uint64_t);
+            auto ef_offsets = EliasFano::from_encoded_data(encoded_file_->region().subspan(offset));
+            offset += ef_offsets.encoded_data_size();
+            ef_offsets_ = std::make_unique<EliasFano>(std::move(ef_offsets));
 
             if (less_false_positives_) {
                 // Read 1-byte-per-key existence filter used to reduce false positives
@@ -509,7 +506,7 @@ class RecSplit {
         // Write out Elias-Fano code for offsets (if any)
         if (double_enum_index_) {
             index_output_stream << *ef_offsets_;
-            SILK_TRACE << "[index] written EF code for offsets [size: " << ef_offsets_->count() - 1 << "]";
+            SILK_TRACE << "[index] written EF code for offsets [size: " << ef_offsets_->size() << "]";
 
             // Write out existence filter (if any)
             if (less_false_positives_) {
@@ -641,14 +638,31 @@ class RecSplit {
     //! Return the value associated with the given key within the MPHF mapping
     size_t operator()(const std::string& key) const { return operator()(string_view_to_byte_view(key)); }
 
-    //! Search result: value position and flag indicating if found or not
-    using LookupResult = std::pair<size_t, bool>;
+    /**
+     * If RecSplitFeatures::kEnums (double_enum_index_) is enabled
+     * Ordinal is an index of an item from the [0, key_count()) interval.
+     * It is output of MPHF mapping, and input to the EF mapping:
+     * - MPHF(key) = ordinal;
+     * - EF(ordinal) = value (offset);
+     * It can be converted to "data id" using base_data_id():
+     *     data_id = base_data_id + ordinal
+     *
+     * If RecSplitFeatures::kEnums (double_enum_index_) is disabled
+     * Ordinal is just the value (offset) output of MPHF mapping:
+     * - MPHF(key) = value (offset) = ordinal;
+     * In this case base_data_id() is not applicable.
+     */
+    struct Ordinal {
+        uint64_t value{0};
+    };
 
     //! Return the value associated with the given key within the index
-    LookupResult lookup(const std::string& key) const { return lookup(string_view_to_byte_view(key)); }
+    std::optional<Ordinal> lookup_ordinal_by_key(const std::string& key) const {
+        return lookup_ordinal_by_key(string_view_to_byte_view(key));
+    }
 
     //! Return the value associated with the given key within the index
-    LookupResult lookup(ByteView key) const {
+    std::optional<Ordinal> lookup_ordinal_by_key(ByteView key) const {
         const Hash128& hashed_key{murmur_hash_3(key)};
         const auto record = operator()(hashed_key);
         const auto position = 1 + 8 + bytes_per_record_ * (record + 1);
@@ -657,15 +671,27 @@ class RecSplit {
         ensure(position + sizeof(uint64_t) < region.size(),
                [&]() { return "position: " + std::to_string(position) + " plus 8 exceeds file length"; });
         const auto value = endian::load_big_u64(region.data() + position) & record_mask_;
-        if (less_false_positives_ && value < existence_filter_.size()) {
-            return {value, existence_filter_.at(value) == static_cast<uint8_t>(hashed_key.first)};
+
+        if (less_false_positives_ && (value < existence_filter_.size()) &&
+            (existence_filter_.at(value) != static_cast<uint8_t>(hashed_key.first))) {
+            return std::nullopt;
         }
-        return {value, true};
+
+        return Ordinal{value};
     }
 
     //! Return the offset of the i-th element in the index. Perfect hash table lookup is not performed,
     //! only access to the Elias-Fano structure containing all offsets
-    size_t lookup_by_ordinal(uint64_t i) const { return ef_offsets_->get(i); }
+    size_t lookup_by_ordinal(Ordinal ord) const {
+        SILKWORM_ASSERT(double_enum_index_);
+        return ef_offsets_->at(ord.value);
+    }
+
+    std::optional<uint64_t> lookup_data_id_by_key(ByteView key) const {
+        SILKWORM_ASSERT(double_enum_index_);
+        auto ord = lookup_ordinal_by_key(key);
+        return ord ? std::optional{ord->value + base_data_id()} : std::nullopt;
+    }
 
     std::optional<size_t> lookup_by_data_id(uint64_t data_id) const {
         // check if data_id is not out of range
@@ -675,12 +701,13 @@ class RecSplit {
             return std::nullopt;
         }
 
-        return lookup_by_ordinal(data_id - base_data_id());
+        return lookup_by_ordinal(Ordinal{data_id - base_data_id()});
     }
 
     std::optional<size_t> lookup_by_key(ByteView key) const {
-        auto [i, found] = lookup(key);
-        return found ? std::optional{lookup_by_ordinal(i)} : std::nullopt;
+        auto ord = lookup_ordinal_by_key(key);
+        if (!ord) return std::nullopt;
+        return double_enum_index_ ? lookup_by_ordinal(*ord) : std::optional{ord->value};
     }
 
     //! Return the number of keys used to build the RecSplit instance

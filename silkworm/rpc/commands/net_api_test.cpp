@@ -31,7 +31,7 @@ TEST_CASE("NetRpcApi::NetRpcApi", "[rpc][erigon_api]") {
     agrpc::GrpcContext grpc_context;
     add_private_service<ethbackend::BackEnd>(
         ioc,
-        std::make_unique<ethbackend::RemoteBackEnd>(ioc, grpc_channel, grpc_context));
+        std::make_unique<ethbackend::RemoteBackEnd>(grpc_channel, grpc_context));
     CHECK_NOTHROW(NetRpcApi{ioc});
 }
 #endif  // SILKWORM_SANITIZE

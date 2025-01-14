@@ -4,6 +4,7 @@ arch=wasm
 compiler=clang
 compiler.version=14
 compiler.libcxx=libc++
+compiler.cppstd=17
 build_type=Release
 [conf]
 tools.build:compiler_executables={'c': '/opt/wasi-sdk/bin/clang', 'cpp': '/opt/wasi-sdk/bin/clang++'}

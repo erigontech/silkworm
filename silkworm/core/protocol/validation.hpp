@@ -148,7 +148,7 @@ namespace protocol {
 
     ValidationResult pre_validate_common_forks(const Transaction& txn, evmc_revision rev, const std::optional<intx::uint256>& blob_gas_price) noexcept;
 
-    ValidationResult validate_call_funds(const Transaction& txn, const EVM& evm, const intx::uint256& owned_funds, bool bailout) noexcept;
+    ValidationResult validate_call_funds(const Transaction& txn, const EVM& evm, const intx::uint256& owned_funds) noexcept;
 
     intx::uint256 compute_call_cost(const Transaction& txn, const intx::uint256& effective_gas_price, const EVM& evm);
 

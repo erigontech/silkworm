@@ -17,7 +17,7 @@
 #pragma once
 
 namespace silkworm {
-void abort_due_to_assertion_failure(char const* expr, char const* file, int line);
+[[noreturn]] void abort_due_to_assertion_failure(char const* expr, char const* file, int line);
 }
 
 // SILKWORM_ASSERT always aborts program execution on assertion failure, even when NDEBUG is defined.

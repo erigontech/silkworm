@@ -173,7 +173,16 @@ Task<void> SentryImpl::run() {
     public_ip_ = co_await nat::ip_resolver(settings_.nat);
     SILK_INFO_M("sentry") << "Node URL: " << make_node_url().to_string();
 
-    co_await (run_tasks() && run_grpc_server());
+    try {
+        co_await (run_tasks() && run_grpc_server());
+    } catch (const boost::system::system_error& ex) {
+        SILK_ERROR_M("sentry") << "SentryImpl::run ex=" << ex.what();
+        if (ex.code() == boost::system::errc::operation_canceled) {
+            // TODO(canepat) demote to debug after https://github.com/erigontech/silkworm/issues/2333 is solved
+            SILK_WARN_M("sentry") << "SentryImpl::run operation_canceled";
+        }
+        throw;
+    }
 }
 
 void SentryImpl::setup_node_key() {

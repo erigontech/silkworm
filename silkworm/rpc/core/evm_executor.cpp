@@ -245,7 +245,7 @@ ExecutionResult EVMExecutor::call(
         return convert_validated_funds(block, txn, evm, owned_funds);
     }
 
-    const auto result = execution_processor_.call(txn, tracers, bailout, refund);
+    const auto result = execution_processor_.call(txn, tracers, refund);
 
     ExecutionResult exec_result{result.status, result.gas_left, result.data};
 

@@ -28,10 +28,10 @@ struct DomainPutLatestQuery {
     RWTxn& tx;
     Domain entity;
 
-    using TKey = decltype(TKeyEncoder::value);
-    using TValue = decltype(TValueEncoder::value);
+    using Key = decltype(TKeyEncoder::value);
+    using Value = decltype(TValueEncoder::value);
 
-    void exec(const TKey& key, const TValue& value, Step step) {
+    void exec(const Key& key, const Value& value, Step step) {
         DomainKeyEncoder<TKeyEncoder> key_encoder{entity.has_large_values};
         key_encoder.value.key.value = key;
         key_encoder.value.timestamp.value = step;

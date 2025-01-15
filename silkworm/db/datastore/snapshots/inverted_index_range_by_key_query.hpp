@@ -46,9 +46,9 @@ struct InvertedIndexFindByKeySegmentQuery {
         datastore::EntityName inverted_index_name)
         : inverted_index_{bundle.inverted_index(inverted_index_name)} {}
 
-    using TKey = decltype(TKeyEncoder::value);
+    using Key = decltype(TKeyEncoder::value);
 
-    std::optional<elias_fano::EliasFanoList32> exec(TKey key) {
+    std::optional<elias_fano::EliasFanoList32> exec(Key key) {
         TKeyEncoder key_encoder;
         key_encoder.value = std::move(key);
         ByteView key_data = key_encoder.encode_word();
@@ -59,7 +59,7 @@ struct InvertedIndexFindByKeySegmentQuery {
         }
 
         auto reader = inverted_index_.kv_segment_reader<RawDecoder<Bytes>>();
-        std::optional<std::pair<TKey, elias_fano::EliasFanoList32>> result = reader.seek_one(*offset);
+        std::optional<std::pair<Key, elias_fano::EliasFanoList32>> result = reader.seek_one(*offset);
 
         // ensure that the found key matches to avoid lookup_by_key false positives
         if (result && (result->first == key_data)) {
@@ -70,7 +70,7 @@ struct InvertedIndexFindByKeySegmentQuery {
     }
 
     template <bool ascending = true>
-    auto exec_filter(TKey key, datastore::TimestampRange ts_range) {
+    auto exec_filter(Key key, datastore::TimestampRange ts_range) {
         return timestamp_range_filter<ascending>(exec(std::move(key)).value_or(elias_fano::EliasFanoList32::empty_list()), ts_range);
     }
 
@@ -86,10 +86,10 @@ struct InvertedIndexRangeByKeyQuery {
         : repository_{repository},
           inverted_index_name_{inverted_index_name} {}
 
-    using TKey = decltype(TKeyEncoder::value);
+    using Key = decltype(TKeyEncoder::value);
 
     template <bool ascending = true>
-    auto exec(TKey key, datastore::TimestampRange ts_range) {
+    auto exec(Key key, datastore::TimestampRange ts_range) {
         auto timestamps_in_bundle = [inverted_index_name = inverted_index_name_, key = std::move(key), ts_range](std::shared_ptr<SnapshotBundle> bundle) {
             InvertedIndexFindByKeySegmentQuery<TKeyEncoder> query{*bundle, inverted_index_name};
             return query.template exec_filter<ascending>(key, ts_range);

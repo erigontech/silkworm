@@ -45,13 +45,13 @@ struct InvertedIndexRangeByKeyQuery {
               repository,
           } {}
 
-    using TKey1 = decltype(TKeyEncoder1::value);
-    using TKey2 = decltype(TKeyEncoder2::value);
-    static_assert(std::same_as<TKey1, TKey2>);
-    using TKey = TKey1;
+    using Key1 = decltype(TKeyEncoder1::value);
+    using Key2 = decltype(TKeyEncoder2::value);
+    static_assert(std::same_as<Key1, Key2>);
+    using Key = Key1;
 
     template <bool ascending = true>
-    auto exec(TKey key, TimestampRange ts_range) {
+    auto exec(Key key, TimestampRange ts_range) {
         if constexpr (ascending) {
             return silkworm::views::concat(
                 query2_.template exec<ascending>(key, ts_range),

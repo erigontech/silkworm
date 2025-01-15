@@ -25,13 +25,13 @@ struct DomainDeleteQuery {
     RWTxn& tx;
     Domain entity;
 
-    using TKey = decltype(TKeyEncoder::value);
-    using TValue = decltype(TValueEncoder::value);
+    using Key = decltype(TKeyEncoder::value);
+    using Value = decltype(TValueEncoder::value);
 
     void exec(
-        const TKey& key,
+        const Key& key,
         Timestamp timestamp,
-        const std::optional<TValue>& prev_value,
+        const std::optional<Value>& prev_value,
         Step prev_step) {
         if (prev_value) {
             DomainPutQuery<TKeyEncoder, RawEncoder<ByteView>> query{tx, entity};

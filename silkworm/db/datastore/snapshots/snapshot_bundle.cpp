@@ -151,11 +151,14 @@ Domain SnapshotBundle::domain(datastore::EntityName name) const {
     auto& data = data_.entities.at(name);
     Domain domain{
         data.kv_segments.at(Schema::kDomainKVSegmentName),
-        data.accessor_indexes.at(Schema::kDomainAccessorIndexName),
+        nullptr,
         data.existence_indexes.at(Schema::kDomainExistenceIndexName),
         data.btree_indexes.at(Schema::kDomainBTreeIndexName),
         std::nullopt,
     };
+    if (data.accessor_indexes.contains(Schema::kDomainAccessorIndexName)) {
+        domain.accessor_index = &data.accessor_indexes.at(Schema::kDomainAccessorIndexName);
+    }
     if (data.segments.contains(Schema::kHistorySegmentName)) {
         domain.history.emplace(History{
             data.segments.at(Schema::kHistorySegmentName),

@@ -164,6 +164,8 @@ class Schema {
             RepositoryDef::undefine_history_schema(*this);
             return *this;
         }
+
+        DomainDef& with_accessor_index();
     };
 
     class RepositoryDef {

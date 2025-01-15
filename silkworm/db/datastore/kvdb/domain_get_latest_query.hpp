@@ -28,7 +28,7 @@ namespace silkworm::datastore::kvdb {
 
 template <EncoderConcept TKeyEncoder, DecoderConcept TValueDecoder>
 struct DomainGetLatestQuery {
-    RWTxn& tx;
+    ROTxn& tx;
     Domain entity;
 
     using Key = decltype(TKeyEncoder::value);

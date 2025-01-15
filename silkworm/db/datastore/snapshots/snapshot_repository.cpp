@@ -145,7 +145,7 @@ void SnapshotRepository::reopen_folder() {
             SnapshotBundlePaths bundle_paths{schema_, dir_path_, range};
             // if all bundle paths exist
             if (std::ranges::all_of(bundle_paths.files(), [](const fs::path& p) { return fs::exists(p); })) {
-                SnapshotBundle bundle{schema_, dir_path_, range};
+                SnapshotBundle bundle = open_bundle(range);
                 bundles->insert_or_assign(num, std::make_shared<SnapshotBundle>(std::move(bundle)));
             }
         }
@@ -159,6 +159,10 @@ void SnapshotRepository::reopen_folder() {
 
     SILK_INFO << "Total reopened bundles: " << bundles_count()
               << " max block available: " << max_block_available();
+}
+
+SnapshotBundle SnapshotRepository::open_bundle(StepRange range) const {
+    return SnapshotBundle{schema_, dir_path_, range, index_salt_};
 }
 
 std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(Timestamp t) const {

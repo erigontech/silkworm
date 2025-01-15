@@ -23,6 +23,6 @@
 
 namespace silkworm::db::state {
 
-using LogAddressInvertedIndexKVSegmentReader = snapshots::segment::KVSegmentReader<AddressDecoder, snapshots::RawDecoder<Bytes>>;
+using LogAddressInvertedIndexKVSegmentReader = snapshots::segment::KVSegmentReader<AddressSnapshotsDecoder, snapshots::RawDecoder<Bytes>>;
 
 }  // namespace silkworm::db::state

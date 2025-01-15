@@ -14,15 +14,17 @@
    limitations under the License.
 */
 
-#pragma once
+#include "bloom_filter_key_hasher.hpp"
 
-#include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
-#include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
+#include <catch2/catch_test_macros.hpp>
 
-#include "hash_decoder.hpp"
+#include <silkworm/core/common/util.hpp>
 
-namespace silkworm::db::state {
+namespace silkworm::snapshots::bloom_filter {
 
-using LogTopicsInvertedIndexKVSegmentReader = snapshots::segment::KVSegmentReader<HashSnapshotsDecoder, snapshots::RawDecoder<Bytes>>;
+TEST_CASE("BloomFilterKeyHasher") {
+    CHECK(BloomFilterKeyHasher{0}.hash(*from_hex("CAFEBABE")) == 2809309899937206063u);
+    CHECK(BloomFilterKeyHasher{12345}.hash(*from_hex("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")) == 17810263873480351644u);
+}
 
-}  // namespace silkworm::db::state
+}  // namespace silkworm::snapshots::bloom_filter

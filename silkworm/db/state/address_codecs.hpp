@@ -37,18 +37,25 @@ struct AddressKVDBEncoder : public datastore::kvdb::Encoder {
 
 static_assert(datastore::kvdb::EncoderConcept<AddressKVDBEncoder>);
 
-struct AddressDecoder : public snapshots::Decoder {
+struct AddressSnapshotsCodec : public snapshots::Codec {
     evmc::address value;
+    ~AddressSnapshotsCodec() override = default;
 
-    ~AddressDecoder() override = default;
+    ByteView encode_word() override {
+        return ByteView{reinterpret_cast<uint8_t*>(&value.bytes), kAddressLength};
+    }
 
     void decode_word(ByteView word) override {
         if (word.size() < kAddressLength)
-            throw std::runtime_error{"AddressDecoder failed to decode"};
+            throw std::runtime_error{"AddressSnapshotsDecoder failed to decode"};
         std::memcpy(value.bytes, word.data(), kAddressLength);
     }
 };
 
-static_assert(snapshots::DecoderConcept<AddressDecoder>);
+static_assert(snapshots::EncoderConcept<AddressSnapshotsCodec>);
+static_assert(snapshots::DecoderConcept<AddressSnapshotsCodec>);
+
+using AddressSnapshotsEncoder = AddressSnapshotsCodec;
+using AddressSnapshotsDecoder = AddressSnapshotsCodec;
 
 }  // namespace silkworm::db::state

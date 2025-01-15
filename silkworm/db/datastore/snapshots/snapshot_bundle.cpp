@@ -81,11 +81,13 @@ static std::map<datastore::EntityName, AccessorIndex> open_accessor_indexes(
 static std::map<datastore::EntityName, bloom_filter::BloomFilter> open_existence_indexes(
     const Schema::EntityDef& entity,
     const std::filesystem::path& dir_path,
-    StepRange range) {
+    StepRange range,
+    std::optional<uint32_t> salt) {
     std::map<datastore::EntityName, bloom_filter::BloomFilter> results;
     for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kExistenceIndex, entity, dir_path, range)) {
         SILK_TRACE << "make_existence_indexes opens " << name.to_string() << " at " << path.filename();
-        results.emplace(name, bloom_filter::BloomFilter{path.path()});
+        SILKWORM_ASSERT(salt);
+        results.emplace(name, bloom_filter::BloomFilter{path.path(), bloom_filter::BloomFilterKeyHasher{*salt}});
     }
     return results;
 }
@@ -105,7 +107,8 @@ static std::map<datastore::EntityName, btree::BTreeIndex> open_btree_indexes(
 SnapshotBundleData open_bundle_data(
     const Schema::RepositoryDef& schema,
     const std::filesystem::path& dir_path,
-    StepRange step_range) {
+    StepRange step_range,
+    std::optional<uint32_t> index_salt) {
     SnapshotBundleData data;
     for (auto& [name, entity_schema_ptr] : schema.entities()) {
         auto& entity_schema = *entity_schema_ptr;
@@ -115,7 +118,7 @@ SnapshotBundleData open_bundle_data(
                 open_segments(entity_schema, dir_path, step_range),
                 open_kv_segments(entity_schema, dir_path, step_range),
                 open_accessor_indexes(entity_schema, dir_path, step_range),
-                open_existence_indexes(entity_schema, dir_path, step_range),
+                open_existence_indexes(entity_schema, dir_path, step_range, index_salt),
                 open_btree_indexes(entity_schema, dir_path, step_range),
             });
     }

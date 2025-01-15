@@ -38,23 +38,29 @@ struct Bytes32KVDBCodec : public datastore::kvdb::Codec {
 static_assert(datastore::kvdb::EncoderConcept<Bytes32KVDBCodec>);
 static_assert(datastore::kvdb::DecoderConcept<Bytes32KVDBCodec>);
 
-struct Bytes32Decoder : public snapshots::Decoder {
+struct Bytes32SnapshotsCodec : public snapshots::Codec {
     evmc::bytes32 value;
-    ~Bytes32Decoder() override = default;
+    ~Bytes32SnapshotsCodec() override = default;
+    ByteView encode_word() override {
+        return ByteView{reinterpret_cast<uint8_t*>(&value.bytes), sizeof(value.bytes)};
+    }
     void decode_word(ByteView word) override {
         if (word.size() < sizeof(value.bytes))
-            throw std::runtime_error{"Bytes32Decoder failed to decode"};
+            throw std::runtime_error{"Bytes32SnapshotsCodec failed to decode"};
         std::memcpy(value.bytes, word.data(), sizeof(value.bytes));
     }
 };
 
-static_assert(snapshots::DecoderConcept<Bytes32Decoder>);
+static_assert(snapshots::EncoderConcept<Bytes32SnapshotsCodec>);
+static_assert(snapshots::DecoderConcept<Bytes32SnapshotsCodec>);
+
+struct StorageAddressAndLocation {
+    evmc::address address;
+    evmc::bytes32 location_hash;
+};
 
 struct StorageAddressAndLocationKVDBEncoder : public datastore::kvdb::Encoder {
-    struct {
-        evmc::address address;
-        evmc::bytes32 location_hash;
-    } value;
+    StorageAddressAndLocation value;
 
     struct {
         AddressKVDBEncoder address;
@@ -70,20 +76,23 @@ struct StorageAddressAndLocationKVDBEncoder : public datastore::kvdb::Encoder {
 
 static_assert(datastore::kvdb::EncoderConcept<StorageAddressAndLocationKVDBEncoder>);
 
-struct StorageAddressAndLocationDecoder : public snapshots::Decoder {
+struct StorageAddressAndLocationSnapshotsCodec : public snapshots::Codec {
+    StorageAddressAndLocation value;
+
     struct {
-        AddressDecoder address;
-        Bytes32Decoder location_hash;
-    } value;
+        AddressSnapshotsCodec address;
+        Bytes32SnapshotsCodec location_hash;
+    } codec;
 
-    ~StorageAddressAndLocationDecoder() override = default;
+    Bytes word;
 
-    void decode_word(ByteView word) override {
-        value.address.decode_word(word);
-        value.location_hash.decode_word(word.substr(kAddressLength));
-    }
+    ~StorageAddressAndLocationSnapshotsCodec() override = default;
+
+    ByteView encode_word() override;
+    void decode_word(ByteView input_word) override;
 };
 
-static_assert(snapshots::DecoderConcept<StorageAddressAndLocationDecoder>);
+static_assert(snapshots::EncoderConcept<StorageAddressAndLocationSnapshotsCodec>);
+static_assert(snapshots::DecoderConcept<StorageAddressAndLocationSnapshotsCodec>);
 
 }  // namespace silkworm::db::state

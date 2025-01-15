@@ -23,18 +23,18 @@
 
 namespace silkworm::db::state {
 
-struct HashDecoder : public snapshots::Decoder {
+struct HashSnapshotsDecoder : public snapshots::Decoder {
     Hash value;
 
-    ~HashDecoder() override = default;
+    ~HashSnapshotsDecoder() override = default;
 
     void decode_word(ByteView word) override {
         if (word.size() < kHashLength)
-            throw std::runtime_error{"HashDecoder failed to decode"};
+            throw std::runtime_error{"HashSnapshotsDecoder failed to decode"};
         value = Hash{word};
     }
 };
 
-static_assert(snapshots::DecoderConcept<HashDecoder>);
+static_assert(snapshots::DecoderConcept<HashSnapshotsDecoder>);
 
 }  // namespace silkworm::db::state

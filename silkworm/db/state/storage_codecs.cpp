@@ -30,4 +30,22 @@ datastore::kvdb::Slice StorageAddressAndLocationKVDBEncoder::encode() {
     return datastore::kvdb::to_slice(data);
 }
 
+ByteView StorageAddressAndLocationSnapshotsCodec::encode_word() {
+    // TODO: this extra copy could be avoided if encoders are able to contain a reference
+    codec.address.value = value.address;
+    codec.location_hash.value = value.location_hash;
+
+    word.clear();
+    word.reserve(kAddressLength + kHashLength);
+    word.append(codec.address.encode_word());
+    word.append(codec.location_hash.encode_word());
+    return word;
+}
+
+void StorageAddressAndLocationSnapshotsCodec::decode_word(ByteView input_word) {
+    codec.address.decode_word(input_word);
+    codec.location_hash.decode_word(input_word.substr(kAddressLength));
+    value = {codec.address.value, codec.location_hash.value};
+}
+
 }  // namespace silkworm::db::state

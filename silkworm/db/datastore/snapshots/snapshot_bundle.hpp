@@ -49,7 +49,8 @@ struct SnapshotBundleData {
 SnapshotBundleData open_bundle_data(
     const Schema::RepositoryDef& schema,
     const std::filesystem::path& dir_path,
-    datastore::StepRange step_range);
+    datastore::StepRange step_range,
+    std::optional<uint32_t> index_salt);
 
 struct SnapshotBundlePaths {
     using StepRange = datastore::StepRange;
@@ -84,10 +85,11 @@ struct SnapshotBundle : public SegmentAndAccessorIndexProvider {
     SnapshotBundle(
         const Schema::RepositoryDef& schema,
         const std::filesystem::path& dir_path,
-        StepRange range)
+        StepRange range,
+        std::optional<uint32_t> index_salt)
         : SnapshotBundle{
               range,
-              open_bundle_data(schema, dir_path, range),
+              open_bundle_data(schema, dir_path, range, std::move(index_salt)),
           } {}
     ~SnapshotBundle() override;
 

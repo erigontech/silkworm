@@ -20,7 +20,10 @@
 #include <cstdint>
 #include <filesystem>
 #include <istream>
+#include <optional>
 #include <vector>
+
+#include "bloom_filter_key_hasher.hpp"
 
 namespace silkworm::snapshots::bloom_filter {
 
@@ -28,7 +31,9 @@ namespace silkworm::snapshots::bloom_filter {
 //! \remark Serialized binary format compatible with: https://github.com/holiman/bloomfilter
 class BloomFilter {
   public:
-    explicit BloomFilter(std::filesystem::path path);
+    explicit BloomFilter(
+        std::filesystem::path path,
+        std::optional<BloomFilterKeyHasher> data_key_hasher = std::nullopt);
     BloomFilter();
     BloomFilter(uint64_t max_key_count, double p);
 
@@ -43,7 +48,8 @@ class BloomFilter {
     //! Checks if filter contains the give \p hash value
     //! \param hash the value to check for presence
     //! \return false means "definitely does not contain value", true means "maybe contains value"
-    bool contains_hash(uint64_t hash);
+    bool contains_hash(uint64_t hash) const;
+    bool contains(ByteView data_key) const;
 
     friend std::istream& operator>>(std::istream& is, BloomFilter& filter);
 
@@ -62,6 +68,9 @@ class BloomFilter {
 
     //! The index file path
     std::filesystem::path path_;
+
+    //! Data key hasher
+    std::optional<BloomFilterKeyHasher> data_key_hasher_;
 
     //! The number of bits that the bitmap should be able to track
     uint64_t bits_count_;

@@ -67,6 +67,9 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
 
     void reopen_folder();
 
+    //! Opens a detached bundle of snapshot files. Use add_snapshot_bundle or replace_snapshot_bundles to add it.
+    SnapshotBundle open_bundle(StepRange range) const;
+
     void add_snapshot_bundle(SnapshotBundle bundle);
 
     //! Replace bundles whose ranges are contained within the given bundle
@@ -79,6 +82,7 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
 
     std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
     void remove_stale_indexes() const;
+    const std::optional<uint32_t>& index_salt() const { return index_salt_; }
     void build_indexes(const SnapshotBundlePaths& bundle) const;
 
     BundlesView<MapValuesView<Bundles::key_type, Bundles::mapped_type>> view_bundles() const override {

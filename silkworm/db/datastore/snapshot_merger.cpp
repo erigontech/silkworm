@@ -126,7 +126,7 @@ void SnapshotMerger::commit(std::shared_ptr<DataMigrationResult> result) {
 
     move_files(bundle.files(), snapshots_.path());
 
-    SnapshotBundle final_bundle{snapshots_.schema(), snapshots_.path(), bundle.step_range()};
+    SnapshotBundle final_bundle = snapshots_.open_bundle(bundle.step_range());
     snapshots_.replace_snapshot_bundles(std::move(final_bundle));
 
     for (auto& merged_bundle : merged_bundles) {

@@ -19,6 +19,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/state/accounts_domain.hpp>
 #include <silkworm/db/state/code_domain.hpp>
+#include <silkworm/db/state/schema_config.hpp>
 #include <silkworm/db/state/storage_domain.hpp>
 
 namespace silkworm::execution {
@@ -27,7 +28,12 @@ using namespace db::state;
 using namespace datastore;
 
 std::optional<Account> LocalState::read_account(const evmc::address& address) const noexcept {
-    AccountsDomainGetLatestQuery query{tx_, data_store_.state_db().accounts_domain()};
+    AccountsDomainGetLatestQuery query{
+        db::state::kDomainNameAccounts,
+        data_store_.chaindata,
+        tx_,
+        data_store_.state_repository,
+    };
     auto result = query.exec(address);
     if (result) {
         return std::move(result->value);
@@ -36,7 +42,12 @@ std::optional<Account> LocalState::read_account(const evmc::address& address) co
 }
 
 ByteView LocalState::read_code(const evmc::address& address, const evmc::bytes32& /*code_hash*/) const noexcept {
-    CodeDomainGetLatestQuery query{tx_, data_store_.state_db().code_domain()};
+    CodeDomainGetLatestQuery query{
+        db::state::kDomainNameCode,
+        data_store_.chaindata,
+        tx_,
+        data_store_.state_repository,
+    };
     auto result = query.exec(address);
     if (result) {
         return std::move(result->value);
@@ -48,7 +59,12 @@ evmc::bytes32 LocalState::read_storage(
     const evmc::address& address,
     uint64_t /*incarnation*/,
     const evmc::bytes32& location) const noexcept {
-    StorageDomainGetLatestQuery query{tx_, data_store_.state_db().storage_domain()};
+    StorageDomainGetLatestQuery query{
+        db::state::kDomainNameStorage,
+        data_store_.chaindata,
+        tx_,
+        data_store_.state_repository,
+    };
     auto result = query.exec({address, location});
     if (result) {
         return std::move(result->value);

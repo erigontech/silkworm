@@ -26,21 +26,21 @@ namespace silkworm::datastore {
 template <kvdb::EncoderConcept TKeyEncoder1, snapshots::EncoderConcept TKeyEncoder2>
 struct InvertedIndexRangeByKeyQuery {
     InvertedIndexRangeByKeyQuery(
-        datastore::EntityName inverted_index_name,
-        kvdb::InvertedIndex kvdb_inverted_index,
+        datastore::EntityName entity_name,
+        kvdb::InvertedIndex kvdb_entity,
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
-        : query1_{tx, kvdb_inverted_index},
-          query2_{repository, inverted_index_name} {}
+        : query1_{tx, kvdb_entity},
+          query2_{repository, entity_name} {}
 
     InvertedIndexRangeByKeyQuery(
-        datastore::EntityName inverted_index_name,
+        datastore::EntityName entity_name,
         kvdb::DatabaseRef database,
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
         : InvertedIndexRangeByKeyQuery{
-              inverted_index_name,
-              database.inverted_index(inverted_index_name),
+              entity_name,
+              database.inverted_index(entity_name),
               tx,
               repository,
           } {}

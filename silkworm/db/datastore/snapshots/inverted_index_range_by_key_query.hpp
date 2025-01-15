@@ -39,12 +39,12 @@ auto timestamp_range_filter(elias_fano::EliasFanoList32 list, datastore::Timesta
 template <EncoderConcept TKeyEncoder>
 struct InvertedIndexFindByKeySegmentQuery {
     explicit InvertedIndexFindByKeySegmentQuery(
-        InvertedIndex inverted_index)
-        : inverted_index_{inverted_index} {}
+        InvertedIndex entity)
+        : entity_{entity} {}
     explicit InvertedIndexFindByKeySegmentQuery(
         const SnapshotBundle& bundle,
-        datastore::EntityName inverted_index_name)
-        : inverted_index_{bundle.inverted_index(inverted_index_name)} {}
+        datastore::EntityName entity_name)
+        : entity_{bundle.inverted_index(entity_name)} {}
 
     using Key = decltype(TKeyEncoder::value);
 
@@ -53,12 +53,12 @@ struct InvertedIndexFindByKeySegmentQuery {
         key_encoder.value = std::move(key);
         ByteView key_data = key_encoder.encode_word();
 
-        auto offset = inverted_index_.accessor_index.lookup_by_key(key_data);
+        auto offset = entity_.accessor_index.lookup_by_key(key_data);
         if (!offset) {
             return std::nullopt;
         }
 
-        auto reader = inverted_index_.kv_segment_reader<RawDecoder<Bytes>>();
+        auto reader = entity_.kv_segment_reader<RawDecoder<Bytes>>();
         std::optional<std::pair<Key, elias_fano::EliasFanoList32>> result = reader.seek_one(*offset);
 
         // ensure that the found key matches to avoid lookup_by_key false positives
@@ -75,23 +75,23 @@ struct InvertedIndexFindByKeySegmentQuery {
     }
 
   private:
-    InvertedIndex inverted_index_;
+    InvertedIndex entity_;
 };
 
 template <EncoderConcept TKeyEncoder>
 struct InvertedIndexRangeByKeyQuery {
     explicit InvertedIndexRangeByKeyQuery(
         const SnapshotRepositoryROAccess& repository,
-        datastore::EntityName inverted_index_name)
+        datastore::EntityName entity_name)
         : repository_{repository},
-          inverted_index_name_{inverted_index_name} {}
+          entity_name_{entity_name} {}
 
     using Key = decltype(TKeyEncoder::value);
 
     template <bool ascending = true>
     auto exec(Key key, datastore::TimestampRange ts_range) {
-        auto timestamps_in_bundle = [inverted_index_name = inverted_index_name_, key = std::move(key), ts_range](std::shared_ptr<SnapshotBundle> bundle) {
-            InvertedIndexFindByKeySegmentQuery<TKeyEncoder> query{*bundle, inverted_index_name};
+        auto timestamps_in_bundle = [entity_name = entity_name_, key = std::move(key), ts_range](std::shared_ptr<SnapshotBundle> bundle) {
+            InvertedIndexFindByKeySegmentQuery<TKeyEncoder> query{*bundle, entity_name};
             return query.template exec_filter<ascending>(key, ts_range);
         };
 
@@ -102,7 +102,7 @@ struct InvertedIndexRangeByKeyQuery {
 
   private:
     const SnapshotRepositoryROAccess& repository_;
-    datastore::EntityName inverted_index_name_;
+    datastore::EntityName entity_name_;
 };
 
 }  // namespace silkworm::snapshots

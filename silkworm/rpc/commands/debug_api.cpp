@@ -274,7 +274,7 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
         }
 
         reply = make_json_content(request, result);
-    } catch (const std::invalid_argument& e) {
+    } catch (const std::invalid_argument&) {
         nlohmann::json result = {{"storage", nullptr}, {"nextKey", nullptr}};
         reply = make_json_content(request, result);
     } catch (const std::exception& e) {

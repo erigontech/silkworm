@@ -26,17 +26,17 @@
 namespace silkworm::rpc {
 
 static std::string optional_uint256_to_string(const std::optional<intx::uint256>& u) {
-    return silkworm::to_hex(silkworm::endian::to_big_compact(u.value_or(intx::uint256{})));
+    return "0x" + silkworm::to_hex(silkworm::endian::to_big_compact(u.value_or(intx::uint256{})));
 }
 
 static std::string optional_bytes_to_string(const std::optional<silkworm::Bytes>& u) {
-    return silkworm::to_hex(u.value_or(silkworm::Bytes{}));
+    return "0x" + silkworm::to_hex(u.value_or(silkworm::Bytes{}));
 }
 
 std::ostream& operator<<(std::ostream& out, const Call& call) {
     out << "from: " << call.from.value_or(evmc::address{}) << " "
         << "to: " << call.to.value_or(evmc::address{}) << " "
-        << "gas: " << call.gas.value_or(0) << " "
+        << "gas: " << std::dec << call.gas.value_or(0) << " "
         << "gas_price: " << optional_uint256_to_string(call.gas_price) << " "
         << "max_priority_fee_per_gas: " << optional_uint256_to_string(call.max_priority_fee_per_gas) << " "
         << "max_fee_per_gas: " << optional_uint256_to_string(call.max_fee_per_gas) << " "

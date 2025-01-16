@@ -436,7 +436,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
     if (params.size() > 2) {
         config = params[2].get<debug::DebugConfig>();
     }
-    SILK_DEBUG << "call: " << call << " block_num_or_hash: " << block_num_or_hash << " config: {" << config << "}";
+    SILK_LOG << "call: " << call << " block_num_or_hash: " << block_num_or_hash << " config: {" << config << "}";
 
     stream.open_object();
     stream.write_json_field("id", request["id"]);

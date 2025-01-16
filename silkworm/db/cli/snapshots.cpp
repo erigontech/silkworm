@@ -44,9 +44,9 @@
 #include <silkworm/db/datastore/snapshots/bittorrent/web_seed_client.hpp>
 #include <silkworm/db/datastore/snapshots/bloom_filter/bloom_filter.hpp>
 #include <silkworm/db/datastore/snapshots/btree/btree_index.hpp>
+#include <silkworm/db/datastore/snapshots/common/encoding/murmur_hash3.hpp>
 #include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
-#include <silkworm/db/datastore/snapshots/rec_split/murmur_hash3.hpp>
-#include <silkworm/db/datastore/snapshots/rec_split/rec_split.hpp>  // TODO(canepat) refactor to extract Hash128 to murmur_hash3.hpp
+#include <silkworm/db/datastore/snapshots/rec_split/rec_split.hpp>
 #include <silkworm/db/datastore/snapshots/segment/seg/seg_zip.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
@@ -516,6 +516,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
     salt_stream.read(salt_bytes.data(), salt_bytes.size());
     const uint32_t salt = endian::load_big_u32(reinterpret_cast<uint8_t*>(salt_bytes.data()));
     SILK_INFO << "Snapshot salt " << salt << " from " << salt_path.filename().string();
+    encoding::Murmur3 key_hasher{salt};
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     seg::Decompressor kv_decompressor{settings.input_file_path};
     bloom_filter::BloomFilter existence_index{existence_index_file_path};
@@ -545,18 +546,18 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
                 SILK_TRACE << "KV: previous_key=" << to_hex(previous_key) << " key=" << to_hex(key)
                            << " nonexistent_key=" << to_hex(nonexistent_key);
                 // Hash the nonexistent key using murmur3 and check its presence in existence filter
-                rec_split::Hash128 key_hash{};
-                snapshots::rec_split::murmur_hash3_x64_128(nonexistent_key.data(), nonexistent_key.size(), salt, &key_hash);
-                if (const bool key_found = existence_index.contains_hash(key_hash.first); key_found) {
+                Bytes key_hash(sizeof(uint64_t) * 2, 0);
+                key_hasher.hash_x64_128(nonexistent_key.data(), nonexistent_key.size(), key_hash.data());
+                if (const bool key_found = existence_index.contains_hash(key_hash); key_found) {
                     ++nonexistent_found_count;
                 }
             }
             ++key_count;
         } else {
             value = *kv_iterator;
-            rec_split::Hash128 key_hash{};
-            snapshots::rec_split::murmur_hash3_x64_128(key.data(), key.size(), salt, &key_hash);
-            const bool key_found = existence_index.contains_hash(key_hash.first);
+            Bytes key_hash(sizeof(uint64_t) * 2, 0);
+            key_hasher.hash_x64_128(key.data(), key.size(), key_hash.data());
+            const bool key_found = existence_index.contains_hash(key_hash);
             SILK_DEBUG << "KV: key=" << to_hex(key) << " value=" << to_hex(value);
             ensure(key_found,
                    [&]() { return "open_existence_index: unexpected not found key=" + to_hex(key) +

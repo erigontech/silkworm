@@ -31,7 +31,7 @@ typedef unsigned __int64 uint64_t;
 #include <cstdint>
 #endif  // !defined(_MSC_VER)
 
-namespace silkworm::snapshots::rec_split {
+namespace silkworm::snapshots::encoding {
 
 void murmur_hash3_x64_128(const void* key, uint64_t len, uint32_t seed, void* out);
 
@@ -51,4 +51,4 @@ class Murmur3 {
     uint32_t seed_;
 };
 
-}  // namespace silkworm::snapshots::rec_split
+}  // namespace silkworm::snapshots::encoding

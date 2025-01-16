@@ -30,8 +30,6 @@
 
 namespace silkworm::execution {
 
-std::unordered_map<evmc::bytes32, Bytes> AsyncRemoteState::code_;
-
 Task<std::optional<Account>> AsyncRemoteState::read_account(const evmc::address& address) const noexcept {
     co_return co_await state_reader_.read_account(address);
 }

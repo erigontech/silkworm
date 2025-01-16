@@ -43,6 +43,14 @@ void from_json(const nlohmann::json& json, DebugConfig& tc) {
     if (json.count("NoRefunds") != 0) {
         json.at("NoRefunds").get_to(tc.no_refunds);
     }
+    if (json.count("TxIndex") != 0) {
+        const auto& json_idx = json.at("TxIndex");
+        if (json_idx.is_string()) {
+            tc.tx_index = std::stol(json_idx.get<std::string>(), nullptr, 16);
+        } else {
+            tc.tx_index = json_idx.get<uint32_t>();
+        }
+    }
 }
 
 std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
@@ -50,6 +58,9 @@ std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
     out << " disableMemory: " << std::boolalpha << tc.disable_memory;
     out << " disableStack: " << std::boolalpha << tc.disable_stack;
     out << " NoRefunds: " << std::boolalpha << tc.no_refunds;
+    if (tc.tx_index) {
+        out << " TxIndex: " << std::dec << tc.tx_index.value();
+    }
 
     return out;
 }
@@ -379,13 +390,14 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash&
     }
     rpc::Transaction transaction{call.to_transaction()};
 
-    const auto& block = block_with_hash->block;
-    const auto block_num = block.header.number + 1;
-
     stream.write_field("result");
     stream.open_object();
+
+    const auto& block = block_with_hash->block;
+    const auto block_num = block.header.number + (config_.tx_index ? 0 : 1);
+    const auto index = config_.tx_index ? config_.tx_index.value() : 0;
     // trace_call semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number + 1
-    co_await execute(stream, storage, block_num, block, transaction, /* index */ 0);
+    co_await execute(stream, storage, block_num, block, transaction, index);
     stream.close_object();
 
     co_return;

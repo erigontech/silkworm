@@ -49,6 +49,7 @@ struct DebugConfig {
     bool disable_memory{false};
     bool disable_stack{false};
     bool no_refunds{false};
+    std::optional<int32_t> tx_index;
 };
 
 std::string uint256_to_hex(const evmone::uint256& x);

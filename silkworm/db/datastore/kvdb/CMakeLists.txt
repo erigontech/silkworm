@@ -27,6 +27,7 @@ silkworm_library(
          mdbx-static
          silkworm_core
          silkworm_infra
+         silkworm_datastore_common
          silkworm_datastore_etl
 )
 

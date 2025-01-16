@@ -21,6 +21,7 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/account.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
@@ -114,7 +115,7 @@ evmc::bytes32 TrieLoader::calculate_root() {
                 }
 
                 // Retrieve account data
-                const auto account{Account::from_encoded_storage(from_slice(hashed_account_data.value))};
+                const auto account = db::state::AccountCodec::from_encoded_storage(from_slice(hashed_account_data.value));
                 success_or_throw(account);
 
                 evmc::bytes32 storage_root{kEmptyRoot};

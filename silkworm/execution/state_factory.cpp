@@ -30,7 +30,7 @@ std::shared_ptr<State> StateFactory::create_state(
     TxnId txn_id) {
     if (tx.is_local()) {
         auto& local_tx = dynamic_cast<db::kv::api::LocalTransaction&>(tx);
-        return std::make_shared<LocalState>(std::nullopt, txn_id, local_tx.data_store());
+        return std::make_shared<LocalState>(txn_id, local_tx.data_store());
     } else {  // NOLINT(readability-else-after-return)
         return std::make_shared<RemoteState>(executor, tx, storage, txn_id);
     }

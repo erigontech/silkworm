@@ -50,6 +50,7 @@ datastore::kvdb::Schema::DatabaseDef make_state_database_schema() {
     schema.domain(kDomainNameAccounts);
     schema.domain(kDomainNameStorage);
     schema.domain(kDomainNameCode)
+        .enable_large_values()
         .values_disable_multi_value();
     schema.domain(kDomainNameCommitment)
         .without_history();
@@ -72,7 +73,7 @@ snapshots::SnapshotRepository make_state_repository(std::filesystem::path dir_pa
         std::move(dir_path),
         open,
         make_state_repository_schema(),
-        std::make_unique<snapshots::StepToTxnIdConverter>(),
+        std::make_unique<datastore::StepToTxnIdConverter>(),
         make_state_index_builders_factory(),
     };
 }

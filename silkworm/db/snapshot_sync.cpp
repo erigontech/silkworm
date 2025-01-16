@@ -108,7 +108,7 @@ Task<void> SnapshotSync::setup_and_run() {
         co_return;
     }
 
-    [[maybe_unused]] auto snapshot_merged_subscription = snapshot_merger_.on_snapshot_merged([this](StepRange range) {
+    [[maybe_unused]] auto snapshot_merged_subscription = snapshot_merger_.on_snapshot_merged([this](datastore::StepRange range) {
         this->seed_frozen_bundle(range);
     });
 
@@ -294,7 +294,7 @@ void SnapshotSync::seed_frozen_local_snapshots() {
     }
 }
 
-void SnapshotSync::seed_frozen_bundle(StepRange range) {
+void SnapshotSync::seed_frozen_bundle(datastore::StepRange range) {
     bool is_frozen = range.size() >= kMaxMergerSnapshotSize;
     auto bundle = blocks_repository().find_bundle(range.start);
     if (bundle && (bundle->step_range() == range) && is_frozen) {

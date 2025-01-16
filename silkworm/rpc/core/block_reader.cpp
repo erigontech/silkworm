@@ -21,6 +21,7 @@
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/db/kv/state_reader.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -77,7 +78,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOr
         intx::uint256 current_balance{0};
 
         if (!value->second.empty()) {
-            const auto account{Account::from_encoded_storage_v3(value->second)};
+            const auto account{db::state::AccountCodec::from_encoded_storage_v3(value->second)};
             if (account) {
                 old_balance = account->balance;
             }

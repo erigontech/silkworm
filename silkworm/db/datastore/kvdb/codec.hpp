@@ -16,16 +16,13 @@
 
 #pragma once
 
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/common/bytes.hpp>
+#include "mdbx.hpp"
 
-namespace silkworm::snapshots {
-
-class SnapshotPath;
+namespace silkworm::datastore::kvdb {
 
 struct Encoder {
     virtual ~Encoder() = default;
-    virtual ByteView encode_word() = 0;
+    virtual Slice encode() = 0;
 };
 
 template <class TEncoder>
@@ -35,8 +32,7 @@ concept EncoderConcept =
 
 struct Decoder {
     virtual ~Decoder() = default;
-    virtual void decode_word(ByteView word) = 0;
-    virtual void check_sanity_with_metadata(const SnapshotPath& /*path*/) {}
+    virtual void decode(Slice slice) = 0;
 };
 
 template <class TDecoder>
@@ -48,4 +44,4 @@ struct Codec : public Encoder, public Decoder {
     ~Codec() override = default;
 };
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::datastore::kvdb

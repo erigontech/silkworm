@@ -26,6 +26,7 @@
 namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
+using namespace datastore;
 
 SnapshotRepository::SnapshotRepository(
     std::filesystem::path dir_path,

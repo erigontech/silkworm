@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include "../common/timestamp.hpp"
+#include "big_endian_codec.hpp"
+#include "codec.hpp"
 #include "mdbx.hpp"
 
 namespace silkworm::datastore::kvdb {
@@ -23,6 +26,36 @@ namespace silkworm::datastore::kvdb {
 struct InvertedIndex {
     const MapConfig& keys_table;
     const MapConfig& index_table;
+};
+
+using TimestampEncoder = BigEndianU64Codec;
+
+template <EncoderConcept TKeyEncoder>
+struct InvertedIndexPutQuery {
+    RWTxn& tx;
+    InvertedIndex entity;
+
+    using TKey = decltype(TKeyEncoder::value);
+
+    void exec(const TKey& key, const Timestamp timestamp, bool with_index_update) {
+        return exec<TimestampEncoder>(key, timestamp, with_index_update);
+    }
+
+    template <EncoderConcept TTimestampEncoder, typename TTimestamp = decltype(TTimestampEncoder::value)>
+    void exec(const TKey& key, const TTimestamp& timestamp, bool with_index_update) {
+        TKeyEncoder key_encoder;
+        key_encoder.value = key;
+        Slice key_slice = key_encoder.encode();
+
+        TTimestampEncoder ts_encoder;
+        ts_encoder.value = timestamp;
+        Slice ts_slice = ts_encoder.encode();
+
+        tx.rw_cursor(entity.keys_table)->insert(ts_slice, key_slice);
+        if (with_index_update) {
+            tx.rw_cursor(entity.index_table)->insert(key_slice, ts_slice);
+        }
+    }
 };
 
 }  // namespace silkworm::datastore::kvdb

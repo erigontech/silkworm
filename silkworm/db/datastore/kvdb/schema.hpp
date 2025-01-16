@@ -81,10 +81,20 @@ class Schema {
             return *this;
         }
 
+        DomainDef& enable_large_values() {
+            has_large_values_ = true;
+            return *this;
+        }
+
         DomainDef& without_history() {
             DatabaseDef::undefine_history_schema(*this);
             return *this;
         }
+
+        bool has_large_values() const { return has_large_values_; }
+
+      private:
+        bool has_large_values_{false};
     };
 
     class DatabaseDef {

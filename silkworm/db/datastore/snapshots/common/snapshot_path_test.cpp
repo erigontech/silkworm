@@ -23,6 +23,8 @@
 
 namespace silkworm::snapshots {
 
+using namespace datastore;
+
 TEST_CASE("SnapshotPath::parse", "[silkworm][node][snapshot]") {
     SECTION("invalid") {
         static constexpr std::string_view kInvalidFilenames[]{

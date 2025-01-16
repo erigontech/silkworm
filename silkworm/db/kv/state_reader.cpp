@@ -20,6 +20,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
@@ -40,7 +41,7 @@ Task<std::optional<Account>> StateReader::read_account(const evmc::address& addr
         co_return std::nullopt;
     }
 
-    const auto account{Account::from_encoded_storage_v3(result.value)};
+    const auto account = db::state::AccountCodec::from_encoded_storage_v3(result.value);
     success_or_throw(account);
     co_return *account;
 }

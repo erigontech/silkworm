@@ -33,11 +33,12 @@ namespace silkworm::execution {
 
 class LocalState : public State {
   public:
-    explicit LocalState(std::optional<BlockNum> block_num, std::optional<TxnId> txn_id, db::DataStoreRef data_store)
-        : block_num_{block_num},
-          txnid_{txn_id},
-          txn_{data_store.chaindata.access_ro().start_ro_tx()},
-          data_model_{txn_, data_store.blocks_repository} {}
+    explicit LocalState(
+        TxnId txn_id,
+        db::DataStoreRef data_store)
+        : txn_id_{txn_id},
+          data_store_{std::move(data_store)},
+          tx_{data_store_.chaindata.access_rw().start_rw_tx()} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -72,30 +73,33 @@ class LocalState : public State {
     void begin_block(BlockNum /*block_num*/, size_t /*updated_accounts_count*/) override {}
 
     void update_account(
-        const evmc::address& /*address*/,
-        std::optional<Account> /*initial*/,
-        std::optional<Account> /*current*/) override {}
+        const evmc::address& address,
+        std::optional<Account> initial,
+        std::optional<Account> current) override;
 
     void update_account_code(
-        const evmc::address& /*address*/,
-        uint64_t /*incarnation*/,
-        const evmc::bytes32& /*code_hash*/,
-        ByteView /*code*/) override {}
+        const evmc::address& address,
+        uint64_t incarnation,
+        const evmc::bytes32& code_hash,
+        ByteView code) override;
 
     void update_storage(
-        const evmc::address& /*address*/,
-        uint64_t /*incarnation*/,
-        const evmc::bytes32& /*location*/,
-        const evmc::bytes32& /*initial*/,
-        const evmc::bytes32& /*current*/) override {}
+        const evmc::address& address,
+        uint64_t incarnation,
+        const evmc::bytes32& location,
+        const evmc::bytes32& initial,
+        const evmc::bytes32& current) override;
 
     void unwind_state_changes(BlockNum /*block_num*/) override {}
 
   private:
-    std::optional<BlockNum> block_num_;
-    std::optional<TxnId> txnid_;
-    mutable datastore::kvdb::ROTxnManaged txn_;
-    db::DataModel data_model_;
+    db::DataModel data_model() const {
+        return db::DataModelFactory{data_store_}(tx_);
+    }
+
+    TxnId txn_id_;
+    db::DataStoreRef data_store_;
+    mutable datastore::kvdb::RWTxnManaged tx_;
 };
 
 }  // namespace silkworm::execution

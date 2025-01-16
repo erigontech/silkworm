@@ -16,13 +16,20 @@
 
 #pragma once
 
-#include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
-#include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
+#include "codec.hpp"
 
-#include "address_codecs.hpp"
+namespace silkworm::datastore::kvdb {
 
-namespace silkworm::db::state {
+struct BigEndianU64Codec : public Codec {
+    uint64_t value{0};
+    Bytes data;
 
-using TracesFromInvertedIndexKVSegmentReader = snapshots::segment::KVSegmentReader<AddressDecoder, snapshots::RawDecoder<Bytes>>;
+    ~BigEndianU64Codec() override = default;
+    Slice encode() override;
+    void decode(Slice slice) override;
+};
 
-}  // namespace silkworm::db::state
+static_assert(EncoderConcept<BigEndianU64Codec>);
+static_assert(DecoderConcept<BigEndianU64Codec>);
+
+}  // namespace silkworm::datastore::kvdb

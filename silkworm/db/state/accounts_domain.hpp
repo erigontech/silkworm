@@ -16,28 +16,17 @@
 
 #pragma once
 
-#include <silkworm/core/types/account.hpp>
+#include <silkworm/db/datastore/kvdb/domain.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
-#include <silkworm/infra/common/decoding_exception.hpp>
 
-#include "address_decoder.hpp"
+#include "account_codecs.hpp"
+#include "address_codecs.hpp"
 
 namespace silkworm::db::state {
 
-struct AccountDecoder : public snapshots::Decoder {
-    Account value;
-
-    ~AccountDecoder() override = default;
-
-    void decode_word(ByteView word) override {
-        auto account = Account::from_encoded_storage_v3(word);
-        if (!account)
-            throw DecodingException{account.error(), "AccountDecoder failed to decode Account"};
-        value = std::move(*account);
-    }
-};
-
-static_assert(snapshots::DecoderConcept<AccountDecoder>);
+using AccountsDomainGetLatestQuery = datastore::kvdb::DomainGetLatestQuery<AddressKVDBEncoder, AccountKVDBCodec>;
+using AccountsDomainPutQuery = datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, AccountKVDBCodec>;
+using AccountsDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, AccountKVDBCodec>;
 
 using AccountsDomainKVSegmentReader = snapshots::segment::KVSegmentReader<AddressDecoder, AccountDecoder>;
 

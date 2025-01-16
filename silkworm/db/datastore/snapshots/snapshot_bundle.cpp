@@ -22,6 +22,7 @@ namespace silkworm::snapshots {
 
 using namespace rec_split;
 using namespace segment;
+using namespace datastore;
 
 static std::map<datastore::EntityName, SnapshotPath> make_snapshot_paths(
     Schema::SnapshotFileDef::Format format,

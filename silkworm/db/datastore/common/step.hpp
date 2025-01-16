@@ -21,7 +21,7 @@
 
 #include "timestamp.hpp"
 
-namespace silkworm::snapshots {
+namespace silkworm::datastore {
 
 //! Scale factor to convert from-to block number values in block snapshot file names
 inline constexpr size_t kStepSizeForBlockSnapshots = 1'000;
@@ -115,4 +115,4 @@ struct StepToTxnIdConverter : public StepToTimestampConverter {
     }
 };
 
-}  // namespace silkworm::snapshots
+}  // namespace silkworm::datastore

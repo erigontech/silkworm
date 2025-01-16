@@ -46,6 +46,7 @@
 #include <silkworm/db/datastore/snapshots/btree/btree_index.hpp>
 #include <silkworm/db/datastore/snapshots/common/encoding/murmur_hash3.hpp>
 #include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
+#include <silkworm/db/datastore/snapshots/index_salt_file.hpp>
 #include <silkworm/db/datastore/snapshots/rec_split/rec_split.hpp>
 #include <silkworm/db/datastore/snapshots/segment/seg/seg_zip.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
@@ -510,12 +511,12 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
     std::filesystem::path existence_index_file_path = settings.input_file_path;
     existence_index_file_path.replace_extension(".kvei");
     SILK_INFO << "KV file: " << settings.input_file_path.string() << " KVEI file: " << existence_index_file_path.string();
+
     const auto salt_path = existence_index_file_path.parent_path().parent_path() / "salt-state.txt";
-    std::ifstream salt_stream{salt_path, std::ios::in | std::ios::binary};
-    std::array<char, sizeof(uint32_t)> salt_bytes{};
-    salt_stream.read(salt_bytes.data(), salt_bytes.size());
-    const uint32_t salt = endian::load_big_u32(reinterpret_cast<uint8_t*>(salt_bytes.data()));
+    snapshots::IndexSaltFile salt_file{salt_path};
+    const uint32_t salt = salt_file.load();
     SILK_INFO << "Snapshot salt " << salt << " from " << salt_path.filename().string();
+
     encoding::Murmur3 key_hasher{salt};
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     seg::Decompressor kv_decompressor{settings.input_file_path};

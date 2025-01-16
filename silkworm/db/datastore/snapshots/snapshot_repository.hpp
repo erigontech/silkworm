@@ -54,6 +54,7 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
         bool open,
         Schema::RepositoryDef schema,
         std::unique_ptr<datastore::StepToTimestampConverter> step_converter,
+        std::optional<uint32_t> index_salt,
         std::unique_ptr<IndexBuildersFactory> index_builders_factory);
 
     SnapshotRepository(SnapshotRepository&&) = default;
@@ -107,6 +108,7 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
 
     bool is_stale_index_path(const SnapshotPath& index_path) const;
     SnapshotPathList stale_index_paths() const;
+    std::optional<uint32_t> load_index_salt() const;
 
     //! Path to the snapshots directory
     std::filesystem::path dir_path_;
@@ -116,6 +118,9 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
 
     //! Converts timestamp units to steps
     std::unique_ptr<datastore::StepToTimestampConverter> step_converter_;
+
+    //! Index salt
+    std::optional<uint32_t> index_salt_;
 
     //! Creates index builders
     std::unique_ptr<IndexBuildersFactory> index_builders_factory_;

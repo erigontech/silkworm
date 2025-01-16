@@ -185,9 +185,15 @@ class Schema {
             return *entity_defs_.at(name);
         }
 
+        RepositoryDef& index_salt_file_name(std::string_view value) {
+            index_salt_file_name_ = value;
+            return *this;
+        }
+
         const std::map<datastore::EntityName, std::shared_ptr<EntityDef>>& entities() const { return entity_defs_; }
         std::vector<std::string> file_extensions() const;
         std::optional<std::pair<datastore::EntityName, datastore::EntityName>> entity_name_by_path(const SnapshotPath& path) const;
+        const std::string& index_salt_file_name() const { return index_salt_file_name_.value(); }
 
       private:
         friend DomainDef;
@@ -200,6 +206,7 @@ class Schema {
         static void undefine_inverted_index_schema(EntityDef& schema);
 
         std::map<datastore::EntityName, std::shared_ptr<EntityDef>> entity_defs_;
+        std::optional<std::string> index_salt_file_name_;
     };
 
     RepositoryDef& repository(datastore::EntityName name) {

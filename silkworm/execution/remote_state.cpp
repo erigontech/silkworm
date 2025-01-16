@@ -35,6 +35,9 @@ Task<std::optional<Account>> AsyncRemoteState::read_account(const evmc::address&
 }
 
 Task<ByteView> AsyncRemoteState::read_code(const evmc::address& address, const evmc::bytes32& code_hash) const noexcept {
+    if (!code_[code_hash].empty()) {
+        co_return code_[code_hash];  // NOLINT(runtime/arrays)
+    }
     const auto optional_code{co_await state_reader_.read_code(address, code_hash)};
     if (optional_code) {
         code_[code_hash] = *optional_code;

@@ -57,7 +57,7 @@ static Task<void> wait_until_cancelled(bool* is_cancelled) {
         steady_timer timer(executor);
         timer.expires_after(1h);
         co_await timer.async_wait(use_awaitable);
-    } catch (const boost::system::system_error& ex) {
+    } catch (const boost::system::system_error&) {
         *is_cancelled = true;
     }
 }

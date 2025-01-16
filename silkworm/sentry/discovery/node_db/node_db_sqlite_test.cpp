@@ -24,8 +24,9 @@
 
 namespace silkworm::sentry::discovery::node_db {
 
-using namespace boost::asio;
+namespace ip = boost::asio::ip;
 using namespace std::chrono_literals;
+using boost::asio::any_io_executor;
 
 bool operator==(const NodeAddress& lhs, const NodeAddress& rhs) {
     return (lhs.ip == rhs.ip) &&

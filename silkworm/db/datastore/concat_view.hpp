@@ -98,7 +98,7 @@ class ConcatView : public std::ranges::view_interface<ConcatView<Range1, Range2>
                 }
             } else if (it2_) {
                 ++(*it2_);
-#if !defined(_WIN32) && __GNUC__ < 12 && !defined(__clang__)
+#if defined(__GNUC__) && __GNUC__ < 12 && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif

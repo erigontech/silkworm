@@ -33,7 +33,7 @@
 
 namespace silkworm::snapshots::bittorrent {
 
-static constexpr int kDefaultPieceSize = 2_Mebi;
+static constexpr int kDefaultPieceSize = static_cast<int>(2_Mebi);
 
 TorrentFile::TorrentFile(ByteView data)
     : params_(lt::load_torrent_buffer(byte_view_to_str_span(data))) {

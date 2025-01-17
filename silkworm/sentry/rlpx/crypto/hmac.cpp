@@ -23,8 +23,12 @@
 
 namespace silkworm::sentry::rlpx::crypto {
 
+#ifdef _WIN32
+#pragma warning(disable : 4996)
+#else
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
 Bytes hmac(ByteView key, ByteView data1, ByteView data2, ByteView data3) {
     SILKWORM_ASSERT(key.size() == 32);

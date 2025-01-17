@@ -44,7 +44,7 @@ void init_inverted_index(RWTxn& tx, InvertedIndex ii, std::multimap<uint64_t, Ti
 
 TEST_CASE("InvertedIndexRangeByKeyQuery") {
     const TemporaryDirectory tmp_dir;
-    ::mdbx::env_managed env = open_env(EnvConfig{.path = tmp_dir.path(), .create = true, .in_memory = true});
+    ::mdbx::env_managed env = open_env(EnvConfig{.path = tmp_dir.path().string(), .create = true, .in_memory = true});
 
     EntityName name{"Test"};
     Schema::DatabaseDef schema;

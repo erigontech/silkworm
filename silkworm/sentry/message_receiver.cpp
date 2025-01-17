@@ -104,7 +104,7 @@ Task<void> MessageReceiver::receive_messages(std::shared_ptr<rlpx::Peer> peer) {
         Message message;
         try {
             message = co_await peer->receive_message();
-        } catch (const rlpx::Peer::DisconnectedError& ex) {
+        } catch (const rlpx::Peer::DisconnectedError&) {
             break;
         }
 

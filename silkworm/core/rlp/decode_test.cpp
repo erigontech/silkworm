@@ -28,7 +28,7 @@ template <class T>
 static T decode_success(std::string_view hex) {
     Bytes bytes{*from_hex(hex)};
     ByteView view{bytes};
-    T res;
+    T res{};
     REQUIRE(decode(view, res));
     return res;
 }

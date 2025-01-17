@@ -45,14 +45,17 @@ add_dependencies(
 )
 # cmake-format: on
 
-if(NOT MSVC)
+# Disable warning in gRPC generated code on different compilers
+if(MSVC)
+  target_compile_options(silkworm_interfaces PRIVATE /wd4100) # C4100: unreferenced formal parameter
+else()
   target_compile_options(silkworm_interfaces PRIVATE -Wno-sign-conversion)
 
   check_cxx_compiler_flag("-Wno-deprecated-pragma" HAS_NO_DEPRECATED_PRAGMA)
   if(HAS_NO_DEPRECATED_PRAGMA)
     target_compile_options(silkworm_interfaces PRIVATE -Wno-deprecated-pragma)
   endif()
-endif(NOT MSVC)
+endif()
 
 target_include_directories(silkworm_interfaces PUBLIC "${SILKWORM_MAIN_DIR};${CMAKE_CURRENT_SOURCE_DIR}")
 

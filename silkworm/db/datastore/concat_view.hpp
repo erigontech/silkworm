@@ -98,12 +98,12 @@ class ConcatView : public std::ranges::view_interface<ConcatView<Range1, Range2>
                 }
             } else if (it2_) {
                 ++(*it2_);
-#if __GNUC__ < 12 && !defined(__clang__)
+#if defined(__GNUC__) && __GNUC__ < 12 && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
                 if (*it2_ == *sentinel2_) {
-#if __GNUC__ < 12 && !defined(__clang__)
+#if defined(__GNUC__) && __GNUC__ < 12 && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
                     it2_ = std::nullopt;
@@ -118,6 +118,12 @@ class ConcatView : public std::ranges::view_interface<ConcatView<Range1, Range2>
         }
         friend bool operator!=(const Iterator& it, const std::default_sentinel_t&) {
             return it.it1_ || it.it2_;
+        }
+        friend bool operator==(const std::default_sentinel_t& s, const Iterator& it) {
+            return it == s;
+        }
+        friend bool operator!=(const std::default_sentinel_t& s, const Iterator& it) {
+            return it != s;
         }
 
       private:

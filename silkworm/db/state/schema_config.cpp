@@ -78,7 +78,7 @@ snapshots::SnapshotRepository make_state_repository(
         open,
         make_state_repository_schema(),
         std::make_unique<datastore::StepToTxnIdConverter>(),
-        std::move(index_salt),
+        index_salt,
         make_state_index_builders_factory(),
     };
 }

@@ -36,7 +36,7 @@ struct DomainGetLatestQuery {
 
     struct Result {
         Value value;
-        Step step;
+        Step step{0};
     };
 
     std::optional<Result> exec(const Key& key) {

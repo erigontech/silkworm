@@ -36,7 +36,7 @@ std::optional<Account> LocalState::read_account(const evmc::address& address) co
     };
     auto result = query.exec(address);
     if (result) {
-        return std::move(result->value);
+        return result->value;
     }
     return std::nullopt;
 }
@@ -50,7 +50,8 @@ ByteView LocalState::read_code(const evmc::address& address, const evmc::bytes32
     };
     auto result = query.exec(address);
     if (result) {
-        return std::move(result->value);
+        static_assert(std::is_same_v<decltype(result->value), ByteView>);
+        return result->value;
     }
     return ByteView{};
 }
@@ -67,7 +68,7 @@ evmc::bytes32 LocalState::read_storage(
     };
     auto result = query.exec({address, location});
     if (result) {
-        return std::move(result->value);
+        return result->value;
     }
     return {};
 }

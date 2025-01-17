@@ -41,7 +41,7 @@ SnapshotRepository::SnapshotRepository(
     : dir_path_(std::move(dir_path)),
       schema_(std::move(schema)),
       step_converter_(std::move(step_converter)),
-      index_salt_(std::move(index_salt)),
+      index_salt_(index_salt),
       index_builders_factory_(std::move(index_builders_factory)),
       bundles_(std::make_shared<Bundles>()),
       bundles_mutex_(std::make_unique<std::mutex>()) {

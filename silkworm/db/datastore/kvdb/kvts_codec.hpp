@@ -40,9 +40,8 @@ class KVTSKeyEncoder : public Encoder {
             data_.append(from_slice(value.key.encode()));
             data_.append(from_slice(value.timestamp.encode()));
             return to_slice(data_);
-        } else {
-            return value.key.encode();
         }
+        return value.key.encode();
     }
 
   private:
@@ -66,12 +65,11 @@ class KVTSValueEncoder : public Encoder {
         data_.clear();
         if (has_large_values_) {
             return value.value.encode();
-        } else {
-            // encode as timestamp + value
-            data_.append(from_slice(value.timestamp.encode()));
-            data_.append(from_slice(value.value.encode()));
-            return to_slice(data_);
         }
+        // encode as timestamp + value
+        data_.append(from_slice(value.timestamp.encode()));
+        data_.append(from_slice(value.value.encode()));
+        return to_slice(data_);
     }
 
   private:

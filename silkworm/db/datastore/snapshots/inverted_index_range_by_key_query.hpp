@@ -17,6 +17,7 @@
 #pragma once
 
 #include <ranges>
+#include <utility>
 
 #include "../common/owning_view.hpp"
 #include "../common/timestamp.hpp"
@@ -84,13 +85,13 @@ struct InvertedIndexRangeByKeyQuery {
         const SnapshotRepositoryROAccess& repository,
         datastore::EntityName entity_name)
         : repository_{repository},
-          entity_name_{entity_name} {}
+          entity_name_{std::move(entity_name)} {}
 
     using Key = decltype(TKeyEncoder::value);
 
     template <bool ascending = true>
     auto exec(Key key, datastore::TimestampRange ts_range) {
-        auto timestamps_in_bundle = [entity_name = entity_name_, key = std::move(key), ts_range](std::shared_ptr<SnapshotBundle> bundle) {
+        auto timestamps_in_bundle = [entity_name = entity_name_, key = std::move(key), ts_range](const std::shared_ptr<SnapshotBundle>& bundle) {
             InvertedIndexFindByKeySegmentQuery<TKeyEncoder> query{*bundle, entity_name};
             return query.template exec_filter<ascending>(key, ts_range);
         };

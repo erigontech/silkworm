@@ -148,7 +148,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
     uint64_t log_count{0};
     Logs filtered_chunk_logs;
 
-    uint64_t block_timestamp;
+    uint64_t block_timestamp{0};
     auto itr = db::txn::make_txn_nums_stream(std::move(paginated_stream), asc_order, tx_, provider);
     while (const auto tnx_nums = co_await itr->next()) {
         if (tnx_nums->final_txn) {

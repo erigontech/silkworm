@@ -60,9 +60,9 @@ class ConcatView : public std::ranges::view_interface<ConcatView<Range1, Range2>
         Iterator() = default;
         Iterator(Range1* range1, Range2* range2)
             : range1_{range1},
-              range2_{range2} {
-            it1_ = std::ranges::begin(*range1_);
-            sentinel1_ = std::ranges::end(*range1_);
+              range2_{range2},
+              it1_{std::ranges::begin(*range1_)},
+              sentinel1_{std::ranges::end(*range1_)} {
             if (*it1_ == *sentinel1_) {
                 it1_ = std::nullopt;
                 sentinel1_ = std::nullopt;

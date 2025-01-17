@@ -922,13 +922,13 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
             break;
         }
 
-        const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
+        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
         if (!transaction) {
             SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index;
             co_return results;
         }
-        results.receipts.push_back(std::move(receipts.at(silkworm::to_hex(transaction.value().hash(), false))));
-        results.transactions.push_back(std::move(transaction.value()));
+        results.receipts.push_back(std::move(receipts.at(silkworm::to_hex(transaction->hash(), false))));
+        results.transactions.push_back(std::move(*transaction));
         results.blocks.push_back(block_info.value().details);
     }
 

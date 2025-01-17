@@ -103,7 +103,7 @@ class ConcatView : public std::ranges::view_interface<ConcatView<Range1, Range2>
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
                 if (*it2_ == *sentinel2_) {
-#if !defined(_WIN32) && __GNUC__ < 12 && !defined(__clang__)
+#if defined(__GNUC__) && __GNUC__ < 12 && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
                     it2_ = std::nullopt;

@@ -22,6 +22,7 @@ namespace silkworm::db::state {
 
 snapshots::Schema::RepositoryDef make_state_repository_schema() {
     snapshots::Schema::RepositoryDef schema;
+    schema.index_salt_file_name("salt-state.txt");
 
     schema.domain(kDomainNameAccounts)
         .tag_override(kDomainAccountsTag);
@@ -68,12 +69,16 @@ std::unique_ptr<snapshots::IndexBuildersFactory> make_state_index_builders_facto
     return std::make_unique<StateIndexBuildersFactory>(make_state_repository_schema());
 }
 
-snapshots::SnapshotRepository make_state_repository(std::filesystem::path dir_path, bool open) {
+snapshots::SnapshotRepository make_state_repository(
+    std::filesystem::path dir_path,
+    bool open,
+    std::optional<uint32_t> index_salt) {
     return snapshots::SnapshotRepository{
         std::move(dir_path),
         open,
         make_state_repository_schema(),
         std::make_unique<datastore::StepToTxnIdConverter>(),
+        std::move(index_salt),
         make_state_index_builders_factory(),
     };
 }

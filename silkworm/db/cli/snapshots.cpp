@@ -45,8 +45,8 @@
 #include <silkworm/db/datastore/snapshots/bloom_filter/bloom_filter.hpp>
 #include <silkworm/db/datastore/snapshots/btree/btree_index.hpp>
 #include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
-#include <silkworm/db/datastore/snapshots/rec_split/murmur_hash3.hpp>
-#include <silkworm/db/datastore/snapshots/rec_split/rec_split.hpp>  // TODO(canepat) refactor to extract Hash128 to murmur_hash3.hpp
+#include <silkworm/db/datastore/snapshots/index_salt_file.hpp>
+#include <silkworm/db/datastore/snapshots/rec_split/rec_split.hpp>
 #include <silkworm/db/datastore/snapshots/segment/seg/seg_zip.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
@@ -510,15 +510,15 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
     std::filesystem::path existence_index_file_path = settings.input_file_path;
     existence_index_file_path.replace_extension(".kvei");
     SILK_INFO << "KV file: " << settings.input_file_path.string() << " KVEI file: " << existence_index_file_path.string();
+
     const auto salt_path = existence_index_file_path.parent_path().parent_path() / "salt-state.txt";
-    std::ifstream salt_stream{salt_path, std::ios::in | std::ios::binary};
-    std::array<char, sizeof(uint32_t)> salt_bytes{};
-    salt_stream.read(salt_bytes.data(), salt_bytes.size());
-    const uint32_t salt = endian::load_big_u32(reinterpret_cast<uint8_t*>(salt_bytes.data()));
+    snapshots::IndexSaltFile salt_file{salt_path};
+    const uint32_t salt = salt_file.load();
     SILK_INFO << "Snapshot salt " << salt << " from " << salt_path.filename().string();
+
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     seg::Decompressor kv_decompressor{settings.input_file_path};
-    bloom_filter::BloomFilter existence_index{existence_index_file_path};
+    bloom_filter::BloomFilter existence_index{existence_index_file_path, bloom_filter::BloomFilterKeyHasher{salt}};
 
     SILK_INFO << "Starting KV scan and existence index check";
     size_t key_count{0}, found_count{0}, nonexistent_count{0}, nonexistent_found_count{0};
@@ -544,19 +544,14 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
                 ByteView nonexistent_key = {full_be + kSizeDiff, sizeof(intx::uint256) - kSizeDiff};
                 SILK_TRACE << "KV: previous_key=" << to_hex(previous_key) << " key=" << to_hex(key)
                            << " nonexistent_key=" << to_hex(nonexistent_key);
-                // Hash the nonexistent key using murmur3 and check its presence in existence filter
-                rec_split::Hash128 key_hash{};
-                snapshots::rec_split::murmur_hash3_x64_128(nonexistent_key.data(), nonexistent_key.size(), salt, &key_hash);
-                if (const bool key_found = existence_index.contains_hash(key_hash.first); key_found) {
+                if (const bool key_found = existence_index.contains(nonexistent_key); key_found) {
                     ++nonexistent_found_count;
                 }
             }
             ++key_count;
         } else {
             value = *kv_iterator;
-            rec_split::Hash128 key_hash{};
-            snapshots::rec_split::murmur_hash3_x64_128(key.data(), key.size(), salt, &key_hash);
-            const bool key_found = existence_index.contains_hash(key_hash.first);
+            const bool key_found = existence_index.contains(key);
             SILK_DEBUG << "KV: key=" << to_hex(key) << " value=" << to_hex(value);
             ensure(key_found,
                    [&]() { return "open_existence_index: unexpected not found key=" + to_hex(key) +

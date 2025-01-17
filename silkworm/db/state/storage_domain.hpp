@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <silkworm/db/datastore/domain_get_latest_query.hpp>
 #include <silkworm/db/datastore/kvdb/domain_queries.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 
@@ -23,10 +24,12 @@
 
 namespace silkworm::db::state {
 
-using StorageDomainGetLatestQuery = datastore::kvdb::DomainGetLatestQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>;
+using StorageDomainGetLatestQuery = datastore::DomainGetLatestQuery<
+    StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
+    Bytes32KVDBCodec, Bytes32SnapshotsCodec>;
 using StorageDomainPutQuery = datastore::kvdb::DomainPutQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>;
 using StorageDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>;
 
-using StorageDomainKVSegmentReader = snapshots::segment::KVSegmentReader<StorageAddressAndLocationDecoder, Bytes32Decoder>;
+using StorageDomainKVSegmentReader = snapshots::segment::KVSegmentReader<StorageAddressAndLocationSnapshotsCodec, Bytes32SnapshotsCodec>;
 
 }  // namespace silkworm::db::state

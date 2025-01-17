@@ -38,7 +38,8 @@ std::unique_ptr<snapshots::IndexBuildersFactory> make_state_index_builders_facto
 
 snapshots::SnapshotRepository make_state_repository(
     std::filesystem::path dir_path,
-    bool open = true);
+    bool open = true,
+    std::optional<uint32_t> index_salt = std::nullopt);
 
 inline constexpr datastore::EntityName kDomainNameAccounts{"Account"};
 inline constexpr datastore::EntityName kDomainNameStorage{"Storage"};

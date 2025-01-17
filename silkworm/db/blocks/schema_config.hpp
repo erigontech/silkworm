@@ -17,6 +17,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include "../datastore/common/entity_name.hpp"
 #include "../datastore/snapshots/index_builders_factory.hpp"
@@ -36,7 +37,8 @@ std::unique_ptr<snapshots::IndexBuildersFactory> make_blocks_index_builders_fact
 
 snapshots::SnapshotRepository make_blocks_repository(
     std::filesystem::path dir_path,
-    bool open = true);
+    bool open = true,
+    std::optional<uint32_t> index_salt = std::nullopt);
 
 inline constexpr datastore::EntityName kHeaderSegmentName{"headers"};
 inline constexpr std::string_view kHeaderSegmentTag = kHeaderSegmentName.name;

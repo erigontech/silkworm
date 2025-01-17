@@ -76,11 +76,11 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
+#include "../common/encoding/murmur_hash3.hpp"
 #include "../common/util/bitmask_operators.hpp"
 #include "../elias_fano/double_elias_fano_list.hpp"
 #include "../elias_fano/elias_fano_list.hpp"
 #include "golomb_rice.hpp"
-#include "murmur_hash3.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
@@ -216,6 +216,7 @@ class RecSplit {
     using GolombRiceBuilder = GolombRiceVector::Builder;
     using EliasFano = elias_fano::EliasFanoList32;
     using DoubleEliasFano = elias_fano::DoubleEliasFanoList16;
+    using Murmur3 = encoding::Murmur3;
 
     //! The base class for RecSplit building strategies
     struct BuildingStrategy {

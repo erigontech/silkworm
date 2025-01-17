@@ -21,7 +21,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-namespace silkworm::snapshots::rec_split {
+namespace silkworm::snapshots::encoding {
 
 TEST_CASE("murmur_hash3_x64_128", "[silkworm][recsplit][support]") {
     constexpr size_t kHashBits{128};
@@ -67,4 +67,4 @@ TEST_CASE("Murmur3", "[silkworm][recsplit][support]") {
     delete[] hashed;
 }
 
-}  // namespace silkworm::snapshots::rec_split
+}  // namespace silkworm::snapshots::encoding

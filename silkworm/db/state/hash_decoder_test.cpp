@@ -22,9 +22,9 @@
 
 namespace silkworm::db::state {
 
-TEST_CASE("HashDecoder") {
+TEST_CASE("HashSnapshotsDecoder") {
     using evmc::literals::operator""_bytes32;
-    HashDecoder decoder;
+    HashSnapshotsDecoder decoder;
     decoder.decode_word(*from_hex("0xb397a22bb95bf14753ec174f02f99df3f0bdf70d1851cdff813ebf745f5aeb55"));
     CHECK(decoder.value == 0xb397a22bb95bf14753ec174f02f99df3f0bdf70d1851cdff813ebf745f5aeb55_bytes32);
 

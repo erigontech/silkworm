@@ -14,15 +14,18 @@
    limitations under the License.
 */
 
-#pragma once
+#include "bloom_filter_key_hasher.hpp"
 
-#include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
-#include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
+#include <array>
 
-#include "hash_decoder.hpp"
+#include "../common/encoding/murmur_hash3.hpp"
 
-namespace silkworm::db::state {
+namespace silkworm::snapshots::bloom_filter {
 
-using LogTopicsInvertedIndexKVSegmentReader = snapshots::segment::KVSegmentReader<HashSnapshotsDecoder, snapshots::RawDecoder<Bytes>>;
+uint64_t BloomFilterKeyHasher::hash(ByteView key) const {
+    std::array<uint64_t, 2> hash = {0, 0};
+    encoding::Murmur3{salt_}.hash_x64_128(key.data(), key.size(), hash.data());
+    return hash[0];
+}
 
-}  // namespace silkworm::db::state
+}  // namespace silkworm::snapshots::bloom_filter

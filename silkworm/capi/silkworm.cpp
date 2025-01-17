@@ -237,8 +237,14 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
 
     auto data_dir_path = parse_path(settings->data_dir_path);
     auto snapshots_dir_path = DataDirectory{data_dir_path}.snapshots().path();
-    auto blocks_repository = db::blocks::make_blocks_repository(snapshots_dir_path, /* open = */ false);
-    auto state_repository = db::state::make_state_repository(snapshots_dir_path, /* open = */ false);
+    auto blocks_repository = db::blocks::make_blocks_repository(
+        snapshots_dir_path,
+        /* open = */ false,
+        /* index_salt = */ 0);  // TODO: pass from erigon
+    auto state_repository = db::state::make_state_repository(
+        snapshots_dir_path,
+        /* open = */ false,
+        /* index_salt = */ 0);  // TODO: pass from erigon
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
     *handle = new SilkwormInstance{

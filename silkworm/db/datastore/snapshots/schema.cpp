@@ -83,10 +83,6 @@ Schema::DomainDef Schema::RepositoryDef::make_domain_schema(datastore::EntityNam
         .sub_dir_name(kDomainKVSegmentSubDirName)
         .tag(name2tag(name))
         .file_ext(kDomainKVSegmentFileExt);
-    schema.accessor_index(kDomainAccessorIndexName)
-        .sub_dir_name(kDomainAccessorIndexSubDirName)
-        .tag(name2tag(name))
-        .file_ext(kDomainAccessorIndexFileExt);
     schema.existence_index(kDomainExistenceIndexName)
         .sub_dir_name(kDomainExistenceIndexSubDirName)
         .tag(name2tag(name))
@@ -97,6 +93,14 @@ Schema::DomainDef Schema::RepositoryDef::make_domain_schema(datastore::EntityNam
         .file_ext(kDomainBTreeIndexFileExt);
     define_history_schema(name, schema);
     return schema;
+}
+
+Schema::DomainDef& Schema::DomainDef::with_accessor_index() {
+    accessor_index(kDomainAccessorIndexName)
+        .sub_dir_name(kDomainAccessorIndexSubDirName)
+        .tag(kv_segment(kDomainKVSegmentName).tag())
+        .file_ext(kDomainAccessorIndexFileExt);
+    return *this;
 }
 
 Schema::EntityDef Schema::RepositoryDef::make_history_schema(datastore::EntityName name) {

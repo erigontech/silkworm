@@ -22,12 +22,27 @@
 
 #include "account_codecs.hpp"
 #include "address_codecs.hpp"
+#include "schema_config.hpp"
 
 namespace silkworm::db::state {
 
-using AccountsDomainGetLatestQuery = datastore::DomainGetLatestQuery<
+using AccountsDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
     AddressKVDBEncoder, AddressSnapshotsEncoder,
     AccountKVDBCodec, AccountSnapshotsCodec>;
+
+struct AccountsDomainGetLatestQuery : public AccountsDomainGetLatestQueryBase {
+    AccountsDomainGetLatestQuery(
+        datastore::kvdb::DatabaseRef database,
+        datastore::kvdb::ROTxn& tx,
+        const snapshots::SnapshotRepositoryROAccess& repository)
+        : AccountsDomainGetLatestQueryBase{
+              db::state::kDomainNameAccounts,
+              std::move(database),
+              tx,
+              repository,
+          } {}
+};
+
 using AccountsDomainPutQuery = datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, AccountKVDBCodec>;
 using AccountsDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, AccountKVDBCodec>;
 

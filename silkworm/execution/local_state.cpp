@@ -29,7 +29,6 @@ using namespace datastore;
 
 std::optional<Account> LocalState::read_account(const evmc::address& address) const noexcept {
     AccountsDomainGetLatestQuery query{
-        db::state::kDomainNameAccounts,
         data_store_.chaindata,
         tx_,
         data_store_.state_repository,
@@ -43,7 +42,6 @@ std::optional<Account> LocalState::read_account(const evmc::address& address) co
 
 ByteView LocalState::read_code(const evmc::address& address, const evmc::bytes32& /*code_hash*/) const noexcept {
     CodeDomainGetLatestQuery query{
-        db::state::kDomainNameCode,
         data_store_.chaindata,
         tx_,
         data_store_.state_repository,
@@ -61,7 +59,6 @@ evmc::bytes32 LocalState::read_storage(
     uint64_t /*incarnation*/,
     const evmc::bytes32& location) const noexcept {
     StorageDomainGetLatestQuery query{
-        db::state::kDomainNameStorage,
         data_store_.chaindata,
         tx_,
         data_store_.state_repository,

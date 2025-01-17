@@ -44,6 +44,7 @@
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/state/schema_config.hpp>
+#include <silkworm/db/kv/grpc/client/remote_client.hpp>
 #include <silkworm/execution/remote_state.hpp>
 #include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
@@ -54,16 +55,19 @@
 #include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/execution/block/block_executor.hpp>
-#include <silkworm/rpc/ethbackend/remote_backend.hpp>
-#include <silkworm/rpc/ethdb/kv/remote_database.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/rpc/daemon.hpp>
+#include <silkworm/rpc/ethbackend/remote_backend.hpp>
+#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 
 #include "common.hpp"
 #include "instance.hpp"
 
 using namespace std::chrono_literals;
 using namespace silkworm;
+// using namespace silkworm::db;
+// using namespace silkworm::rpc;
 
 static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
     return {mmf.memory_address, mmf.memory_length};
@@ -780,6 +784,9 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, ui
     // Allow each client to open its own TCP connection to server (sharing one single connection becomes a bottleneck under high load)
     channel_args.SetInt(GRPC_ARG_USE_LOCAL_SUBCHANNEL_POOL, 1);
     auto grpc_erigon_channel = grpc::CreateCustomChannel("localhost:9090", grpc::InsecureChannelCredentials(), channel_args);
+    silkworm::rpc::ChannelFactory create_channel = [&]() {
+        return grpc::CreateCustomChannel("localhost:9090", grpc::InsecureChannelCredentials(), channel_args);
+    };
 
     silkworm::rpc::ClientContextPool context_pool{1};
 
@@ -787,10 +794,13 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, ui
     auto& ioc = *context.ioc();
     auto& grpc_context{*context.grpc_context()};
 
-    auto state_cache{std::make_unique<db::kv::api::CoherentStateCache>(db::kv::api::CoherentCacheConfig{})};
+    // auto state_cache{std::make_unique<db::kv::api::CoherentStateCache>(db::kv::api::CoherentCacheConfig{})};
+    silkworm::db::kv::api::CoherentStateCache state_cache;
 
-    auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(ioc, grpc_erigon_channel, grpc_context)};
-    auto database = std::make_unique<rpc::ethdb::kv::RemoteDatabase>(backend.get(), state_cache.get(), grpc_context, grpc_erigon_channel);
+    auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(grpc_erigon_channel, grpc_context)};
+
+    auto database = std::make_unique<db::kv::grpc::client::RemoteClient>(
+        create_channel, grpc_context, &state_cache, silkworm::rpc::ethdb::kv::make_backend_providers(backend.get()));
 
     context_pool.start();
     auto _ = gsl::finally([&context_pool] {
@@ -801,10 +811,10 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, ui
     Block block{};  // todo: get block header
 
     auto state = concurrency::spawn_future_and_wait(ioc, [&]() -> Task<std::shared_ptr<State>> {
-        auto kv_transaction = co_await database->begin();
+        auto kv_transaction = co_await database->service()->begin_transaction();
         const auto chain_storage = kv_transaction->create_storage();
         auto this_executor = co_await boost::asio::this_coro::executor;
-        auto remote_state = std::make_unique<silkworm::execution::RemoteState>(this_executor, *kv_transaction, *chain_storage, 1, std::nullopt);
+        auto remote_state = std::make_unique<silkworm::execution::RemoteState>(this_executor, *kv_transaction, *chain_storage, 1);
 
         // auto a = hex_to_address("0x71562b71999873db5b286df957af199ec94617f7");
         // auto acc = remote_state->read_account(a);
@@ -842,10 +852,9 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, ui
         log::Info{"account2 not found"};
     }
 
-    log::Info{"dupa blada, spadam"};
-    // const auto chain_config = *chain_info;
-    // auto protocol_rule_set_{protocol::rule_set_factory(*chain_config)};
-    // ExecutionProcessor processor{block, *protocol_rule_set_, *state, *chain_config};
+    const auto chain_config = *chain_info;
+    auto protocol_rule_set_{protocol::rule_set_factory(*chain_config)};
+    ExecutionProcessor processor{block, *protocol_rule_set_, *state, *chain_config, false};
     // // add analysis cache, check block exec for more
 
     // silkworm::Transaction transaction{};  // todo: get txn

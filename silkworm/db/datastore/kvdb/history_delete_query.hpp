@@ -25,9 +25,9 @@ struct HistoryDeleteQuery {
     RWTxn& tx;
     History entity;
 
-    using TKey = decltype(TKeyEncoder::value);
+    using Key = decltype(TKeyEncoder::value);
 
-    void exec(const TKey& key, Timestamp timestamp) {
+    void exec(const Key& key, Timestamp timestamp) {
         HistoryPutQuery<TKeyEncoder, RawEncoder<ByteView>> query{tx, entity};
         query.exec(key, ByteView{}, timestamp);
     }

@@ -70,7 +70,7 @@ void BTreeIndex::warmup_if_empty_or_check(const KVSegmentReader& kv_segment) {
     }
 }
 
-std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, const KVSegmentReader& kv_segment) {
+std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, const KVSegmentReader& kv_segment) const {
     KeyValueIndex index{kv_segment, data_offsets_, file_path_};
     auto [found, key, value, data_index] = btree_->seek(seek_key, index);
     if (key.compare(seek_key) >= 0) {
@@ -85,7 +85,7 @@ std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, const KVSe
     return std::nullopt;
 }
 
-std::optional<Bytes> BTreeIndex::get(ByteView key, const KVSegmentReader& kv_segment) {
+std::optional<Bytes> BTreeIndex::get(ByteView key, const KVSegmentReader& kv_segment) const {
     KeyValueIndex index{kv_segment, data_offsets_, file_path_};
     auto result = btree_->get(key, index);
     if (!result) {

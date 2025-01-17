@@ -50,7 +50,7 @@ class BTreeIndex {
         friend class BTreeIndex;
 
         Cursor(
-            BTreeIndex* index,
+            const BTreeIndex* index,
             Bytes key,
             Bytes value,
             DataIndex data_index,
@@ -61,7 +61,7 @@ class BTreeIndex {
               data_index_{data_index},
               kv_segment_{kv_segment} {}
 
-        BTreeIndex* index_;
+        const BTreeIndex* index_;
         Bytes key_;
         Bytes value_;
         DataIndex data_index_;
@@ -89,13 +89,13 @@ class BTreeIndex {
     //! \return a cursor positioned at key >= \p seek_key or nullptr
     //! \details if \p seek_key is empty, first key is returned
     //! \details if \p seek_key is greater than any other key, std::nullopt is returned
-    std::optional<Cursor> seek(ByteView seek_key, const KVSegmentReader& kv_segment);
+    std::optional<Cursor> seek(ByteView seek_key, const KVSegmentReader& kv_segment) const;
 
     //! Get the value associated to the given key with exact match
     //! \param key the data key to match exactly
     //! \param kv_segment reader of the key-value data sequence
     //! \return the value associated at \p key or std::nullopt if not found
-    std::optional<Bytes> get(ByteView key, const KVSegmentReader& kv_segment);
+    std::optional<Bytes> get(ByteView key, const KVSegmentReader& kv_segment) const;
 
   private:
     class KeyValueIndex : public BTree::KeyValueIndex {

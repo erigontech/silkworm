@@ -16,31 +16,32 @@
 
 #pragma once
 
-#include "concat_view.hpp"
 #include "kvdb/database.hpp"
-#include "kvdb/inverted_index_range_by_key_query.hpp"
-#include "snapshots/inverted_index_range_by_key_query.hpp"
+#include "kvdb/domain_get_latest_query.hpp"
+#include "snapshots/domain_get_latest_query.hpp"
 
 namespace silkworm::datastore {
 
-template <kvdb::EncoderConcept TKeyEncoder1, snapshots::EncoderConcept TKeyEncoder2>
-struct InvertedIndexRangeByKeyQuery {
-    InvertedIndexRangeByKeyQuery(
+template <
+    kvdb::EncoderConcept TKeyEncoder1, snapshots::EncoderConcept TKeyEncoder2,
+    kvdb::DecoderConcept TValueDecoder1, snapshots::DecoderConcept TValueDecoder2>
+struct DomainGetLatestQuery {
+    DomainGetLatestQuery(
         datastore::EntityName entity_name,
-        kvdb::InvertedIndex kvdb_entity,
+        kvdb::Domain kvdb_entity,
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
         : query1_{tx, kvdb_entity},
           query2_{repository, entity_name} {}
 
-    InvertedIndexRangeByKeyQuery(
+    DomainGetLatestQuery(
         datastore::EntityName entity_name,
         kvdb::DatabaseRef database,
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
-        : InvertedIndexRangeByKeyQuery{
+        : DomainGetLatestQuery{
               entity_name,
-              database.inverted_index(entity_name),
+              database.domain(entity_name),
               tx,
               repository,
           } {}
@@ -50,22 +51,25 @@ struct InvertedIndexRangeByKeyQuery {
     static_assert(std::same_as<Key1, Key2>);
     using Key = Key1;
 
-    template <bool ascending = true>
-    auto exec(Key key, TimestampRange ts_range) {
-        if constexpr (ascending) {
-            return silkworm::views::concat(
-                query2_.template exec<ascending>(key, ts_range),
-                query1_.exec(key, ts_range, ascending));
-        } else {
-            return silkworm::views::concat(
-                query1_.exec(key, ts_range, ascending),
-                query2_.template exec<ascending>(key, ts_range));
+    using Result1 = typename kvdb::DomainGetLatestQuery<TKeyEncoder1, TValueDecoder1>::Result;
+    using Result2 = typename snapshots::DomainGetLatestQuery<TKeyEncoder2, TValueDecoder2>::Result;
+    using Result = Result1;
+
+    std::optional<Result> exec(const Key& key) {
+        auto result1 = query1_.exec(key);
+        if (result1) {
+            return result1;
         }
+        auto result2 = query2_.exec(key);
+        if (result2) {
+            return Result{std::move(result2->value), result2->step};
+        }
+        return std::nullopt;
     }
 
   private:
-    kvdb::InvertedIndexRangeByKeyQuery<TKeyEncoder1> query1_;
-    snapshots::InvertedIndexRangeByKeyQuery<TKeyEncoder2> query2_;
+    kvdb::DomainGetLatestQuery<TKeyEncoder1, TValueDecoder1> query1_;
+    snapshots::DomainGetLatestQuery<TKeyEncoder2, TValueDecoder2> query2_;
 };
 
 }  // namespace silkworm::datastore

@@ -34,14 +34,14 @@ struct InvertedIndexRangeByKeyQuery {
     ROTxn& tx;
     InvertedIndex entity;
 
-    using TKey = decltype(TKeyEncoder::value);
+    using Key = decltype(TKeyEncoder::value);
 
     //! A range of timestamps
     using Timestamps = std::ranges::filter_view<
         std::ranges::subrange<CursorValuesIterator<TimestampDecoder>>,
         decltype(std::declval<TimestampRange>().contains_predicate())>;
 
-    CursorValuesIterator<TimestampDecoder> begin(TKey key, TimestampRange ts_range, bool ascending) {
+    CursorValuesIterator<TimestampDecoder> begin(Key key, TimestampRange ts_range, bool ascending) {
         auto cursor = tx.ro_cursor_dup_sort(entity.index_table);
 
         TKeyEncoder key_encoder;
@@ -76,13 +76,13 @@ struct InvertedIndexRangeByKeyQuery {
         return {};
     }
 
-    Timestamps exec_with_eager_begin(TKey key, TimestampRange ts_range, bool ascending) {
+    Timestamps exec_with_eager_begin(Key key, TimestampRange ts_range, bool ascending) {
         auto begin_it = begin(std::move(key), ts_range, ascending);
         return std::ranges::subrange{std::move(begin_it), CursorValuesIterator<TimestampDecoder>{}} |
                std::views::filter(ts_range.contains_predicate());
     }
 
-    auto exec(TKey key, TimestampRange ts_range, bool ascending) {
+    auto exec(Key key, TimestampRange ts_range, bool ascending) {
         auto exec_func = [query = *this, key = std::move(key), ts_range, ascending](std::monostate) mutable {
             return query.exec_with_eager_begin(std::move(key), ts_range, ascending);
         };

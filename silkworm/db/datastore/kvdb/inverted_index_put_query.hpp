@@ -28,14 +28,14 @@ struct InvertedIndexPutQuery {
     RWTxn& tx;
     InvertedIndex entity;
 
-    using TKey = decltype(TKeyEncoder::value);
+    using Key = decltype(TKeyEncoder::value);
 
-    void exec(const TKey& key, const Timestamp timestamp, bool with_index_update) {
+    void exec(const Key& key, const Timestamp timestamp, bool with_index_update) {
         return exec<TimestampEncoder>(key, timestamp, with_index_update);
     }
 
     template <EncoderConcept TTimestampEncoder, typename TTimestamp = decltype(TTimestampEncoder::value)>
-    void exec(const TKey& key, const TTimestamp& timestamp, bool with_index_update) {
+    void exec(const Key& key, const TTimestamp& timestamp, bool with_index_update) {
         TKeyEncoder key_encoder;
         key_encoder.value = key;
         Slice key_slice = key_encoder.encode();

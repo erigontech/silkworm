@@ -16,13 +16,20 @@
 
 #pragma once
 
-#include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
-#include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
+#include <filesystem>
 
-#include "hash_decoder.hpp"
+namespace silkworm::snapshots {
 
-namespace silkworm::db::state {
+class IndexSaltFile {
+  public:
+    explicit IndexSaltFile(std::filesystem::path path) : path_{std::move(path)} {}
 
-using LogTopicsInvertedIndexKVSegmentReader = snapshots::segment::KVSegmentReader<HashSnapshotsDecoder, snapshots::RawDecoder<Bytes>>;
+    uint32_t load() const;
+    void save(uint32_t value) const;
+    bool exists() const { return std::filesystem::exists(path_); }
 
-}  // namespace silkworm::db::state
+  private:
+    std::filesystem::path path_;
+};
+
+}  // namespace silkworm::snapshots

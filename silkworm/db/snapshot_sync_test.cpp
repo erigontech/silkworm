@@ -133,11 +133,8 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
 
     // Add a sample Snapshot bundle to the repository
     auto step_range = datastore::StepRange::from_block_num_range(snapshots::test_util::kSampleSnapshotBlockRange);
-    SnapshotBundle bundle{
-        step_range,
-        open_bundle_data(blocks::make_blocks_repository_schema(), tmp_dir_path, step_range),
-    };
     auto& repository = snapshot_sync.blocks_repository();
+    SnapshotBundle bundle = repository.open_bundle(step_range);
     repository.add_snapshot_bundle(std::move(bundle));
 
     // Update the block headers in the database according to the repository content

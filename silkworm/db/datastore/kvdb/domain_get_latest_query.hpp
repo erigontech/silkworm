@@ -28,18 +28,18 @@ namespace silkworm::datastore::kvdb {
 
 template <EncoderConcept TKeyEncoder, DecoderConcept TValueDecoder>
 struct DomainGetLatestQuery {
-    RWTxn& tx;
+    ROTxn& tx;
     Domain entity;
 
-    using TKey = decltype(TKeyEncoder::value);
-    using TValue = decltype(TValueDecoder::value);
+    using Key = decltype(TKeyEncoder::value);
+    using Value = decltype(TValueDecoder::value);
 
     struct Result {
-        TValue value;
+        Value value;
         Step step;
     };
 
-    std::optional<Result> exec(const TKey& key) {
+    std::optional<Result> exec(const Key& key) {
         DomainKeyEncoder<TKeyEncoder> key_encoder{/* has_large_values = */ false};
         key_encoder.value.key.value = key;
         key_encoder.value.timestamp.value = Step{std::numeric_limits<decltype(Step::value)>::max()};

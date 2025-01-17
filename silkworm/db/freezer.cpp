@@ -134,7 +134,7 @@ void Freezer::commit(std::shared_ptr<DataMigrationResult> result) {
     auto& bundle = freezer_result.bundle_paths;
     move_files(bundle.files(), snapshots_.path());
 
-    SnapshotBundle final_bundle{snapshots_.schema(), snapshots_.path(), bundle.step_range()};
+    SnapshotBundle final_bundle = snapshots_.open_bundle(bundle.step_range());
     snapshots_.add_snapshot_bundle(std::move(final_bundle));
 }
 

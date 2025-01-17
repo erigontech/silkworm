@@ -16,13 +16,17 @@
 
 #pragma once
 
-#include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
-#include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
+#include <silkworm/core/common/bytes.hpp>
 
-#include "hash_decoder.hpp"
+namespace silkworm::snapshots::bloom_filter {
 
-namespace silkworm::db::state {
+class BloomFilterKeyHasher {
+  public:
+    explicit BloomFilterKeyHasher(uint32_t salt) : salt_{salt} {}
+    uint64_t hash(ByteView key) const;
 
-using LogTopicsInvertedIndexKVSegmentReader = snapshots::segment::KVSegmentReader<HashSnapshotsDecoder, snapshots::RawDecoder<Bytes>>;
+  private:
+    uint32_t salt_;
+};
 
-}  // namespace silkworm::db::state
+}  // namespace silkworm::snapshots::bloom_filter

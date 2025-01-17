@@ -27,14 +27,14 @@ struct DomainPutQuery {
     RWTxn& tx;
     Domain entity;
 
-    using TKey = decltype(TKeyEncoder::value);
-    using TValue = decltype(TValueEncoder::value);
+    using Key = decltype(TKeyEncoder::value);
+    using Value = decltype(TValueEncoder::value);
 
     void exec(
-        const TKey& key,
-        const TValue& value,
+        const Key& key,
+        const Value& value,
         Timestamp timestamp,
-        const std::optional<TValue>& prev_value,
+        const std::optional<Value>& prev_value,
         Step prev_step) {
         DomainPutLatestQuery<TKeyEncoder, TValueEncoder> value_query{tx, entity};
         value_query.exec(key, value, prev_step);

@@ -20,8 +20,8 @@
 
 namespace silkworm::db::state {
 
-TEST_CASE("ReceiptsDomainKeyDecoder") {
-    ReceiptsDomainKeyDecoder decoder;
+TEST_CASE("ReceiptsDomainKeySnapshotsDecoder") {
+    ReceiptsDomainKeySnapshotsDecoder decoder;
     decoder.decode_word(Bytes{1});
     CHECK(decoder.value == ReceiptsDomainKey::kCumulativeBlobGasUsedInBlockKey);
 

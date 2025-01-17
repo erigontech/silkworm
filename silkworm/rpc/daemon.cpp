@@ -37,6 +37,7 @@
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/common/compatibility.hpp>
+#include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/engine/remote_execution_engine.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
@@ -229,6 +230,7 @@ Daemon::Daemon(
     // Create shared and private state in execution contexts: order *matters* (e.g. for state cache)
     add_shared_services();
     add_private_services();
+    EVMExecutor::register_service(worker_pool_);
 
     // Create the unique KV state-changes stream feeding the state cache
     auto& context = context_pool_.next_context();

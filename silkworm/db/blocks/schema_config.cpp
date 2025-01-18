@@ -65,7 +65,7 @@ snapshots::SnapshotRepository make_blocks_repository(
         open,
         make_blocks_repository_schema(),
         std::make_unique<datastore::StepToBlockNumConverter>(),
-        std::move(index_salt),
+        index_salt,
         make_blocks_index_builders_factory(),
     };
 }

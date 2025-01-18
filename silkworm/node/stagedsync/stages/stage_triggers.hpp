@@ -29,8 +29,8 @@ class TriggersStage : public Stage, public datastore::StageScheduler {
     ~TriggersStage() override = default;
 
     Stage::Result forward(db::RWTxn& tx) override;
+    Stage::Result unwind(db::RWTxn& txn) override;
 
-    Stage::Result unwind(db::RWTxn&) override { return Stage::Result::kSuccess; }
     Stage::Result prune(db::RWTxn&) override { return Stage::Result::kSuccess; }
 
     Task<void> schedule(std::function<void(db::RWTxn&)> callback) override;

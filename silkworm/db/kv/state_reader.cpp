@@ -31,14 +31,12 @@ StateReader::StateReader(kv::api::Transaction& tx, std::optional<TxnId> txn_id) 
 }
 
 Task<std::optional<Account>> StateReader::read_account(const evmc::address& address) const {
-
     api::PointResult result;
 
     if (!txn_number_) {
         db::kv::api::GetLatestQuery query{
             .table = table::kAccountDomain,
-            .key = db::account_domain_key(address)
-        };
+            .key = db::account_domain_key(address)};
         result = co_await tx_.get_latest(std::move(query));
     } else {
         db::kv::api::GetAsOfQuery query{
@@ -66,8 +64,7 @@ Task<evmc::bytes32> StateReader::read_storage(const evmc::address& address,
     if (!txn_number_) {
         db::kv::api::GetLatestQuery query{
             .table = table::kStorageDomain,
-            .key = db::storage_domain_key(address, location_hash)
-        };
+            .key = db::storage_domain_key(address, location_hash)};
         result = co_await tx_.get_latest(std::move(query));
     } else {
         db::kv::api::GetAsOfQuery query{
@@ -94,8 +91,7 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
     if (!txn_number_) {
         db::kv::api::GetLatestQuery query{
             .table = table::kCodeDomain,
-            .key = db::code_domain_key(address)
-        };
+            .key = db::code_domain_key(address)};
         result = co_await tx_.get_latest(std::move(query));
     } else {
         db::kv::api::GetAsOfQuery query{

@@ -442,7 +442,7 @@ void unwind(datastore::kvdb::EnvConfig& config, BlockNum unwind_point, const boo
 
         // Remove the block bodies up to the unwind point
         const auto body_cursor{txn.rw_cursor(db::table::kBlockBodies)};
-        const auto start_key{db::block_key(unwind_point)};
+        const auto start_key{db::block_key(unwind_point + 1)};
         std::size_t erased_bodies{0};
         auto body_data{body_cursor->lower_bound(datastore::kvdb::to_slice(start_key), /*throw_notfound=*/false)};
         while (body_data) {

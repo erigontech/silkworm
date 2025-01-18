@@ -4,6 +4,7 @@
 #include "stage_triggers.hpp"
 
 #include <gsl/util>
+#include <magic_enum.hpp>
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/concurrency/spawn.hpp>
@@ -15,20 +16,95 @@ TriggersStage::TriggersStage(SyncContext* sync_context)
 }
 
 Stage::Result TriggersStage::forward(db::RWTxn& tx) {
-    current_tx_ = &tx;
-    [[maybe_unused]] auto _ = gsl::finally([this] {
-        current_tx_ = nullptr;
-    });
+    Stage::Result result = Stage::Result::kSuccess;
 
-    ioc_.restart();
-    ioc_.run();
+    operation_ = OperationType::kForward;
+    try {
+        current_tx_ = &tx;
+        [[maybe_unused]] auto _ = gsl::finally([this] {
+            current_tx_ = nullptr;
+        });
 
-    // Update its own progress to the previous stage progress to satisfy the execution pipeline constraints
-    const BlockNum previous_stage_progress = db::stages::read_stage_progress(tx, db::stages::kTxLookupKey);
-    update_progress(tx, previous_stage_progress);
-    tx.commit_and_renew();
+        ioc_.restart();
+        ioc_.run();
 
-    return Stage::Result::kSuccess;
+        const auto current_progress = get_progress(tx);
+        const BlockNum previous_stage_progress = db::stages::read_stage_progress(tx, db::stages::kTxLookupKey);
+        if (current_progress >= previous_stage_progress) {
+            // Nothing to process
+            return result;
+        }
+        const BlockNum segment_width{previous_stage_progress - current_progress};
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+            log::Info(log_prefix_,
+                      {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                       "from", std::to_string(current_progress),
+                       "to", std::to_string(previous_stage_progress),
+                       "span", std::to_string(segment_width)});
+        }
+
+        throw_if_stopping();
+        update_progress(tx, previous_stage_progress);
+        tx.commit_and_renew();
+    } catch (const StageError& ex) {
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        result = static_cast<Stage::Result>(ex.err());
+    } catch (const mdbx::exception& ex) {
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        result = Stage::Result::kDbError;
+    } catch (const std::exception& ex) {
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        result = Stage::Result::kUnexpectedError;
+    } catch (...) {
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        result = Stage::Result::kUnexpectedError;
+    }
+    operation_ = OperationType::kNone;
+
+    return result;
+}
+
+Stage::Result TriggersStage::unwind(db::RWTxn& txn) {
+    Stage::Result result = Stage::Result::kSuccess;
+    if (!sync_context_->unwind_point) {
+        return result;
+    }
+    const BlockNum unwind_point = *sync_context_->unwind_point;
+
+    operation_ = OperationType::kUnwind;
+    try {
+        const auto current_progress = get_progress(txn);
+        if (unwind_point >= current_progress) {
+            return result;
+        }
+
+        const BlockNum segment_width = current_progress - unwind_point;
+        if (segment_width > db::stages::kSmallBlockSegmentWidth) {
+            SILK_INFO_M(log_prefix_, {"op", std::string(magic_enum::enum_name<OperationType>(operation_)),
+                                      "from", std::to_string(current_progress),
+                                      "to", std::to_string(unwind_point),
+                                      "span", std::to_string(segment_width)});
+        }
+
+        throw_if_stopping();
+        update_progress(txn, unwind_point);
+        txn.commit_and_renew();
+    } catch (const StageError& ex) {
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        result = static_cast<Stage::Result>(ex.err());
+    } catch (const mdbx::exception& ex) {
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        result = Stage::Result::kDbError;
+    } catch (const std::exception& ex) {
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
+        result = Stage::Result::kUnexpectedError;
+    } catch (...) {
+        SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", "unexpected and undefined"});
+        result = Stage::Result::kUnexpectedError;
+    }
+    operation_ = OperationType::kNone;
+
+    return result;
 }
 
 Task<void> TriggersStage::schedule(std::function<void(db::RWTxn&)> callback) {

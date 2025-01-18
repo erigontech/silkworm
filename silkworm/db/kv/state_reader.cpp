@@ -27,16 +27,28 @@
 
 namespace silkworm::db::kv {
 
-StateReader::StateReader(kv::api::Transaction& tx, TxnId txn_id) : tx_(tx), txn_number_(txn_id) {
+StateReader::StateReader(kv::api::Transaction& tx, std::optional<TxnId> txn_id) : tx_(tx), txn_number_(txn_id) {
 }
 
 Task<std::optional<Account>> StateReader::read_account(const evmc::address& address) const {
-    db::kv::api::GetAsOfQuery query{
-        .table = table::kAccountDomain,
-        .key = db::account_domain_key(address),
-        .timestamp = static_cast<kv::api::Timestamp>(txn_number_),
-    };
-    const auto result = co_await tx_.get_as_of(std::move(query));
+
+    api::PointResult result;
+
+    if (!txn_number_) {
+        db::kv::api::GetLatestQuery query{
+            .table = table::kAccountDomain,
+            .key = db::account_domain_key(address)
+        };
+        result = co_await tx_.get_latest(std::move(query));
+    } else {
+        db::kv::api::GetAsOfQuery query{
+            .table = table::kAccountDomain,
+            .key = db::account_domain_key(address),
+            .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
+        };
+        result = co_await tx_.get_as_of(std::move(query));
+    }
+
     if (!result.success) {
         co_return std::nullopt;
     }
@@ -49,12 +61,23 @@ Task<std::optional<Account>> StateReader::read_account(const evmc::address& addr
 Task<evmc::bytes32> StateReader::read_storage(const evmc::address& address,
                                               uint64_t /* incarnation */,
                                               const evmc::bytes32& location_hash) const {
-    db::kv::api::GetAsOfQuery query{
-        .table = table::kStorageDomain,
-        .key = db::storage_domain_key(address, location_hash),
-        .timestamp = static_cast<kv::api::Timestamp>(txn_number_),
-    };
-    const auto result = co_await tx_.get_as_of(std::move(query));
+    api::PointResult result;
+
+    if (!txn_number_) {
+        db::kv::api::GetLatestQuery query{
+            .table = table::kStorageDomain,
+            .key = db::storage_domain_key(address, location_hash)
+        };
+        result = co_await tx_.get_latest(std::move(query));
+    } else {
+        db::kv::api::GetAsOfQuery query{
+            .table = table::kStorageDomain,
+            .key = db::storage_domain_key(address, location_hash),
+            .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
+        };
+        result = co_await tx_.get_as_of(std::move(query));
+    }
+
     if (!result.success) {
         co_return evmc::bytes32{};
     }
@@ -66,12 +89,23 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
         co_return std::nullopt;
     }
 
-    db::kv::api::GetAsOfQuery query{
-        .table = table::kCodeDomain,
-        .key = db::code_domain_key(address),
-        .timestamp = static_cast<kv::api::Timestamp>(txn_number_),
-    };
-    const auto result = co_await tx_.get_as_of(std::move(query));
+    api::PointResult result;
+
+    if (!txn_number_) {
+        db::kv::api::GetLatestQuery query{
+            .table = table::kCodeDomain,
+            .key = db::code_domain_key(address)
+        };
+        result = co_await tx_.get_latest(std::move(query));
+    } else {
+        db::kv::api::GetAsOfQuery query{
+            .table = table::kCodeDomain,
+            .key = db::code_domain_key(address),
+            .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
+        };
+        result = co_await tx_.get_as_of(std::move(query));
+    }
+
     if (!result.success) {
         co_return std::nullopt;
     }

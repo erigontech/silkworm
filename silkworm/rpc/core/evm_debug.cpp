@@ -390,6 +390,17 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash&
     }
     rpc::Transaction transaction{call.to_transaction()};
 
+    if (config_.tx_index) {
+        const auto tx_index = static_cast<size_t>(config_.tx_index.value());
+        if (tx_index > block_with_hash->block.transactions.size()) {
+            std::ostringstream oss;
+            oss << "TxIndex " << tx_index << " greater than #tnx in block " << block_num_or_hash;
+            const Error error{-32000, oss.str()};
+            stream.write_json_field("error", error);
+
+            co_return;
+        }
+    }
     stream.write_field("result");
     stream.open_object();
 

@@ -92,7 +92,7 @@ class EVMExecutor {
         WorkerPool& workers,
         const silkworm::Block& block,
         const silkworm::Transaction& txn,
-        TxnId txnId,
+        TxnId txn_id,
         StateFactory state_factory,
         const Tracers& tracers = {},
         bool refund = true,

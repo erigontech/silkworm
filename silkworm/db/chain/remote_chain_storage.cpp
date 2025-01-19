@@ -24,7 +24,6 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/grpc/common/conversion.hpp>
 
 namespace silkworm::db::chain {
 
@@ -274,7 +273,7 @@ Task<std::pair<std::optional<BlockHeader>, std::optional<Hash>>> RemoteChainStor
 
     Hash header_hash{head_header_hash};
 
-    co_return std::pair{std::move(header), std::move(header_hash)};
+    co_return std::pair{std::move(header), header_hash};
 }
 
 }  // namespace silkworm::db::chain

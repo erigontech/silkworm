@@ -27,7 +27,7 @@ namespace silkworm::db::state {
 
 using CodeDomainGetLatestQuery = datastore::DomainGetLatestQuery<
     AddressKVDBEncoder, AddressSnapshotsEncoder,
-    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
+    datastore::kvdb::RawDecoder<ByteView>, snapshots::RawDecoder<ByteView>>;
 using CodeDomainPutQuery = datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>;
 using CodeDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>;
 

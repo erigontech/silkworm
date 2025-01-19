@@ -35,7 +35,7 @@ struct InvertedIndexRangeByKeyQuery {
 
     InvertedIndexRangeByKeyQuery(
         datastore::EntityName entity_name,
-        kvdb::DatabaseRef database,
+        const kvdb::DatabaseRef& database,
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
         : InvertedIndexRangeByKeyQuery{

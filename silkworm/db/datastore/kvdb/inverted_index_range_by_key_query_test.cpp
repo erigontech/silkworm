@@ -35,7 +35,7 @@ std::vector<Timestamp> vector_from_range(auto range) {
     return results;
 }
 
-void init_inverted_index(RWTxn& tx, InvertedIndex ii, std::multimap<uint64_t, Timestamp> kvs) {
+void init_inverted_index(RWTxn& tx, InvertedIndex ii, const std::multimap<uint64_t, Timestamp>& kvs) {
     InvertedIndexPutQuery<BigEndianU64Codec> put_query{tx, ii};
     for (auto& entry : kvs) {
         put_query.exec(entry.first, entry.second, true);
@@ -55,10 +55,10 @@ TEST_CASE("InvertedIndexRangeByKeyQuery") {
     InvertedIndex ii = db.inverted_index(name);
     RWAccess db_access = db.access_rw();
 
-    auto find_in = [&db_access, &ii](std::multimap<uint64_t, Timestamp> kvs, uint64_t key, TimestampRange ts_range, bool ascending) -> std::vector<Timestamp> {
+    auto find_in = [&db_access, &ii](const std::multimap<uint64_t, Timestamp>& kvs, uint64_t key, TimestampRange ts_range, bool ascending) -> std::vector<Timestamp> {
         {
             RWTxnManaged tx = db_access.start_rw_tx();
-            init_inverted_index(tx, ii, std::move(kvs));
+            init_inverted_index(tx, ii, kvs);
             tx.commit_and_stop();
         }
 

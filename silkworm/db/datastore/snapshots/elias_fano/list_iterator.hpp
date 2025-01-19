@@ -32,14 +32,14 @@ concept IndexedListConcept = requires(const TList list) {
 
 static_assert(IndexedListConcept<std::vector<int>>);
 
-template </* IndexedListConcept */ class TList, typename TValueReference = typename TList::value_type&>
+template </* IndexedListConcept */ class TList, typename TValue = typename TList::value_type>
 class ListIterator {
   public:
-    using value_type = typename TList::value_type;
+    using value_type = TValue;
     using iterator_category [[maybe_unused]] = std::random_access_iterator_tag;
     using difference_type = std::ptrdiff_t;
     using pointer = value_type*;
-    using reference = TValueReference;
+    using reference = value_type;
 
     ListIterator() = default;
     ListIterator(const TList& list, size_t i) : list_{&list}, i_{i} {}

@@ -188,9 +188,8 @@ tl::expected<Account, DecodingError> AccountCodec::from_encoded_storage_v3(ByteV
         if (data.size() == kHashLength) {
             std::memcpy(out_hash.bytes, data.data(), kHashLength);
             return {};
-        } else {
-            return tl::unexpected{DecodingError::kUnexpectedLength};
         }
+        return tl::unexpected{DecodingError::kUnexpectedLength};
     };
 
     Account account;

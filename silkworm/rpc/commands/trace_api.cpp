@@ -438,7 +438,7 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
                 reply = make_json_content(request);
             }
         }
-    } catch (const std::exception& e) {
+    } catch (const std::exception&) {
         reply = make_json_content(request);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
@@ -474,7 +474,7 @@ Task<void> TraceRpcApi::handle_trace_transaction(const nlohmann::json& request, 
             auto result = co_await executor.trace_transaction(*(tx_with_block->block_with_hash), tx_with_block->transaction, /* gas_bailout */ false);
             reply = make_json_content(request, result);
         }
-    } catch (const std::exception& e) {
+    } catch (const std::exception&) {
         reply = make_json_content(request);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();

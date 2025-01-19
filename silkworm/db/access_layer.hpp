@@ -387,7 +387,7 @@ class DataModel {
 class DataModelFactory {
   public:
     explicit DataModelFactory(DataStoreRef data_store)
-        : func_{[=](db::ROTxn& tx) { return db::DataModel{tx, data_store.blocks_repository}; }} {}
+        : func_{[data_store = std::move(data_store)](db::ROTxn& tx) { return db::DataModel{tx, data_store.blocks_repository}; }} {}
 
     DataModel operator()(ROTxn& tx) const {
         return func_(tx);

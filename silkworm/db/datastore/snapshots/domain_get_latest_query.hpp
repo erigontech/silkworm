@@ -71,7 +71,7 @@ struct DomainGetLatestQuery {
 
     struct Result {
         Value value;
-        datastore::Step step;
+        datastore::Step step{0};
     };
 
     std::optional<Result> exec(const Key& key) {

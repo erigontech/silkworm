@@ -48,6 +48,7 @@ namespace bitmap {
     using namespace silkworm::datastore::kvdb::bitmap;
 }
 
+//! The current supported version of the Otterscan API
 static constexpr int kCurrentApiLevel{8};
 
 //! The window size used when probing history periodically
@@ -921,13 +922,13 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
             break;
         }
 
-        const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
+        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
         if (!transaction) {
             SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index;
             co_return results;
         }
-        results.receipts.push_back(std::move(receipts.at(silkworm::to_hex(transaction.value().hash(), false))));
-        results.transactions.push_back(std::move(transaction.value()));
+        results.receipts.push_back(std::move(receipts.at(silkworm::to_hex(transaction->hash(), false))));
+        results.transactions.push_back(std::move(*transaction));
         results.blocks.push_back(block_info.value().details);
     }
 
@@ -1032,7 +1033,7 @@ Task<ChunkProviderResponse> ChunkProvider::get() {
                 key_value = co_await cursor_->previous();
             }
         }
-    } catch (const std::exception& e) {
+    } catch (const std::exception&) {
         error_ = true;
     }
 
@@ -1068,7 +1069,7 @@ Task<ChunkLocatorResponse> ChunkLocator::get(BlockNum min_block) {
 
         co_return ChunkLocatorResponse{ChunkProvider{cursor_, address_, navigate_forward_, key_value}, true, false};
 
-    } catch (const std::exception& e) {
+    } catch (const std::exception&) {
         co_return ChunkLocatorResponse{ChunkProvider{cursor_, address_, navigate_forward_, key_value}, false, true};
     }
 }
@@ -1128,7 +1129,7 @@ Task<BlockProviderResponse> ForwardBlockProvider::get() {
                 co_return BlockProviderResponse{0, false, false};
             }
 
-        } catch (std::exception& e) {
+        } catch (std::exception&) {
             finished_ = true;
             co_return BlockProviderResponse{0, false, true};
         }
@@ -1155,7 +1156,7 @@ Task<BlockProviderResponse> ForwardBlockProvider::get() {
             auto bitmap = bitmap::parse(chunk_provider_res.chunk);
             iterator(bitmap);
 
-        } catch (std::exception& e) {
+        } catch (std::exception&) {
             finished_ = true;
             co_return BlockProviderResponse{0, false, true};
         }
@@ -1254,7 +1255,7 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
                 reverse_iterator(bitmap);
             }
 
-        } catch (std::exception& e) {
+        } catch (std::exception&) {
             finished_ = true;
             co_return BlockProviderResponse{0, false, true};
         }
@@ -1281,7 +1282,7 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
             auto bitmap = bitmap::parse(chunk_provider_res.chunk);
             reverse_iterator(bitmap);
 
-        } catch (std::exception& e) {
+        } catch (std::exception&) {
             finished_ = true;
             co_return BlockProviderResponse{0, false, true};
         }

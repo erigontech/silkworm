@@ -32,7 +32,7 @@ static std::string build_thread_name(const char name_tag[11], size_t id) {
 ServerContext::ServerContext(size_t context_id, ServerCompletionQueuePtr queue)
     : Context{context_id},
       server_grpc_context_{std::make_unique<agrpc::GrpcContext>(std::move(queue))},
-      client_grpc_context_{std::make_unique<agrpc::GrpcContext>(std::make_unique<grpc::CompletionQueue>())},
+      client_grpc_context_{std::make_unique<agrpc::GrpcContext>()},
       server_grpc_context_work_{boost::asio::make_work_guard(server_grpc_context_->get_executor())},
       client_grpc_context_work_{boost::asio::make_work_guard(client_grpc_context_->get_executor())} {}
 

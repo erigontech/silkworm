@@ -74,7 +74,7 @@ class DoubleEliasFanoList16 {
     std::pair<uint64_t, uint64_t> derive_fields();
 
     void get(
-        const uint64_t i,
+        uint64_t i,
         uint64_t& cum_keys,
         uint64_t& position,
         uint64_t& window_cum_keys,

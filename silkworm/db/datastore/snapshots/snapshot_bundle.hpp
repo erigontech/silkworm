@@ -89,7 +89,7 @@ struct SnapshotBundle : public SegmentAndAccessorIndexProvider {
         std::optional<uint32_t> index_salt)
         : SnapshotBundle{
               range,
-              open_bundle_data(schema, dir_path, range, std::move(index_salt)),
+              open_bundle_data(schema, dir_path, range, index_salt),
           } {}
     ~SnapshotBundle() override;
 

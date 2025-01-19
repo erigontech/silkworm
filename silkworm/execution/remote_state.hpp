@@ -63,7 +63,7 @@ class AsyncRemoteState {
     Task<std::optional<evmc::bytes32>> canonical_hash(BlockNum block_num) const;
 
   private:
-    static std::unordered_map<evmc::bytes32, Bytes> code_;
+    mutable std::unordered_map<evmc::bytes32, Bytes> code_;
 
     const db::chain::ChainStorage& storage_;
     db::kv::StateReader state_reader_;

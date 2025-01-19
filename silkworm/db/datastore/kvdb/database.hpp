@@ -17,7 +17,7 @@
 #pragma once
 
 #include <map>
-#include <utility>  // for std::move
+#include <utility>
 
 #include "domain.hpp"
 #include "inverted_index.hpp"
@@ -45,7 +45,7 @@ class DatabaseRef {
         mdbx::env env,
         const Schema::DatabaseDef& schema,
         const EntitiesMap& entities)
-        : env_{env},
+        : env_{std::move(env)},
           schema_{schema},
           entities_{entities} {}
 

@@ -178,7 +178,7 @@ struct SilkwormLibrary {
     }
 
     int exectute_single_tx(MDBX_txn* txn) const {
-        return silkworm_execute_tx(handle_, txn, 1, 1, nullptr, nullptr);
+        return silkworm_execute_tx(handle_, txn, 1, SilkwormBytes32{}, 1, 1, nullptr, nullptr);
     }
 
     int add_snapshot(SilkwormChainSnapshot* snapshot) const {

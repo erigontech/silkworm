@@ -147,9 +147,7 @@ Task<bool> RemoteBackEnd::get_block(BlockNum block_num, const HashAsSpan& hash, 
     request.set_allocated_block_hash(h256_from_bytes(hash).release());
     const auto reply = co_await rpc::unary_rpc(&Stub::AsyncBlock, *stub_, request, grpc_context_);
     ByteView block_rlp{string_view_to_byte_view(reply.block_rlp())};
-    SILK_DEBUG << "RemoteBackEnd::get_block block_num=" << block_num << " reply=" << reply.DebugString();
     if (const auto decode_result{rlp::decode(block_rlp, block)}; !decode_result) {
-        SILK_ERROR << "RemoteBackEnd::get_block block_num=" << block_num << " decode error=" << int(decode_result.error());
         co_return false;
     }
     if (read_senders) {

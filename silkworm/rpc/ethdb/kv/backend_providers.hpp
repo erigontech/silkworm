@@ -23,8 +23,6 @@ namespace silkworm::rpc::ethdb::kv {
 
 inline db::chain::BlockProvider block_provider(ethbackend::BackEnd* backend) {
     return [backend](auto block_num, HashAsSpan hash, bool read_senders, auto& block) -> Task<bool> {
-        SILK_DEBUG << "db::chain::BlockProvider::block_provider: "
-                   << " number: " << block_num;
         co_return co_await backend->get_block(block_num, hash, read_senders, block);
     };
 }

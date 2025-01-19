@@ -86,26 +86,16 @@ Task<TxNum> min_tx_num(Transaction& tx, BlockNum block_num, chain::CanonicalBody
     if (block_num == 0) {
         co_return 0;
     }
-    SILK_DEBUG << "min_tx_num 1";
     const auto max_tx_num_cursor = co_await tx.cursor(table::kMaxTxNumName);
-    SILK_DEBUG << "min_tx_num 2";
     const std::optional<TxNum> last_tx_num = co_await last_tx_num_for_block(max_tx_num_cursor, (block_num - 1), provider);
-    SILK_DEBUG << "min_tx_num 3";
     if (!last_tx_num) {
-        SILK_DEBUG << "min_tx_num 4";
         const KeyValue key_value = co_await max_tx_num_cursor->last();
-        SILK_DEBUG << "min_tx_num 5";
         if (key_value.value.empty()) {
-            SILK_DEBUG << "min_tx_num 6";
             co_return 0;
         }
         if (key_value.value.size() != sizeof(TxNum)) {
-            SILK_DEBUG << "min_tx_num 7";
-
             throw std::length_error("Bad TxNum value size " + std::to_string(key_value.value.size()) + " in db");
         }
-        SILK_DEBUG << "min_tx_num 8";
-
         co_return endian::load_big_u64(key_value.value.data());
     }
     co_return *last_tx_num + 1;

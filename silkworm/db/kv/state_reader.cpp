@@ -108,4 +108,4 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
     co_return result.value;
 }
 
-}  // namespace silkworm::db::kv
+} // namespace silkworm::db::kv

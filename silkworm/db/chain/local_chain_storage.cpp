@@ -64,8 +64,6 @@ Task<std::optional<BlockHeader>> LocalChainStorage::read_header(BlockNum block_n
 }
 
 Task<std::optional<BlockHeader>> LocalChainStorage::read_header(BlockNum block_num, const Hash& hash) const {
-    SILK_DEBUG << "LocalChainStorage::read_header: "
-               << " number: " << block_num;
     co_return data_model_.read_header(block_num, hash);
 }
 

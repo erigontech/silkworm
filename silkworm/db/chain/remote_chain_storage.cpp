@@ -89,25 +89,18 @@ Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(BlockNum block_
     const bool success = co_await providers_.block(block_num, hash, /*.read_senders=*/false, block);
     std::optional<BlockHeader> header;
     if (success) {
-        SILK_DEBUG << "RemoteChainStorage::read_header: success read "
-                   << " number: " << block_num;
         header = std::move(block.header);
     }
     co_return header;
 }
 
 Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(BlockNum block_num, const Hash& hash) const {
-    SILK_DEBUG << "RemoteChainStorage::read_header: "
-               << " number: " << block_num;
     co_return co_await read_header(block_num, hash.bytes);
 }
 
 Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(const Hash& hash) const {
     const auto block_num = co_await providers_.block_num_from_hash(hash.bytes);
     if (!block_num) {
-        SILK_DEBUG << "RemoteChainStorage::read_header: "
-                   << " failed to get block number: " << *block_num;
-
         co_return std::nullopt;
     }
     SILK_DEBUG << "RemoteChainStorage::read_header: " << silkworm::to_hex(hash) << " number: " << *block_num;

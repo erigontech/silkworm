@@ -113,7 +113,6 @@ std::shared_ptr<chain::ChainStorage> RemoteTransaction::create_storage() {
 }
 
 Task<TxnId> RemoteTransaction::first_txn_num_in_block(BlockNum block_num) {
-    SILK_INFO << "RemoteTransaction::first_txn_num_in_block block_num=" << block_num;
     const auto min_txn_num = co_await txn::min_tx_num(*this, block_num, providers_.canonical_body_for_storage);
     co_return min_txn_num + /*txn_index*/ 0;
 }

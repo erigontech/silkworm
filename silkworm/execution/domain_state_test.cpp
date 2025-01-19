@@ -165,7 +165,6 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
 
         CHECK(storage_66_01 == 0x0123_bytes32);
     }
-
 }
 
 TEST_CASE("DomainState empty overriden methods do nothing", "[execution][domain][state]") {

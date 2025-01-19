@@ -781,7 +781,7 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx
     auto state = silkworm::execution::DomainState{txn_id_, unmanaged_tx, chain_db, *handle->blocks_repository, *handle->state_repository};
     if (!handle->chain_config) {
         handle->chain_config = db::read_chain_config(unmanaged_tx);
-    }    
+    }
 
     //! Manual tests: remove when done
     // auto b_hash = to_bytes32(*from_hex("0xe8b28e4882bcbd6293ef56433c69b34e9e3e5bf512a05ddbed6bb94aa65948f4"));
@@ -812,22 +812,25 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx
     //     log::Info{"account2 not found"};
     // }
 
-    //TODO: cache block, also consider preloading
+    // TODO: cache block, also consider preloading
     silkworm::Block block{};
     auto block_read_ok = state.read_body(block_number, head_hash, block);
     if (!block_read_ok) {
-        SILK_ERROR << "Block not found" << " block_number: " << block_number << " head_hash: " << head_hash;
+        SILK_ERROR << "Block not found"
+                   << " block_number: " << block_number << " head_hash: " << head_hash;
         return SILKWORM_INVALID_BLOCK;
     }
     auto header = state.read_header(block_number, head_hash);
     if (!header) {
-        SILK_ERROR << "Header not found" << " block_number: " << block_number << " head_hash: " << head_hash;
+        SILK_ERROR << "Header not found"
+                   << " block_number: " << block_number << " head_hash: " << head_hash;
         return SILKWORM_INVALID_BLOCK;
     }
     block.header = header.value();
 
     if (txn_num >= block.transactions.size()) {
-        SILK_ERROR << "Transaction not found" << " txn_num: " << txn_num;
+        SILK_ERROR << "Transaction not found"
+                   << " txn_num: " << txn_num;
         return SILKWORM_INVALID_BLOCK;
     }
 
@@ -835,7 +838,7 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx
 
     auto protocol_rule_set_{protocol::rule_set_factory(*handle->chain_config)};
     ExecutionProcessor processor{block, *protocol_rule_set_, state, *handle->chain_config, false};
-    //TODO: add analysis cache, check block exec for more
+    // TODO: add analysis cache, check block exec for more
 
     silkworm::Receipt receipt{};
     const ValidationResult err{protocol::validate_transaction(transaction, processor.intra_block_state(), processor.available_gas())};
@@ -850,7 +853,7 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx
     }
     if (blob_gas_used) {
         *blob_gas_used = transaction.total_blob_gas();
-    }    
+    }
 
     return SILKWORM_OK;
 }

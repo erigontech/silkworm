@@ -26,10 +26,10 @@
 #include <silkworm/db/state/schema_config.hpp>
 #include <silkworm/infra/common/directories.hpp>
 
-//TODO: this is a duplicate of test_database_context.hpp
-//check linking issues and remove this file
+// TODO: this is a duplicate of test_database_context.hpp
+// check linking issues and remove this file
 
-//TODO: populate_genesis and populate_blocks should write to the domain tables
+// TODO: populate_genesis and populate_blocks should write to the domain tables
 
 namespace silkworm::execution {
 

@@ -27,13 +27,13 @@ namespace silkworm::execution {
 using namespace db::state;
 using namespace datastore;
 
-//TODO:
-// - implement: state_root_hash, canonize_block, decanonize_block, insert_call_traces
-// - add begin_txn method (replacing begin_block?)
-// - insert_receipts should write to domain receipts table db::state::kDomainNameReceipts
-// - add buffer saving previous steps for values in accounts, code and storage domains - for updates
-// - extend transaction to include txn_id, or
-// - add base_txn_id to block and get_txn_by_id method
+// TODO:
+//  - implement: state_root_hash, canonize_block, decanonize_block, insert_call_traces
+//  - add begin_txn method (replacing begin_block?)
+//  - insert_receipts should write to domain receipts table db::state::kDomainNameReceipts
+//  - add buffer saving previous steps for values in accounts, code and storage domains - for updates
+//  - extend transaction to include txn_id, or
+//  - add base_txn_id to block and get_txn_by_id method
 
 std::optional<Account> DomainState::read_account(const evmc::address& address) const noexcept {
     AccountsDomainGetLatestQuery query{
@@ -168,8 +168,6 @@ void DomainState::update_storage(
     const evmc::bytes32& location,
     const evmc::bytes32& initial,
     const evmc::bytes32& current) {
-
-
     StorageDomainGetLatestQuery query_prev{
         db::state::kDomainNameStorage,
         database_.domain(db::state::kDomainNameStorage),

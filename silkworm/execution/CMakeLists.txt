@@ -19,6 +19,7 @@ include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 find_package(asio-grpc REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(GTest REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 # cmake-format: off
 set(LIBS_PRIVATE
@@ -30,9 +31,12 @@ set(LIBS_PRIVATE
 # cmake-format: off
 set(LIBS_PUBLIC
     asio-grpc::asio-grpc
+    nlohmann_json::nlohmann_json
     silkworm_core
     silkworm_infra
     silkworm_db
+    silkworm_block_execution
+    silkworm_snapshots
 )
 # cmake-format: on
 

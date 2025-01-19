@@ -16,8 +16,6 @@
 
 #include "state_reader.hpp"
 
-#include <typeinfo>
-
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
@@ -26,7 +24,6 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
-#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::db::kv {
 
@@ -34,42 +31,16 @@ StateReader::StateReader(kv::api::Transaction& tx, TxnId txn_id) : tx_(tx), txn_
 }
 
 Task<std::optional<Account>> StateReader::read_account(const evmc::address& address) const {
-    if (!txn_number_) {
-        SILK_DEBUG << "test 1";
-        SILK_DEBUG << "StateReader::read_account: "
-                   << " first_txn_num_in_block " << *block_num_;
-        SILK_DEBUG << "test 1";
-        if (tx_.is_local()) {
-            SILK_DEBUG << "StateReader::read_account local: tx_ type: ";
-        } else {
-            SILK_DEBUG << "StateReader::read_account: tx_ type: ";
-        }
-
-        txn_number_ = co_await tx_.first_txn_num_in_block(*block_num_);
-    }
-
-    SILK_DEBUG << "StateReader::read_account: "
-               << " query";
     db::kv::api::GetAsOfQuery query{
         .table = table::kAccountDomain,
         .key = db::account_domain_key(address),
         .timestamp = static_cast<kv::api::Timestamp>(txn_number_),
     };
-    SILK_DEBUG << "StateReader::read_account: "
-               << " query2";
     const auto result = co_await tx_.get_as_of(std::move(query));
-    SILK_DEBUG << "StateReader::read_account: "
-               << " get_as_of";
-
     if (!result.success) {
-        SILK_DEBUG << "StateReader::read_account: "
-                   << " no success";
         co_return std::nullopt;
     }
 
-    SILK_DEBUG << "StateReader::read_account: "
-               << " success" << to_hex(result.value);
-    // const auto account{Account::from_encoded_storage_v3(result.value)};
     const auto account = db::state::AccountCodec::from_encoded_storage_v3(result.value);
     success_or_throw(account);
     co_return *account;

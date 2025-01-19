@@ -544,7 +544,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
                 ByteView nonexistent_key = {full_be + kSizeDiff, sizeof(intx::uint256) - kSizeDiff};
                 SILK_TRACE << "KV: previous_key=" << to_hex(previous_key) << " key=" << to_hex(key)
                            << " nonexistent_key=" << to_hex(nonexistent_key);
-                if (const bool key_found = existence_index.contains(nonexistent_key); key_found) {
+                if (existence_index.contains(nonexistent_key)) {
                     ++nonexistent_found_count;
                 }
             }

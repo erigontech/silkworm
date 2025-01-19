@@ -42,9 +42,10 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
+#include <silkworm/db/kv/grpc/client/remote_client.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/state/schema_config.hpp>
-#include <silkworm/db/kv/grpc/client/remote_client.hpp>
+#include <silkworm/execution/domain_state.hpp>
 #include <silkworm/execution/remote_state.hpp>
 #include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
@@ -54,12 +55,12 @@
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/node/execution/block/block_executor.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/rpc/daemon.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
-#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 
 #include "common.hpp"
 #include "instance.hpp"
@@ -751,125 +752,105 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 }
 
 // todo: add available gas, add txn, add block header
-SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* txn, uint64_t block_num, uint64_t tx_index, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT {
-    log::Info{"silkworm_execute_tx", {"block_num", std::to_string(block_num), "tx_index", std::to_string(tx_index)}};
+SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx, uint64_t block_num, struct SilkwormBytes32 head_hash_bytes, uint64_t txn_num, uint64_t txn_id, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT {
+    log::Info{"silkworm_execute_tx", {"block_num", std::to_string(block_num), "txn_num", std::to_string(txn_num)}};
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
 
-    if (!txn) {
+    if (!mdbx_tx) {
         return SILKWORM_INVALID_MDBX_TXN;
     }
 
-    if (block_num == 0) {
-        return SILKWORM_INVALID_BLOCK;
-    }
-
-    if (tx_index == 0) {
-        return SILKWORM_INVALID_BLOCK;
-    }
-
     if (gas_used) {
-        *gas_used = 1;
+        *gas_used = 0;
     }
 
     if (blob_gas_used) {
-        *blob_gas_used = 1;
+        *blob_gas_used = 0;
     }
 
-    // const auto chain_info = kKnownChainConfigs.find(chain_id);
-    const auto chain_info = kKnownChainConfigs.find(1);
-    if (!chain_info) {
-        return SILKWORM_UNKNOWN_CHAIN_ID;
-    }
+    silkworm::Hash head_hash{};
+    memcpy(head_hash.bytes, head_hash_bytes.bytes, sizeof(head_hash.bytes));
+    BlockNum block_number{block_num};
+    TxnId txn_id_{txn_id};
 
-    //
-    grpc::ChannelArguments channel_args;
-    // Allow to receive messages up to specified max size
-    channel_args.SetMaxReceiveMessageSize(64 * 1024 * 1024);
-    // Allow each client to open its own TCP connection to server (sharing one single connection becomes a bottleneck under high load)
-    channel_args.SetInt(GRPC_ARG_USE_LOCAL_SUBCHANNEL_POOL, 1);
-    auto grpc_erigon_channel = grpc::CreateCustomChannel("localhost:9090", grpc::InsecureChannelCredentials(), channel_args);
-    silkworm::rpc::ChannelFactory create_channel = [&]() {
-        return grpc::CreateCustomChannel("localhost:9090", grpc::InsecureChannelCredentials(), channel_args);
-    };
+    auto unmanaged_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_tx};
+    auto unmanaged_env = unmanaged_tx.unmanaged_env();
+    auto chain_db = db::DataStore::make_chaindata_database(std::move(unmanaged_env));
+    auto state = silkworm::execution::DomainState{txn_id_, unmanaged_tx, chain_db, *handle->blocks_repository, *handle->state_repository};
+    if (!handle->chain_config) {
+        handle->chain_config = db::read_chain_config(unmanaged_tx);
+    }    
 
-    silkworm::rpc::ClientContextPool context_pool{1};
-
-    auto& context = context_pool.next_context();
-    auto& ioc = *context.ioc();
-    auto& grpc_context{*context.grpc_context()};
-
-    // auto state_cache{std::make_unique<db::kv::api::CoherentStateCache>(db::kv::api::CoherentCacheConfig{})};
-    silkworm::db::kv::api::CoherentStateCache state_cache;
-
-    auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(grpc_erigon_channel, grpc_context)};
-
-    auto database = std::make_unique<db::kv::grpc::client::RemoteClient>(
-        create_channel, grpc_context, &state_cache, silkworm::rpc::ethdb::kv::make_backend_providers(backend.get()));
-
-    context_pool.start();
-    auto _ = gsl::finally([&context_pool] {
-        context_pool.stop();
-        context_pool.join();
-    });
-
-    Block block{};  // todo: get block header
-
-    auto state = concurrency::spawn_future_and_wait(ioc, [&]() -> Task<std::shared_ptr<State>> {
-        auto kv_transaction = co_await database->service()->begin_transaction();
-        const auto chain_storage = kv_transaction->create_storage();
-        auto this_executor = co_await boost::asio::this_coro::executor;
-        auto remote_state = std::make_unique<silkworm::execution::RemoteState>(this_executor, *kv_transaction, *chain_storage, 1);
-
-        // auto a = hex_to_address("0x71562b71999873db5b286df957af199ec94617f7");
-        // auto acc = remote_state->read_account(a);
-
-        // if (acc) {
-        //     log::Info{"account", {"balance", std::to_string(acc->balance.num_bits)}};
-        // } else {
-        //     log::Info{"account not found"};
-        // }
-
-        co_return remote_state;
-        // co_return execution::StateFactory{*kv_transaction}.create_state(this_executor, *chain_storage, block.header.number);
-        // co_return kv_transaction->create_state(this_executor, *chain_storage, block.header.number);
-    });
-
+    //! Manual tests: remove when done
     // auto b_hash = to_bytes32(*from_hex("0xe8b28e4882bcbd6293ef56433c69b34e9e3e5bf512a05ddbed6bb94aa65948f4"));
     // auto b_number = BlockNum{2910651};
+    // auto b_hash = to_bytes32(*from_hex("0x6f81fc8bb897eb2075ffa53a2b28c3216022fd1841d361af7908198f8ff2faa3"));
+    // auto b_number = BlockNum{1};
+    // auto header = state.read_header(b_number, b_hash);
+    // if (header) {
+    //     log::Info{"JG header", {"number", std::to_string(header->number), "gas_used", std::to_string(header->gas_used)}};
+    // } else {
+    //     log::Warning{"header not found"};
+    //     return SILKWORM_INVALID_BLOCK;
+    // }
+    // silkworm::Block block{};
+    // auto block_read_ok = state.read_body(b_number, b_hash, block);
+    // if (block_read_ok) {
+    //     log::Info{"JG body", {"number", std::to_string(block.header.number), "transactions", std::to_string(block.transactions.size())}};
+    // } else {
+    //     log::Warning{"body not found"};
+    //     return SILKWORM_INVALID_BLOCK;
+    // }
+    // block.header = header.value();
+    // auto a = hex_to_address("0x71562b71999873db5b286df957af199ec94617f7");
+    // auto acc = state.read_account(a);
+    // if (acc) {
+    //     log::Info{"account2", {"balance", std::to_string(acc->balance.num_bits)}};
+    // } else {
+    //     log::Info{"account2 not found"};
+    // }
 
-    auto b_hash = to_bytes32(*from_hex("0x6f81fc8bb897eb2075ffa53a2b28c3216022fd1841d361af7908198f8ff2faa3"));
-    auto b_number = BlockNum{1};
+    //TODO: cache block, also consider preloading
+    silkworm::Block block{};
+    auto block_read_ok = state.read_body(block_number, head_hash, block);
+    if (!block_read_ok) {
+        SILK_ERROR << "Block not found" << " block_number: " << block_number << " head_hash: " << head_hash;
+        return SILKWORM_INVALID_BLOCK;
+    }
+    auto header = state.read_header(block_number, head_hash);
+    if (!header) {
+        SILK_ERROR << "Header not found" << " block_number: " << block_number << " head_hash: " << head_hash;
+        return SILKWORM_INVALID_BLOCK;
+    }
+    block.header = header.value();
 
-    auto header = state->read_header(b_number, b_hash);
-    if (header) {
-        log::Info{"JG header", {"number", std::to_string(header->number), "gas_used", std::to_string(header->gas_used)}};
-    } else {
-        log::Warning{"header not found"};
+    if (txn_num >= block.transactions.size()) {
+        SILK_ERROR << "Transaction not found" << " txn_num: " << txn_num;
         return SILKWORM_INVALID_BLOCK;
     }
 
-    auto a = hex_to_address("0x71562b71999873db5b286df957af199ec94617f7");
-    auto acc = state->read_account(a);
-    if (acc) {
-        log::Info{"account2", {"balance", std::to_string(acc->balance.num_bits)}};
-    } else {
-        log::Info{"account2 not found"};
+    auto& transaction = block.transactions[txn_num];
+
+    auto protocol_rule_set_{protocol::rule_set_factory(*handle->chain_config)};
+    ExecutionProcessor processor{block, *protocol_rule_set_, state, *handle->chain_config, false};
+    //TODO: add analysis cache, check block exec for more
+
+    silkworm::Receipt receipt{};
+    const ValidationResult err{protocol::validate_transaction(transaction, processor.intra_block_state(), processor.available_gas())};
+    if (err != ValidationResult::kOk) {
+        return SILKWORM_INVALID_BLOCK;
     }
+    processor.execute_transaction(transaction, receipt);
+    state.insert_receipts(block_number, std::vector<silkworm::Receipt>{receipt});
 
-    const auto chain_config = *chain_info;
-    auto protocol_rule_set_{protocol::rule_set_factory(*chain_config)};
-    ExecutionProcessor processor{block, *protocol_rule_set_, *state, *chain_config, false};
-    // // add analysis cache, check block exec for more
-
-    // silkworm::Transaction transaction{};  // todo: get txn
-    // silkworm::Receipt receipt{};
-    // const ValidationResult err{protocol::validate_transaction(transaction, processor.intra_block_state(), processor.available_gas())};
-    // if (err != ValidationResult::kOk) {
-    //     return SILKWORM_INVALID_BLOCK;
-    // }
-    // processor.execute_transaction(transaction, receipt);
+    if (gas_used) {
+        *gas_used = receipt.cumulative_gas_used;
+    }
+    if (blob_gas_used) {
+        *blob_gas_used = transaction.total_blob_gas();
+    }    
 
     return SILKWORM_OK;
 }

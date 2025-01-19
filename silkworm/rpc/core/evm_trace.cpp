@@ -938,6 +938,10 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
         return;
     }
 
+    if (index_stack_.empty()) {
+        return;
+    }
+
     auto index = index_stack_.top();
     auto start_gas = start_gas_.top();
 

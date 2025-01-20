@@ -83,12 +83,10 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
         tx->set_state_cache_enabled(is_latest_block);
 
         const auto block_num = co_await block_reader.get_block_num(block_id);
-        execution::StateFactory state_factory{*tx};
-        const auto txn_id = co_await state_factory.user_txn_id_at(block_num + 1);
+        const auto txn_id = co_await tx->user_txn_id_at(block_num + 1);
 
         StateReader state_reader{*tx, txn_id};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
-
         if (account) {
             auto code{co_await state_reader.read_code(address, account->code_hash)};
             reply = make_json_content(request, code.has_value());
@@ -441,8 +439,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         const auto chain_storage = tx->create_storage();
         rpc::BlockReader block_reader{*chain_storage, *tx};
         auto block_num = co_await block_reader.get_latest_block_num();
-        execution::StateFactory state_factory{*tx};
-        const auto txn_number = co_await state_factory.user_txn_id_at(block_num);
+        const auto txn_number = co_await tx->user_txn_id_at(block_num);
 
         StateReader state_reader{*tx, txn_number};
         std::optional<silkworm::Account> account_opt{co_await state_reader.read_account(contract_address)};

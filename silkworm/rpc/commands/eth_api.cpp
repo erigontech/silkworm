@@ -1176,7 +1176,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
             }
         }
     } catch (const std::exception& e) {
-        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        SILK_DEBUG << "exception: " << e.what() << " processing request: " << request.dump();
         make_glaze_json_error(request, kInternalError, e.what(), reply);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();

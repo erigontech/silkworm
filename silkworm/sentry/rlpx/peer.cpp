@@ -214,7 +214,7 @@ Task<void> Peer::handle() {
             disconnect_reason_.set({reason});
             co_return;
         } else if (ex.code() == boost::system::errc::operation_canceled) {
-            SILK_DEBUG_M("sentry") << "Peer::handle cancelled";
+            SILK_WARN_M("sentry") << "Peer::handle cancelled";
             co_return;
         }
         SILK_ERROR_M("sentry") << "Peer::handle system_error: " << ex.what();
@@ -291,7 +291,7 @@ Task<void> Peer::drop(DisconnectReason reason) {
             SILK_DEBUG_M("sentry") << "Peer::drop network error: " << ex.what();
             co_return;
         } else if (ex.code() == boost::system::errc::operation_canceled) {
-            SILK_DEBUG_M("sentry") << "Peer::drop cancelled";
+            SILK_WARN_M("sentry") << "Peer::drop cancelled";
             co_return;
         }
         SILK_ERROR_M("sentry") << "Peer::drop system_error: " << ex.what();
@@ -352,7 +352,7 @@ Task<void> Peer::send_message(std::shared_ptr<Peer> peer, Message message) {
         SILK_DEBUG_M("sentry") << "Peer::send_message: " << ex.what();
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            SILK_DEBUG_M("sentry") << "Peer::send_message cancelled";
+            SILK_WARN_M("sentry") << "Peer::send_message cancelled";
             co_return;
         }
         SILK_ERROR_M("sentry") << "Peer::send_message system_error: " << ex.what();

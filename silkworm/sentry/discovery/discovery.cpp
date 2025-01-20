@@ -242,7 +242,7 @@ Task<void> Discovery::run() {
         return p_impl_->run();
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
-            SILK_DEBUG_M("sentry") << "Discovery::run unexpected end [operation_canceled]";
+            SILK_WARN_M("sentry") << "Discovery::run unexpected end [operation_canceled]";
         } else {
             SILK_CRIT_M("sentry") << "Discovery::run unexpected end [" + std::string{se.what()} + "]";
         }

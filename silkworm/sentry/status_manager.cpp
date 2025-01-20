@@ -34,7 +34,7 @@ Task<void> StatusManager::run() {
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
-            SILK_DEBUG_M("sentry") << "StatusManager::run unexpected end [operation_canceled]";
+            SILK_WARN_M("sentry") << "StatusManager::run unexpected end [operation_canceled]";
         } else {
             SILK_CRIT_M("sentry") << "StatusManager::run unexpected end [" + std::string{se.what()} + "]";
         }

@@ -67,14 +67,19 @@ Bytes OutboundGetBlockBodies::message_data() const {
 }
 
 std::vector<PeerId> OutboundGetBlockBodies::send_packet(SentryClient& sentry) {
-    // SILK_TRACE << "Sending message OutboundGetBlockBodies with send_message_by_min_block, content:" << packet_;
+    try {
+        SILK_TRACE << "Sending message OutboundGetBlockBodies with send_message_by_min_block, content:" << packet_;
 
-    auto peers = sentry.send_message_by_min_block(*this, min_block_, 0);
+        auto peers = sentry.send_message_by_min_block(*this, min_block_, 0);
 
-    // SILK_TRACE << "Received sentry result of OutboundGetBlockBodies reqId=" << packet_.request_id << ": "
-    //            << std::to_string(peers.size()) + " peer(s)";
+        SILK_TRACE << "Received sentry result of OutboundGetBlockBodies reqId=" << packet_.request_id << ": "
+                   << std::to_string(peers.size()) + " peer(s)";
 
-    return peers;
+        return peers;
+    } catch (const std::exception& e) {
+        SILK_WARN << "OutboundGetBlockBodies failed send_message_by_min_block error: " << e.what();
+        throw;
+    }
 }
 
 std::string OutboundGetBlockBodies::content() const {

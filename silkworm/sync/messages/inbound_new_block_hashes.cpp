@@ -64,8 +64,8 @@ void InboundNewBlockHashes::execute(db::DataStoreRef, HeaderChain& hc, BodySeque
 
             SILK_TRACE << "Received sentry result of " << identify(*this) << ": "
                        << std::to_string(peers.size()) + " peer(s)";
-        } catch (const boost::system::system_error& se) {
-            SILK_TRACE << "Received error from sentry send_message_by_id for " << identify(*this) << " error: " << se.what();
+        } catch (const std::exception& e) {
+            SILK_WARN << "Received error from sentry send_message_by_id for " << identify(*this) << " error: " << e.what();
         }
     }
 

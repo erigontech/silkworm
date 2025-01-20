@@ -50,15 +50,20 @@ Bytes OutboundNewBlock::message_data() const {
 }
 
 std::vector<PeerId> OutboundNewBlock::send_packet(SentryClient& sentry, NewBlockPacket packet) {
-    SILK_TRACE << "Sending message OutboundNewBlock (announcements) with send_message_to_random_peers, content:" << packet;
+    try {
+        SILK_TRACE << "Sending message OutboundNewBlock (announcements) with send_message_to_random_peers, content:" << packet;
 
-    packet_ = std::move(packet);
-    auto peers = sentry.send_message_to_random_peers(*this, kMaxPeers);
-    ++sent_packets_;
+        packet_ = std::move(packet);
+        auto peers = sentry.send_message_to_random_peers(*this, kMaxPeers);
+        ++sent_packets_;
 
-    SILK_TRACE << "Received sentry result of OutboundNewBlock: " << std::to_string(peers.size()) + " peer(s)";
+        SILK_TRACE << "Received sentry result of OutboundNewBlock: " << std::to_string(peers.size()) + " peer(s)";
 
-    return peers;
+        return peers;
+    } catch (const std::exception& e) {
+        SILK_WARN << "OutboundNewBlock failed send_message_to_random_peers error: " << e.what();
+        throw;
+    }
 }
 
 std::string OutboundNewBlock::content() const {

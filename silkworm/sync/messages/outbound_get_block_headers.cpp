@@ -75,14 +75,19 @@ std::vector<PeerId> OutboundGetBlockHeaders::send_packet(SentryClient& sentry) {
     BlockNum min_block = std::get<BlockNum>(packet_.request.origin);  // choose target peer
     if (!packet_.request.reverse) min_block += packet_.request.amount * packet_.request.skip;
 
-    // SILK_TRACE << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:" << packet_;
+    try {
+        SILK_TRACE << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:" << packet_;
 
-    auto peers = sentry.send_message_by_min_block(*this, min_block, 0);
+        auto peers = sentry.send_message_by_min_block(*this, min_block, 0);
 
-    // SILK_TRACE << "Received sentry result of OutboundGetBlockHeaders reqId=" << packet_.request_id << ": "
-    //            << std::to_string(peers.size()) + " peer(s)";
+        SILK_TRACE << "Received sentry result of OutboundGetBlockHeaders reqId=" << packet_.request_id << ": "
+                   << std::to_string(peers.size()) + " peer(s)";
 
-    return peers;
+        return peers;
+    } catch (const std::exception& e) {
+        SILK_WARN << "OutboundGetBlockHeaders failed send_message_by_min_block error: " << e.what();
+        throw;
+    }
 }
 
 std::string OutboundGetBlockHeaders::content() const {

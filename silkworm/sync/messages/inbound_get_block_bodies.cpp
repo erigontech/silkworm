@@ -60,8 +60,8 @@ void InboundGetBlockBodies::execute(db::DataStoreRef db, HeaderChain&, BodySeque
         [[maybe_unused]] auto peers = sentry.send_message_by_id(reply_message, peer_id_);
 
         SILK_TRACE << "Received sentry result of " << identify(*this) << ": " << std::to_string(peers.size()) + " peer(s)";
-    } catch (const boost::system::system_error& se) {
-        SILK_TRACE << "InboundGetBlockBodies failed send_message_by_id error: " << se.what();
+    } catch (const std::exception& e) {
+        SILK_WARN << "InboundGetBlockBodies failed send_message_by_id error: " << e.what();
     }
 }
 

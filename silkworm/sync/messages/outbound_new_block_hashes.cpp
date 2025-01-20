@@ -52,8 +52,8 @@ void OutboundNewBlockHashes::execute(db::DataStoreRef, HeaderChain& hc, BodySequ
         SILK_TRACE << "Received sentry result of OutboundNewBlockHashes: " << std::to_string(peers.size()) + " peer(s)";
 
         announces_to_do.clear();  // clear announces from the queue
-    } catch (const boost::system::system_error& se) {
-        SILK_TRACE << "OutboundNewBlockHashes failed send_message_to_all error: " << se.what();
+    } catch (const std::exception& e) {
+        SILK_WARN << "OutboundNewBlockHashes failed send_message_to_all error: " << e.what();
     }
 }
 

@@ -48,16 +48,16 @@ void InboundBlockHeaders::execute(db::DataStoreRef, HeaderChain& hc, BodySequenc
         SILK_TRACE << "Penalizing " << PeerPenalization{penalty, peer_id_};
         try {
             sentry.penalize_peer(peer_id_, penalty);
-        } catch (const boost::system::system_error& se) {
-            SILK_TRACE << "InboundBlockHeaders failed penalize_peer error: " << se.what();
+        } catch (const std::exception& e) {
+            SILK_WARN << "InboundBlockHeaders failed penalize_peer error: " << e.what();
         }
     }
 
     try {
         SILK_TRACE << "Replying to " << identify(*this) << " with peer_min_block";
         sentry.peer_min_block(peer_id_, max_block_num);
-    } catch (const boost::system::system_error& se) {
-        SILK_TRACE << "InboundBlockHeaders failed peer_min_block error: " << se.what();
+    } catch (const std::exception& e) {
+        SILK_WARN << "InboundBlockHeaders failed peer_min_block error: " << e.what();
     }
 }
 

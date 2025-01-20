@@ -209,7 +209,7 @@ Task<void> SentryImpl::run_tasks() {
             run_peer_discovery_feedback());
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
-            SILK_DEBUG_M("sentry") << "Sentry run_tasks unexpected end [operation_canceled]";
+            SILK_WARN_M("sentry") << "Sentry run_tasks unexpected end [operation_canceled]";
         } else {
             SILK_CRIT_M("sentry") << "Sentry run_tasks unexpected end [" + std::string{se.what()} + "]";
         }
@@ -255,7 +255,7 @@ Task<void> SentryImpl::run_peer_manager() {
         return peer_manager_.run(rlpx_server_, discovery_, make_protocol(), client_factory());
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
-            SILK_DEBUG_M("sentry") << "run_peer_manager unexpected end [operation_canceled]";
+            SILK_WARN_M("sentry") << "run_peer_manager unexpected end [operation_canceled]";
         } else {
             SILK_CRIT_M("sentry") << "run_peer_manager unexpected end [" + std::string{se.what()} + "]";
         }
@@ -268,7 +268,7 @@ Task<void> SentryImpl::run_message_sender() {
         return message_sender_.run(peer_manager_);
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
-            SILK_DEBUG_M("sentry") << "run_message_sender unexpected end [operation_canceled]";
+            SILK_WARN_M("sentry") << "run_message_sender unexpected end [operation_canceled]";
         } else {
             SILK_CRIT_M("sentry") << "run_message_sender unexpected end [" + std::string{se.what()} + "]";
         }
@@ -281,7 +281,7 @@ Task<void> SentryImpl::run_message_receiver() {
         return MessageReceiver::run(message_receiver_, peer_manager_);
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
-            SILK_DEBUG_M("sentry") << "run_message_receiver unexpected end [operation_canceled]";
+            SILK_WARN_M("sentry") << "run_message_receiver unexpected end [operation_canceled]";
         } else {
             SILK_CRIT_M("sentry") << "run_message_receiver unexpected end [" + std::string{se.what()} + "]";
         }
@@ -294,7 +294,7 @@ Task<void> SentryImpl::run_peer_manager_api() {
         return PeerManagerApi::run(peer_manager_api_);
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
-            SILK_DEBUG_M("sentry") << "run_peer_manager_api unexpected end [operation_canceled]";
+            SILK_WARN_M("sentry") << "run_peer_manager_api unexpected end [operation_canceled]";
         } else {
             SILK_CRIT_M("sentry") << "run_peer_manager_api unexpected end [" + std::string{se.what()} + "]";
         }
@@ -307,7 +307,7 @@ Task<void> SentryImpl::run_peer_discovery_feedback() {
         return PeerDiscoveryFeedback::run(peer_discovery_feedback_, peer_manager_, discovery_);
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
-            SILK_DEBUG_M("sentry") << "run_peer_discovery_feedback unexpected end [operation_canceled]";
+            SILK_WARN_M("sentry") << "run_peer_discovery_feedback unexpected end [operation_canceled]";
         } else {
             SILK_CRIT_M("sentry") << "run_peer_discovery_feedback unexpected end [" + std::string{se.what()} + "]";
         }

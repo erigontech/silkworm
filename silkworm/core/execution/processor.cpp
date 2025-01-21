@@ -134,6 +134,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     assert(protocol::validate_transaction(txn, state_, available_gas()) == ValidationResult::kOk);
 
     StateView evm1_state_view{state_};
+
     BlockHashes evm1_block_hashes{evm_};
 
     evmone::state::Transaction evm1_txn{

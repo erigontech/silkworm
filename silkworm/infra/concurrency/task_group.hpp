@@ -54,7 +54,8 @@ namespace silkworm::concurrency {
 class TaskGroup {
   public:
     TaskGroup(const boost::asio::any_io_executor& executor, size_t max_tasks)
-        : completions_(executor, max_tasks),
+        : max_tasks_(max_tasks),
+          completions_(executor, max_tasks),
           exceptions_(executor, 1) {}
 
     TaskGroup(const TaskGroup&) = delete;
@@ -63,6 +64,11 @@ class TaskGroup {
     class SpawnAfterCloseError : public std::runtime_error {
       public:
         SpawnAfterCloseError() : std::runtime_error("TaskGroup can't spawn after it was closed") {}
+    };
+    class MaxTasksReachedError : public std::runtime_error {
+      public:
+        explicit MaxTasksReachedError(size_t max_tasks)
+            : std::runtime_error("TaskGroup can't spawn more than " + std::to_string(max_tasks) + " tasks") {}
     };
 
     //! Similar to co_spawn, but also adds the task to this group until it completes.
@@ -80,6 +86,7 @@ class TaskGroup {
     bool is_closed_{false};
     size_t last_task_id_{0};
     std::map<size_t, boost::asio::cancellation_signal> tasks_;
+    size_t max_tasks_{0};
     concurrency::Channel<std::pair<size_t, std::exception_ptr>> completions_;
     concurrency::Channel<std::exception_ptr> exceptions_;
 };

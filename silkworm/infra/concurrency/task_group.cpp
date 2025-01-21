@@ -25,6 +25,9 @@ void TaskGroup::spawn(const any_io_executor& executor, Task<void> task) {
     if (is_closed_) {
         throw SpawnAfterCloseError();
     }
+    if (tasks_.size() == max_tasks_) {
+        throw MaxTasksReachedError(max_tasks_);
+    }
 
     auto task_id = ++last_task_id_;
 
@@ -102,7 +105,7 @@ void TaskGroup::on_complete(size_t task_id, const std::exception_ptr& ex_ptr) {
         // if a task threw during cancellation - rethrow from wait()
         auto result_ex_ptr = (ex_ptr && !is_cancelled) ? ex_ptr : std::exception_ptr{};
 
-        bool ok = completions_.try_send({task_id, result_ex_ptr});
+        const bool ok = completions_.try_send({task_id, result_ex_ptr});
         if (!ok) {
             throw std::runtime_error("TaskGroup::on_complete: completions queue is full, unexpected max_tasks limit breach");
         }

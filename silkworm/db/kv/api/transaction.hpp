@@ -69,6 +69,11 @@ class Transaction {
     // Temporarily here waiting for a better place
     virtual Task<TxnId> first_txn_num_in_block(BlockNum block_num) = 0;
 
+    Task<TxnId> user_txn_id_at(BlockNum block_num, uint32_t txn_index = 0) {
+        const auto base_txn_in_block = co_await first_txn_num_in_block(block_num);
+        co_return base_txn_in_block + 1 + txn_index;  // + 1 for system txn in the beginning of block
+    }
+
     /** Temporal Point Queries **/
 
     // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=true (ts ignored)

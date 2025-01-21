@@ -442,7 +442,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await state_factory.user_txn_id_at(block_num);
+    const auto txn_id = co_await tx_.user_txn_id_at(block_num);
 
     co_await async_task(workers_.executor(), [&]() -> void {
         auto state = state_factory.create_state(current_executor, storage, txn_id);
@@ -512,7 +512,7 @@ Task<void> DebugExecutor::execute(
     // We must do the execution at the state after the txn identified by the given index within the given block
     // at the state after the block identified by the given block_num
     execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await state_factory.user_txn_id_at(block_num, static_cast<uint32_t>(index));
+    const auto txn_id = co_await tx_.user_txn_id_at(block_num, static_cast<uint32_t>(index));
 
     co_await async_task(workers_.executor(), [&]() {
         const auto state = state_factory.create_state(current_executor, storage, txn_id);
@@ -565,7 +565,7 @@ Task<void> DebugExecutor::execute(
     // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
     // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
     execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await state_factory.user_txn_id_at(block.header.number, static_cast<uint32_t>(transaction_index));
+    const auto txn_id = co_await tx_.user_txn_id_at(block.header.number, static_cast<uint32_t>(transaction_index));
 
     co_await async_task(workers_.executor(), [&]() {
         auto state = state_factory.create_state(current_executor, storage, txn_id);

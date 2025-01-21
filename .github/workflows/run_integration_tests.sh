@@ -26,6 +26,9 @@ debug_traceBlockByNumber/test_10,\
 debug_traceBlockByNumber/test_11,\
 debug_traceBlockByNumber/test_12,\
 debug_traceBlockByNumber/test_29,\
+debug_traceCall/test_16,\
+debug_traceCall/test_20,\
+debug_traceCall/test_21,\
 debug_traceTransaction/test_25.json,\
 debug_traceTransaction/test_36.json,\
 debug_traceTransaction/test_43.json,\

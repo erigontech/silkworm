@@ -265,10 +265,6 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
 
     SILKWORM_ASSERT(protocol::validate_call_precheck(txn, evm_) == ValidationResult::kOk);
 
-    if (!evm().bailout) {
-        SILKWORM_ASSERT(protocol::validate_call_funds(txn, evm_, state_.get_balance(*txn.sender())) == ValidationResult::kOk);
-    }
-
     const BlockHeader& header{evm_.block().header};
     const intx::uint256 base_fee_per_gas{header.base_fee_per_gas.value_or(0)};
 
@@ -287,6 +283,7 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
 
     if (!evm().bailout) {
         const intx::uint256 required_funds = protocol::compute_call_cost(txn, effective_gas_price, evm_);
+        SILKWORM_ASSERT(protocol::validate_call_funds(txn, evm_, state_.get_balance(*txn.sender())) == ValidationResult::kOk);
         state_.subtract_from_balance(*txn.sender(), required_funds);
     }
     const intx::uint128 g0{protocol::intrinsic_gas(txn, evm_.revision())};

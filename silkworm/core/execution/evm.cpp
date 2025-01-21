@@ -106,7 +106,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
 
     auto value{intx::be::load<intx::uint256>(message.value)};
     const auto owned_funds = state_.get_balance(message.sender);
-    if (!bailout && owned_funds < value) {
+    if (owned_funds < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
 
         for (auto tracer : tracers_) {

@@ -51,14 +51,14 @@ static Task<void> async_throw() {
     throw TestException();
 }
 
-static Task<void> wait_until_cancelled(bool* is_cancelled) {
+static Task<void> wait_until_cancelled(bool& is_cancelled) {
     try {
         auto executor = co_await this_coro::executor;
         steady_timer timer(executor);
         timer.expires_after(1h);
         co_await timer.async_wait(use_awaitable);
     } catch (const boost::system::system_error& ex) {
-        *is_cancelled = true;
+        is_cancelled = true;
     }
 }
 
@@ -89,7 +89,7 @@ TEST_CASE("TaskGroup.1.wait_until_cancelled") {
     auto executor = runner.executor();
     TaskGroup group{executor, 1};
     bool is_cancelled = false;
-    group.spawn(executor, wait_until_cancelled(&is_cancelled));
+    group.spawn(executor, wait_until_cancelled(is_cancelled));
     CHECK_THROWS_AS(runner.run(group.wait() && async_throw()), TestException);
     CHECK(is_cancelled);
 }
@@ -99,9 +99,9 @@ TEST_CASE("TaskGroup.some.wait_until_cancelled") {
     auto executor = runner.executor();
     TaskGroup group{executor, 3};
     std::array<bool, 3> is_cancelled{};
-    group.spawn(executor, wait_until_cancelled(&is_cancelled[0]));
-    group.spawn(executor, wait_until_cancelled(&is_cancelled[1]));
-    group.spawn(executor, wait_until_cancelled(&is_cancelled[2]));
+    group.spawn(executor, wait_until_cancelled(is_cancelled[0]));
+    group.spawn(executor, wait_until_cancelled(is_cancelled[1]));
+    group.spawn(executor, wait_until_cancelled(is_cancelled[2]));
     CHECK_THROWS_AS(runner.run(group.wait() && async_throw()), TestException);
     CHECK(is_cancelled[0]);
     CHECK(is_cancelled[1]);
@@ -114,11 +114,11 @@ TEST_CASE("TaskGroup.some.mix") {
     TaskGroup group{executor, 6};
     std::array<bool, 3> is_cancelled{};
     group.spawn(executor, async_ok());
-    group.spawn(executor, wait_until_cancelled(&is_cancelled[0]));
+    group.spawn(executor, wait_until_cancelled(is_cancelled[0]));
     group.spawn(executor, async_ok());
-    group.spawn(executor, wait_until_cancelled(&is_cancelled[1]));
+    group.spawn(executor, wait_until_cancelled(is_cancelled[1]));
     group.spawn(executor, async_ok());
-    group.spawn(executor, wait_until_cancelled(&is_cancelled[2]));
+    group.spawn(executor, wait_until_cancelled(is_cancelled[2]));
     CHECK_THROWS_AS(runner.run(group.wait() && async_throw()), TestException);
     CHECK(is_cancelled[0]);
     CHECK(is_cancelled[1]);
@@ -173,7 +173,7 @@ TEST_CASE("TaskGroup.task_exception_during_cancellation_is_rethrown") {
 
     auto task = [&]() -> Task<void> {
         bool is_cancelled = false;
-        co_await wait_until_cancelled(&is_cancelled);
+        co_await wait_until_cancelled(is_cancelled);
         if (is_cancelled) {
             throw std::runtime_error("exception_during_cancellation");
         }
@@ -192,6 +192,33 @@ TEST_CASE("TaskGroup.task_exception_during_cancellation_is_rethrown") {
         }
     };
     CHECK(runner.run(test()));
+}
+
+TEST_CASE("TaskGroup.avoid_max_tasks_limit_breach") {
+    log::init(log::Settings{
+        .log_std_out = true,
+        .log_nocolor = true,
+        .log_threads = true,
+        .log_verbosity = log::Level::kInfo,
+    });
+    test_util::TaskRunner runner;
+    auto executor = runner.executor();
+    const size_t max_tasks = 10;
+    TaskGroup group{executor, max_tasks};
+
+    auto task = [&]() -> Task<void> {
+        bool is_cancelled = false;
+        co_await wait_until_cancelled(is_cancelled);
+        if (is_cancelled) {
+            throw std::runtime_error("exception_during_cancellation");
+        }
+    };
+    // Spawn max_tasks tasks
+    for (size_t i = 0; i < max_tasks; ++i) {
+        REQUIRE_NOTHROW(group.spawn(executor, task()));
+    }
+    // Trying to spawn one more *must* trigger MaxTasksReachedError exception
+    CHECK_THROWS_AS(group.spawn(executor, task()), TaskGroup::MaxTasksReachedError);
 }
 
 }  // namespace silkworm::concurrency

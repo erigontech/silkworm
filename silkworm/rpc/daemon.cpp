@@ -29,6 +29,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/kv/api/client.hpp>
 #include <silkworm/db/kv/api/direct_client.hpp>
 #include <silkworm/db/kv/grpc/client/remote_client.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -36,11 +37,10 @@
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/common/compatibility.hpp>
+#include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/engine/remote_execution_engine.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
-#include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
-#include <silkworm/rpc/ethdb/kv/remote_database.hpp>
 #include <silkworm/rpc/http/jwt.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
 #include <silkworm/rpc/json_rpc/validator.hpp>
@@ -230,11 +230,12 @@ Daemon::Daemon(
     // Create shared and private state in execution contexts: order *matters* (e.g. for state cache)
     add_shared_services();
     add_private_services();
+    EVMExecutor::register_service(worker_pool_);
 
     // Create the unique KV state-changes stream feeding the state cache
     auto& context = context_pool_.next_context();
-    kv_client_ = make_kv_client(context);
-    state_changes_stream_ = std::make_unique<db::kv::StateChangesStream>(context, *kv_client_);
+    auto* kv_client = must_use_private_service<db::kv::api::Client>(*context.ioc());
+    state_changes_stream_ = std::make_unique<db::kv::StateChangesStream>(context, *kv_client);
 
     // Set compatibility with Erigon RpcDaemon at JSON RPC level
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
@@ -252,22 +253,10 @@ void Daemon::add_private_services() {
         auto& ioc = *context.ioc();
         auto& grpc_context{*context.grpc_context()};
 
-        auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(ioc)};
-
-        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(ioc, grpc_channel, grpc_context)};
-        auto tx_pool{std::make_unique<txpool::TransactionPool>(ioc, grpc_channel, grpc_context)};
-        auto miner{std::make_unique<txpool::Miner>(ioc, grpc_channel, grpc_context)};
-        std::unique_ptr<ethdb::Database> database;
-        if (data_store_) {
-            database = std::make_unique<ethdb::file::LocalDatabase>(*data_store_, state_cache);
-        } else {
-            database = std::make_unique<ethdb::kv::RemoteDatabase>(backend.get(), state_cache, grpc_context, grpc_channel);
-        }
-
-        add_private_service<ethdb::Database>(ioc, std::move(database));
-        add_private_service<rpc::ethbackend::BackEnd>(ioc, std::move(backend));
-        add_private_service(ioc, std::move(tx_pool));
-        add_private_service(ioc, std::move(miner));
+        add_private_service<ethbackend::BackEnd>(ioc, std::make_unique<ethbackend::RemoteBackEnd>(grpc_channel, grpc_context));
+        add_private_service<db::kv::api::Client>(ioc, make_kv_client(context));
+        add_private_service(ioc, std::make_unique<txpool::TransactionPool>(grpc_channel, grpc_context));
+        add_private_service(ioc, std::make_unique<txpool::Miner>(grpc_channel, grpc_context));
     }
 }
 

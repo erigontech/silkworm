@@ -23,11 +23,14 @@
 
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/kv/api/client.hpp>
+#include <silkworm/db/kv/api/direct_client.hpp>
+#include <silkworm/db/kv/api/direct_service.hpp>
+#include <silkworm/db/kv/api/service_router.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/rpc/common/constants.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
-#include <silkworm/rpc/ethdb/file/local_database.hpp>
 #include <silkworm/rpc/json_rpc/request_handler.hpp>
 #include <silkworm/rpc/json_rpc/validator.hpp>
 #include <silkworm/rpc/test_util/service_context_test_base.hpp>
@@ -78,9 +81,11 @@ class LocalContextTestBase : public ServiceContextTestBase {
     explicit LocalContextTestBase(
         db::DataStoreRef data_store,
         db::kv::api::StateCache* state_cache) {
-        add_private_service<ethdb::Database>(
-            ioc_,
-            std::make_unique<ethdb::file::LocalDatabase>(std::move(data_store), state_cache));
+        db::kv::api::StateChangeRunner runner{ioc_.get_executor()};
+        db::kv::api::ServiceRouter router{runner.state_changes_calls_channel()};
+        add_private_service<db::kv::api::Client>(ioc_,
+                                                 std::make_unique<db::kv::api::DirectClient>(
+                                                     std::make_shared<db::kv::api::DirectService>(router, std::move(data_store), state_cache)));
     }
 };
 

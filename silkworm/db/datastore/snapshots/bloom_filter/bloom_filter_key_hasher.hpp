@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,23 +16,17 @@
 
 #pragma once
 
-#include <memory>
+#include <silkworm/core/common/bytes.hpp>
 
-#include <silkworm/infra/concurrency/task.hpp>
+namespace silkworm::snapshots::bloom_filter {
 
-#include <silkworm/db/kv/api/transaction.hpp>
-
-namespace silkworm::rpc::ethdb {
-
-class Database {
+class BloomFilterKeyHasher {
   public:
-    Database() = default;
-    virtual ~Database() = default;
+    explicit BloomFilterKeyHasher(uint32_t salt) : salt_{salt} {}
+    uint64_t hash(ByteView key) const;
 
-    Database(const Database&) = delete;
-    Database& operator=(const Database&) = delete;
-
-    virtual Task<std::unique_ptr<db::kv::api::Transaction>> begin() = 0;
+  private:
+    uint32_t salt_;
 };
 
-}  // namespace silkworm::rpc::ethdb
+}  // namespace silkworm::snapshots::bloom_filter

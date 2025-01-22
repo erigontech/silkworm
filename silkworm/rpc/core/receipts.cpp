@@ -168,12 +168,11 @@ Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx,
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     execution::StateFactory state_factory{tx};
-    const auto txn_id = co_await state_factory.user_txn_id_at(block_num);
+    const auto txn_id = co_await tx.user_txn_id_at(block_num);
 
     const auto receipts = co_await async_task(workers.executor(), [&]() -> Receipts {
         auto state = state_factory.create_state(current_executor, chain_storage, txn_id);
 
-        auto curr_state = state_factory.create_state(current_executor, chain_storage, txn_id);
         EVMExecutor executor{block, chain_config, workers, state};
 
         Receipts rpc_receipts;

@@ -25,12 +25,12 @@
 
 namespace silkworm::snapshots {
 
-TEST_CASE("BodyTxsAmountQuery") {
+TEST_CASE("BodyTxsAmountSegmentQuery") {
     TemporaryDirectory tmp_dir;
     test_util::SampleBodySnapshotFile snapshot_file{tmp_dir.path()};
     segment::SegmentFileReader snapshot{snapshot_file.path()};
 
-    BodyTxsAmountQuery query{snapshot};
+    BodyTxsAmountSegmentQuery query{snapshot};
     auto result = query.exec();
 
     CHECK(result.first_tx_id == 7'341'262);

@@ -16,13 +16,16 @@
 
 #pragma once
 
-#include <silkworm/db/datastore/kvdb/domain.hpp>
+#include <silkworm/db/datastore/domain_get_latest_query.hpp>
+#include <silkworm/db/datastore/kvdb/domain_queries.hpp>
 #include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 
 namespace silkworm::db::state {
 
-using CommitmentDomainGetLatestQuery = datastore::kvdb::DomainGetLatestQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawDecoder<ByteView>>;
+using CommitmentDomainGetLatestQuery = datastore::DomainGetLatestQuery<
+    datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
+    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
 using CommitmentDomainPutQuery = datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
 using CommitmentDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
 

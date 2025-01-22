@@ -21,7 +21,7 @@
 
 #include <cstddef>
 
-namespace silkworm::snapshots::rec_split {
+namespace silkworm::snapshots::encoding {
 
 // Platform-specific functions and macros
 
@@ -193,4 +193,4 @@ void murmur_hash3_x64_128(const void* key, const uint64_t len,
     reinterpret_cast<uint64_t*>(out)[1] = h2;
 }
 
-}  // namespace silkworm::snapshots::rec_split
+}  // namespace silkworm::snapshots::encoding

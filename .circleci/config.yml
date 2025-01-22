@@ -117,7 +117,7 @@ commands:
             cp "cmake/profiles/$conan_profile" "$HOME/selected_conan_profile"
       - restore_cache:
           name: "Restore Conan cache"
-          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-<<parameters.compiler_id>>-<<parameters.compiler_version>>-{{checksum "../selected_conan_profile"}}-{{checksum "conanfile.py"}}
+          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-<<parameters.compiler_id>>-<<parameters.compiler_version>>-{{checksum "../selected_conan_profile"}}-{{checksum "conanfile.py"}}-{{checksum "cmake/conan.cmake"}}
       - build:
           build_type: <<parameters.build_type>>
           compiler_id: <<parameters.compiler_id>>
@@ -447,9 +447,9 @@ workflows:
       - lint
       - linux-clang-tidy-diff
       - linux-release:
-          name: linux-gcc-12-release
+          name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release
           compiler_id: gcc
-          compiler_version: 12
+          compiler_version: <<pipeline.parameters.gcc_version_min>>
           ethereum_tests: false
           requires:
             - lint
@@ -468,9 +468,9 @@ workflows:
         - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
     jobs:
       - linux-release:
-          name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release
+          name: linux-gcc-12-release
           compiler_id: gcc
-          compiler_version: <<pipeline.parameters.gcc_version_min>>
+          compiler_version: 12
       - linux-gcc-thread-sanitizer
       - linux-clang-coverage
       - linux-clang-address-sanitizer

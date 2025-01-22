@@ -49,7 +49,9 @@ uint64_t BloomFilter::optimal_bits_count(uint64_t max_key_count, double p) {
     return static_cast<uint64_t>(std::ceil(-static_cast<double>(max_key_count) * std::log(p) / (ln2 * ln2)));
 }
 
-BloomFilter::BloomFilter(std::filesystem::path path)
+BloomFilter::BloomFilter(
+    std::filesystem::path path,
+    std::optional<BloomFilterKeyHasher> data_key_hasher)
     : BloomFilter{kMinimumBitsCount, new_random_keys()} {
     if (!std::filesystem::exists(path)) {
         throw std::runtime_error("index file " + path.filename().string() + " doesn't exist");
@@ -62,6 +64,7 @@ BloomFilter::BloomFilter(std::filesystem::path path)
     file_stream >> *this;
 
     path_ = std::move(path);
+    data_key_hasher_ = data_key_hasher;
 }
 
 BloomFilter::BloomFilter()
@@ -86,7 +89,7 @@ void BloomFilter::add_hash(uint64_t hash) {
     ++inserted_count_;
 }
 
-bool BloomFilter::contains_hash(uint64_t hash) {
+bool BloomFilter::contains_hash(uint64_t hash) const {
     uint64_t r{1};
     for (size_t n = 0; n < kHardCodedK; ++n) {
         hash = ((hash << kRotation) | (hash >> kRotationOf64)) ^ keys_[n];
@@ -94,6 +97,10 @@ bool BloomFilter::contains_hash(uint64_t hash) {
         r &= (bits_[i >> 6] >> (i & 0x3F)) & uint64_t{1};
     }
     return r != 0;
+}
+
+bool BloomFilter::contains(ByteView data_key) const {
+    return contains_hash(data_key_hasher_->hash(data_key));
 }
 
 void BloomFilter::ensure_min_bits_count(uint64_t bits_count) {

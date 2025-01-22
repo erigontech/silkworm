@@ -22,19 +22,33 @@
 
 namespace silkworm::db::state {
 
-TEST_CASE("StorageAddressAndLocationDecoder") {
+TEST_CASE("StorageAddressAndLocationSnapshotsCodec.decode_word") {
     using evmc::literals::operator""_address;
     using evmc::literals::operator""_bytes32;
-    StorageAddressAndLocationDecoder decoder;
+    StorageAddressAndLocationSnapshotsCodec decoder;
 
     decoder.decode_word(
         *from_hex(
             "000000000000000000636f6e736f6c652e6c6f67"
             "000000000000000000000000000000000000000000005666856076ebaf477f07"));
-    CHECK(decoder.value.address.value == 0x000000000000000000636f6e736f6c652e6c6f67_address);
-    CHECK(decoder.value.location_hash.value == 0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32);
+    CHECK(decoder.value.address == 0x000000000000000000636f6e736f6c652e6c6f67_address);
+    CHECK(decoder.value.location_hash == 0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32);
 
     CHECK_THROWS_AS(decoder.decode_word({}), std::runtime_error);
+}
+
+TEST_CASE("StorageAddressAndLocationSnapshotsCodec.encode_word") {
+    using evmc::literals::operator""_address;
+    using evmc::literals::operator""_bytes32;
+    StorageAddressAndLocationSnapshotsCodec encoder;
+
+    encoder.value.address = 0x000000000000000000636f6e736f6c652e6c6f67_address;
+    encoder.value.location_hash = 0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32;
+    CHECK(
+        encoder.encode_word() ==
+        *from_hex(
+            "000000000000000000636f6e736f6c652e6c6f67"
+            "000000000000000000000000000000000000000000005666856076ebaf477f07"));
 }
 
 }  // namespace silkworm::db::state

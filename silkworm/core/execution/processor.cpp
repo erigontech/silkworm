@@ -258,12 +258,15 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     check_evm1_execution_result(evm1_receipt.state_diff, state_);
 }
 
-CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<std::shared_ptr<EvmTracer>>& tracers, bool bailout, bool refund) noexcept {
+CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<std::shared_ptr<EvmTracer>>& tracers, bool refund) noexcept {
     const std::optional<evmc::address> sender{txn.sender()};
     SILKWORM_ASSERT(sender);
 
     SILKWORM_ASSERT(protocol::validate_call_precheck(txn, evm_) == ValidationResult::kOk);
-    SILKWORM_ASSERT(protocol::validate_call_funds(txn, evm_, state_.get_balance(*txn.sender()), bailout) == ValidationResult::kOk);
+
+    if (!evm().bailout) {
+        SILKWORM_ASSERT(protocol::validate_call_funds(txn, evm_, state_.get_balance(*txn.sender())) == ValidationResult::kOk);
+    }
 
     const BlockHeader& header{evm_.block().header};
     const intx::uint256 base_fee_per_gas{header.base_fee_per_gas.value_or(0)};
@@ -281,7 +284,7 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
         state_.set_nonce(*sender, state_.get_nonce(*txn.sender()) + 1);
     }
 
-    if (!bailout) {
+    if (!evm().bailout) {
         const intx::uint256 required_funds = protocol::compute_call_cost(txn, effective_gas_price, evm_);
         state_.subtract_from_balance(*txn.sender(), required_funds);
     }
@@ -291,7 +294,7 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
     uint64_t gas_left{result.gas_left};
     uint64_t gas_used{txn.gas_limit - result.gas_left};
 
-    if (refund && !bailout) {
+    if (refund && !evm().bailout) {
         gas_used = txn.gas_limit - refund_gas(txn, effective_gas_price, result.gas_left, result.gas_refund);
         gas_left = txn.gas_limit - gas_used;
     }

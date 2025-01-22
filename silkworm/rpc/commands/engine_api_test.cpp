@@ -26,19 +26,20 @@
 
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/db/kv/api/client.hpp>
 #include <silkworm/db/test_util/mock_cursor.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/test_util/api_test_base.hpp>
-#include <silkworm/rpc/test_util/dummy_database.hpp>
+#include <silkworm/rpc/test_util/dummy_client.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
 #include <silkworm/rpc/test_util/mock_execution_engine.hpp>
 
 namespace silkworm::rpc::commands {
 
 using db::kv::api::KeyValue;
-using rpc::test::DummyDatabase;
+using rpc::test::DummyClient;
 
 class EngineRpcApiForTest : public EngineRpcApi {
   public:
@@ -61,7 +62,7 @@ struct EngineRpcApiTest : public test_util::JsonApiTestBase<EngineRpcApiForTest>
         add_private_service<ethbackend::BackEnd>(ioc_, std::move(local_backend));
         mock_backend = dynamic_cast<test::BackEndMock*>(must_use_private_service<ethbackend::BackEnd>(ioc_));  // NOLINT
 
-        add_private_service<ethdb::Database>(ioc_, std::make_unique<DummyDatabase>(mock_cursor, mock_cursor_dup_sort, mock_backend));
+        add_private_service<db::kv::api::Client>(ioc_, std::make_unique<DummyClient>(mock_cursor, mock_cursor_dup_sort, mock_backend));
         add_shared_service<engine::ExecutionEngine>(ioc_, mock_engine);
     }
 

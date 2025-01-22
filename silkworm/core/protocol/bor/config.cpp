@@ -65,12 +65,22 @@ std::optional<Config> Config::from_json(const nlohmann::json& json) noexcept {
         const BlockNum from{std::stoull(item.key(), nullptr, 0)};
         period.emplace_back(from, item.value().get<uint64_t>());
     }
+    if (period.size() > SmallMap<BlockNum, uint64_t>::max_size()) {
+        return std::nullopt;
+    }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+    // silence misdiagnostics in gcc 14
     config.period = {period.begin(), period.end()};
+#pragma GCC diagnostic pop
 
     std::vector<std::pair<BlockNum, uint64_t>> sprint;
     for (const auto& item : json["sprint"].items()) {
         const BlockNum from{std::stoull(item.key(), nullptr, 0)};
         sprint.emplace_back(from, item.value().get<uint64_t>());
+    }
+    if (sprint.size() > SmallMap<BlockNum, uint64_t>::max_size()) {
+        return std::nullopt;
     }
     config.sprint = {sprint.begin(), sprint.end()};
 

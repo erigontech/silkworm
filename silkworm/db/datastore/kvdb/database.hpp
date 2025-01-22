@@ -17,6 +17,7 @@
 #pragma once
 
 #include <map>
+#include <utility>
 
 #include "domain.hpp"
 #include "inverted_index.hpp"
@@ -44,7 +45,7 @@ class DatabaseRef {
         mdbx::env env,
         const Schema::DatabaseDef& schema,
         const EntitiesMap& entities)
-        : env_{env},
+        : env_{std::move(env)},
           schema_{schema},
           entities_{entities} {}
 
@@ -71,9 +72,11 @@ class Database {
     RWAccess access_rw() const { return ref().access_rw(); }
 
     Domain domain(datastore::EntityName name) const { return ref().domain(name); }
-    InvertedIndex inverted_index(datastore::EntityName name) { return ref().inverted_index(name); }
+    InvertedIndex inverted_index(datastore::EntityName name) const { return ref().inverted_index(name); }
 
     DatabaseRef ref() const { return {env_, schema_, entities_}; }  // NOLINT(cppcoreguidelines-slicing)
+
+    void create_tables();
 
   private:
     mdbx::env_managed env_;
@@ -94,7 +97,7 @@ class DatabaseUnmanaged {
     RWAccess access_rw() const { return ref().access_rw(); }
 
     Domain domain(datastore::EntityName name) const { return ref().domain(name); }
-    InvertedIndex inverted_index(datastore::EntityName name) { return ref().inverted_index(name); }
+    InvertedIndex inverted_index(datastore::EntityName name) const { return ref().inverted_index(name); }
 
     DatabaseRef ref() const { return {env_, schema_, entities_}; }  // NOLINT(cppcoreguidelines-slicing)
 

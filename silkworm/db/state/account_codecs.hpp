@@ -45,19 +45,26 @@ struct AccountKVDBCodec : public datastore::kvdb::Codec {
 static_assert(datastore::kvdb::EncoderConcept<AccountKVDBCodec>);
 static_assert(datastore::kvdb::DecoderConcept<AccountKVDBCodec>);
 
-struct AccountDecoder : public snapshots::Decoder {
+struct AccountSnapshotsCodec : public snapshots::Codec {
     Account value;
+    Bytes word;
 
-    ~AccountDecoder() override = default;
+    ~AccountSnapshotsCodec() override = default;
 
-    void decode_word(ByteView word) override {
-        auto account = AccountCodec::from_encoded_storage_v3(word);
+    ByteView encode_word() override {
+        word = AccountCodec::encode_for_storage_v3(value);
+        return word;
+    }
+
+    void decode_word(ByteView input_word) override {
+        auto account = AccountCodec::from_encoded_storage_v3(input_word);
         if (!account)
-            throw DecodingException{account.error(), "AccountDecoder failed to decode Account"};
-        value = std::move(*account);
+            throw DecodingException{account.error(), "AccountSnapshotsCodec failed to decode Account"};
+        value = *account;
     }
 };
 
-static_assert(snapshots::DecoderConcept<AccountDecoder>);
+static_assert(snapshots::EncoderConcept<AccountSnapshotsCodec>);
+static_assert(snapshots::DecoderConcept<AccountSnapshotsCodec>);
 
 }  // namespace silkworm::db::state

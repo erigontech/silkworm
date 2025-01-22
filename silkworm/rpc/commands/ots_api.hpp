@@ -25,6 +25,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/db/chain/providers.hpp>
 #include <silkworm/db/datastore/kvdb/bitmap.hpp>
+#include <silkworm/db/kv/api/client.hpp>
 #include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
@@ -33,7 +34,6 @@
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/ethbackend/backend.hpp>
-#include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::json_rpc {
@@ -195,9 +195,9 @@ class OtsRpcApi {
     OtsRpcApi(boost::asio::io_context& ioc, WorkerPool& workers)
         : ioc_{ioc},
           workers_{workers},
-          database_(must_use_private_service<ethdb::Database>(ioc_)),
-          state_cache_(must_use_shared_service<StateCache>(ioc_)),
-          block_cache_(must_use_shared_service<BlockCache>(ioc_)),
+          database_{must_use_private_service<db::kv::api::Client>(ioc_)->service()},
+          state_cache_{must_use_shared_service<StateCache>(ioc_)},
+          block_cache_{must_use_shared_service<BlockCache>(ioc_)},
           backend_{must_use_private_service<ethbackend::BackEnd>(ioc_)} {}
 
     virtual ~OtsRpcApi() = default;
@@ -222,7 +222,7 @@ class OtsRpcApi {
 
     boost::asio::io_context& ioc_;
     WorkerPool& workers_;
-    ethdb::Database* database_;
+    std::shared_ptr<db::kv::api::Service> database_;
     StateCache* state_cache_;
     BlockCache* block_cache_;
     ethbackend::BackEnd* backend_;

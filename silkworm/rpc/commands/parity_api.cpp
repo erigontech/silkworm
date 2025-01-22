@@ -25,7 +25,6 @@
 #include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/block_reader.hpp>
@@ -60,7 +59,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
                << " quantity: " << quantity
                << " offset: " << (offset ? silkworm::to_hex(offset.value(), true) : "null");
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -69,8 +68,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         const auto block_num = co_await block_reader.get_block_num(block_id);
         SILK_DEBUG << "read account with address: " << address << " block number: " << block_num;
 
-        execution::StateFactory state_factory{*tx};
-        const auto txn_number = co_await state_factory.user_txn_id_at(block_num);
+        const auto txn_number = co_await tx->user_txn_id_at(block_num);
 
         StateReader state_reader{*tx, txn_number};
         std::optional<Account> account = co_await state_reader.read_account(address);

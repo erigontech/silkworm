@@ -290,7 +290,7 @@ class DataModel {
   public:
     DataModel(
         ROTxn& txn,
-        snapshots::SnapshotRepository& repository)
+        const snapshots::SnapshotRepositoryROAccess& repository)
         : txn_{txn},
           repository_{repository} {}
 
@@ -381,13 +381,13 @@ class DataModel {
     std::optional<BlockNum> read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const;
 
     ROTxn& txn_;
-    snapshots::SnapshotRepository& repository_;
+    const snapshots::SnapshotRepositoryROAccess& repository_;
 };
 
 class DataModelFactory {
   public:
     explicit DataModelFactory(DataStoreRef data_store)
-        : func_{[=](db::ROTxn& tx) { return db::DataModel{tx, data_store.blocks_repository}; }} {}
+        : func_{[data_store = std::move(data_store)](db::ROTxn& tx) { return db::DataModel{tx, data_store.blocks_repository}; }} {}
 
     DataModel operator()(ROTxn& tx) const {
         return func_(tx);

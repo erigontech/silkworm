@@ -22,6 +22,7 @@ namespace silkworm::db::blocks {
 
 snapshots::Schema::RepositoryDef make_blocks_repository_schema() {
     snapshots::Schema::RepositoryDef repository_schema;
+    repository_schema.index_salt_file_name("salt-blocks.txt");
     snapshots::Schema::EntityDef& schema = repository_schema.default_entity();
 
     schema.segment(kHeaderSegmentName)
@@ -55,12 +56,16 @@ std::unique_ptr<snapshots::IndexBuildersFactory> make_blocks_index_builders_fact
     return std::make_unique<BlocksIndexBuildersFactory>(make_blocks_repository_schema());
 }
 
-snapshots::SnapshotRepository make_blocks_repository(std::filesystem::path dir_path, bool open) {
+snapshots::SnapshotRepository make_blocks_repository(
+    std::filesystem::path dir_path,
+    bool open,
+    std::optional<uint32_t> index_salt) {
     return snapshots::SnapshotRepository{
         std::move(dir_path),
         open,
         make_blocks_repository_schema(),
         std::make_unique<datastore::StepToBlockNumConverter>(),
+        index_salt,
         make_blocks_index_builders_factory(),
     };
 }

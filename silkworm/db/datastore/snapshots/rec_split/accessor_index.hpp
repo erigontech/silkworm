@@ -16,54 +16,33 @@
 
 #pragma once
 
-#include <cstdint>
-#include <memory>
 #include <optional>
-
-#include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/types/hash.hpp>
 
 #include "../common/snapshot_path.hpp"
 #include "rec_split.hpp"
 
 namespace silkworm::snapshots::rec_split {
 
-class AccessorIndex {
+class AccessorIndex : private RecSplitIndex {
   public:
     explicit AccessorIndex(
         SnapshotPath path,
         std::optional<MemoryMappedRegion> region = std::nullopt)
-        : path_{std::move(path)},
-          index_{path_.path(), region} {
+        : RecSplitIndex{path.path(), region},
+          path_{std::move(path)} {
     }
 
-    std::optional<size_t> lookup_by_data_id(uint64_t id) const {
-        return index_.lookup_by_data_id(id);
-    }
+    using RecSplitIndex::lookup_by_data_id;
+    using RecSplitIndex::lookup_by_key;
 
-    std::optional<size_t> lookup_by_hash(const Hash& hash) const {
-        return index_.lookup_by_key(hash);
-    }
-
-    std::optional<size_t> lookup_ordinal_by_hash(const Hash& hash) const {
-        auto [result, found] = index_.lookup(hash);
-        return found ? std::optional{result} : std::nullopt;
-    }
+    using RecSplitIndex::base_data_id;
+    using RecSplitIndex::memory_file_region;
 
     const SnapshotPath& path() const { return path_; }
     const std::filesystem::path& fs_path() const { return path_.path(); }
 
-    MemoryMappedRegion memory_file_region() const {
-        return index_.memory_file_region();
-    }
-
-    uint64_t base_data_id() const {
-        return index_.base_data_id();
-    }
-
   private:
     SnapshotPath path_;
-    rec_split::RecSplitIndex index_;
 };
 
 }  // namespace silkworm::snapshots::rec_split

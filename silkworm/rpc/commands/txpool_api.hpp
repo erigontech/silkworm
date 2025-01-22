@@ -22,7 +22,6 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/infra/concurrency/private_service.hpp>
-#include <silkworm/rpc/ethdb/database.hpp>
 #include <silkworm/rpc/txpool/transaction_pool.hpp>
 
 namespace silkworm::rpc::json_rpc {
@@ -34,8 +33,7 @@ namespace silkworm::rpc::commands {
 class TxPoolRpcApi {
   public:
     explicit TxPoolRpcApi(boost::asio::io_context& ioc)
-        : database_{must_use_private_service<ethdb::Database>(ioc)},
-          tx_pool_{must_use_private_service<txpool::TransactionPool>(ioc)} {}
+        : tx_pool_{must_use_private_service<txpool::TransactionPool>(ioc)} {}
     virtual ~TxPoolRpcApi() = default;
 
     TxPoolRpcApi(const TxPoolRpcApi&) = delete;
@@ -47,7 +45,6 @@ class TxPoolRpcApi {
     Task<void> handle_txpool_content(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    ethdb::Database* database_;
     txpool::TransactionPool* tx_pool_;
 
     friend class silkworm::rpc::json_rpc::RequestHandler;

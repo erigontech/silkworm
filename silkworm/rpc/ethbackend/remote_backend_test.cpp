@@ -19,13 +19,12 @@
 #include <string>
 #include <utility>
 
-#include <agrpc/test.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
-#include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_responder.hpp>
 #include <silkworm/interfaces/remote/ethbackend_mock.grpc.pb.h>
@@ -83,7 +82,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::etherbase", "[silkworm][rpc][ethbacke
 
     SECTION("call etherbase and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::etherbase>()), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::etherbase>()), rpc::GrpcStatusError);
     }
 }
 
@@ -107,7 +106,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::protocol_version", "[silkworm][rpc][e
 
     SECTION("call protocol_version and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::protocol_version>()), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::protocol_version>()), rpc::GrpcStatusError);
     }
 }
 
@@ -131,7 +130,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::net_version", "[silkworm][rpc][ethbac
 
     SECTION("call net_version and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::net_version>()), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::net_version>()), rpc::GrpcStatusError);
     }
 }
 
@@ -155,7 +154,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::client_version", "[silkworm][rpc][eth
 
     SECTION("call client_version and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::client_version>()), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::client_version>()), rpc::GrpcStatusError);
     }
 }
 
@@ -182,7 +181,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_num_from_txn_hash", "[silkw
 
     SECTION("call get_block_num_from_txn_hash and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_num_from_txn_hash>(hash.bytes)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_num_from_txn_hash>(hash.bytes)), rpc::GrpcStatusError);
     }
 }
 
@@ -214,7 +213,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_num_from_hash", "[silkworm]
 
     SECTION("call get_block_num_from_hash and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_num_from_hash>(hash.bytes)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_num_from_hash>(hash.bytes)), rpc::GrpcStatusError);
     }
 }
 
@@ -233,7 +232,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::canonical_body_for_storage", "[silkwo
 
     SECTION("call get_block_num_from_hash and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::canonical_body_for_storage>(block_num)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::canonical_body_for_storage>(block_num)), rpc::GrpcStatusError);
     }
 }
 
@@ -258,7 +257,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::get_block_hash_from_block_num", "[sil
 
     SECTION("call get_block_hash_from_block_num and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_hash_from_block_num>(block_num)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::get_block_hash_from_block_num>(block_num)), rpc::GrpcStatusError);
     }
 }
 
@@ -282,7 +281,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::net_peer_count", "[silkworm][rpc][eth
 
     SECTION("call net_peer_count and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::net_peer_count>()), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::net_peer_count>()), rpc::GrpcStatusError);
     }
 }
 
@@ -304,8 +303,8 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::node_info", "[silkworm][rpc][ethbacke
         ports_ref->set_listener(30000);
         reply->set_allocated_ports(ports_ref);
         std::string protocols = std::string(R"({"eth": {"network":5, "difficulty":10790000, "genesis":"0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a",)");
-        protocols += R"( "config": {"ChainName":"goerli", "chainId":5, "consensus":"clique", "homesteadBlock":0, "daoForkSupport":true, "eip150Block":0,)";
-        protocols += R"( "eip150Hash":"0x0000000000000000000000000000000000000000000000000000000000000000", "eip155Block":0, "byzantiumBlock":0, "constantinopleBlock":0,)";
+        protocols += R"("config": {"ChainName":"goerli", "chainId":5, "consensus":"clique", "homesteadBlock":0, "daoForkSupport":true, "eip150Block":0,)";
+        protocols += R"("eip150Hash":"0x0000000000000000000000000000000000000000000000000000000000000000", "eip155Block":0, "byzantiumBlock":0, "constantinopleBlock":0,)";
         protocols += R"("petersburgBlock":0, "istanbulBlock":1561651, "berlinBlock":4460644, "londonBlock":5062605, "terminalTotalDifficulty":10790000,)";
         protocols += R"("terminalTotalDifficultyPassed":true, "clique": {"period":15, "epoch":30000}},)";
         protocols += R"("head":"0x11fce21bdebbcf09e1e2e37b874729c17518cd342fcf0959659e650fa45f9768"}})";
@@ -382,7 +381,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::node_info", "[silkworm][rpc][ethbacke
 
     SECTION("call engine_get_payload and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_get_payload>(0u)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_get_payload>(0u)), rpc::GrpcStatusError);
     }
 }
 
@@ -491,7 +490,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload", "[silkworm][rpc]
 
         SECTION("call engine_new_payload and get error [i=" + std::to_string(i) + "]") {
             EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-            CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_new_payload>(new_payload_request)), boost::system::system_error);
+            CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_new_payload>(new_payload_request)), rpc::GrpcStatusError);
         }
     }
 }
@@ -538,7 +537,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated", "[silkwor
 
     SECTION("call engine_forkchoice_updated_v1 and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_forkchoice_updated>(forkchoice_request)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_forkchoice_updated>(forkchoice_request)), rpc::GrpcStatusError);
     }
 }*/
 

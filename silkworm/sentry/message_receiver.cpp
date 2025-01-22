@@ -37,11 +37,20 @@ Task<void> MessageReceiver::run(std::shared_ptr<MessageReceiver> self, PeerManag
 
     peer_manager.add_observer(std::weak_ptr(self));
 
-    auto run =
-        self->peer_tasks_.wait() &&
-        self->unsubscription_tasks_.wait() &&
-        self->handle_calls();
-    co_await concurrency::spawn_task(self->strand_, std::move(run));
+    try {
+        auto run =
+            self->peer_tasks_.wait() &&
+            self->unsubscription_tasks_.wait() &&
+            self->handle_calls();
+        co_await concurrency::spawn_task(self->strand_, std::move(run));
+    } catch (const boost::system::system_error& ex) {
+        SILK_ERROR_M("sentry") << "MessageReceiver::run ex=" << ex.what();
+        if (ex.code() == boost::system::errc::operation_canceled) {
+            // TODO(canepat) demote to debug after https://github.com/erigontech/silkworm/issues/2333 is solved
+            SILK_WARN_M("sentry") << "MessageReceiver::run operation_canceled";
+        }
+        throw;
+    }
 }
 
 Task<void> MessageReceiver::handle_calls() {
@@ -95,7 +104,7 @@ Task<void> MessageReceiver::receive_messages(std::shared_ptr<rlpx::Peer> peer) {
         Message message;
         try {
             message = co_await peer->receive_message();
-        } catch (const rlpx::Peer::DisconnectedError& ex) {
+        } catch (const rlpx::Peer::DisconnectedError&) {
             break;
         }
 

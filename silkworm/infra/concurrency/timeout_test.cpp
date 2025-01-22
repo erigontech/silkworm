@@ -83,7 +83,7 @@ Task<void> wait_until_cancelled_bad() {
         steady_timer timer(executor);
         timer.expires_after(1h);
         co_await timer.async_wait(use_awaitable);
-    } catch (const boost::system::system_error& ex) {
+    } catch (const boost::system::system_error&) {
         throw BadCancelException();
     }
 }

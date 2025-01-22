@@ -239,10 +239,19 @@ Task<void> NodeImpl::wait_for_setup() {
 Task<void> NodeImpl::run() {
     using namespace concurrency::awaitable_wait_for_all;
 
-    co_await (
-        run_tasks() &&
-        snapshot_sync_.run() &&
-        embedded_sentry_run_if_needed());
+    try {
+        co_await (
+            run_tasks() &&
+            snapshot_sync_.run() &&
+            embedded_sentry_run_if_needed());
+    } catch (const boost::system::system_error& ex) {
+        SILK_ERROR_M("node") << "NodeImpl::run ex=" << ex.what();
+        if (ex.code() == boost::system::errc::operation_canceled) {
+            // TODO(canepat) demote to debug after https://github.com/erigontech/silkworm/issues/2333 is solved
+            SILK_WARN_M("node") << "NodeImpl::run operation_canceled";
+        }
+        throw;
+    }
 }
 
 Task<void> NodeImpl::run_tasks() {

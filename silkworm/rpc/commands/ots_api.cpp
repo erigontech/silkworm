@@ -48,6 +48,7 @@ namespace bitmap {
     using namespace silkworm::datastore::kvdb::bitmap;
 }
 
+//! The current supported version of the Otterscan API
 static constexpr int kCurrentApiLevel{8};
 
 //! The window size used when probing history periodically
@@ -71,7 +72,7 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
 
     SILK_DEBUG << "address: " << address << " block_id: " << block_id;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -82,12 +83,10 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
         tx->set_state_cache_enabled(is_latest_block);
 
         const auto block_num = co_await block_reader.get_block_num(block_id);
-        execution::StateFactory state_factory{*tx};
-        const auto txn_id = co_await state_factory.user_txn_id_at(block_num + 1);
+        const auto txn_id = co_await tx->user_txn_id_at(block_num + 1);
 
         StateReader state_reader{*tx, txn_id};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
-
         if (account) {
             auto code{co_await state_reader.read_code(address, account->code_hash)};
             reply = make_json_content(request, code.has_value());
@@ -117,7 +116,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
 
     SILK_DEBUG << "block_id: " << block_id;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -166,7 +165,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
 
     SILK_DEBUG << "block_hash: " << silkworm::to_hex(block_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -215,7 +214,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
 
     SILK_DEBUG << "block_id: " << block_id << " page_number: " << page_number << " page_size: " << page_size;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -288,7 +287,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
     const auto nonce = params[1].get<uint64_t>();
 
     SILK_DEBUG << "sender: " << sender << ", nonce: " << nonce;
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         auto key = db::code_domain_key(sender);
@@ -434,14 +433,13 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
 
     SILK_DEBUG << "contract_address: " << contract_address;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
         rpc::BlockReader block_reader{*chain_storage, *tx};
         auto block_num = co_await block_reader.get_latest_block_num();
-        execution::StateFactory state_factory{*tx};
-        const auto txn_number = co_await state_factory.user_txn_id_at(block_num);
+        const auto txn_number = co_await tx->user_txn_id_at(block_num);
 
         StateReader state_reader{*tx, txn_number};
         std::optional<silkworm::Account> account_opt{co_await state_reader.read_account(contract_address)};
@@ -594,7 +592,7 @@ Task<void> OtsRpcApi::handle_ots_trace_transaction(const nlohmann::json& request
 
     SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -640,7 +638,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& req
 
     SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -686,7 +684,7 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
 
     SILK_DEBUG << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage{tx->create_storage()};
@@ -749,7 +747,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
     if (block_num > 0) {
         --block_num;
     }
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
     try {
         auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
 
@@ -799,7 +797,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
         co_return;
     }
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
@@ -921,13 +919,13 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
             break;
         }
 
-        const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
+        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
         if (!transaction) {
             SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index;
             co_return results;
         }
-        results.receipts.push_back(std::move(receipts.at(silkworm::to_hex(transaction.value().hash(), false))));
-        results.transactions.push_back(std::move(transaction.value()));
+        results.receipts.push_back(std::move(receipts.at(silkworm::to_hex(transaction->hash(), false))));
+        results.transactions.push_back(std::move(*transaction));
         results.blocks.push_back(block_info.value().details);
     }
 
@@ -1032,7 +1030,7 @@ Task<ChunkProviderResponse> ChunkProvider::get() {
                 key_value = co_await cursor_->previous();
             }
         }
-    } catch (const std::exception& e) {
+    } catch (const std::exception&) {
         error_ = true;
     }
 
@@ -1068,7 +1066,7 @@ Task<ChunkLocatorResponse> ChunkLocator::get(BlockNum min_block) {
 
         co_return ChunkLocatorResponse{ChunkProvider{cursor_, address_, navigate_forward_, key_value}, true, false};
 
-    } catch (const std::exception& e) {
+    } catch (const std::exception&) {
         co_return ChunkLocatorResponse{ChunkProvider{cursor_, address_, navigate_forward_, key_value}, false, true};
     }
 }
@@ -1128,7 +1126,7 @@ Task<BlockProviderResponse> ForwardBlockProvider::get() {
                 co_return BlockProviderResponse{0, false, false};
             }
 
-        } catch (std::exception& e) {
+        } catch (std::exception&) {
             finished_ = true;
             co_return BlockProviderResponse{0, false, true};
         }
@@ -1155,7 +1153,7 @@ Task<BlockProviderResponse> ForwardBlockProvider::get() {
             auto bitmap = bitmap::parse(chunk_provider_res.chunk);
             iterator(bitmap);
 
-        } catch (std::exception& e) {
+        } catch (std::exception&) {
             finished_ = true;
             co_return BlockProviderResponse{0, false, true};
         }
@@ -1254,7 +1252,7 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
                 reverse_iterator(bitmap);
             }
 
-        } catch (std::exception& e) {
+        } catch (std::exception&) {
             finished_ = true;
             co_return BlockProviderResponse{0, false, true};
         }
@@ -1281,7 +1279,7 @@ Task<BlockProviderResponse> BackwardBlockProvider::get() {
             auto bitmap = bitmap::parse(chunk_provider_res.chunk);
             reverse_iterator(bitmap);
 
-        } catch (std::exception& e) {
+        } catch (std::exception&) {
             finished_ = true;
             co_return BlockProviderResponse{0, false, true};
         }

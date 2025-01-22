@@ -61,7 +61,7 @@ static BlockNum get_first_stored_header_num(ROTxn& txn) {
 }
 
 static std::optional<uint64_t> get_next_base_txn_id(SnapshotRepository& repository, BlockNum block_num) {
-    auto body = BodyFindByBlockNumMultiQuery{repository}.exec(block_num);
+    auto body = BodyFindByBlockNumQuery{repository}.exec(block_num);
     if (!body) return std::nullopt;
     return body->base_txn_id + body->txn_count;
 }
@@ -134,7 +134,7 @@ void Freezer::commit(std::shared_ptr<DataMigrationResult> result) {
     auto& bundle = freezer_result.bundle_paths;
     move_files(bundle.files(), snapshots_.path());
 
-    SnapshotBundle final_bundle{snapshots_.schema(), snapshots_.path(), bundle.step_range()};
+    SnapshotBundle final_bundle = snapshots_.open_bundle(bundle.step_range());
     snapshots_.add_snapshot_bundle(std::move(final_bundle));
 }
 

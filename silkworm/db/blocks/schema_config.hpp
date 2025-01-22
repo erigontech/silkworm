@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <array>
 #include <memory>
+#include <optional>
 
 #include "../datastore/common/entity_name.hpp"
 #include "../datastore/snapshots/index_builders_factory.hpp"
@@ -37,14 +37,15 @@ std::unique_ptr<snapshots::IndexBuildersFactory> make_blocks_index_builders_fact
 
 snapshots::SnapshotRepository make_blocks_repository(
     std::filesystem::path dir_path,
-    bool open = true);
+    bool open = true,
+    std::optional<uint32_t> index_salt = std::nullopt);
 
 inline constexpr datastore::EntityName kHeaderSegmentName{"headers"};
 inline constexpr std::string_view kHeaderSegmentTag = kHeaderSegmentName.name;
 //! Index header_hash -> block_num -> headers_segment_offset
 inline constexpr datastore::EntityName kIdxHeaderHashName{"headers.idx"};
 inline constexpr std::string_view kIdxHeaderHashTag = kHeaderSegmentTag;
-inline constexpr std::array<datastore::EntityName, 3> kHeaderSegmentAndIdxNames{
+inline constexpr snapshots::SegmentAndAccessorIndexNames kHeaderSegmentAndIdxNames{
     snapshots::Schema::kDefaultEntityName,
     kHeaderSegmentName,
     kIdxHeaderHashName,
@@ -55,7 +56,7 @@ inline constexpr std::string_view kBodySegmentTag = kBodySegmentName.name;
 //! Index block_num -> bodies_segment_offset
 inline constexpr datastore::EntityName kIdxBodyNumberName{"bodies.idx"};
 inline constexpr std::string_view kIdxBodyNumberTag = kBodySegmentTag;
-inline constexpr std::array<datastore::EntityName, 3> kBodySegmentAndIdxNames{
+inline constexpr snapshots::SegmentAndAccessorIndexNames kBodySegmentAndIdxNames{
     snapshots::Schema::kDefaultEntityName,
     kBodySegmentName,
     kIdxBodyNumberName,
@@ -66,7 +67,7 @@ inline constexpr std::string_view kTxnSegmentTag = kTxnSegmentName.name;
 //! Index transaction_hash -> txn_id -> transactions_segment_offset
 inline constexpr datastore::EntityName kIdxTxnHashName{"transactions.idx"};
 inline constexpr std::string_view kIdxTxnHashTag = kTxnSegmentTag;
-inline constexpr std::array<datastore::EntityName, 3> kTxnSegmentAndIdxNames{
+inline constexpr snapshots::SegmentAndAccessorIndexNames kTxnSegmentAndIdxNames{
     snapshots::Schema::kDefaultEntityName,
     kTxnSegmentName,
     kIdxTxnHashName,

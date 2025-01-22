@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <array>
 #include <filesystem>
 #include <functional>
 #include <vector>
@@ -50,7 +49,8 @@ struct SnapshotBundleData {
 SnapshotBundleData open_bundle_data(
     const Schema::RepositoryDef& schema,
     const std::filesystem::path& dir_path,
-    datastore::StepRange step_range);
+    datastore::StepRange step_range,
+    std::optional<uint32_t> index_salt);
 
 struct SnapshotBundlePaths {
     using StepRange = datastore::StepRange;
@@ -75,7 +75,7 @@ struct SnapshotBundlePaths {
     StepRange step_range_;
 };
 
-struct SnapshotBundle {
+struct SnapshotBundle : public SegmentAndAccessorIndexProvider {
     using StepRange = datastore::StepRange;
 
     SnapshotBundle(StepRange step_range, SnapshotBundleData data)
@@ -85,12 +85,13 @@ struct SnapshotBundle {
     SnapshotBundle(
         const Schema::RepositoryDef& schema,
         const std::filesystem::path& dir_path,
-        StepRange range)
+        StepRange range,
+        std::optional<uint32_t> index_salt)
         : SnapshotBundle{
               range,
-              open_bundle_data(schema, dir_path, range),
+              open_bundle_data(schema, dir_path, range, index_salt),
           } {}
-    virtual ~SnapshotBundle();
+    ~SnapshotBundle() override;
 
     SnapshotBundle(SnapshotBundle&&) = default;
     SnapshotBundle& operator=(SnapshotBundle&&) noexcept = default;
@@ -105,7 +106,7 @@ struct SnapshotBundle {
         datastore::EntityName entity_name,
         datastore::EntityName index_name) const;
     SegmentAndAccessorIndex segment_and_accessor_index(
-        std::array<datastore::EntityName, 3> names) const {
+        const SegmentAndAccessorIndexNames& names) const override {
         return {
             segment(names[0], names[1]),
             accessor_index(names[0], names[2]),

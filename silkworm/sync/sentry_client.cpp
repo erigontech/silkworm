@@ -249,7 +249,16 @@ void SentryClient::peer_min_block(const PeerId& peer_id, BlockNum min_block) {
 Task<void> SentryClient::async_run() {
     using namespace concurrency::awaitable_wait_for_all;
 
-    co_await (receive_messages() && receive_peer_events() && tasks_.wait());
+    try {
+        co_await (receive_messages() && receive_peer_events() && tasks_.wait());
+    } catch (const boost::system::system_error& ex) {
+        SILK_ERROR_M(kLogTitle) << "SentryClient::async_run ex=" << ex.what();
+        if (ex.code() == boost::system::errc::operation_canceled) {
+            // TODO(canepat) demote to debug after https://github.com/erigontech/silkworm/issues/2333 is solved
+            SILK_WARN_M(kLogTitle) << "SentryClient::async_run operation_canceled";
+        }
+        throw;
+    }
 }
 
 Task<void> SentryClient::receive_messages() {

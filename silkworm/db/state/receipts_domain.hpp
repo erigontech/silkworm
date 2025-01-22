@@ -18,13 +18,16 @@
 
 #include <stdexcept>
 
-#include <silkworm/db/datastore/kvdb/domain.hpp>
+#include <silkworm/db/datastore/domain_get_latest_query.hpp>
+#include <silkworm/db/datastore/kvdb/domain_queries.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 #include <silkworm/db/datastore/snapshots/segment/seg/common/varint.hpp>
 
 namespace silkworm::db::state {
 
-using ReceiptsDomainGetLatestQuery = datastore::kvdb::DomainGetLatestQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawDecoder<ByteView>>;
+using ReceiptsDomainGetLatestQuery = datastore::DomainGetLatestQuery<
+    datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
+    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
 using ReceiptsDomainPutQuery = datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
 using ReceiptsDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
 
@@ -34,31 +37,31 @@ enum class ReceiptsDomainKey : uint8_t {
     kFirstLogIndexKey = 2,
 };
 
-struct ReceiptsDomainKeyDecoder : public snapshots::Decoder {
+struct ReceiptsDomainKeySnapshotsDecoder : public snapshots::Decoder {
     ReceiptsDomainKey value{};
-    ~ReceiptsDomainKeyDecoder() override = default;
+    ~ReceiptsDomainKeySnapshotsDecoder() override = default;
     void decode_word(ByteView word) override {
         if (word.empty())
-            throw std::runtime_error{"ReceiptsDomainKeyDecoder failed to decode an empty word"};
+            throw std::runtime_error{"ReceiptsDomainKeySnapshotsDecoder failed to decode an empty word"};
         value = static_cast<ReceiptsDomainKey>(word[0]);
     }
 };
 
-static_assert(snapshots::DecoderConcept<ReceiptsDomainKeyDecoder>);
+static_assert(snapshots::DecoderConcept<ReceiptsDomainKeySnapshotsDecoder>);
 
-struct VarintDecoder : public snapshots::Decoder {
+struct VarintSnapshotsDecoder : public snapshots::Decoder {
     uint64_t value{};
-    ~VarintDecoder() override = default;
+    ~VarintSnapshotsDecoder() override = default;
     void decode_word(ByteView word) override {
         auto value_opt = snapshots::seg::varint::decode(word);
         if (!value_opt)
-            throw std::runtime_error{"VarintDecoder failed to decode"};
+            throw std::runtime_error{"VarintSnapshotsDecoder failed to decode"};
         value = *value_opt;
     }
 };
 
-static_assert(snapshots::DecoderConcept<VarintDecoder>);
+static_assert(snapshots::DecoderConcept<VarintSnapshotsDecoder>);
 
-using ReceiptsDomainKVSegmentReader = snapshots::segment::KVSegmentReader<ReceiptsDomainKeyDecoder, VarintDecoder>;
+using ReceiptsDomainKVSegmentReader = snapshots::segment::KVSegmentReader<ReceiptsDomainKeySnapshotsDecoder, VarintSnapshotsDecoder>;
 
 }  // namespace silkworm::db::state

@@ -23,7 +23,6 @@
 #include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -59,9 +58,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOr
     const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_num);
     const auto end_txn_number = co_await transaction_.first_txn_num_in_block(block_num + 1);
 
-    execution::StateFactory state_factory{transaction_};
-    const auto txn_id = co_await state_factory.user_txn_id_at(block_num + 1);
-
+    const auto txn_id = co_await transaction_.user_txn_id_at(block_num + 1);
     StateReader state_reader{transaction_, txn_id};
 
     db::kv::api::HistoryRangeQuery query{

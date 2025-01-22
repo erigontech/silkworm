@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,21 +14,18 @@
    limitations under the License.
 */
 
-#pragma once
+#include "bloom_filter_key_hasher.hpp"
 
-#include <memory>
+#include <array>
 
-#include <silkworm/infra/concurrency/task.hpp>
+#include "../common/encoding/murmur_hash3.hpp"
 
-#include <gmock/gmock.h>
+namespace silkworm::snapshots::bloom_filter {
 
-#include <silkworm/rpc/ethdb/database.hpp>
+uint64_t BloomFilterKeyHasher::hash(ByteView key) const {
+    std::array<uint64_t, 2> hash = {0, 0};
+    encoding::Murmur3{salt_}.hash_x64_128(key.data(), key.size(), hash.data());
+    return hash[0];
+}
 
-namespace silkworm::rpc::test {
-
-class MockDatabase : public ethdb::Database {
-  public:
-    MOCK_METHOD((Task<std::unique_ptr<db::kv::api::Transaction>>), begin, ());
-};
-
-}  // namespace silkworm::rpc::test
+}  // namespace silkworm::snapshots::bloom_filter

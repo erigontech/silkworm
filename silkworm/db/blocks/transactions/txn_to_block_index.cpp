@@ -20,7 +20,7 @@
 
 namespace silkworm::snapshots {
 
-static IndexInputDataQuery::Iterator::value_type query_entry(TxsAndBodiesQuery::Iterator& it) {
+static IndexInputDataQuery::Iterator::value_type query_entry(TxsAndBodiesSegmentQuery::Iterator& it) {
     return {
         .key_data = it->tx_buffer,
         .value = it->block_num,
@@ -28,12 +28,12 @@ static IndexInputDataQuery::Iterator::value_type query_entry(TxsAndBodiesQuery::
 }
 
 IndexInputDataQuery::Iterator TransactionToBlockIndexInputDataQuery::begin() {
-    auto impl_it = std::make_shared<TxsAndBodiesQuery::Iterator>(query_.begin());
+    auto impl_it = std::make_shared<TxsAndBodiesSegmentQuery::Iterator>(query_.begin());
     return IndexInputDataQuery::Iterator{this, impl_it, query_entry(*impl_it)};
 }
 
 IndexInputDataQuery::Iterator TransactionToBlockIndexInputDataQuery::end() {
-    auto impl_it = std::make_shared<TxsAndBodiesQuery::Iterator>(query_.end());
+    auto impl_it = std::make_shared<TxsAndBodiesSegmentQuery::Iterator>(query_.end());
     return IndexInputDataQuery::Iterator{this, impl_it, query_entry(*impl_it)};
 }
 
@@ -43,7 +43,7 @@ size_t TransactionToBlockIndexInputDataQuery::keys_count() {
 
 std::pair<std::shared_ptr<void>, IndexInputDataQuery::Iterator::value_type>
 TransactionToBlockIndexInputDataQuery::next_iterator(std::shared_ptr<void> it_impl) {
-    auto& it_impl_ref = *reinterpret_cast<TxsAndBodiesQuery::Iterator*>(it_impl.get());
+    auto& it_impl_ref = *reinterpret_cast<TxsAndBodiesSegmentQuery::Iterator*>(it_impl.get());
     ++it_impl_ref;
     return {it_impl, query_entry(it_impl_ref)};
 }
@@ -51,8 +51,8 @@ TransactionToBlockIndexInputDataQuery::next_iterator(std::shared_ptr<void> it_im
 bool TransactionToBlockIndexInputDataQuery::equal_iterators(
     std::shared_ptr<void> lhs_it_impl,
     std::shared_ptr<void> rhs_it_impl) const {
-    auto lhs = reinterpret_cast<TxsAndBodiesQuery::Iterator*>(lhs_it_impl.get());
-    auto rhs = reinterpret_cast<TxsAndBodiesQuery::Iterator*>(rhs_it_impl.get());
+    auto lhs = reinterpret_cast<TxsAndBodiesSegmentQuery::Iterator*>(lhs_it_impl.get());
+    auto rhs = reinterpret_cast<TxsAndBodiesSegmentQuery::Iterator*>(rhs_it_impl.get());
     return (*lhs == *rhs);
 }
 
@@ -68,7 +68,7 @@ IndexBuilder TransactionToBlockIndex::make(
 
     auto descriptor = make_descriptor(segment_path, first_block_num, first_tx_id);
 
-    TxsAndBodiesQuery data_query{
+    TxsAndBodiesSegmentQuery data_query{
         std::move(segment_path),
         segment_region,
         std::move(bodies_segment_path),

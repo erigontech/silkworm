@@ -77,7 +77,7 @@ endmacro()
 # unset(CONAN_COMMAND CACHE)
 find_program(
   CONAN_COMMAND "conan"
-  PATHS /opt/conan2/bin
+  PATHS /opt/conan2/bin /opt/homebrew/opt/conan@2/bin
   NO_DEFAULT_PATH
 )
 if(NOT CONAN_COMMAND)
@@ -129,6 +129,7 @@ if(SILKWORM_SANITIZE_COMPILER_OPTIONS)
       "libtorrent/*"
       "protobuf/*"
   )
+  list(APPEND CONAN_BUILD "missing")
   # cmake-format: on
 
   format_list_as_json_array(CONAN_CXXFLAGS CONAN_CXXFLAGS_STR)

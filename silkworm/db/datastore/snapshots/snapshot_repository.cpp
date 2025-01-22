@@ -23,6 +23,9 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
+#include "index_builders_factory.hpp"
+#include "index_salt_file.hpp"
+
 namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
@@ -33,10 +36,12 @@ SnapshotRepository::SnapshotRepository(
     bool open,
     Schema::RepositoryDef schema,
     std::unique_ptr<StepToTimestampConverter> step_converter,
+    std::optional<uint32_t> index_salt,
     std::unique_ptr<IndexBuildersFactory> index_builders_factory)
     : dir_path_(std::move(dir_path)),
       schema_(std::move(schema)),
       step_converter_(std::move(step_converter)),
+      index_salt_(index_salt),
       index_builders_factory_(std::move(index_builders_factory)),
       bundles_(std::make_shared<Bundles>()),
       bundles_mutex_(std::make_unique<std::mutex>()) {
@@ -91,9 +96,9 @@ Step SnapshotRepository::max_end_step() const {
 }
 
 std::pair<std::optional<SegmentAndAccessorIndex>, std::shared_ptr<SnapshotBundle>> SnapshotRepository::find_segment(
-    std::array<datastore::EntityName, 3> names,
+    const SegmentAndAccessorIndexNames& names,
     Timestamp t) const {
-    auto bundle = find_bundle(step_converter_->step_from_timestamp(t));
+    auto bundle = find_bundle(t);
     if (bundle) {
         return {bundle->segment_and_accessor_index(names), bundle};
     }
@@ -116,11 +121,13 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes()
 void SnapshotRepository::reopen_folder() {
     SILK_INFO << "Reopen snapshot repository folder: " << dir_path_.string();
 
+    index_salt_ = load_index_salt();
+
     auto file_ranges = list_dir_file_ranges();
     if (file_ranges.empty()) return;
 
     // sort file_ranges by range.start
-    std::sort(file_ranges.begin(), file_ranges.end(), [](const StepRange& r1, const StepRange& r2) -> bool {
+    std::ranges::sort(file_ranges, [](const StepRange& r1, const StepRange& r2) -> bool {
         return r1.start < r2.start;
     });
 
@@ -138,7 +145,7 @@ void SnapshotRepository::reopen_folder() {
             SnapshotBundlePaths bundle_paths{schema_, dir_path_, range};
             // if all bundle paths exist
             if (std::ranges::all_of(bundle_paths.files(), [](const fs::path& p) { return fs::exists(p); })) {
-                SnapshotBundle bundle{schema_, dir_path_, range};
+                SnapshotBundle bundle = open_bundle(range);
                 bundles->insert_or_assign(num, std::make_shared<SnapshotBundle>(std::move(bundle)));
             }
         }
@@ -152,6 +159,14 @@ void SnapshotRepository::reopen_folder() {
 
     SILK_INFO << "Total reopened bundles: " << bundles_count()
               << " max block available: " << max_block_available();
+}
+
+SnapshotBundle SnapshotRepository::open_bundle(StepRange range) const {
+    return SnapshotBundle{schema_, dir_path_, range, index_salt_};
+}
+
+std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(Timestamp t) const {
+    return find_bundle(step_converter_->step_from_timestamp(t));
 }
 
 std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(Step step) const {
@@ -176,6 +191,30 @@ std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_in_rang
     return bundles;
 }
 
+std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_intersecting_range(StepRange range, bool ascending) const {
+    if (range.size() == 0) {
+        return {};
+    }
+    std::vector<std::shared_ptr<SnapshotBundle>> bundles;
+    for (const auto& bundle : view_bundles()) {
+        StepRange bundle_range = bundle->step_range();
+        if (range.contains_range(bundle_range) || bundle_range.contains(range.start) || bundle_range.contains(Step{range.end.value - 1})) {
+            bundles.push_back(bundle);
+        }
+    }
+    if (!ascending) {
+        std::ranges::reverse(bundles);
+    }
+    return bundles;
+}
+
+std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_intersecting_range(TimestampRange range, bool ascending) const {
+    if (range.size() == 0) {
+        return {};
+    }
+    return bundles_intersecting_range(step_converter_->step_range_from_timestamp_range(range), ascending);
+}
+
 SnapshotPathList SnapshotRepository::get_files(std::string_view ext) const {
     ensure(fs::exists(dir_path_),
            [&]() { return "SnapshotRepository: " + dir_path_.string() + " does not exist"; });
@@ -198,7 +237,7 @@ SnapshotPathList SnapshotRepository::get_files(std::string_view ext) const {
     }
 
     // Order snapshot files by version/block-range/type
-    std::sort(snapshot_files.begin(), snapshot_files.end());
+    std::ranges::sort(snapshot_files, std::less{});
 
     return snapshot_files;
 }
@@ -241,8 +280,8 @@ SnapshotPathList SnapshotRepository::stale_index_paths() const {
     SnapshotBundlePaths some_bundle_paths{schema_, path(), {Step{0}, Step{1}}};
     auto accessor_index_file_ext = some_bundle_paths.accessor_index_paths().begin()->second.extension();
     auto all_files = get_files(accessor_index_file_ext);
-    std::copy_if(
-        all_files.begin(), all_files.end(),
+    std::ranges::copy_if(
+        all_files,
         std::back_inserter(results),
         [this](const SnapshotPath& index_path) { return this->is_stale_index_path(index_path); });
     return results;
@@ -253,6 +292,11 @@ void SnapshotRepository::remove_stale_indexes() const {
         const bool removed = fs::remove(path.path());
         ensure(removed, [&]() { return "SnapshotRepository::remove_stale_indexes: cannot remove index file " + path.path().string(); });
     }
+}
+
+std::optional<uint32_t> SnapshotRepository::load_index_salt() const {
+    IndexSaltFile file{this->dir_path_ / schema_.index_salt_file_name()};
+    return file.exists() ? file.load() : std::optional<uint32_t>{};
 }
 
 void SnapshotRepository::build_indexes(const SnapshotBundlePaths& bundle) const {

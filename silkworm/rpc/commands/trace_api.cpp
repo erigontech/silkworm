@@ -50,7 +50,7 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
 
     SILK_TRACE << "call: " << call << " block_num_or_hash: " << block_num_or_hash << " config: " << config;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -99,7 +99,7 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
 
     SILK_TRACE << "#trace_calls: " << trace_calls.size() << " block_num_or_hash: " << block_num_or_hash;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -189,7 +189,7 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
 
     SILK_TRACE << "transaction: " << transaction << " config: " << config;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         tx->set_state_cache_enabled(/*cache_enabled=*/true);
@@ -238,7 +238,7 @@ Task<void> TraceRpcApi::handle_trace_replay_block_transactions(const nlohmann::j
 
     SILK_TRACE << " block_num_or_hash: " << block_num_or_hash << " config: " << config;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -276,7 +276,7 @@ Task<void> TraceRpcApi::handle_trace_replay_transaction(const nlohmann::json& re
 
     SILK_TRACE << "transaction_hash: " << silkworm::to_hex(transaction_hash) << " config: " << config;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -320,7 +320,7 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
 
     SILK_TRACE << " block_num_or_hash: " << block_num_or_hash;
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -366,7 +366,7 @@ Task<void> TraceRpcApi::handle_trace_filter(const nlohmann::json& request, json:
     stream.write_json_field("id", request["id"]);
     stream.write_field("jsonrpc", "2.0");
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -416,7 +416,7 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
         co_return;
     }
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -438,7 +438,7 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
                 reply = make_json_content(request);
             }
         }
-    } catch (const std::exception& e) {
+    } catch (const std::exception&) {
         reply = make_json_content(request);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
@@ -462,7 +462,7 @@ Task<void> TraceRpcApi::handle_trace_transaction(const nlohmann::json& request, 
 
     SILK_TRACE << "transaction_hash: " << silkworm::to_hex(transaction_hash);
 
-    auto tx = co_await database_->begin();
+    auto tx = co_await database_->begin_transaction();
 
     try {
         const auto chain_storage = tx->create_storage();
@@ -474,7 +474,7 @@ Task<void> TraceRpcApi::handle_trace_transaction(const nlohmann::json& request, 
             auto result = co_await executor.trace_transaction(*(tx_with_block->block_with_hash), tx_with_block->transaction, /* gas_bailout */ false);
             reply = make_json_content(request, result);
         }
-    } catch (const std::exception& e) {
+    } catch (const std::exception&) {
         reply = make_json_content(request);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();

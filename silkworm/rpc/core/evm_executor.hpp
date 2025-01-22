@@ -92,7 +92,7 @@ class EVMExecutor {
         WorkerPool& workers,
         const silkworm::Block& block,
         const silkworm::Transaction& txn,
-        TxnId txnId,
+        TxnId txn_id,
         StateFactory state_factory,
         const Tracers& tracers = {},
         bool refund = true,
@@ -106,11 +106,10 @@ class EVMExecutor {
           rule_set_{protocol::rule_set_factory(config)},
           execution_processor_{block, *rule_set_, *state_, config, false} {
         SILKWORM_ASSERT(rule_set_);
-        if (!has_service<AnalysisCacheService>(workers_)) {
-            make_service<AnalysisCacheService>(workers_);
-        }
     }
     virtual ~EVMExecutor() = default;
+
+    static void register_service(WorkerPool& workers) { make_service<AnalysisCacheService>(workers); }
 
     EVMExecutor(const EVMExecutor&) = delete;
     EVMExecutor& operator=(const EVMExecutor&) = delete;

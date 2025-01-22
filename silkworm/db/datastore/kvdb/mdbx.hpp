@@ -32,11 +32,13 @@
 #include <utility>
 
 #include <absl/functional/function_ref.h>
+#include <cpptrace/cpptrace.hpp>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/object_pool.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/os.hpp>
 
 namespace silkworm::datastore::kvdb {
@@ -228,9 +230,18 @@ class ROTxn {
 class ROTxnManaged : public ROTxn {
   public:
     explicit ROTxnManaged() : ROTxn{managed_txn_} {}
-    explicit ROTxnManaged(mdbx::env& env) : ROTxn{managed_txn_}, managed_txn_{env.start_read()} {}
-    explicit ROTxnManaged(mdbx::env&& env) : ROTxn{managed_txn_}, managed_txn_{std::move(env).start_read()} {}
-    ~ROTxnManaged() override = default;
+    explicit ROTxnManaged(mdbx::env& env) : ROTxn{managed_txn_}, managed_txn_{env.start_read()} {
+        const auto sf = cpptrace::generate_trace().frames;
+        SILK_INFO << "ROTxnManaged: " << sf[0] << " " << sf[1] << " " << sf[2] << " " << sf[3];
+    }
+    explicit ROTxnManaged(mdbx::env&& env) : ROTxn{managed_txn_}, managed_txn_{std::move(env).start_read()} {
+        const auto sf = cpptrace::generate_trace().frames;
+        SILK_INFO << "ROTxnManaged: " << sf[0] << " " << sf[1] << " " << sf[2] << " " << sf[3];
+    }
+    ~ROTxnManaged() override {
+        const auto sf = cpptrace::generate_trace().frames;
+        SILK_INFO << "~ROTxnManaged: " << sf[0] << " " << sf[1] << " " << sf[2] << " " << sf[3];
+    }
 
     // Not copyable
     ROTxnManaged(const ROTxnManaged&) = delete;

@@ -231,16 +231,13 @@ class ROTxnManaged : public ROTxn {
   public:
     explicit ROTxnManaged() : ROTxn{managed_txn_} {}
     explicit ROTxnManaged(mdbx::env& env) : ROTxn{managed_txn_}, managed_txn_{env.start_read()} {
-        const auto sf = cpptrace::generate_trace().frames;
-        SILK_INFO << "ROTxnManaged: " << sf[0] << " " << sf[1] << " " << sf[2] << " " << sf[3];
+        SILK_INFO << "ROTxnManaged: " << cpptrace::generate_trace().to_string();
     }
     explicit ROTxnManaged(mdbx::env&& env) : ROTxn{managed_txn_}, managed_txn_{std::move(env).start_read()} {
-        const auto sf = cpptrace::generate_trace().frames;
-        SILK_INFO << "ROTxnManaged: " << sf[0] << " " << sf[1] << " " << sf[2] << " " << sf[3];
+        SILK_INFO << "ROTxnManaged: " << cpptrace::generate_trace().to_string();
     }
     ~ROTxnManaged() override {
-        const auto sf = cpptrace::generate_trace().frames;
-        SILK_INFO << "~ROTxnManaged: " << sf[0] << " " << sf[1] << " " << sf[2] << " " << sf[3];
+        SILK_INFO << "~ROTxnManaged: " << cpptrace::generate_trace().to_string();
     }
 
     // Not copyable

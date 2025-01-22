@@ -34,6 +34,7 @@ class SilkwormRecipe(ConanFile):
         self.requires('benchmark/1.6.1')
         self.requires('boost/1.83.0')
         self.requires('cli11/2.2.0')
+        self.requires('cpptrace/0.7.0')
         self.requires('gmp/6.2.1')
         self.requires('grpc/1.67.1')
         self.requires('gtest/1.12.1')

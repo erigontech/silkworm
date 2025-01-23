@@ -23,12 +23,17 @@
 
 #include <silkworm/infra/concurrency/sleep.hpp>
 #include <silkworm/rpc/test_util/service_context_test_base.hpp>
-#include <silkworm/sync/block_exchange.hpp>
 
 #include "test_util/mock_block_exchange.hpp"
 #include "test_util/mock_execution_client.hpp"
 
 namespace silkworm::chainsync {
+
+using namespace std::chrono_literals;
+using testing::_;
+using testing::InvokeWithoutArgs;
+
+using namespace execution::api;
 
 class PoSSyncTest : public rpc::test_util::ServiceContextTestBase {
   public:
@@ -106,22 +111,110 @@ static rpc::NewPayloadRequest make_payload_request_v3() {
     return request;
 }
 
-TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
-    using namespace std::chrono_literals;
-    using testing::_;
-    using testing::InvokeWithoutArgs;
+static const std::array kNewPayloadRequests{
+    make_fixed_payload_request(rpc::ExecutionPayload::kV1),
+    make_fixed_payload_request(rpc::ExecutionPayload::kV2),
+    make_fixed_payload_request(rpc::ExecutionPayload::kV3),
+    make_payload_request_v3(),
+};
 
-    const std::array requests{
-        make_fixed_payload_request(rpc::ExecutionPayload::kV1),
-        make_fixed_payload_request(rpc::ExecutionPayload::kV2),
-        make_fixed_payload_request(rpc::ExecutionPayload::kV3),
-        make_payload_request_v3(),
-    };
-    for (size_t i{0}; i < requests.size(); ++i) {
-        const auto& request{requests[i]};
+TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload.get_header_timeout", "[sync]") {
+    for (size_t i{0}; i < kNewPayloadRequests.size(); ++i) {
+        const auto& request{kNewPayloadRequests[i]};
         const auto& payload{request.execution_payload};
-        BlockId block_num_or_hash{payload.block_num, payload.block_hash};
-        execution::api::BlockNumOrHash parent_block_num_or_hash{payload.parent_hash};
+        SECTION("payload version: v" + std::to_string(payload.version) + " i=" + std::to_string(i)) {
+            EXPECT_CALL(*execution_service, get_header(BlockNumOrHash{payload.parent_hash}))
+                .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> {
+                    co_await sleep(1h);  // simulate exaggeratedly long-running task
+                    co_return BlockHeader{};
+                }));
+
+            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == rpc::PayloadStatus::kSyncingStr);
+        }
+    }
+}
+
+TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload.get_td_timeout", "[sync]") {
+    for (size_t i{0}; i < kNewPayloadRequests.size(); ++i) {
+        const auto& request{kNewPayloadRequests[i]};
+        const auto& payload{request.execution_payload};
+        const execution::api::BlockNumOrHash parent_block_num_or_hash{payload.parent_hash};
+        SECTION("payload version: v" + std::to_string(payload.version) + " i=" + std::to_string(i)) {
+            EXPECT_CALL(*execution_service, get_header(parent_block_num_or_hash))
+                .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> {
+                    co_return BlockHeader{};
+                }));
+            EXPECT_CALL(*execution_service, get_td(parent_block_num_or_hash))
+                .WillOnce(InvokeWithoutArgs([&]() -> Task<std::optional<TotalDifficulty>> {
+                    co_await sleep(1h);  // simulate exaggeratedly long-running task
+                    co_return kSepoliaConfig.terminal_total_difficulty;
+                }));
+
+            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == rpc::PayloadStatus::kSyncingStr);
+        }
+    }
+}
+
+TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload.insert_blocks_timeout", "[sync]") {
+    for (size_t i{0}; i < kNewPayloadRequests.size(); ++i) {
+        const auto& request{kNewPayloadRequests[i]};
+        const auto& payload{request.execution_payload};
+        const execution::api::BlockNumOrHash parent_block_num_or_hash{payload.parent_hash};
+        SECTION("payload version: v" + std::to_string(payload.version) + " i=" + std::to_string(i)) {
+            EXPECT_CALL(*execution_service, get_header(parent_block_num_or_hash))
+                .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> {
+                    co_return BlockHeader{};
+                }));
+            EXPECT_CALL(*execution_service, get_td(parent_block_num_or_hash))
+                .WillOnce(InvokeWithoutArgs([&]() -> Task<std::optional<TotalDifficulty>> {
+                    co_return kSepoliaConfig.terminal_total_difficulty;
+                }));
+            EXPECT_CALL(*execution_service, insert_blocks(_))
+                .WillOnce(InvokeWithoutArgs([]() -> Task<execution::api::InsertionResult> {
+                    co_await sleep(1h);  // simulate exaggeratedly long-running task
+                    co_return execution::api::InsertionResult{};
+                }));
+
+            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == rpc::PayloadStatus::kSyncingStr);
+        }
+    }
+}
+
+TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload.get_header_hash_number_timeout", "[sync]") {
+    for (size_t i{0}; i < kNewPayloadRequests.size(); ++i) {
+        const auto& request{kNewPayloadRequests[i]};
+        const auto& payload{request.execution_payload};
+        const execution::api::BlockNumOrHash parent_block_num_or_hash{payload.parent_hash};
+        SECTION("payload version: v" + std::to_string(payload.version) + " i=" + std::to_string(i)) {
+            EXPECT_CALL(*execution_service, get_header(parent_block_num_or_hash))
+                .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> {
+                    co_return BlockHeader{};
+                }));
+            EXPECT_CALL(*execution_service, get_td(parent_block_num_or_hash))
+                .WillOnce(InvokeWithoutArgs([&]() -> Task<std::optional<TotalDifficulty>> {
+                    co_return kSepoliaConfig.terminal_total_difficulty;
+                }));
+            EXPECT_CALL(*execution_service, insert_blocks(_))
+                .WillOnce(InvokeWithoutArgs([]() -> Task<execution::api::InsertionResult> {
+                    co_return execution::api::InsertionResult{};
+                }));
+            EXPECT_CALL(*execution_service, get_header_hash_number(Hash{payload.block_hash}))
+                .WillOnce(InvokeWithoutArgs([=]() -> Task<std::optional<BlockNum>> {
+                    co_await sleep(1h);  // simulate exaggeratedly long-running task
+                    co_return payload.block_num;
+                }));
+
+            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == rpc::PayloadStatus::kSyncingStr);
+        }
+    }
+}
+
+TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload.validate_chain_timeout", "[sync]") {
+    for (size_t i{0}; i < kNewPayloadRequests.size(); ++i) {
+        const auto& request{kNewPayloadRequests[i]};
+        const auto& payload{request.execution_payload};
+        const BlockId block_num_or_hash{payload.block_num, payload.block_hash};
+        const execution::api::BlockNumOrHash parent_block_num_or_hash{payload.parent_hash};
         SECTION("payload version: v" + std::to_string(payload.version) + " i=" + std::to_string(i)) {
             EXPECT_CALL(*execution_service, get_header(parent_block_num_or_hash))
                 .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> {
@@ -144,6 +237,87 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
             CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == rpc::PayloadStatus::kSyncingStr);
         }
     }
+}
+
+TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload.validate_chain_success", "[sync]") {
+    for (size_t i{0}; i < kNewPayloadRequests.size(); ++i) {
+        const auto& request{kNewPayloadRequests[i]};
+        const auto& payload{request.execution_payload};
+        const BlockId block_num_or_hash{payload.block_num, payload.block_hash};
+        const execution::api::BlockNumOrHash parent_block_num_or_hash{payload.parent_hash};
+        SECTION("payload version: v" + std::to_string(payload.version) + " i=" + std::to_string(i)) {
+            EXPECT_CALL(*execution_service, get_header(parent_block_num_or_hash))
+                .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> {
+                    co_return BlockHeader{};
+                }));
+            EXPECT_CALL(*execution_service, get_td(parent_block_num_or_hash))
+                .WillOnce(InvokeWithoutArgs([&]() -> Task<std::optional<TotalDifficulty>> {
+                    co_return kSepoliaConfig.terminal_total_difficulty;
+                }));
+            EXPECT_CALL(*execution_service, insert_blocks(_))
+                .WillOnce(InvokeWithoutArgs([]() -> Task<execution::api::InsertionResult> { co_return execution::api::InsertionResult{}; }));
+            EXPECT_CALL(*execution_service, get_header_hash_number(Hash{payload.block_hash}))
+                .WillOnce(InvokeWithoutArgs([=]() -> Task<std::optional<BlockNum>> { co_return payload.block_num; }));
+            EXPECT_CALL(*execution_service, validate_chain(block_num_or_hash))
+                .WillOnce(InvokeWithoutArgs([&]() -> Task<execution::api::ValidationResult> {
+                    co_return execution::api::ValidChain{};
+                }));
+
+            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == rpc::PayloadStatus::kValidStr);
+        }
+    }
+}
+
+static const rpc::ForkChoiceUpdatedRequest kInvalidForkChoiceUpdatedRequest{
+    .fork_choice_state = rpc::ForkChoiceState{
+        .head_block_hash = kZeroHash,
+        .safe_block_hash = kZeroHash,
+        .finalized_block_hash = kZeroHash,
+    },
+};
+
+TEST_CASE_METHOD(PoSSyncTest, "PoSSync::fork_choice_updated.invalid_request", "[sync]") {
+    const auto request = kInvalidForkChoiceUpdatedRequest;
+    CHECK(spawn_and_wait(sync_.fork_choice_updated(request, 1ms)).payload_status.status == rpc::PayloadStatus::kInvalidStr);
+}
+
+static const rpc::ForkChoiceUpdatedRequest kValidForkChoiceUpdatedRequest{
+    .fork_choice_state = rpc::ForkChoiceState{
+        .head_block_hash = 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32,
+        .safe_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
+        .finalized_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
+    },
+};
+
+TEST_CASE_METHOD(PoSSyncTest, "PoSSync::fork_choice_updated.get_header1_timeout", "[sync]") {
+    const auto request = kValidForkChoiceUpdatedRequest;
+    const auto& fork_choice_state{request.fork_choice_state};
+    const execution::api::BlockNumOrHash head_block_hash{fork_choice_state.head_block_hash};
+    EXPECT_CALL(*execution_service, get_header(head_block_hash))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> {
+            co_await sleep(1h);  // simulate exaggeratedly long-running task
+            co_return BlockHeader{};
+        }));
+
+    CHECK(spawn_and_wait(sync_.fork_choice_updated(request, 1ms)).payload_status.status == rpc::PayloadStatus::kSyncingStr);
+}
+
+TEST_CASE_METHOD(PoSSyncTest, "PoSSync::fork_choice_updated.get_header2_timeout", "[sync]") {
+    const auto request = kValidForkChoiceUpdatedRequest;
+    const auto& fork_choice_state{request.fork_choice_state};
+    const execution::api::BlockNumOrHash head_block_hash{fork_choice_state.head_block_hash};
+    const auto head_parent_hash = 0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32;
+    EXPECT_CALL(*execution_service, get_header(head_block_hash))
+        .WillOnce(InvokeWithoutArgs([&]() -> Task<std::optional<BlockHeader>> {
+            co_return BlockHeader{.parent_hash = head_parent_hash};
+        }));
+    const execution::api::BlockNumOrHash head_parent_block_num_or_hash{head_parent_hash};
+    EXPECT_CALL(*execution_service, get_header(head_parent_block_num_or_hash))
+        .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> {
+            co_return BlockHeader{};
+        }));
+
+    CHECK(spawn_and_wait(sync_.fork_choice_updated(request, 1ms)).payload_status.status == rpc::PayloadStatus::kSyncingStr);
 }
 
 }  // namespace silkworm::chainsync

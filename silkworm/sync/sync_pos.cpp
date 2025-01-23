@@ -142,7 +142,6 @@ std::tuple<bool, Hash> PoSSync::has_valid_ancestor(const Hash&) {
 Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& request, std::chrono::milliseconds timeout) {
     // Implementation of engine_new_payloadVx method
     using namespace execution;
-    constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
     auto terminal_total_difficulty = block_exchange_.chain_config().terminal_total_difficulty;
     const auto no_latest_valid_hash = std::nullopt;
 
@@ -173,14 +172,16 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
             co_return rpc::PayloadStatus::kSyncing;
         }
 
-        auto [valid, last_valid] = has_valid_ancestor(block_hash);
+        const auto [valid, last_valid] = has_valid_ancestor(block_hash);
         if (!valid) co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalidStr, last_valid, "bad ancestor"};
 
         // Find attaching point using chain fork view first to avoid remote access to execution
         auto parent_td = chain_fork_view_.get_total_difficulty(block->header.number - 1, block->header.parent_hash);
         if (!parent_td) {
             // if not found, try to get it from the execution engine
-            const auto parent = co_await exec_engine_->get_header(block->header.parent_hash);
+            const auto parent_var = co_await (exec_engine_->get_header(block->header.parent_hash) || concurrency::timeout(timeout));
+            ensure(std::holds_alternative<std::optional<BlockHeader>>(parent_var), "PoSSync: unexpected awaitable operators outcome");
+            const auto parent = std::get<std::optional<BlockHeader>>(parent_var);
             if (!parent) {
                 SILK_TRACE << "PoSSync: new_payload parent=" << Hash(block->header.parent_hash) << " NOT found, extend the chain";
                 // send payload to the block exchange to extend the chain up to it
@@ -189,25 +190,30 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
             }
             SILK_TRACE << "PoSSync: new_payload parent=" << Hash(block->header.parent_hash) << " found, add to chain fork";
             // if found, add it to the chain_fork_view_ and calc total difficulty
-            parent_td = co_await exec_engine_->get_td(block->header.parent_hash);
-            // TODO(canepat) either remove caching here or use a distinct cache (the same ChainForkView eats on itself)
+            const auto parent_td_var = co_await (exec_engine_->get_td(block->header.parent_hash) || concurrency::timeout(timeout));
+            ensure(std::holds_alternative<std::optional<TotalDifficulty>>(parent_td_var), "PoSSync: unexpected awaitable operators outcome");
+            parent_td = std::get<std::optional<TotalDifficulty>>(parent_td_var);
             chain_fork_view_.add(*parent, *parent_td);
-        }  // maybe we can simplify the code above returning kSyncing if parent_td is not found on  chain_fork_view
+        }  // maybe we can simplify the code above returning kSyncing if parent_td is not found on chain_fork_view
 
         // do sanity checks
-        do_sanity_checks(block->header, /*parent,*/ *parent_td);
+        do_sanity_checks(block->header, *parent_td);
 
         // block_exchange_.insert(block);  // todo: implement, like HeaderChain::initial_status + BodySequence::add_to_announcements
 
         // insert the new block
         std::vector<std::shared_ptr<Block>> blocks{block};
-        const auto insert_result{co_await exec_engine_->insert_blocks(blocks)};
+        const auto insert_result_var = co_await (exec_engine_->insert_blocks(blocks) || concurrency::timeout(timeout));
+        ensure(std::holds_alternative<execution::api::InsertionResult>(insert_result_var), "PoSSync: unexpected awaitable operators outcome");
+        const auto insert_result = std::get<execution::api::InsertionResult>(insert_result_var);
         if (!insert_result) {
             SILK_ERROR << "PoSSync: cannot insert " << blocks.size() << " blocks, error=" << insert_result.status;
             co_return rpc::PayloadStatus::kSyncing;
         }
 
-        const auto block_num = co_await exec_engine_->get_header_hash_number(block_hash);
+        const auto block_num_var = co_await (exec_engine_->get_header_hash_number(block_hash) || concurrency::timeout(timeout));
+        ensure(std::holds_alternative<std::optional<BlockNum>>(block_num_var), "PoSSync: unexpected awaitable operators outcome");
+        const auto block_num = std::get<std::optional<BlockNum>>(block_num_var);
         if (!block_num) {
             co_return rpc::PayloadStatus::kAccepted;
         }
@@ -226,9 +232,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
             // INVALID
             const auto invalid_chain = std::get<execution::api::InvalidChain>(verification);
             auto unwind_point_td = chain_fork_view_.get_total_difficulty(invalid_chain.unwind_point.hash);
-            Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty
-                                         ? kZeroHash
-                                         : invalid_chain.unwind_point.hash;
+            Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty ? kZeroHash : invalid_chain.unwind_point.hash;
             SILK_INFO << "PoSSync: new_payload INVALID latest_valid_hash=" << latest_valid_hash;
             co_return rpc::PayloadStatus{.status = rpc::PayloadStatus::kInvalidStr, .latest_valid_hash = latest_valid_hash};
         } else {
@@ -257,7 +261,6 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
 Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkChoiceUpdatedRequest& request, std::chrono::milliseconds timeout) {
     // Implementation of engine_forkchoiceUpdatedVx method
     using namespace execution;
-    constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
     auto terminal_total_difficulty = block_exchange_.chain_config().terminal_total_difficulty;
     auto no_latest_valid_hash = std::nullopt;
 
@@ -271,9 +274,12 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
                   << " safe_block_hash=" << Hash(state.safe_block_hash) << " finalized_block_hash=" << Hash(state.finalized_block_hash);
 
         Hash head_header_hash = state.head_block_hash;
-        const auto head_header = co_await exec_engine_->get_header(head_header_hash);  // todo: decide whether to use chain_fork_view_ cache instead
+        const auto head_header_var = co_await (exec_engine_->get_header(head_header_hash) ||
+                                               concurrency::timeout(timeout));  // todo: decide whether to use chain_fork_view_ cache instead
+        ensure(std::holds_alternative<std::optional<BlockHeader>>(head_header_var), "PoSSync: unexpected awaitable operators outcome");
+        const auto head_header = std::get<std::optional<BlockHeader>>(head_header_var);
         if (!head_header) {
-            auto [valid, last_valid] = has_valid_ancestor(head_header_hash);
+            const auto [valid, last_valid] = has_valid_ancestor(head_header_hash);
             if (!valid) co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalidStr, last_valid, "bad ancestor"}};
 
             SILK_INFO << "PoSSync: fork_choice_update head header not found => SYNCING";
@@ -284,12 +290,15 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
 
         // BlockId head{head_header->number, head_header_hash};
 
-        const auto parent = co_await exec_engine_->get_header(head_header->parent_hash);  // todo: decide whether to use chain_fork_view_ cache instead
-        if (!parent) {
+        const auto parent_header_var = co_await (exec_engine_->get_header(head_header->parent_hash) ||
+                                                 concurrency::timeout(timeout));  // todo: decide whether to use chain_fork_view_ cache instead
+        ensure(std::holds_alternative<std::optional<BlockHeader>>(parent_header_var), "PoSSync: unexpected awaitable operators outcome");
+        const auto parent_header = std::get<std::optional<BlockHeader>>(parent_header_var);
+        if (!parent_header) {
             SILK_INFO << "PoSSync: fork_choice_update parent header not found => SYNCING";
             co_return rpc::ForkChoiceUpdatedReply{rpc::PayloadStatus::kSyncing};
         }
-        auto parent_td = chain_fork_view_.get_total_difficulty(head_header->number - 1, head_header->parent_hash);
+        const auto parent_td = chain_fork_view_.get_total_difficulty(head_header->number - 1, head_header->parent_hash);
         if (!parent_td) {
             SILK_INFO << "PoSSync: fork_choice_update TD not found for parent block number=" << (head_header->number - 1)
                       << " hash=" << Hash(head_header->parent_hash) << " => SYNCING";
@@ -308,9 +317,7 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
             // INVALID
             auto invalid_chain = std::get<execution::api::InvalidChain>(verification);
             auto unwind_point_td = chain_fork_view_.get_total_difficulty(invalid_chain.unwind_point.hash);
-            Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty
-                                         ? kZeroHash
-                                         : invalid_chain.unwind_point.hash;
+            Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty ? kZeroHash : invalid_chain.unwind_point.hash;
             SILK_INFO << "PoSSync: fork_choice_update INVALID latest_valid_hash=" << latest_valid_hash;
             co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalidStr, latest_valid_hash}};
         } else if (std::holds_alternative<execution::api::ValidationError>(verification)) {

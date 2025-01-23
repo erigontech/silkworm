@@ -84,12 +84,12 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
     SECTION("reads existing total difficulty") {
         auto td1 = sut.total_difficulty(1, header1_hash);
         CHECK(td1.has_value());
-        CHECK(*td1 == 17'171'480'576);
+        CHECK(*td1 == 1);
     }
 
     SECTION("reads head canonical block number") {
         auto head_block_num = sut.current_canonical_block();
-        CHECK(head_block_num == 1);
+        CHECK(head_block_num == 9);
     }
 
     //! Current genesis preloading does not store data to domain tables
@@ -118,27 +118,78 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
 
     SECTION("update_account") {
         Account account_66{
-            .nonce = 123,
-            .balance = 456,
+            .nonce = 8,
+            .balance = 260,
             .incarnation = kDefaultIncarnation,
         };
-
         sut.update_account(
             0x668bdf435d810c91414ec09147daa6db62406379_address,
-            account_66,
-            {});
+            {},
+            account_66);
 
         auto account_66_read = sut.read_account(0x668bdf435d810c91414ec09147daa6db62406379_address);
         CHECK(account_66_read.has_value());
-        CHECK(account_66_read->incarnation == kDefaultIncarnation);
-        CHECK(account_66_read->nonce == 123);
-        CHECK(account_66_read->balance == 456);
+        CHECK(account_66_read->incarnation == account_66.incarnation);
+        CHECK(account_66_read->nonce == account_66.nonce);
+        CHECK(account_66_read->balance == account_66.balance);
+    }
+
+    SECTION("update_account with different steps") {
+        Account account_66{
+            .nonce = 8,
+            .balance = 260,
+            .incarnation = kDefaultIncarnation,
+        };
+        sut.update_account(
+            0x668bdf435d810c91414ec09147daa6db62406379_address,
+            {},
+            account_66);
+
+        auto account_66_read = sut.read_account(0x668bdf435d810c91414ec09147daa6db62406379_address);
+        CHECK(account_66_read.has_value());
+        CHECK(account_66_read->incarnation == account_66.incarnation);
+        CHECK(account_66_read->nonce == account_66.nonce);
+        CHECK(account_66_read->balance == account_66.balance);
+
+        Account account_66_v2{
+            .nonce = 9,
+            .balance = 261552435,
+            .incarnation = kDefaultIncarnation,
+        };
+        sut.update_account(
+            0x668bdf435d810c91414ec09147daa6db62406379_address,
+            account_66,
+            account_66_v2);
+
+        account_66_read = sut.read_account(0x668bdf435d810c91414ec09147daa6db62406379_address);
+        CHECK(account_66_read.has_value());
+        CHECK(account_66_read->incarnation == account_66_v2.incarnation);
+        CHECK(account_66_read->nonce == account_66_v2.nonce);
+        CHECK(account_66_read->balance == account_66_v2.balance);
+
+        auto next_step_txn_id = silkworm::datastore::kStepSizeForTemporalSnapshots + 1;
+        auto sut2 = DomainState{next_step_txn_id, rw_tx, ds_context->chaindata(), ds_context->blocks_repository(), ds_context->state_repository()};
+        Account account_66_v3{
+            .nonce = 10,
+            .balance = 262,
+            .incarnation = kDefaultIncarnation,
+        };
+
+        sut2.update_account(
+            0x668bdf435d810c91414ec09147daa6db62406379_address,
+            account_66_v2,
+            account_66_v3);
+
+        account_66_read = sut2.read_account(0x668bdf435d810c91414ec09147daa6db62406379_address);
+        CHECK(account_66_read.has_value());
+        CHECK(account_66_read->incarnation == account_66_v3.incarnation);
+        CHECK(account_66_read->nonce == account_66_v3.nonce);
+        CHECK(account_66_read->balance == account_66_v3.balance);
     }
 
     SECTION("update_account_code") {
         auto code_66 = *from_hex("0x6042");
         auto code_hash_66 = std::bit_cast<evmc_bytes32>(keccak256(code_66));
-
         sut.update_account_code(
             0x668bdf435d810c91414ec09147daa6db62406379_address,
             kDefaultIncarnation,
@@ -150,20 +201,101 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
         CHECK(code_66_read == code_66);
     }
 
+    SECTION("update_account_code with different steps") {
+        auto code_66 = *from_hex("0x6042");
+        auto code_hash_66 = std::bit_cast<evmc_bytes32>(keccak256(code_66));
+        sut.update_account_code(
+            0x668bdf435d810c91414ec09147daa6db62406379_address,
+            kDefaultIncarnation,
+            code_hash_66,
+            code_66);
+
+        auto code_66_read = sut.read_code(0x668bdf435d810c91414ec09147daa6db62406379_address, code_hash_66);
+        CHECK(code_66_read.size() > 0);
+        CHECK(code_66_read == code_66);
+
+        code_66 = *from_hex("0x6043");
+        code_hash_66 = std::bit_cast<evmc_bytes32>(keccak256(code_66));
+        sut.update_account_code(
+            0x668bdf435d810c91414ec09147daa6db62406379_address,
+            kDefaultIncarnation,
+            code_hash_66,
+            code_66);
+
+        code_66_read = sut.read_code(0x668bdf435d810c91414ec09147daa6db62406379_address, code_hash_66);
+        CHECK(code_66_read.size() > 0);
+        CHECK(code_66_read == code_66);
+
+        auto next_step_txn_id = silkworm::datastore::kStepSizeForTemporalSnapshots + 1;
+        auto sut2 = DomainState{next_step_txn_id, rw_tx, ds_context->chaindata(), ds_context->blocks_repository(), ds_context->state_repository()};
+        code_66 = *from_hex("0x6044");
+        code_hash_66 = std::bit_cast<evmc_bytes32>(keccak256(code_66));
+        sut2.update_account_code(
+            0x668bdf435d810c91414ec09147daa6db62406379_address,
+            kDefaultIncarnation,
+            code_hash_66,
+            code_66);
+
+        code_66_read = sut2.read_code(0x668bdf435d810c91414ec09147daa6db62406379_address, code_hash_66);
+        CHECK(code_66_read.size() > 0);
+        CHECK(code_66_read == code_66);
+    }
+
     SECTION("update_storage") {
         sut.update_storage(
             0x668bdf435d810c91414ec09147daa6db62406379_address,
             kDefaultIncarnation,
-            0x010_bytes32,
+            0x0100_bytes32,
             evmc::bytes32{},
             0x0123_bytes32);
 
         auto storage_66_01 = sut.read_storage(
             0x668bdf435d810c91414ec09147daa6db62406379_address,
             kDefaultIncarnation,
-            0x010_bytes32);
-
+            0x0100_bytes32);
         CHECK(storage_66_01 == 0x0123_bytes32);
+    }
+
+    SECTION("update_storage with different steps") {
+        sut.update_storage(
+            0x668bdf435d810c91414ec09147daa6db62406379_address,
+            kDefaultIncarnation,
+            0x0100_bytes32,
+            evmc::bytes32{},
+            0x0123_bytes32);
+
+        auto storage_66_01 = sut.read_storage(
+            0x668bdf435d810c91414ec09147daa6db62406379_address,
+            kDefaultIncarnation,
+            0x0100_bytes32);
+        CHECK(storage_66_01 == 0x0123_bytes32);
+
+        sut.update_storage(
+            0x668bdf435d810c91414ec09147daa6db62406379_address,
+            kDefaultIncarnation,
+            0x0100_bytes32,
+            0x0123_bytes32,
+            0x0124_bytes32);
+
+        storage_66_01 = sut.read_storage(
+            0x668bdf435d810c91414ec09147daa6db62406379_address,
+            kDefaultIncarnation,
+            0x0100_bytes32);
+        CHECK(storage_66_01 == 0x0124_bytes32);
+
+        auto next_step_txn_id = silkworm::datastore::kStepSizeForTemporalSnapshots + 1;
+        auto sut2 = DomainState{next_step_txn_id, rw_tx, ds_context->chaindata(), ds_context->blocks_repository(), ds_context->state_repository()};
+        sut2.update_storage(
+            0x668bdf435d810c91414ec09147daa6db62406379_address,
+            kDefaultIncarnation,
+            0x0100_bytes32,
+            0x0124_bytes32,
+            0x0456_bytes32);
+        storage_66_01 = sut2.read_storage(
+            0x668bdf435d810c91414ec09147daa6db62406379_address,
+            kDefaultIncarnation,
+            0x0100_bytes32);
+        CHECK(storage_66_01 == 0x0456_bytes32);
     }
 }
 

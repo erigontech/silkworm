@@ -44,22 +44,35 @@ struct DomainGetLatestQuery {
         key_encoder.value.key.value = key;
         key_encoder.value.timestamp.value = Step{std::numeric_limits<decltype(Step::value)>::max()};
         Slice key_slice = key_encoder.encode();
+        SILK_DEBUG << "Querying " << entity.values_table.name << " with key " << to_hex(datastore::kvdb::from_slice(key_slice), true) << " ";
 
-        auto result = tx.ro_cursor(entity.values_table)->lower_bound(key_slice, false);
-        if (!result) return std::nullopt;
+        auto result = entity.has_large_values ? tx.ro_cursor(entity.values_table)->lower_bound(key_slice, false) : tx.ro_cursor(entity.values_table)->find(key_slice, false);
+
+        if (!result) {
+            SILK_DEBUG << "key not found" << std::endl;
+            return std::nullopt;
+        }
 
         DomainKeyDecoder<RawDecoder<ByteView>> key_decoder{entity.has_large_values};
         key_decoder.decode(result.key);
-        if (key_decoder.value.key.value != from_slice(key_slice)) return std::nullopt;
+        if (key_decoder.value.key.value != from_slice(key_slice)) {
+            SILK_DEBUG << "key not found (decoded to different value)" << std::endl;
+            return std::nullopt;
+        }
 
         DomainValueDecoder<RawDecoder<ByteView>> empty_value_decoder{entity.has_large_values};
         empty_value_decoder.decode(result.value);
-        if (empty_value_decoder.value.value.value.empty()) return std::nullopt;
+        if (empty_value_decoder.value.value.value.empty()) {
+            SILK_DEBUG << "empty value" << std::endl;
+            return std::nullopt;
+        }
 
         DomainValueDecoder<TValueDecoder> value_decoder{entity.has_large_values};
         value_decoder.decode(result.value);
 
         Step step = Step(key_decoder.value.timestamp.value.value | value_decoder.value.timestamp.value.value);
+
+        SILK_DEBUG << "found value " << to_hex(datastore::kvdb::from_slice(result.value), true) << " at step " << step.to_string() << " resulting key " << to_hex(datastore::kvdb::from_slice(result.key), true) << std::endl;
 
         return Result{std::move(value_decoder.value.value.value), step};
     }

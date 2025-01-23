@@ -28,7 +28,8 @@ using namespace db::state;
 using namespace datastore;
 
 // TODO:
-//  - implement: state_root_hash, canonize_block, decanonize_block, insert_call_traces
+//  - implement: state_root_hash, canonize_block, decanonize_block (optional)
+//  - implement insert_call_traces (mandatory)
 //  - add begin_txn method (replacing begin_block?)
 //  - insert_receipts should write to domain receipts table db::state::kDomainNameReceipts
 //  - add buffer saving previous steps for values in accounts, code and storage domains - for updates
@@ -178,6 +179,7 @@ void DomainState::update_storage(
 
     Step prev_step{0};
     if (result_prev) {
+        SILK_DEBUG << "Found previous value " << to_hex(result_prev->value, true) << " step " << result_prev->step.to_string() << std::endl;
         prev_step = result_prev->step;
     }
 

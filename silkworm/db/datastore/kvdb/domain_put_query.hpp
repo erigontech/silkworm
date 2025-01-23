@@ -37,15 +37,15 @@ struct DomainPutQuery {
         const std::optional<Value>& prev_value,
         Step prev_step) {
         DomainPutLatestQuery<TKeyEncoder, TValueEncoder> value_query{tx, entity};
-        value_query.exec(key, value, prev_step);
+        value_query.exec(key, value, Step::from_txn_id(timestamp));
 
         if (entity.history) {
             if (prev_value) {
                 HistoryPutQuery<TKeyEncoder, TValueEncoder> history_query{tx, *entity.history};
-                history_query.exec(key, *prev_value, timestamp);
+                history_query.exec(key, *prev_value, prev_step.value);
             } else {
                 HistoryDeleteQuery<TKeyEncoder> history_query{tx, *entity.history};
-                history_query.exec(key, timestamp);
+                history_query.exec(key, prev_step.value);
             }
         }
     }

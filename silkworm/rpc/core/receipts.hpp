@@ -39,4 +39,12 @@ Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx,
                                                 const db::chain::ChainStorage& chain_storage,
                                                 WorkerPool& workers);
 
+Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
+                                          const silkworm::Block& block,
+                                          TxnId txn_id,
+                                          uint32_t tx_index,
+                                          const silkworm::Transaction& transaction,
+                                          const db::chain::ChainStorage& chain_storage,
+                                          WorkerPool& workers);
+
 }  // namespace silkworm::rpc::core

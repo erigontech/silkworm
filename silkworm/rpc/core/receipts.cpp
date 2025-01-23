@@ -19,6 +19,7 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/db/state/receipts_domain.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -33,6 +34,9 @@ namespace silkworm::rpc::core {
 using ethdb::walk;
 
 static constexpr int kGasPerBlob = 0x20000;
+static constexpr Bytes CumulativeGasUsedKey{0x0};
+static constexpr Bytes CumulativeBlocGasUsedKey{0x1};
+static constexpr Bytes FirstLogIndexKey{0x2};
 
 Task<Receipts> get_receipts(db::kv::api::Transaction& tx,
                             const silkworm::BlockWithHash& block_with_hash,
@@ -194,6 +198,91 @@ Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx,
     });
 
     co_return receipts;
+}
+
+Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
+                                          const silkworm::Block& block,
+                                          TxnId txn_id,
+                                          uint32_t tx_index,
+                                          const silkworm::Transaction& transaction,
+                                          const db::chain::ChainStorage& chain_storage,
+                                          WorkerPool& workers) {
+    const auto chain_config = co_await chain_storage.read_chain_config();
+    auto current_executor = co_await boost::asio::this_coro::executor;
+
+    execution::StateFactory state_factory{tx};
+
+    auto new_receipt = co_await async_task(workers.executor(), [&]() -> Receipt {
+        auto state = state_factory.create_state(current_executor, chain_storage, txn_id);
+
+        EVMExecutor executor{block, chain_config, workers, state};
+
+        Receipt receipt;
+
+        auto result = executor.call_with_receipt(block, transaction, receipt, {}, /*refund=*/true, /*gas_bailout=*/false);
+
+        return receipt;
+    });
+
+
+    txn_id++; // query db on next txn
+
+    db::kv::api::GetAsOfQuery query_cumulative_gas{
+        .table = db::table::kReceiptDomain,
+        .key = CumulativeGasUsedKey,
+        .timestamp = static_cast<db::kv::api::Timestamp>(txn_id),
+     };
+    auto result = co_await tx.get_as_of(std::move(query_cumulative_gas));
+    if (!result.success) {
+        co_return std::nullopt;
+    }
+
+    db::state::VarintSnapshotsDecoder varint;
+    varint.decode_word(result.value);
+    auto first_cumulative_gas_used_in_tx = varint.value;
+
+#ifdef notdef
+    db::kv::api::GetAsOfQuery query_cumulative_blolb_gas{
+        .table = db::table::kReceiptDomain,
+        .key = CumulativeBlocGasUsedKey,
+        .timestamp = static_cast<db::kv::api::Timestamp>(txn_id),
+      };
+    result = co_await tx.get_as_of(std::move(query_cumulative_blolb_gas));
+    if (!result.success) {
+        co_return std::nullopt;
+    }
+    varint.decode_word(result.value);
+    auto first_blob_gas_used_in_tx = varint.value;
+#endif
+
+    db::kv::api::GetAsOfQuery query_first_log_index {
+        .table = db::table::kReceiptDomain,
+        .key = FirstLogIndexKey,
+        .timestamp = static_cast<db::kv::api::Timestamp>(txn_id),
+      };
+    result = co_await tx.get_as_of(std::move(query_first_log_index));
+    if (!result.success) {
+        co_return std::nullopt;
+    }
+
+    varint.decode_word(result.value);
+    auto first_log_index = varint.value;
+
+    new_receipt.cumulative_gas_used = first_cumulative_gas_used_in_tx;
+    new_receipt.from = transaction.sender();
+    new_receipt.to = transaction.to;
+    new_receipt.type = transaction.type;
+
+    for (auto& curr_log : new_receipt.logs) {
+        curr_log.block_num = block.header.number;
+        curr_log.block_hash = block.header.hash();
+        curr_log.tx_hash = transaction.hash();
+        curr_log.tx_index = tx_index;
+        curr_log.index = first_log_index++;
+        curr_log.removed = false;
+    }
+
+    co_return new_receipt;
 }
 
 }  // namespace silkworm::rpc::core

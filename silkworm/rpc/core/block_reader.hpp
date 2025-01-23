@@ -77,6 +77,8 @@ class BlockReader {
 
     Task<bool> is_latest_block_num(const BlockNumOrHash& block_num_or_hash);
 
+    Task<std::optional<BlockHeader>> read_header(BlockNum block_num) { co_return co_await chain_storage_.read_canonical_header(block_num); }
+
   private:
     Task<BlockNum> get_forkchoice_block_num(const char* block_hash_tag);
     const db::chain::ChainStorage& chain_storage_;

@@ -34,9 +34,9 @@ namespace silkworm::rpc::core {
 using ethdb::walk;
 
 static constexpr int kGasPerBlob = 0x20000;
-static constexpr Bytes CumulativeGasUsedKey{0x0};
-static constexpr Bytes CumulativeBlocGasUsedKey{0x1};
-static constexpr Bytes FirstLogIndexKey{0x2};
+inline constexpr Bytes CumulativeGasUsedKey{0x0};
+inline constexpr Bytes CumulativeBlocGasUsedKey{0x1};
+inline constexpr Bytes FirstLogIndexKey{0x2};
 
 Task<Receipts> get_receipts(db::kv::api::Transaction& tx,
                             const silkworm::BlockWithHash& block_with_hash,
@@ -265,7 +265,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     }
 
     varint.decode_word(result.value);
-    auto first_log_index = varint.value;
+    uint32_t first_log_index = varint.value;
 
     new_receipt.cumulative_gas_used = first_cumulative_gas_used_in_tx;
     new_receipt.from = transaction.sender();

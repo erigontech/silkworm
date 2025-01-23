@@ -167,7 +167,7 @@ Task<std::optional<TransactionNums>> PaginatedTransactionInfoIterator::next() {
     const TransactionNums txn_nums{
         .txn_id = tnx_id,
         .block_num = block_num_,
-        .txn_index = tnx_id - min_txn_num_ - 1,
+        .txn_index = static_cast<uint32_t>(tnx_id - min_txn_num_ - 1),
         .final_txn = tnx_id == max_txn_num_,
         .block_changed = block_changed};
 

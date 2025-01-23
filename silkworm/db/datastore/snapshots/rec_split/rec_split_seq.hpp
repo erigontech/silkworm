@@ -119,7 +119,7 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
         // We use an exception for collision error condition because ETL currently does not support loading errors
         // TODO(canepat) refactor ETL to support errors in LoadFunc and propagate them to caller to get rid of CollisionError
         struct CollisionError : public std::runtime_error {
-            explicit CollisionError(uint64_t _bucket_id) : runtime_error("collision"), bucket_id(_bucket_id) {}
+            explicit CollisionError(uint64_t bucket_id) : runtime_error("collision"), bucket_id(bucket_id) {}
             uint64_t bucket_id;
         };
         try {

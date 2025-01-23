@@ -1372,10 +1372,10 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
     co_return BlockProviderResponse{block_num, has_more_from_ || has_more_to_, false};
 }
 
-FromToBlockProvider::FromToBlockProvider(bool is_backwards, BlockProvider* callFromProvider, BlockProvider* callToProvider)
+FromToBlockProvider::FromToBlockProvider(bool is_backwards, BlockProvider* call_from_provider, BlockProvider* call_to_provider)
     : is_backwards_{is_backwards},
-      call_from_provider_{callFromProvider},
-      call_to_provider_{callToProvider} {
+      call_from_provider_{call_from_provider},
+      call_to_provider_{call_to_provider} {
 }
 
 }  // namespace silkworm::rpc::commands

@@ -18,6 +18,10 @@ debug_traceBlockByHash/test_10,\
 debug_traceBlockByNumber/test_09,\
 debug_traceBlockByNumber/test_10,\
 debug_traceBlockByNumber/test_29,\
+debug_traceCall/test_16,\
+debug_traceCall/test_17,\
+debug_traceCall/test_20,\
+debug_traceCall/test_21,\
 debug_traceTransaction/test_25,\
 debug_traceTransaction/test_36,\
 debug_traceTransaction/test_43,\

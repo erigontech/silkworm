@@ -183,7 +183,7 @@ class FromToBlockProvider : public BlockProvider {
     bool initialized_{false};
 
   public:
-    FromToBlockProvider(bool is_backwards, BlockProvider* callFromProvider, BlockProvider* callToProvider);
+    FromToBlockProvider(bool is_backwards, BlockProvider* call_from_provider, BlockProvider* call_to_provider);
 
     Task<BlockProviderResponse> get() override;
 };

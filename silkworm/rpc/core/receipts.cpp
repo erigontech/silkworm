@@ -34,9 +34,9 @@ namespace silkworm::rpc::core {
 using ethdb::walk;
 
 static constexpr int kGasPerBlob = 0x20000;
-inline constexpr Bytes CumulativeGasUsedKey{0x0};
-inline constexpr Bytes CumulativeBlocGasUsedKey{0x1};
-inline constexpr Bytes FirstLogIndexKey{0x2};
+const Bytes kCumulativeGasUsedKey{static_cast<uint8_t>(db::state::ReceiptsDomainKey::kCumulativeBlobGasUsedInBlockKey)};
+const Bytes kCumulativeBlocGasUsedKey{static_cast<uint8_t>(db::state::ReceiptsDomainKey::kCumulativeGasUsedInBlockKey)};
+const Bytes kFirstLogIndexKey{static_cast<uint8_t>(db::state::ReceiptsDomainKey::kFirstLogIndexKey)};
 
 Task<Receipts> get_receipts(db::kv::api::Transaction& tx,
                             const silkworm::BlockWithHash& block_with_hash,
@@ -213,6 +213,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     execution::StateFactory state_factory{tx};
 
     auto new_receipt = co_await async_task(workers.executor(), [&]() -> Receipt {
+        std::cout << "create state for txn: " << txn_id << "\n";
         auto state = state_factory.create_state(current_executor, chain_storage, txn_id);
 
         EVMExecutor executor{block, chain_config, workers, state};
@@ -225,10 +226,11 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     });
 
     txn_id++;  // query db on next txn
+    db::state::VarintSnapshotsDecoder varint;
 
     db::kv::api::GetAsOfQuery query_cumulative_gas{
         .table = db::table::kReceiptDomain,
-        .key = CumulativeGasUsedKey,
+        .key = kCumulativeGasUsedKey,
         .timestamp = static_cast<db::kv::api::Timestamp>(txn_id),
     };
     auto result = co_await tx.get_as_of(std::move(query_cumulative_gas));
@@ -236,14 +238,13 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
         co_return std::nullopt;
     }
 
-    db::state::VarintSnapshotsDecoder varint;
     varint.decode_word(result.value);
     auto first_cumulative_gas_used_in_tx = varint.value;
 
 #ifdef notdef
     db::kv::api::GetAsOfQuery query_cumulative_blolb_gas{
         .table = db::table::kReceiptDomain,
-        .key = CumulativeBlocGasUsedKey,
+        .key = kCumulativeBlocGasUsedKey,
         .timestamp = static_cast<db::kv::api::Timestamp>(txn_id),
     };
     result = co_await tx.get_as_of(std::move(query_cumulative_blolb_gas));
@@ -256,7 +257,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
 
     db::kv::api::GetAsOfQuery query_first_log_index{
         .table = db::table::kReceiptDomain,
-        .key = FirstLogIndexKey,
+        .key = kFirstLogIndexKey,
         .timestamp = static_cast<db::kv::api::Timestamp>(txn_id),
     };
     result = co_await tx.get_as_of(std::move(query_first_log_index));

@@ -105,9 +105,13 @@ void LocalState::update_account(
     std::optional<Account> initial,
     std::optional<Account> current) {
     Step current_step = Step::from_txn_id(txn_id_);
-    AccountsDomainPutQuery query{tx_, data_store_.state_db().accounts_domain()};
-    // TODO: handle current = nullopt
-    query.exec(address, *current, txn_id_, initial, current_step);
+    if (current) {
+        AccountsDomainPutQuery query{tx_, data_store_.state_db().accounts_domain()};
+        query.exec(address, *current, txn_id_, initial, current_step);
+    } else {
+        AccountsDomainDeleteQuery query{tx_, data_store_.state_db().accounts_domain()};
+        query.exec(address, txn_id_, initial, current_step);
+    }
 }
 
 void LocalState::update_account_code(

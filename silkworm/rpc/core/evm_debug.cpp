@@ -401,15 +401,15 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash&
             co_return;
         }
     }
-    stream.write_field("result");
-    stream.open_object();
+//    stream.write_field("result");
+//    stream.open_object();
 
     const auto& block = block_with_hash->block;
     const auto block_num = block.header.number + (config_.tx_index ? 0 : 1);
     const auto index = config_.tx_index ? config_.tx_index.value() : 0;
     // trace_call semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number + 1
     co_await execute(stream, storage, block_num, block, transaction, index);
-    stream.close_object();
+//    stream.close_object();
 
     co_return;
 }
@@ -427,11 +427,11 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
         const auto& transaction = tx_with_block->transaction;
         const auto block_num = block.header.number;
 
-        stream.write_field("result");
-        stream.open_object();
+//        stream.write_field("result");
+//        stream.open_object();
         // trace_transaction semantics: we must execute the txn from the state at the current block
         co_await execute(stream, storage, block_num, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
-        stream.close_object();
+//        stream.close_object();
     }
 
     co_return;
@@ -544,6 +544,9 @@ Task<void> DebugExecutor::execute(
 
         auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
 
+        stream.write_field("result");
+        stream.open_object();
+
         stream.write_field("structLogs");
         stream.open_array();
 
@@ -556,10 +559,19 @@ Task<void> DebugExecutor::execute(
 
         SILK_DEBUG << "debug return: " << execution_result.error_message();
 
-        stream.write_json_field("failed", !execution_result.success());
-        if (!execution_result.pre_check_error) {
-            stream.write_field("gas", transaction.gas_limit - execution_result.gas_left);
-            stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
+//        if (execution_result.success()) {
+//            stream.write_json_field("failed", !execution_result.success());
+            if (!execution_result.pre_check_error) {
+                stream.write_json_field("failed", !execution_result.success());
+                stream.write_field("gas", transaction.gas_limit - execution_result.gas_left);
+                stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
+            }
+//        }
+        stream.close_object();
+
+        if (execution_result.pre_check_error) {
+            const Error error{-32000, "tracing failed: " + execution_result.pre_check_error.value()};
+            stream.write_json_field("error", error);
         }
     });
 

@@ -380,7 +380,7 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
     }
 }
 
-Task<rpc::ExecutionPayloadAndValue> PoSSync::get_payload(uint64_t /*payloadId*/, std::chrono::milliseconds /*timeout*/) {
+Task<rpc::ExecutionPayloadAndValue> PoSSync::get_payload(uint64_t /*payload_id*/, std::chrono::milliseconds /*timeout*/) {
     // Implementation of engine_getPayloadVx method
     ensure_invariant(false, "get_payload not implemented");
     co_return rpc::ExecutionPayloadAndValue{};

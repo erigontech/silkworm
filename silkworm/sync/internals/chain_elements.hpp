@@ -42,10 +42,10 @@ struct Link {
     bool persisted = false;                   // Whether this link comes from the database record
     bool preverified = false;                 // Ancestor of pre-verified header
 
-    Link(BlockHeader h, bool persisted_)
+    Link(BlockHeader h, bool persist)
         : block_num{h.number},
           hash{h.hash()},  // save computation
-          persisted{persisted_} {
+          persisted{persist} {
         header = std::make_shared<BlockHeader>(std::move(h));
     }
 

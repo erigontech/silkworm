@@ -48,7 +48,7 @@ class Fork {
     Fork(const Fork&) = delete;
 
     void close();
-    void flush(db::RWTxn& main_chain_tx_);
+    void flush(db::RWTxn& main_chain_tx);
 
     // extension & contraction
     void extend_with(const std::list<std::shared_ptr<Block>>&);

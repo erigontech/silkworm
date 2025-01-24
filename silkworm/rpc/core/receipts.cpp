@@ -35,9 +35,6 @@ using ethdb::walk;
 
 static constexpr int kGasPerBlob = 0x20000;
 const Bytes kCumulativeGasUsedKey{static_cast<uint8_t>(db::state::ReceiptsDomainKey::kCumulativeBlobGasUsedInBlockKey)};
-#ifdef notdef
-const Bytes kCumulativeBlocGasUsedKey{static_cast<uint8_t>(db::state::ReceiptsDomainKey::kCumulativeGasUsedInBlockKey)};
-#endif
 const Bytes kFirstLogIndexKey{static_cast<uint8_t>(db::state::ReceiptsDomainKey::kFirstLogIndexKey)};
 
 Task<Receipts> get_receipts(db::kv::api::Transaction& tx,
@@ -241,20 +238,6 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
 
     varint.decode_word(result.value);
     auto first_cumulative_gas_used_in_tx = varint.value;
-
-#ifdef notdef
-    db::kv::api::GetAsOfQuery query_cumulative_blolb_gas{
-        .table = db::table::kReceiptDomain,
-        .key = kCumulativeBlocGasUsedKey,
-        .timestamp = static_cast<db::kv::api::Timestamp>(txn_id),
-    };
-    result = co_await tx.get_as_of(std::move(query_cumulative_blolb_gas));
-    if (!result.success) {
-        co_return std::nullopt;
-    }
-    varint.decode_word(result.value);
-    auto first_blob_gas_used_in_tx = varint.value;
-#endif
 
     db::kv::api::GetAsOfQuery query_first_log_index{
         .table = db::table::kReceiptDomain,

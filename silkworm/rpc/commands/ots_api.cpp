@@ -877,16 +877,14 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
         SILK_DEBUG
             << "txn_id: " << tnx_nums->txn_id
             << " block_num: " << tnx_nums->block_num
-            << ", txn_index: " << tnx_nums->txn_index.value_or(-1)
-            << ", initial txn: " << tnx_nums->initial_txn
-            << ", final txn: " << tnx_nums->final_txn
+            << ", tnx_index: " << (tnx_nums->txn_index ? std::to_string(*tnx_nums->txn_index) : "")
             << ", ascending: " << std::boolalpha << ascending;
 
         if (tnx_nums->block_changed) {
             block_info.reset();
         }
 
-        if (tnx_nums->initial_txn || tnx_nums->final_txn) {
+        if (!tnx_nums->txn_index) {
             continue;
         }
 

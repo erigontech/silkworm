@@ -149,10 +149,10 @@ Task<void> LogsWalker::get_logs(BlockNum start,
     Logs filtered_chunk_logs;
 
     uint64_t block_timestamp{0};
-    std::shared_ptr<BlockWithHash> block_with_hash{};
+    std::shared_ptr<BlockWithHash> block_with_hash;
     auto itr = db::txn::make_txn_nums_stream(std::move(paginated_stream), asc_order, tx_, provider);
     while (const auto tnx_nums = co_await itr->next()) {
-        SILK_DEBUG << " blockNum: " << tnx_nums->block_num << " txn_index: " << tnx_nums->txn_index.value_or(0) << " txn_id: " << tnx_nums->txn_id << " initial: " << tnx_nums->initial_txn << " final: " << tnx_nums->final_txn;
+        SILK_DEBUG << " blockNum: " << tnx_nums->block_num <<  " txn_id: " << tnx_nums->txn_id << " txn_index: " << (tnx_nums->txn_index ? std::to_string(*(tnx_nums->txn_index)) : "nullopt");
 
         if (tnx_nums->block_changed) {
             receipts.clear();
@@ -165,11 +165,13 @@ Task<void> LogsWalker::get_logs(BlockNum start,
             block_timestamp = block_with_hash->block.header.timestamp;
         }
 
-        if (tnx_nums->initial_txn || tnx_nums->final_txn) {
+        if (!tnx_nums->txn_index ) {
             continue;
         }
 
-        const std::optional<silkworm::Transaction> transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index.value());
+        SILKWORM_ASSERT(block_with_hash);
+
+        const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index.value());
         if (!transaction) {
             SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index.value();
             continue;

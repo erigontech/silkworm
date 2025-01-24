@@ -56,9 +56,7 @@ Task<std::optional<BlockNum>> block_num_from_tx_num(kv::api::Transaction& tx,
 struct TransactionNums {
     TxnId txn_id{0};
     BlockNum block_num{0};
-    std::optional<uint32_t> txn_index{0};
-    bool initial_txn{false};
-    bool final_txn{false};
+    std::optional<uint32_t> txn_index;
     bool block_changed{false};
 };
 

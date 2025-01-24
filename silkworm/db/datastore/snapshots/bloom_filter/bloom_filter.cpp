@@ -64,7 +64,7 @@ BloomFilter::BloomFilter(
     file_stream >> *this;
 
     path_ = std::move(path);
-    data_key_hasher_ = data_key_hasher;
+    data_key_hasher_ = std::move(data_key_hasher);
 }
 
 BloomFilter::BloomFilter()

@@ -86,6 +86,7 @@ Checks: >
   -readability-suspicious-call-argument,
   -readability-uppercase-literal-suffix
 CheckOptions:
+  performance-move-const-arg.CheckTriviallyCopyableMove: false
   performance-unnecessary-value-param.AllowedTypes: std::exception_ptr
   readability-identifier-naming.ClassCase: CamelCase
   readability-identifier-naming.ClassIgnoredRegexp: buildinfo|glaze

@@ -35,7 +35,7 @@ std::optional<Account> LocalState::read_account(const evmc::address& address) co
     };
     auto result = query.exec(address);
     if (result) {
-        return result->value;
+        return std::move(result->value);
     }
     return std::nullopt;
 }

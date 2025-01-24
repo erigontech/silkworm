@@ -752,8 +752,8 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 }
 
 // todo: add available gas, add txn, add block header
-SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx, uint64_t block_num, struct SilkwormBytes32 head_hash_bytes, uint64_t txn_num, uint64_t txn_id, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT {
-    log::Info{"silkworm_execute_tx", {"block_num", std::to_string(block_num), "txn_num", std::to_string(txn_num)}};
+SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx, uint64_t block_num, struct SilkwormBytes32 head_hash_bytes, uint64_t txn_index, uint64_t txn_id, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT {
+    log::Info{"silkworm_execute_tx", {"block_num", std::to_string(block_num), "txn_index", std::to_string(txn_index)}};
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -828,13 +828,13 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx
     }
     block.header = header.value();
 
-    if (txn_num >= block.transactions.size()) {
+    if (txn_index >= block.transactions.size()) {
         SILK_ERROR << "Transaction not found"
-                   << " txn_num: " << txn_num;
+                   << " txn_index: " << txn_index;
         return SILKWORM_INVALID_BLOCK;
     }
 
-    auto& transaction = block.transactions[txn_num];
+    auto& transaction = block.transactions[txn_index];
 
     auto protocol_rule_set_{protocol::rule_set_factory(*handle->chain_config)};
     ExecutionProcessor processor{block, *protocol_rule_set_, state, *handle->chain_config, false};

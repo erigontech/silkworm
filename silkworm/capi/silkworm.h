@@ -370,7 +370,7 @@ SILKWORM_EXPORT int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDB
  * \param[out] blob_gas_used The blob gas used by the transaction.
  * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
  */
-SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx, uint64_t block_num, struct SilkwormBytes32 head_hash_bytes, uint64_t txn_num, uint64_t txn_id, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT;
+SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx, uint64_t block_num, struct SilkwormBytes32 head_hash_bytes, uint64_t txn_index, uint64_t txn_id, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT;
 
 /**
  * \brief Finalize the Silkworm C API library.

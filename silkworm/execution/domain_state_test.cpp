@@ -46,6 +46,7 @@ using testing::Unused;
 TEST_CASE("DomainState data access", "[execution][domain][state]") {
     TemporaryDirectory tmp_dir;
     TestDataStore ds_context{tmp_dir};
+    log::init(log::Settings{.log_verbosity = log::Level::kDebug});
 
     auto rw_tx = ds_context.chaindata_rw().start_rw_tx();
 

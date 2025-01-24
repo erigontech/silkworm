@@ -42,7 +42,7 @@ struct DomainPutLatestQuery {
         value_encoder.value.timestamp.value = step;
         Slice value_data = value_encoder.encode();
 
-        SILK_DEBUG << "Putting  " << entity.values_table.name << " with key " << to_hex(datastore::kvdb::from_slice(key_data), true) << " value " << to_hex(datastore::kvdb::from_slice(value_data), true) << std::endl;
+        SILK_DEBUG << "Putting  " << entity.values_table.name << " with key " << to_hex(datastore::kvdb::from_slice(key_data), true) << " value " << to_hex(datastore::kvdb::from_slice(value_data), true);
 
         if (entity.values_table.value_mode == mdbx::value_mode::multi) {
             auto cursor = tx.rw_cursor_dup_sort(entity.values_table);
@@ -65,12 +65,12 @@ struct DomainPutLatestQuery {
                 Step existing_value_step = existing_value_decoder.value.timestamp.value;
                 if (existing_value_step == step) {
                     cursor->erase();
-                    SILK_DEBUG << "earasing" << std::endl;
+                    SILK_DEBUG << "earasing";
                 } else {
-                    SILK_DEBUG << "not earasing, existing_value_step: " << existing_value_step.to_string() << std::endl;
+                    SILK_DEBUG << "not earasing, existing_value_step: " << existing_value_step.to_string();
                 }
             } else {
-                SILK_DEBUG << " not found" << std::endl;
+                SILK_DEBUG << " not found";
             }
 
             cursor->upsert(key_data, value_data);

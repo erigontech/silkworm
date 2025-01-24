@@ -179,7 +179,7 @@ void DomainState::update_storage(
 
     Step prev_step{0};
     if (result_prev) {
-        SILK_DEBUG << "Found previous value " << to_hex(result_prev->value, true) << " step " << result_prev->step.to_string() << std::endl;
+        SILK_DEBUG << "Found previous value " << to_hex(result_prev->value, true) << " step " << result_prev->step.to_string();
         prev_step = result_prev->step;
     }
 

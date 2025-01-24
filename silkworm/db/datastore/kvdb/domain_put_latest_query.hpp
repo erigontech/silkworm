@@ -51,7 +51,7 @@ struct DomainPutLatestQuery {
             same_step_value_encoder.value.timestamp.value = step;
             Slice same_step_value = same_step_value_encoder.encode();
 
-            CursorResult result = cursor->find_multivalue(key_data, same_step_value, false);
+            CursorResult result = cursor->lower_bound_multivalue(key_data, same_step_value, false);
             if (result) {
                 // the found value will have the same key, but the step part can be different,
                 // let's decode it ignoring the data part

@@ -20,13 +20,28 @@
 #include <silkworm/db/datastore/kvdb/domain_queries.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 
+#include "schema_config.hpp"
 #include "storage_codecs.hpp"
 
 namespace silkworm::db::state {
 
-using StorageDomainGetLatestQuery = datastore::DomainGetLatestQuery<
+using StorageDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
     StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
     Bytes32KVDBCodec, Bytes32SnapshotsCodec>;
+
+struct StorageDomainGetLatestQuery : public StorageDomainGetLatestQueryBase {
+    StorageDomainGetLatestQuery(
+        datastore::kvdb::DatabaseRef database,
+        datastore::kvdb::ROTxn& tx,
+        const snapshots::SnapshotRepositoryROAccess& repository)
+        : StorageDomainGetLatestQueryBase{
+              db::state::kDomainNameStorage,
+              std::move(database),
+              tx,
+              repository,
+          } {}
+};
+
 using StorageDomainPutQuery = datastore::kvdb::DomainPutQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>;
 using StorageDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>;
 

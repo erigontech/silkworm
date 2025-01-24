@@ -22,12 +22,27 @@
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 
 #include "address_codecs.hpp"
+#include "schema_config.hpp"
 
 namespace silkworm::db::state {
 
-using CodeDomainGetLatestQuery = datastore::DomainGetLatestQuery<
+using CodeDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
     AddressKVDBEncoder, AddressSnapshotsEncoder,
     datastore::kvdb::RawDecoder<ByteView>, snapshots::RawDecoder<ByteView>>;
+
+struct CodeDomainGetLatestQuery : public CodeDomainGetLatestQueryBase {
+    CodeDomainGetLatestQuery(
+        datastore::kvdb::DatabaseRef database,
+        datastore::kvdb::ROTxn& tx,
+        const snapshots::SnapshotRepositoryROAccess& repository)
+        : CodeDomainGetLatestQueryBase{
+              db::state::kDomainNameCode,
+              std::move(database),
+              tx,
+              repository,
+          } {}
+};
+
 using CodeDomainPutQuery = datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>;
 using CodeDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>;
 

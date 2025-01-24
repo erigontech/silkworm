@@ -61,7 +61,7 @@ class CursorIterator {
   private:
     void decode(const CursorResult& result);
     std::shared_ptr<ROCursor> cursor_;
-    MoveOperation move_op_{MoveOperation::first};
+    MoveOperation move_op_{MoveOperation::next};
     value_type decoders_;
 };
 

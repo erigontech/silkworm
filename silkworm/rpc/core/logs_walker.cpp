@@ -152,7 +152,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
     std::shared_ptr<BlockWithHash> block_with_hash;
     auto itr = db::txn::make_txn_nums_stream(std::move(paginated_stream), asc_order, tx_, provider);
     while (const auto tnx_nums = co_await itr->next()) {
-        SILK_DEBUG << " blockNum: " << tnx_nums->block_num <<  " txn_id: " << tnx_nums->txn_id << " txn_index: " << (tnx_nums->txn_index ? std::to_string(*(tnx_nums->txn_index)) : "nullopt");
+        SILK_DEBUG << " blockNum: " << tnx_nums->block_num << " txn_id: " << tnx_nums->txn_id << " txn_index: " << (tnx_nums->txn_index ? std::to_string(*(tnx_nums->txn_index)) : "nullopt");
 
         if (tnx_nums->block_changed) {
             receipts.clear();
@@ -165,7 +165,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
             block_timestamp = block_with_hash->block.header.timestamp;
         }
 
-        if (!tnx_nums->txn_index ) {
+        if (!tnx_nums->txn_index) {
             continue;
         }
 

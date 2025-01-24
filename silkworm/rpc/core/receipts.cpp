@@ -213,7 +213,6 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     execution::StateFactory state_factory{tx};
 
     auto new_receipt = co_await async_task(workers.executor(), [&]() -> Receipt {
-        std::cout << "create state for txn: " << txn_id << "\n";
         auto state = state_factory.create_state(current_executor, chain_storage, txn_id);
 
         EVMExecutor executor{block, chain_config, workers, state};
@@ -266,7 +265,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     }
 
     varint.decode_word(result.value);
-    uint32_t first_log_index = varint.value;
+    uint32_t first_log_index = static_cast<uint32_t>(varint.value);
 
     new_receipt.cumulative_gas_used = first_cumulative_gas_used_in_tx;
     new_receipt.from = transaction.sender();

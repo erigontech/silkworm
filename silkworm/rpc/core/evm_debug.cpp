@@ -401,15 +401,12 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash&
             co_return;
         }
     }
-    //    stream.write_field("result");
-    //    stream.open_object();
 
     const auto& block = block_with_hash->block;
     const auto block_num = block.header.number + (config_.tx_index ? 0 : 1);
     const auto index = config_.tx_index ? config_.tx_index.value() : 0;
     // trace_call semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number + 1
     co_await execute(stream, storage, block_num, block, transaction, index);
-    //    stream.close_object();
 
     co_return;
 }
@@ -427,11 +424,8 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
         const auto& transaction = tx_with_block->transaction;
         const auto block_num = block.header.number;
 
-        //        stream.write_field("result");
-        //        stream.open_object();
         // trace_transaction semantics: we must execute the txn from the state at the current block
         co_await execute(stream, storage, block_num, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
-        //        stream.close_object();
     }
 
     co_return;

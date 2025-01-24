@@ -877,16 +877,15 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
         SILK_DEBUG
             << "txn_id: " << tnx_nums->txn_id
             << " block_num: " << tnx_nums->block_num
-            << ", txn_index: " << tnx_nums->txn_index
-            << ", final txn: " << tnx_nums->final_txn
+            << ", tnx_index: " << (tnx_nums->txn_index ? std::to_string(*tnx_nums->txn_index) : "")
             << ", ascending: " << std::boolalpha << ascending;
-
-        if (tnx_nums->final_txn) {
-            continue;
-        }
 
         if (tnx_nums->block_changed) {
             block_info.reset();
+        }
+
+        if (!tnx_nums->txn_index) {
+            continue;
         }
 
         if (!block_info) {
@@ -919,9 +918,9 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
             break;
         }
 
-        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
+        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index.value());
         if (!transaction) {
-            SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index;
+            SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index.value();
             co_return results;
         }
         results.receipts.push_back(std::move(receipts.at(silkworm::to_hex(transaction->hash(), false))));

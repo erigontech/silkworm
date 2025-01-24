@@ -152,10 +152,8 @@ Task<void> LogsWalker::get_logs(BlockNum start,
     std::shared_ptr<BlockWithHash> block_with_hash{};
     auto itr = db::txn::make_txn_nums_stream(std::move(paginated_stream), asc_order, tx_, provider);
     while (const auto tnx_nums = co_await itr->next()) {
-        std::cout << " blockNum: " << tnx_nums->block_num << " txn_index: " << tnx_nums->txn_index << " txn_id: " << tnx_nums->txn_id << std::endl;
-        if (tnx_nums->final_txn) {
-            continue;
-        }
+        SILK_DEBUG << " blockNum: " << tnx_nums->block_num << " txn_index: " << tnx_nums->txn_index.value_or(0) << " txn_id: " << tnx_nums->txn_id << " initial: " << tnx_nums->initial_txn << " final: " << tnx_nums->final_txn;
+
         if (tnx_nums->block_changed) {
             receipts.clear();
 
@@ -166,19 +164,24 @@ Task<void> LogsWalker::get_logs(BlockNum start,
             }
             block_timestamp = block_with_hash->block.header.timestamp;
         }
-        const std::optional<silkworm::Transaction> transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
+
+        if (tnx_nums->initial_txn || tnx_nums->final_txn) {
+            continue;
+        }
+
+        const std::optional<silkworm::Transaction> transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index.value());
         if (!transaction) {
-            SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index;
+            SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index.value();
             continue;
         }
 
-        auto receipt = co_await core::get_receipt(tx_, block_with_hash->block, tnx_nums->txn_id, tnx_nums->txn_index, *transaction, *chain_storage, workers_);
+        auto receipt = co_await core::get_receipt(tx_, block_with_hash->block, tnx_nums->txn_id, tnx_nums->txn_index.value(), *transaction, *chain_storage, workers_);
         if (!receipt) {
-            SILK_DEBUG << "No receipt found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index;
+            SILK_DEBUG << "No receipt found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index.value();
             continue;
         }
 
-        SILK_DEBUG << "Got transaction: block_num: " << tnx_nums->block_num << ", txn_index: " << tnx_nums->txn_index;
+        SILK_DEBUG << "Got transaction: block_num: " << tnx_nums->block_num << ", txn_index: " << tnx_nums->txn_index.value();
 
         // ERIGON3 compatibility: erigon_getLatestLogs overwrites log index
         if (options.overwrite_log_index) {

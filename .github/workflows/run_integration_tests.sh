@@ -19,8 +19,6 @@ eth_getLogs/test_17,\
 eth_getLogs/test_18,\
 eth_getLogs/test_19,\
 eth_getLogs/test_20,\
-debug_traceBlockByHash/test_05,\
-debug_traceBlockByHash/test_08,\
 debug_traceBlockByHash/test_09,\
 debug_traceBlockByHash/test_10,\
 debug_traceBlockByNumber/test_09,\

@@ -22,10 +22,11 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <silkworm/infra/common/directories.hpp>
+
 #include "big_endian_codec.hpp"
 #include "database.hpp"
 #include "inverted_index_put_query.hpp"
-#include "silkworm/infra/common/directories.hpp"
 
 namespace silkworm::datastore::kvdb {
 

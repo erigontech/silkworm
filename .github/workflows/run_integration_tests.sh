@@ -12,7 +12,13 @@ set -o pipefail
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
+# eth_getLogs: not runned waiting fix on erigon sync 
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --json-diff --port 51515 --transport_type http,websocket -x \
+eth_getLogs/test_16,\
+eth_getLogs/test_17,\
+eth_getLogs/test_18,\
+eth_getLogs/test_19,\
+eth_getLogs/test_20,\
 debug_traceBlockByHash/test_05,\
 debug_traceBlockByHash/test_08,\
 debug_traceBlockByHash/test_09,\

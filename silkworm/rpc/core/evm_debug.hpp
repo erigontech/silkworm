@@ -136,7 +136,7 @@ class DebugExecutor {
 
     Task<void> trace_block(json::Stream& stream, const ChainStorage& storage, BlockNum block_num);
     Task<void> trace_block(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& block_hash);
-    Task<void> trace_call(json::Stream& stream, const BlockNumOrHash& block_num_or_hash, const ChainStorage& storage, const Call& call);
+    Task<void> trace_call(json::Stream& stream, const BlockNumOrHash& block_num_or_hash, const ChainStorage& storage, const Call& call, bool is_latest_block);
     Task<void> trace_transaction(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& tx_hash);
     Task<void> trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context);
 
@@ -152,7 +152,8 @@ class DebugExecutor {
         BlockNum block_num,
         const silkworm::Block& block,
         const Transaction& transaction,
-        int32_t = -1);
+        int32_t index = -1,
+        bool is_latest_block = false);
 
     Task<void> execute(
         json::Stream& stream,

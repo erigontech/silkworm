@@ -452,7 +452,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
         debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
-        co_await executor.trace_call(stream, block_num_or_hash, *chain_storage, call);
+        co_await executor.trace_call(stream, block_num_or_hash, *chain_storage, call, is_latest_block);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;

@@ -513,9 +513,14 @@ Task<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& reque
     auto tx = co_await database_->begin_transaction();
 
     try {
-        debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
         const auto chain_storage = tx->create_storage();
-        co_await executor.trace_call_many(stream, *chain_storage, bundles, simulation_context);
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+
+        const bool is_latest_block = co_await block_reader.is_latest_block_num(simulation_context.block_num);
+        tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
+
+        debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
+        co_await executor.trace_call_many(stream, *chain_storage, bundles, simulation_context, is_latest_block);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         const Error error{kServerError, "unexpected exception"};

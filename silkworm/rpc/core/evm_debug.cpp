@@ -437,7 +437,7 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
     co_return;
 }
 
-Task<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context) {
+Task<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context, bool is_latest_block) {
     const auto block_with_hash = co_await rpc::core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, context.block_num);
     if (!block_with_hash) {
         co_return;
@@ -449,7 +449,7 @@ Task<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStora
 
     stream.write_field("result");
     stream.open_array();
-    co_await execute(stream, storage, block_with_hash, bundles, transaction_index);
+    co_await execute(stream, storage, block_with_hash, bundles, transaction_index, is_latest_block);
     stream.close_array();
 
     co_return;
@@ -535,14 +535,13 @@ Task<void> DebugExecutor::execute(
 
     // We must do the execution at the state after the txn identified by the given index within the given block
     // at the state after the block identified by the given block_num
-    execution::StateFactory state_factory{tx_};
-
     std::optional<TxnId> txn_id;
     if (!is_latest_block) {
         txn_id = co_await tx_.user_txn_id_at(block_num, static_cast<uint32_t>(index));
     }
 
     co_await async_task(workers_.executor(), [&]() {
+        execution::StateFactory state_factory{tx_};
         const auto state = state_factory.create_state(current_executor, storage, txn_id);
 
         EVMExecutor executor{block, chain_config, workers_, state};
@@ -576,7 +575,8 @@ Task<void> DebugExecutor::execute(
     const ChainStorage& storage,
     std::shared_ptr<BlockWithHash> block_with_hash,
     const Bundles& bundles,
-    int32_t transaction_index) {
+    int32_t transaction_index,
+    bool is_latest_block) {
     const auto& block = block_with_hash->block;
     const auto& block_transactions = block.transactions;
 
@@ -593,7 +593,11 @@ Task<void> DebugExecutor::execute(
     // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
     // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
     execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await tx_.user_txn_id_at(block.header.number, static_cast<uint32_t>(transaction_index));
+
+    std::optional<TxnId> txn_id;
+    if (!is_latest_block) {
+        txn_id = co_await tx_.user_txn_id_at(block.header.number, static_cast<uint32_t>(transaction_index));
+    }
 
     co_await async_task(workers_.executor(), [&]() {
         auto state = state_factory.create_state(current_executor, storage, txn_id);

@@ -157,8 +157,8 @@ Task<CallManyResult> CallExecutor::execute(
     std::optional<TxnId> txn_id;
 
     if (co_await block_reader_.is_latest_block_num(block_with_hash->block.header.number) == false) {
-        const uint64_t transaction_index =
-            context.transaction_index == -1 ? block_with_hash->block.transactions.size() : static_cast<uint64_t>(context.transaction_index);
+        const uint32_t transaction_index =
+            context.transaction_index == -1 ? block_with_hash->block.transactions.size() : static_cast<uint32_t>(context.transaction_index);
         txn_id = co_await transaction_.user_txn_id_at(block_with_hash->block.header.number, transaction_index);
     }
     result = co_await async_task(workers_.executor(), [&]() -> CallManyResult {

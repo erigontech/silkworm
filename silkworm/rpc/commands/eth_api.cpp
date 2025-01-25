@@ -1173,10 +1173,14 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
         silkworm::Transaction txn{call.to_transaction()};
 
         execution::StateFactory state_factory{*tx};
-        const auto txn_id = co_await tx->user_txn_id_at(block_num + 1);
+
+        std::optional<TxnId> txn_id;
+        if (!is_latest_block) {
+            txn_id = co_await tx->user_txn_id_at(block_num + 1);
+        }
 
         const auto execution_result = co_await EVMExecutor::call(
-            chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&state_factory](auto& io_executor, auto curr_txn_id, auto& storage) {
+            chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&state_factory](auto& io_executor, std::optional<TxnId> curr_txn_id, auto& storage) {
                 return state_factory.create_state(io_executor, storage, curr_txn_id);
             });
 
@@ -1332,7 +1336,10 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         const bool is_latest_block = co_await block_reader.get_latest_executed_block_num() == block_with_hash->block.header.number;
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
-        const auto txn_id = co_await tx->user_txn_id_at(block_with_hash->block.header.number + 1);
+        std::optional<TxnId> txn_id;
+        if (!is_latest_block) {
+             txn_id = co_await tx->user_txn_id_at(block_with_hash->block.header.number + 1);
+        }
 
         StateReader state_reader{*tx, txn_id};
 
@@ -1367,7 +1374,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         execution::StateFactory state_factory{*tx};
         while (true) {
             const auto execution_result = co_await EVMExecutor::call(
-                chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&](auto& io_executor, auto curr_txn_id, auto& storage) {
+                chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&](auto& io_executor, std::optional <TxnId> curr_txn_id, auto& storage) {
                     return state_factory.create_state(io_executor, storage, curr_txn_id);
                 },
                 tracers, /* refund */ true, /* gasBailout */ false);
@@ -1462,7 +1469,11 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
             }
 
             execution::StateFactory state_factory{*tx};
-            const auto txn_id = co_await tx->user_txn_id_at(block_with_hash->block.header.number + 1);
+
+            std::optional<TxnId> txn_id;
+            if (!is_latest_block) {
+                 txn_id = co_await tx->user_txn_id_at(block_with_hash->block.header.number + 1);
+            }
 
             const auto execution_result = co_await EVMExecutor::call(
                 chain_config, *chain_storage, workers_, block_with_hash->block, tx_with_block->transaction, txn_id, [&](auto& io_executor, auto curr_txn_id, auto& storage) {

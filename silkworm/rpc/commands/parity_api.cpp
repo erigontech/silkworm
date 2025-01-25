@@ -68,7 +68,10 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         const auto block_num = co_await block_reader.get_block_num(block_id);
         SILK_DEBUG << "read account with address: " << address << " block number: " << block_num;
 
-        const auto txn_number = co_await tx->user_txn_id_at(block_num);
+        std::optional<TxnId> txn_number;
+        if (co_await block_reader.is_latest_block_num(block_num)) {
+            txn_number = co_await tx->user_txn_id_at(block_num);
+        }
 
         StateReader state_reader{*tx, txn_number};
         std::optional<Account> account = co_await state_reader.read_account(address);

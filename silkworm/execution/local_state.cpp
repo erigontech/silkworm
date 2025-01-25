@@ -104,7 +104,6 @@ void LocalState::update_account(
     const evmc::address& address,
     std::optional<Account> initial,
     std::optional<Account> current) {
-
     if (!txn_id_) {
         /* mgt on latest for Battle */
         return;

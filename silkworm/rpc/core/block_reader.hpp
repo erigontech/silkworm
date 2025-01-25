@@ -57,7 +57,7 @@ class BlockReader {
 
     Task<std::pair<BlockNum, bool>> get_block_num(const std::string& block_id, bool latest_required) const;
 
-    Task<BlockNum> get_block_num(const std::string& block_id) const ;
+    Task<BlockNum> get_block_num(const std::string& block_id) const;
 
     Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumOrHash& block_num_or_hash) const;
 

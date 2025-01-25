@@ -66,7 +66,7 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
         tx->set_state_cache_enabled(is_latest_block);
 
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
-        const auto result = co_await executor.trace_call(block_with_hash->block, call, config);
+        const auto result = co_await executor.trace_call(block_with_hash->block, call, config, is_latest_block);
 
         if (result.pre_check_error) {
             reply = make_json_error(request, kServerError, result.pre_check_error.value());
@@ -115,7 +115,7 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
         tx->set_state_cache_enabled(is_latest_block);
 
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
-        const auto result = co_await executor.trace_calls(block_with_hash->block, trace_calls);
+        const auto result = co_await executor.trace_calls(block_with_hash->block, trace_calls, is_latest_block);
 
         if (result.pre_check_error) {
             reply = make_json_error(request, kServerError, result.pre_check_error.value());

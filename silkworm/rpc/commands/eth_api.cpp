@@ -1251,7 +1251,10 @@ Task<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& request, n
     auto tx = co_await database_->begin_transaction();
 
     try {
-        call::CallExecutor executor{*tx, *block_cache_, workers_};
+        const auto chain_storage{tx->create_storage()};
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+
+        call::CallExecutor executor{*tx, *block_cache_, workers_, block_reader};
         const auto result = co_await executor.execute(bundles, simulation_context, accounts_overrides, timeout);
 
         if (result.error) {
@@ -1338,7 +1341,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
 
         std::optional<TxnId> txn_id;
         if (!is_latest_block) {
-             txn_id = co_await tx->user_txn_id_at(block_with_hash->block.header.number + 1);
+            txn_id = co_await tx->user_txn_id_at(block_with_hash->block.header.number + 1);
         }
 
         StateReader state_reader{*tx, txn_id};
@@ -1374,7 +1377,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         execution::StateFactory state_factory{*tx};
         while (true) {
             const auto execution_result = co_await EVMExecutor::call(
-                chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&](auto& io_executor, std::optional <TxnId> curr_txn_id, auto& storage) {
+                chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&](auto& io_executor, std::optional<TxnId> curr_txn_id, auto& storage) {
                     return state_factory.create_state(io_executor, storage, curr_txn_id);
                 },
                 tracers, /* refund */ true, /* gasBailout */ false);
@@ -1472,7 +1475,7 @@ Task<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request,
 
             std::optional<TxnId> txn_id;
             if (!is_latest_block) {
-                 txn_id = co_await tx->user_txn_id_at(block_with_hash->block.header.number + 1);
+                txn_id = co_await tx->user_txn_id_at(block_with_hash->block.header.number + 1);
             }
 
             const auto execution_result = co_await EVMExecutor::call(

@@ -55,14 +55,13 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOr
 
     SILK_TRACE << "read_balance_changes: block_num: " << block_num;
 
-
     const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_num);
     const auto end_txn_number = co_await transaction_.first_txn_num_in_block(block_num + 1);
 
-    auto is_latest =  co_await is_latest_block_num(block_num);
+    auto is_latest = co_await is_latest_block_num(block_num);
     std::optional<TxnId> txn_id{std::nullopt};
     if (!is_latest) {
-       txn_id = co_await transaction_.user_txn_id_at(block_num + 1);
+        txn_id = co_await transaction_.user_txn_id_at(block_num + 1);
     }
     StateReader state_reader{transaction_, txn_id};
 
@@ -136,7 +135,7 @@ Task<BlockNum> BlockReader::get_block_num_by_tag(const std::string& block_id) co
     co_return block_num;
 }
 
-Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const std::string& block_id, bool latest_required)  const {
+Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const std::string& block_id, bool latest_required) const {
     BlockNum block_num{0};
     bool is_latest_block = false;
     bool check_if_latest = false;

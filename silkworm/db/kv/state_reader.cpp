@@ -20,6 +20,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
@@ -48,6 +49,10 @@ Task<std::optional<Account>> StateReader::read_account(const evmc::address& addr
     }
 
     if (!result.success) {
+        co_return std::nullopt;
+    }
+
+    if (result.value.size() == 0) {
         co_return std::nullopt;
     }
 

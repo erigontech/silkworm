@@ -917,15 +917,13 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
             return chain_storage->read_canonical_header(block_num);
         };
 
-        rpc::AccountReader account_reader = [&tx](const evmc::address& address, TxnId txn_id) -> Task<std::optional<Account>> {
+        rpc::AccountReader account_reader = [&tx](const evmc::address& address, std::optional<TxnId> txn_id) -> Task<std::optional<Account>> {
             StateReader state_reader{*tx, txn_id};
             co_return co_await state_reader.read_account(address);
         };
 
-        const auto txn_id = co_await tx->user_txn_id_at(latest_block.header.number);
-
         rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, chain_config, workers_, *tx, *chain_storage};
-        const auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block, txn_id, block_num_for_gas_limit);
+        const auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block, std::nullopt /*latest block */, block_num_for_gas_limit);
 
         reply = make_json_content(request, to_quantity(estimated_gas));
     } catch (const std::invalid_argument&) {

@@ -52,6 +52,7 @@ Task<std::optional<Account>> StateReader::read_account(const evmc::address& addr
         co_return std::nullopt;
     }
 
+    // Non-existent account has empty encoded value
     if (result.value.empty()) {
         co_return std::nullopt;
     }

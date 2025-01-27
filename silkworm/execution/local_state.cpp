@@ -28,7 +28,6 @@ using namespace db::state;
 using namespace datastore;
 
 std::optional<Account> LocalState::read_account(const evmc::address& address) const noexcept {
-
     if (!txn_id_) {
         AccountsDomainGetLatestQuery query{
             data_store_.chaindata,
@@ -67,7 +66,6 @@ evmc::bytes32 LocalState::read_storage(
     const evmc::address& address,
     uint64_t /*incarnation*/,
     const evmc::bytes32& location) const noexcept {
-
     if (!txn_id_) {
         StorageDomainGetLatestQuery query{
             data_store_.chaindata,
@@ -79,7 +77,7 @@ evmc::bytes32 LocalState::read_storage(
             return result->value;
         }
     } else {
-            // historical request on *txn_id timestamp
+        // historical request on *txn_id timestamp
     }
     return {};
 }
@@ -118,7 +116,6 @@ void LocalState::update_account(
     const evmc::address& address,
     std::optional<Account> initial,
     std::optional<Account> current) {
-
     /* should be managed request on Latest(txn_id == nullopt) and historical (txn_id != nullopt) */
 
     Step current_step = Step::from_txn_id(*txn_id_);
@@ -136,7 +133,6 @@ void LocalState::update_account_code(
     uint64_t /*incarnation*/,
     const evmc::bytes32& /*code_hash*/,
     ByteView code) {
-
     /* should be managed request on Latest(txn_id == nullopt) and historical (txn_id != nullopt) */
 
     Step current_step = Step::from_txn_id(*txn_id_);
@@ -153,7 +149,6 @@ void LocalState::update_storage(
     const evmc::bytes32& location,
     const evmc::bytes32& initial,
     const evmc::bytes32& current) {
-
     /* should be managed request on Latest(txn_id == nullopt) and historical (txn_id != nullopt) */
 
     Step current_step = Step::from_txn_id(*txn_id_);

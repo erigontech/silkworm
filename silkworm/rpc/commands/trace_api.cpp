@@ -244,8 +244,12 @@ Task<void> TraceRpcApi::handle_trace_replay_block_transactions(const nlohmann::j
         const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (block_with_hash) {
+            rpc::BlockReader block_reader{*chain_storage, *tx};
+            const bool is_latest_block = co_await block_reader.is_latest_block_num(block_with_hash->block.header.number);
+            tx->set_state_cache_enabled(is_latest_block);
+
             trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
-            const auto result = co_await executor.trace_block_transactions(block_with_hash->block, config);
+            const auto result = co_await executor.trace_block_transactions(block_with_hash->block, config, is_latest_block);
             reply = make_json_content(request, result);
         } else {
             reply = make_json_error(request, kInvalidParams, "block not found");
@@ -330,10 +334,13 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
+        rpc::BlockReader block_reader{*chain_storage, *tx};
+        const bool is_latest_block = co_await block_reader.is_latest_block_num(block_with_hash->block.header.number);
+        tx->set_state_cache_enabled(is_latest_block);
 
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
         trace::Filter filter;
-        const auto result = co_await executor.trace_block(*block_with_hash, filter);
+        const auto result = co_await executor.trace_block(*block_with_hash, filter, nullptr /* json::Stream */, is_latest_block);
         reply = make_json_content(request, result);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();

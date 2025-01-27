@@ -1293,7 +1293,7 @@ void IntraBlockStateTracer::on_reward_granted(const silkworm::CallResult& result
     }
 }
 
-Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& block_with_hash, Filter& filter, json::Stream* stream) {
+Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& block_with_hash, Filter& filter, json::Stream* stream, bool is_latest_block) {
     std::vector<Trace> traces;
 
     const TraceConfig trace_block_config{
@@ -1301,7 +1301,7 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
         .trace = true,
         .state_diff = false,
     };
-    const auto trace_call_results = co_await trace_block_transactions(block_with_hash.block, trace_block_config);
+    const auto trace_call_results = co_await trace_block_transactions(block_with_hash.block, trace_block_config, is_latest_block);
     for (size_t pos = 0; pos < trace_call_results.size(); ++pos) {
         rpc::Transaction transaction{block_with_hash.block.transactions[pos]};
         const auto tnx_hash = transaction.hash();
@@ -1408,7 +1408,7 @@ Task<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& blo
     co_return traces;
 }
 
-Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(const silkworm::Block& block, const TraceConfig& config) {
+Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(const silkworm::Block& block, const TraceConfig& config, bool is_latest_block) {
     auto block_num = block.header.number;
     const auto& transactions = block.transactions;
 
@@ -1417,11 +1417,14 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
     const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
 
-    execution::StateFactory state_factory{tx_};
-    // trace_block semantics: we must execute the call from the state at the current block
-    const auto txn_id = co_await tx_.user_txn_id_at(block_num);
+    std::optional<TxnId> txn_id;
+    if (!is_latest_block) {
+        // trace_block semantics: we must execute the call from the state at the current block
+        txn_id = co_await tx_.user_txn_id_at(block_num);
+    }
 
     const auto call_result = co_await async_task(workers_.executor(), [&]() -> std::vector<TraceCallResult> {
+        execution::StateFactory state_factory{tx_};
         auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
         IntraBlockState initial_ibs{*state};
 

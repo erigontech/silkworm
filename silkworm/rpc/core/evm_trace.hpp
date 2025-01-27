@@ -493,8 +493,8 @@ class TraceCallExecutor {
     TraceCallExecutor(const TraceCallExecutor&) = delete;
     TraceCallExecutor& operator=(const TraceCallExecutor&) = delete;
 
-    Task<std::vector<Trace>> trace_block(const BlockWithHash& block_with_hash, Filter& filter, json::Stream* stream = nullptr);
-    Task<std::vector<TraceCallResult>> trace_block_transactions(const silkworm::Block& block, const TraceConfig& config);
+    Task<std::vector<Trace>> trace_block(const BlockWithHash& block_with_hash, Filter& filter, json::Stream* stream = nullptr, bool is_latest_block = false);
+    Task<std::vector<TraceCallResult>> trace_block_transactions(const silkworm::Block& block, const TraceConfig& config, bool is_latest_block = false);
     Task<TraceCallResult> trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config, bool is_latest_block = false);
     Task<TraceManyCallResult> trace_calls(const silkworm::Block& block, const std::vector<TraceCall>& calls, bool is_latest_block = false);
     Task<TraceDeployResult> trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address);

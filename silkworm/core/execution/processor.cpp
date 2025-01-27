@@ -170,7 +170,6 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     // Prepare the receipt using the result from evmone.
     receipt.type = txn.type;
     receipt.success = evm1_receipt.status == EVMC_SUCCESS;
-    receipt.cumulative_gas_used = cumulative_gas_used_;
     receipt.logs.clear();  // can be dirty
     receipt.logs.reserve(evm1_receipt.logs.size());
     for (auto& [addr, data, topics] : evm1_receipt.logs)
@@ -180,6 +179,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     if (evm1_v2_) {
         const auto gas_used = static_cast<uint64_t>(evm1_receipt.gas_used);
         cumulative_gas_used_ += gas_used;
+        receipt.cumulative_gas_used = cumulative_gas_used_;
 
         // Apply the state diff produced by evmone APIv2 to the state and skip the Silkworm execution.
         const auto& state_diff = evm1_receipt.state_diff;
@@ -248,6 +248,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     gas_left = txn.gas_limit - gas_used;
     state_.add_to_balance(*txn.sender(), gas_left * effective_gas_price);
+    receipt.cumulative_gas_used = cumulative_gas_used_;
 
     // award the fee recipient
     const intx::uint256 amount{txn.priority_fee_per_gas(base_fee_per_gas) * gas_used};
@@ -361,7 +362,7 @@ void ExecutionProcessor::update_access_lists(const evmc::address& sender, const 
     }
 }
 
-uint64_t ExecutionProcessor::calculate_refund_gas(const Transaction& txn, uint64_t gas_left, uint64_t gas_refund) noexcept {
+uint64_t ExecutionProcessor::calculate_refund_gas(const Transaction& txn, uint64_t gas_left, uint64_t gas_refund) const noexcept {
     const evmc_revision rev{evm_.revision()};
 
     const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? protocol::kMaxRefundQuotientLondon

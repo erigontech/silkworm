@@ -938,6 +938,10 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
         return;
     }
 
+    if (index_stack_.empty()) {
+        return;
+    }
+
     auto index = index_stack_.top();
     auto start_gas = start_gas_.top();
 
@@ -1415,7 +1419,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 
     execution::StateFactory state_factory{tx_};
     // trace_block semantics: we must execute the call from the state at the current block
-    const auto txn_id = co_await state_factory.user_txn_id_at(block_num);
+    const auto txn_id = co_await tx_.user_txn_id_at(block_num);
 
     const auto call_result = co_await async_task(workers_.executor(), [&]() -> std::vector<TraceCallResult> {
         auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
@@ -1486,7 +1490,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
 
     execution::StateFactory state_factory{tx_};
     // trace_calls semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number + 1
-    const auto txn_id = co_await state_factory.user_txn_id_at(block_num + 1);
+    const auto txn_id = co_await tx_.user_txn_id_at(block_num + 1);
 
     const auto trace_calls_result = co_await async_task(workers_.executor(), [&]() -> TraceManyCallResult {
         auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
@@ -1551,7 +1555,7 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await state_factory.user_txn_id_at(block_num);
+    const auto txn_id = co_await tx_.user_txn_id_at(block_num);
 
     const auto deploy_result = co_await async_task(workers_.executor(), [&]() -> TraceDeployResult {
         auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
@@ -1619,7 +1623,7 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
     // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
     // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
     execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await state_factory.user_txn_id_at(block_num, gsl::narrow<uint32_t>(transaction_with_block.transaction.transaction_index));
+    const auto txn_id = co_await tx_.user_txn_id_at(block_num, gsl::narrow<uint32_t>(transaction_with_block.transaction.transaction_index));
 
     const auto trace_result = co_await async_task(workers_.executor(), [&]() -> TraceEntriesResult {
         auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
@@ -1648,7 +1652,7 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
     // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
     // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
     execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await state_factory.user_txn_id_at(block_num, gsl::narrow<uint32_t>(transaction_with_block.transaction.transaction_index));
+    const auto txn_id = co_await tx_.user_txn_id_at(block_num, gsl::narrow<uint32_t>(transaction_with_block.transaction.transaction_index));
 
     const auto trace_error = co_await async_task(workers_.executor(), [&]() -> std::string {
         auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
@@ -1680,8 +1684,7 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
 
     // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
     // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
-    execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await state_factory.user_txn_id_at(block_num, gsl::narrow<uint32_t>(transaction_with_block.transaction.transaction_index));
+    const auto txn_id = co_await tx_.user_txn_id_at(block_num, gsl::narrow<uint32_t>(transaction_with_block.transaction.transaction_index));
 
     const auto trace_op_result = co_await async_task(workers_.executor(), [&]() -> TraceOperationsResult {
         auto state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, txn_id);
@@ -1711,7 +1714,7 @@ Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& b
     const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
     execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await state_factory.user_txn_id_at(block_num);
+    const auto txn_id = co_await tx_.user_txn_id_at(block_num);
 
     const bool result = co_await async_task(workers_.executor(), [&]() -> bool {
         auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
@@ -1804,7 +1807,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
     // We must do the execution at the state after the txn identified by the given index within the given block
     // at the state after the block identified by the given block_num
     execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await state_factory.user_txn_id_at(block_num, gsl::narrow<uint32_t>(transaction.transaction_index));
+    const auto txn_id = co_await tx_.user_txn_id_at(block_num, gsl::narrow<uint32_t>(transaction.transaction_index));
     auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
     auto curr_state = state_factory.create_state(current_executor, chain_storage_, txn_id);
     const auto trace_call_result = co_await async_task(workers_.executor(), [&]() -> TraceCallResult {

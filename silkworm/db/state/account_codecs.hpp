@@ -60,7 +60,7 @@ struct AccountSnapshotsCodec : public snapshots::Codec {
         auto account = AccountCodec::from_encoded_storage_v3(input_word);
         if (!account)
             throw DecodingException{account.error(), "AccountSnapshotsCodec failed to decode Account"};
-        value = *account;
+        value = std::move(*account);
     }
 };
 

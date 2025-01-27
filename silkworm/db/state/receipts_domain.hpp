@@ -23,11 +23,27 @@
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 #include <silkworm/db/datastore/snapshots/segment/seg/common/varint.hpp>
 
+#include "schema_config.hpp"
+
 namespace silkworm::db::state {
 
-using ReceiptsDomainGetLatestQuery = datastore::DomainGetLatestQuery<
+using ReceiptsDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
     datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
     datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
+
+struct ReceiptsDomainGetLatestQuery : public ReceiptsDomainGetLatestQueryBase {
+    ReceiptsDomainGetLatestQuery(
+        datastore::kvdb::DatabaseRef database,
+        datastore::kvdb::ROTxn& tx,
+        const snapshots::SnapshotRepositoryROAccess& repository)
+        : ReceiptsDomainGetLatestQueryBase{
+              db::state::kDomainNameReceipts,
+              std::move(database),
+              tx,
+              repository,
+          } {}
+};
+
 using ReceiptsDomainPutQuery = datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
 using ReceiptsDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
 

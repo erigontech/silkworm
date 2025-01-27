@@ -149,45 +149,52 @@ Task<void> LogsWalker::get_logs(BlockNum start,
     Logs filtered_chunk_logs;
 
     uint64_t block_timestamp{0};
+    std::shared_ptr<BlockWithHash> block_with_hash;
     auto itr = db::txn::make_txn_nums_stream(std::move(paginated_stream), asc_order, tx_, provider);
     while (const auto tnx_nums = co_await itr->next()) {
-        if (tnx_nums->final_txn) {
-            continue;
-        }
+        SILK_DEBUG << " blockNum: " << tnx_nums->block_num << " txn_id: " << tnx_nums->txn_id << " txn_index: " << (tnx_nums->txn_index ? std::to_string(*(tnx_nums->txn_index)) : "nullopt");
+
         if (tnx_nums->block_changed) {
             receipts.clear();
 
-            const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, *chain_storage, tnx_nums->block_num);
+            block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, *chain_storage, tnx_nums->block_num);
             if (!block_with_hash) {
                 SILK_DEBUG << "Not found block no.  " << tnx_nums->block_num;
                 break;
             }
             block_timestamp = block_with_hash->block.header.timestamp;
-            receipts = co_await core::get_receipts(tx_, *block_with_hash, *chain_storage, workers_);
-            SILK_DEBUG << "Read #" << receipts.size() << " receipts from block " << tnx_nums->block_num;
         }
-        const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
-        if (!transaction) {
-            SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index;
+
+        if (!tnx_nums->txn_index) {
             continue;
         }
 
-        SILK_DEBUG << "Got transaction: block_num: " << tnx_nums->block_num << ", txn_index: " << tnx_nums->txn_index;
+        SILKWORM_ASSERT(block_with_hash);
 
-        SILKWORM_ASSERT(tnx_nums->txn_index < receipts.size());
-        auto& receipt = receipts.at(tnx_nums->txn_index);
+        const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index.value());
+        if (!transaction) {
+            SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index.value();
+            continue;
+        }
+
+        auto receipt = co_await core::get_receipt(tx_, block_with_hash->block, tnx_nums->txn_id, tnx_nums->txn_index.value(), *transaction, *chain_storage, workers_);
+        if (!receipt) {
+            SILK_DEBUG << "No receipt found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index.value();
+            continue;
+        }
+
+        SILK_DEBUG << "Got transaction: block_num: " << tnx_nums->block_num << ", txn_index: " << tnx_nums->txn_index.value();
 
         // ERIGON3 compatibility: erigon_getLatestLogs overwrites log index
         if (options.overwrite_log_index) {
             uint32_t log_index{0};
-            for (auto& log : receipt.logs) {
+            for (auto& log : receipt->logs) {
                 log.index = log_index++;
             }
         }
 
-        SILK_DEBUG << "blockNum: " << tnx_nums->block_num << ", #rawLogs: " << receipt.logs.size();
         filtered_chunk_logs.clear();
-        filter_logs(receipt.logs, addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
+        filter_logs(receipt->logs, addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
         SILK_DEBUG << "filtered #logs: " << filtered_chunk_logs.size();
         if (filtered_chunk_logs.empty()) {
             continue;
@@ -197,8 +204,8 @@ Task<void> LogsWalker::get_logs(BlockNum start,
         SILK_DEBUG << "log_count: " << log_count;
 
         if (options.add_timestamp) {
-            for (auto& log : filtered_chunk_logs) {
-                log.timestamp = block_timestamp;
+            for (auto& curr_log : filtered_chunk_logs) {
+                curr_log.timestamp = block_timestamp;
             }
         }
         logs.insert(logs.end(), filtered_chunk_logs.begin(), filtered_chunk_logs.end());

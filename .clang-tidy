@@ -86,6 +86,7 @@ Checks: >
   -readability-suspicious-call-argument,
   -readability-uppercase-literal-suffix
 CheckOptions:
+  performance-move-const-arg.CheckTriviallyCopyableMove: false
   performance-unnecessary-value-param.AllowedTypes: std::exception_ptr
   readability-identifier-naming.ClassCase: CamelCase
   readability-identifier-naming.ClassIgnoredRegexp: buildinfo|glaze
@@ -100,6 +101,8 @@ CheckOptions:
   readability-identifier-naming.GlobalConstantPrefix: k
   readability-identifier-naming.LocalVariableCase: lower_case
   readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+  readability-identifier-naming.NamespaceCase: lower_case
+  readability-identifier-naming.ParameterCase: lower_case
   readability-identifier-naming.PrivateMemberCase: lower_case
   readability-identifier-naming.PrivateMemberSuffix: _
   readability-identifier-naming.ProtectedMemberCase: lower_case
@@ -108,4 +111,5 @@ CheckOptions:
   readability-identifier-naming.PublicMemberSuffix: ''
   readability-identifier-naming.StaticConstantCase: CamelCase
   readability-identifier-naming.StaticConstantPrefix: k
+  readability-identifier-naming.StaticVariableCase: lower_case
   readability-simplify-boolean-expr.SimplifyDeMorgan: false

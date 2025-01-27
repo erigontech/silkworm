@@ -167,16 +167,14 @@ Task<std::optional<TransactionNums>> PaginatedTransactionInfoIterator::next() {
     const TransactionNums txn_nums{
         .txn_id = tnx_id,
         .block_num = block_num_,
-        .txn_index = tnx_id - min_txn_num_ - 1,
-        .final_txn = tnx_id == max_txn_num_,
+        .txn_index = (tnx_id != min_txn_num_ && tnx_id != max_txn_num_) ? std::make_optional<uint32_t>(tnx_id - min_txn_num_ - 1) : std::nullopt,
         .block_changed = block_changed};
 
     SILK_DEBUG << "txn_id: " << txn_nums.txn_id
                << ", block_num: " << txn_nums.block_num
-               << ", tnx_index: " << txn_nums.txn_index
+               << ", tnx_index: " << (txn_nums.txn_index ? std::to_string(*txn_nums.txn_index) : "")
                << ", max_tnx_num: " << max_txn_num_
-               << ", min_txn_num: " << min_txn_num_
-               << ", final txn: " << txn_nums.final_txn;
+               << ", min_txn_num: " << min_txn_num_;
 
     co_return txn_nums;
 }

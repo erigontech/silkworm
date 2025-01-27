@@ -551,9 +551,8 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
             ++key_count;
         } else {
             value = *kv_iterator;
-            const bool key_found = existence_index.contains(key);
             SILK_DEBUG << "KV: key=" << to_hex(key) << " value=" << to_hex(value);
-            ensure(key_found,
+            ensure(existence_index.contains(key),
                    [&]() { return "open_existence_index: unexpected not found key=" + to_hex(key) +
                                   " position=" + std::to_string(key_count); });
             ++found_count;

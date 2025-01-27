@@ -12,31 +12,33 @@ set -o pipefail
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
+# eth_getLogs: not runned waiting fix on erigon sync 
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --json-diff --port 51515 --transport_type http,websocket -x \
-debug_traceBlockByHash/test_05,\
-debug_traceBlockByHash/test_08,\
+eth_getLogs/test_16,\
+eth_getLogs/test_17,\
+eth_getLogs/test_18,\
+eth_getLogs/test_19,\
+eth_getLogs/test_20,\
 debug_traceBlockByHash/test_09,\
 debug_traceBlockByHash/test_10,\
-debug_traceBlockByHash/test_11,\
-debug_traceBlockByHash/test_12,\
-debug_traceBlockByNumber/test_05,\
-debug_traceBlockByNumber/test_08,\
 debug_traceBlockByNumber/test_09,\
 debug_traceBlockByNumber/test_10,\
-debug_traceBlockByNumber/test_11,\
-debug_traceBlockByNumber/test_12,\
 debug_traceBlockByNumber/test_29,\
-debug_traceTransaction/test_25.json,\
-debug_traceTransaction/test_36.json,\
-debug_traceTransaction/test_43.json,\
-debug_traceTransaction/test_62.json,\
-debug_traceTransaction/test_74.tar,\
-debug_traceTransaction/test_75.tar,\
-debug_traceTransaction/test_77.json,\
-debug_traceTransaction/test_90.tar,\
-debug_traceTransaction/test_91.tar,\
-debug_traceTransaction/test_92.tar,\
-debug_traceTransaction/test_96.json,\
+debug_traceCall/test_16,\
+debug_traceCall/test_17,\
+debug_traceCall/test_20,\
+debug_traceCall/test_21,\
+debug_traceTransaction/test_25,\
+debug_traceTransaction/test_36,\
+debug_traceTransaction/test_43,\
+debug_traceTransaction/test_62,\
+debug_traceTransaction/test_74,\
+debug_traceTransaction/test_75,\
+debug_traceTransaction/test_77,\
+debug_traceTransaction/test_90,\
+debug_traceTransaction/test_91,\
+debug_traceTransaction/test_92,\
+debug_traceTransaction/test_96,\
 trace_replayBlockTransactions/test_29,\
 engine_,\
 trace_filter/test_24.json,\

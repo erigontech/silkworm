@@ -83,12 +83,10 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
         tx->set_state_cache_enabled(is_latest_block);
 
         const auto block_num = co_await block_reader.get_block_num(block_id);
-        execution::StateFactory state_factory{*tx};
-        const auto txn_id = co_await state_factory.user_txn_id_at(block_num + 1);
+        const auto txn_id = co_await tx->user_txn_id_at(block_num + 1);
 
         StateReader state_reader{*tx, txn_id};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
-
         if (account) {
             auto code{co_await state_reader.read_code(address, account->code_hash)};
             reply = make_json_content(request, code.has_value());
@@ -441,8 +439,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         const auto chain_storage = tx->create_storage();
         rpc::BlockReader block_reader{*chain_storage, *tx};
         auto block_num = co_await block_reader.get_latest_block_num();
-        execution::StateFactory state_factory{*tx};
-        const auto txn_number = co_await state_factory.user_txn_id_at(block_num);
+        const auto txn_number = co_await tx->user_txn_id_at(block_num);
 
         StateReader state_reader{*tx, txn_number};
         std::optional<silkworm::Account> account_opt{co_await state_reader.read_account(contract_address)};
@@ -880,16 +877,15 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
         SILK_DEBUG
             << "txn_id: " << tnx_nums->txn_id
             << " block_num: " << tnx_nums->block_num
-            << ", txn_index: " << tnx_nums->txn_index
-            << ", final txn: " << tnx_nums->final_txn
+            << ", tnx_index: " << (tnx_nums->txn_index ? std::to_string(*tnx_nums->txn_index) : "")
             << ", ascending: " << std::boolalpha << ascending;
-
-        if (tnx_nums->final_txn) {
-            continue;
-        }
 
         if (tnx_nums->block_changed) {
             block_info.reset();
+        }
+
+        if (!tnx_nums->txn_index) {
+            continue;
         }
 
         if (!block_info) {
@@ -922,9 +918,9 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
             break;
         }
 
-        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index);
+        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index.value());
         if (!transaction) {
-            SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index;
+            SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index.value();
             co_return results;
         }
         results.receipts.push_back(std::move(receipts.at(silkworm::to_hex(transaction->hash(), false))));
@@ -1375,10 +1371,10 @@ Task<BlockProviderResponse> FromToBlockProvider::get() {
     co_return BlockProviderResponse{block_num, has_more_from_ || has_more_to_, false};
 }
 
-FromToBlockProvider::FromToBlockProvider(bool is_backwards, BlockProvider* callFromProvider, BlockProvider* callToProvider)
+FromToBlockProvider::FromToBlockProvider(bool is_backwards, BlockProvider* call_from_provider, BlockProvider* call_to_provider)
     : is_backwards_{is_backwards},
-      call_from_provider_{callFromProvider},
-      call_to_provider_{callToProvider} {
+      call_from_provider_{call_from_provider},
+      call_to_provider_{call_to_provider} {
 }
 
 }  // namespace silkworm::rpc::commands

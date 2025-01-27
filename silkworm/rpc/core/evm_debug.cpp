@@ -43,6 +43,14 @@ void from_json(const nlohmann::json& json, DebugConfig& tc) {
     if (json.count("NoRefunds") != 0) {
         json.at("NoRefunds").get_to(tc.no_refunds);
     }
+    if (json.count("TxIndex") != 0) {
+        const auto& json_idx = json.at("TxIndex");
+        if (json_idx.is_string()) {
+            tc.tx_index = std::stol(json_idx.get<std::string>(), nullptr, 16);
+        } else {
+            tc.tx_index = json_idx.get<uint32_t>();
+        }
+    }
 }
 
 std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
@@ -50,6 +58,9 @@ std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
     out << " disableMemory: " << std::boolalpha << tc.disable_memory;
     out << " disableStack: " << std::boolalpha << tc.disable_stack;
     out << " NoRefunds: " << std::boolalpha << tc.no_refunds;
+    if (tc.tx_index) {
+        out << " TxIndex: " << std::dec << tc.tx_index.value();
+    }
 
     return out;
 }
@@ -379,13 +390,25 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash&
     }
     rpc::Transaction transaction{call.to_transaction()};
 
-    const auto& block = block_with_hash->block;
-    const auto block_num = block.header.number + 1;
+    if (config_.tx_index) {
+        const auto tx_index = static_cast<size_t>(config_.tx_index.value());
+        if (tx_index > block_with_hash->block.transactions.size()) {
+            std::ostringstream oss;
+            oss << "TxIndex " << tx_index << " greater than #tnx in block " << block_num_or_hash;
+            const Error error{-32000, oss.str()};
+            stream.write_json_field("error", error);
 
+            co_return;
+        }
+    }
     stream.write_field("result");
     stream.open_object();
+
+    const auto& block = block_with_hash->block;
+    const auto block_num = block.header.number + (config_.tx_index ? 0 : 1);
+    const auto index = config_.tx_index ? config_.tx_index.value() : 0;
     // trace_call semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number + 1
-    co_await execute(stream, storage, block_num, block, transaction, /* index */ 0);
+    co_await execute(stream, storage, block_num, block, transaction, index);
     stream.close_object();
 
     co_return;
@@ -442,7 +465,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
     auto current_executor = co_await boost::asio::this_coro::executor;
 
     execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await state_factory.user_txn_id_at(block_num);
+    const auto txn_id = co_await tx_.user_txn_id_at(block_num);
 
     co_await async_task(workers_.executor(), [&]() -> void {
         auto state = state_factory.create_state(current_executor, storage, txn_id);
@@ -512,7 +535,7 @@ Task<void> DebugExecutor::execute(
     // We must do the execution at the state after the txn identified by the given index within the given block
     // at the state after the block identified by the given block_num
     execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await state_factory.user_txn_id_at(block_num, static_cast<uint32_t>(index));
+    const auto txn_id = co_await tx_.user_txn_id_at(block_num, static_cast<uint32_t>(index));
 
     co_await async_task(workers_.executor(), [&]() {
         const auto state = state_factory.create_state(current_executor, storage, txn_id);
@@ -565,7 +588,7 @@ Task<void> DebugExecutor::execute(
     // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
     // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
     execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await state_factory.user_txn_id_at(block.header.number, static_cast<uint32_t>(transaction_index));
+    const auto txn_id = co_await tx_.user_txn_id_at(block.header.number, static_cast<uint32_t>(transaction_index));
 
     co_await async_task(workers_.executor(), [&]() {
         auto state = state_factory.create_state(current_executor, storage, txn_id);

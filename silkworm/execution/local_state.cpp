@@ -28,28 +28,37 @@ using namespace db::state;
 using namespace datastore;
 
 std::optional<Account> LocalState::read_account(const evmc::address& address) const noexcept {
-    AccountsDomainGetLatestQuery query{
-        data_store_.chaindata,
-        tx_,
-        data_store_.state_repository,
-    };
-    auto result = query.exec(address);
-    if (result) {
-        return std::move(result->value);
+
+    if (!txn_id_) {
+        AccountsDomainGetLatestQuery query{
+            data_store_.chaindata,
+            tx_,
+            data_store_.state_repository,
+        };
+        auto result = query.exec(address);
+        if (result) {
+            return std::move(result->value);
+        }
+    } else {
+        // historical request on *txn_id timestamp
     }
     return std::nullopt;
 }
 
 ByteView LocalState::read_code(const evmc::address& address, const evmc::bytes32& /*code_hash*/) const noexcept {
-    CodeDomainGetLatestQuery query{
-        data_store_.chaindata,
-        tx_,
-        data_store_.state_repository,
-    };
-    auto result = query.exec(address);
-    if (result) {
-        static_assert(std::is_same_v<decltype(result->value), ByteView>);
-        return result->value;
+    if (!txn_id_) {
+        CodeDomainGetLatestQuery query{
+            data_store_.chaindata,
+            tx_,
+            data_store_.state_repository,
+        };
+        auto result = query.exec(address);
+        if (result) {
+            static_assert(std::is_same_v<decltype(result->value), ByteView>);
+            return result->value;
+        }
+    } else {
+        // historical request on *txn_id timestamp
     }
     return ByteView{};
 }
@@ -58,14 +67,19 @@ evmc::bytes32 LocalState::read_storage(
     const evmc::address& address,
     uint64_t /*incarnation*/,
     const evmc::bytes32& location) const noexcept {
-    StorageDomainGetLatestQuery query{
-        data_store_.chaindata,
-        tx_,
-        data_store_.state_repository,
-    };
-    auto result = query.exec({address, location});
-    if (result) {
-        return result->value;
+
+    if (!txn_id_) {
+        StorageDomainGetLatestQuery query{
+            data_store_.chaindata,
+            tx_,
+            data_store_.state_repository,
+        };
+        auto result = query.exec({address, location});
+        if (result) {
+            return result->value;
+        }
+    } else {
+            // historical request on *txn_id timestamp
     }
     return {};
 }
@@ -104,10 +118,8 @@ void LocalState::update_account(
     const evmc::address& address,
     std::optional<Account> initial,
     std::optional<Account> current) {
-    if (!txn_id_) {
-        /* mgt on latest for Battle */
-        return;
-    }
+
+    /* should be managed request on Latest(txn_id == nullopt) and historical (txn_id != nullopt) */
 
     Step current_step = Step::from_txn_id(*txn_id_);
     if (current) {
@@ -124,10 +136,9 @@ void LocalState::update_account_code(
     uint64_t /*incarnation*/,
     const evmc::bytes32& /*code_hash*/,
     ByteView code) {
-    if (!txn_id_) {
-        /* mgt on latest for Battle */
-        return;
-    }
+
+    /* should be managed request on Latest(txn_id == nullopt) and historical (txn_id != nullopt) */
+
     Step current_step = Step::from_txn_id(*txn_id_);
     CodeDomainPutQuery query{tx_, data_store_.state_db().code_domain()};
     std::optional<ByteView> initial_code = read_code(address, evmc::bytes32{});
@@ -142,10 +153,9 @@ void LocalState::update_storage(
     const evmc::bytes32& location,
     const evmc::bytes32& initial,
     const evmc::bytes32& current) {
-    if (!txn_id_) {
-        /* mgt on latest for Battle */
-        return;
-    }
+
+    /* should be managed request on Latest(txn_id == nullopt) and historical (txn_id != nullopt) */
+
     Step current_step = Step::from_txn_id(*txn_id_);
     StorageDomainPutQuery query{tx_, data_store_.state_db().storage_domain()};
     query.exec({address, location}, current, *txn_id_, initial, current_step);

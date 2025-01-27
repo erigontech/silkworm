@@ -50,7 +50,7 @@ proto::GetLatestReq get_latest_request_from_query(const api::GetLatestQuery& que
 
 api::GetLatestResult get_latest_result_from_response(const proto::GetLatestReply& response) {
     api::GetLatestResult result;
-    result.success = true;
+    result.success = !response.v().empty();
     result.value = string_to_bytes(response.v());
     return result;
 }

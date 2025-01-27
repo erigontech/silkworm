@@ -52,7 +52,7 @@ Task<std::optional<Account>> StateReader::read_account(const evmc::address& addr
         co_return std::nullopt;
     }
 
-    if (result.value.size() == 0) {
+    if (result.value.empty()) {
         co_return std::nullopt;
     }
 

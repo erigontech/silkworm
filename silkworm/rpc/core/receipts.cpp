@@ -250,7 +250,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     }
 
     varint.decode_word(result.value);
-    uint32_t first_log_index = static_cast<uint32_t>(varint.value);
+    auto first_log_index = static_cast<uint32_t>(varint.value);
 
     new_receipt.cumulative_gas_used = first_cumulative_gas_used_in_tx;
     new_receipt.from = transaction.sender();

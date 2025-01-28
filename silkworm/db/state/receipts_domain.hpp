@@ -33,12 +33,12 @@ using ReceiptsDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
 
 struct ReceiptsDomainGetLatestQuery : public ReceiptsDomainGetLatestQueryBase {
     ReceiptsDomainGetLatestQuery(
-        datastore::kvdb::DatabaseRef database,
+        const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
         : ReceiptsDomainGetLatestQueryBase{
               db::state::kDomainNameReceipts,
-              std::move(database),
+              database,
               tx,
               repository,
           } {}

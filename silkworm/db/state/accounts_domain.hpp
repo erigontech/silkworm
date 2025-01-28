@@ -32,12 +32,12 @@ using AccountsDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
 
 struct AccountsDomainGetLatestQuery : public AccountsDomainGetLatestQueryBase {
     AccountsDomainGetLatestQuery(
-        datastore::kvdb::DatabaseRef database,
+        const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
         : AccountsDomainGetLatestQueryBase{
               db::state::kDomainNameAccounts,
-              std::move(database),
+              database,
               tx,
               repository,
           } {}

@@ -27,7 +27,7 @@ namespace silkworm::execution {
 std::shared_ptr<State> StateFactory::create_state(
     boost::asio::any_io_executor& executor,
     const db::chain::ChainStorage& storage,
-    TxnId txn_id) {
+    std::optional<TxnId> txn_id) {
     if (tx.is_local()) {
         auto& local_tx = dynamic_cast<db::kv::api::LocalTransaction&>(tx);
         return std::make_shared<LocalState>(txn_id, local_tx.data_store());

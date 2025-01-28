@@ -58,7 +58,11 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOr
     const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_num);
     const auto end_txn_number = co_await transaction_.first_txn_num_in_block(block_num + 1);
 
-    const auto txn_id = co_await transaction_.user_txn_id_at(block_num + 1);
+    auto is_latest = co_await is_latest_block_num(block_num);
+    std::optional<TxnId> txn_id;
+    if (!is_latest) {
+        txn_id = co_await transaction_.user_txn_id_at(block_num + 1);
+    }
     StateReader state_reader{transaction_, txn_id};
 
     db::kv::api::HistoryRangeQuery query{
@@ -95,7 +99,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOr
     SILK_DEBUG << "Changed balances: " << balance_changes.size();
 }
 
-Task<BlockNum> BlockReader::get_forkchoice_block_num(const char* block_hash_tag) {
+Task<BlockNum> BlockReader::get_forkchoice_block_num(const char* block_hash_tag) const {
     const auto kv_pair = co_await transaction_.get(table::kLastForkchoiceName, string_to_bytes(block_hash_tag));
     const auto block_hash_data = kv_pair.value;
     if (block_hash_data.empty()) {
@@ -109,12 +113,12 @@ Task<BlockNum> BlockReader::get_forkchoice_block_num(const char* block_hash_tag)
     co_return *block_num;
 }
 
-Task<bool> BlockReader::is_latest_block_num(BlockNum block_num) {
+Task<bool> BlockReader::is_latest_block_num(BlockNum block_num) const {
     const auto last_executed_block_num = co_await get_latest_executed_block_num();
     co_return last_executed_block_num == block_num;
 }
 
-Task<BlockNum> BlockReader::get_block_num_by_tag(const std::string& block_id) {
+Task<BlockNum> BlockReader::get_block_num_by_tag(const std::string& block_id) const {
     BlockNum block_num{0};
     if (block_id == kEarliestBlockId) {
         block_num = kEarliestBlockNum;
@@ -131,7 +135,7 @@ Task<BlockNum> BlockReader::get_block_num_by_tag(const std::string& block_id) {
     co_return block_num;
 }
 
-Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const std::string& block_id, bool latest_required) {
+Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const std::string& block_id, bool latest_required) const {
     BlockNum block_num{0};
     bool is_latest_block = false;
     bool check_if_latest = false;
@@ -166,12 +170,12 @@ Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const std::string& bl
     co_return std::make_pair(block_num, is_latest_block);
 }
 
-Task<BlockNum> BlockReader::get_block_num(const std::string& block_id) {
+Task<BlockNum> BlockReader::get_block_num(const std::string& block_id) const {
     const auto [block_num, _] = co_await get_block_num(block_id, /*latest_required=*/false);
     co_return block_num;
 }
 
-Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const BlockNumOrHash& block_num_or_hash) {
+Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const BlockNumOrHash& block_num_or_hash) const {
     if (block_num_or_hash.is_tag()) {
         co_return co_await get_block_num(block_num_or_hash.tag(), true);
     } else if (block_num_or_hash.is_number()) {
@@ -188,25 +192,25 @@ Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const BlockNumOrHash&
     }
 }
 
-Task<BlockNum> BlockReader::get_block_num(const Hash& hash) {
+Task<BlockNum> BlockReader::get_block_num(const Hash& hash) const {
     auto bn = co_await chain_storage_.read_block_num(hash);
     ensure(bn != 0, "get_block_num: block with hash not found");
     co_return *bn;
 }
 
-Task<BlockNum> BlockReader::get_current_block_num() {
+Task<BlockNum> BlockReader::get_current_block_num() const {
     co_return co_await stages::get_sync_stage_progress(transaction_, stages::kFinish);
 }
 
-Task<BlockNum> BlockReader::get_max_block_num() {
+Task<BlockNum> BlockReader::get_max_block_num() const {
     co_return co_await stages::get_sync_stage_progress(transaction_, stages::kHeaders);
 }
 
-Task<BlockNum> BlockReader::get_latest_executed_block_num() {
+Task<BlockNum> BlockReader::get_latest_executed_block_num() const {
     co_return co_await stages::get_sync_stage_progress(transaction_, stages::kExecution);
 }
 
-Task<BlockNum> BlockReader::get_latest_block_num() {
+Task<BlockNum> BlockReader::get_latest_block_num() const {
     const auto kv_pair = co_await transaction_.get(table::kLastForkchoiceName, string_to_bytes(kHeadBlockHash));
     const auto head_block_hash_data = kv_pair.value;
     if (!head_block_hash_data.empty()) {
@@ -220,15 +224,15 @@ Task<BlockNum> BlockReader::get_latest_block_num() {
     co_return co_await get_latest_executed_block_num();
 }
 
-Task<BlockNum> BlockReader::get_forkchoice_finalized_block_num() {
+Task<BlockNum> BlockReader::get_forkchoice_finalized_block_num() const {
     co_return co_await get_forkchoice_block_num(kFinalizedBlockHash);
 }
 
-Task<BlockNum> BlockReader::get_forkchoice_safe_block_num() {
+Task<BlockNum> BlockReader::get_forkchoice_safe_block_num() const {
     co_return co_await get_forkchoice_block_num(kSafeBlockHash);
 }
 
-Task<bool> BlockReader::is_latest_block_num(const BlockNumOrHash& block_num_or_hash) {
+Task<bool> BlockReader::is_latest_block_num(const BlockNumOrHash& block_num_or_hash) const {
     if (block_num_or_hash.is_tag()) {
         co_return block_num_or_hash.tag() == kLatestBlockId || block_num_or_hash.tag() == kPendingBlockId;
     } else {

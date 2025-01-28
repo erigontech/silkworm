@@ -34,7 +34,7 @@ namespace silkworm::execution {
 class LocalState : public State {
   public:
     explicit LocalState(
-        TxnId txn_id,
+        std::optional<TxnId> txn_id,
         db::DataStoreRef data_store)
         : txn_id_{txn_id},
           data_store_{std::move(data_store)},
@@ -97,7 +97,7 @@ class LocalState : public State {
         return db::DataModelFactory{data_store_}(tx_);
     }
 
-    TxnId txn_id_;
+    std::optional<TxnId> txn_id_;
     db::DataStoreRef data_store_;
     mutable datastore::kvdb::RWTxnManaged tx_;
 };

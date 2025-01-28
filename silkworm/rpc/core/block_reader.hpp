@@ -51,36 +51,36 @@ class BlockReader {
 
     Task<void> read_balance_changes(BlockCache& cache, const BlockNumOrHash& block_num_or_hash, BalanceChanges& balance_changes) const;
 
-    Task<bool> is_latest_block_num(BlockNum block_num);
+    Task<bool> is_latest_block_num(BlockNum block_num) const;
 
-    Task<BlockNum> get_block_num_by_tag(const std::string& block_id);
+    Task<BlockNum> get_block_num_by_tag(const std::string& block_id) const;
 
-    Task<std::pair<BlockNum, bool>> get_block_num(const std::string& block_id, bool latest_required);
+    Task<std::pair<BlockNum, bool>> get_block_num(const std::string& block_id, bool latest_required) const;
 
-    Task<BlockNum> get_block_num(const std::string& block_id);
+    Task<BlockNum> get_block_num(const std::string& block_id) const;
 
-    Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumOrHash& block_num_or_hash);
+    Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumOrHash& block_num_or_hash) const;
 
-    Task<BlockNum> get_block_num(const Hash& hash);
+    Task<BlockNum> get_block_num(const Hash& hash) const;
 
-    Task<BlockNum> get_current_block_num();
+    Task<BlockNum> get_current_block_num() const;
 
-    Task<BlockNum> get_max_block_num();
+    Task<BlockNum> get_max_block_num() const;
 
-    Task<BlockNum> get_latest_block_num();
+    Task<BlockNum> get_latest_block_num() const;
 
-    Task<BlockNum> get_latest_executed_block_num();
+    Task<BlockNum> get_latest_executed_block_num() const;
 
-    Task<BlockNum> get_forkchoice_finalized_block_num();
+    Task<BlockNum> get_forkchoice_finalized_block_num() const;
 
-    Task<BlockNum> get_forkchoice_safe_block_num();
+    Task<BlockNum> get_forkchoice_safe_block_num() const;
 
-    Task<bool> is_latest_block_num(const BlockNumOrHash& block_num_or_hash);
+    Task<bool> is_latest_block_num(const BlockNumOrHash& block_num_or_hash) const;
 
     Task<std::optional<BlockHeader>> read_header(BlockNum block_num) { co_return co_await chain_storage_.read_canonical_header(block_num); }
 
   private:
-    Task<BlockNum> get_forkchoice_block_num(const char* block_hash_tag);
+    Task<BlockNum> get_forkchoice_block_num(const char* block_hash_tag) const;
     const db::chain::ChainStorage& chain_storage_;
     db::kv::api::Transaction& transaction_;
 };

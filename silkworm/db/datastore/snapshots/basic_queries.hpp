@@ -74,7 +74,7 @@ struct FindByHashSegmentQuery : public BasicSegmentQuery<TSegmentReader, segment
             return std::nullopt;
         }
 
-        auto result = this->reader_.seek_one(*offset, hash);
+        auto result = this->reader_.seek_one(*offset, ByteView{hash.bytes, 1});
 
         // We *must* ensure that the retrieved txn hash matches because there is no way to know if key exists in MPHF
         if (result && (result->hash() != hash)) {

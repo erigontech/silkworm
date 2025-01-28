@@ -103,11 +103,9 @@ class SegmentFileReader {
     Iterator begin(std::shared_ptr<Decoder> decoder) const;
     Iterator end() const;
 
-    Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<Decoder> decoder) const;
+    Iterator seek(uint64_t offset, std::optional<ByteView> check_prefix, std::shared_ptr<Decoder> decoder) const;
 
   private:
-    seg::Decompressor::Iterator seek_decompressor(uint64_t offset, std::optional<Hash> hash_prefix) const;
-
     //! The path of the segment file for this snapshot
     SnapshotPath path_;
 
@@ -170,12 +168,12 @@ class SegmentReader {
         return Iterator{reader_.end()};
     }
 
-    Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
-        return Iterator{reader_.seek(offset, hash_prefix, std::make_shared<TDecoder>())};
+    Iterator seek(uint64_t offset, std::optional<ByteView> check_prefix = std::nullopt) const {
+        return Iterator{reader_.seek(offset, check_prefix, std::make_shared<TDecoder>())};
     }
 
-    std::optional<typename Iterator::value_type> seek_one(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
-        auto it = seek(offset, hash_prefix);
+    std::optional<typename Iterator::value_type> seek_one(uint64_t offset, std::optional<ByteView> check_prefix = std::nullopt) const {
+        auto it = seek(offset, check_prefix);
         return (it != end()) ? std::optional{std::move(*it)} : std::nullopt;
     }
 

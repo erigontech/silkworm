@@ -21,11 +21,27 @@
 #include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 
+#include "schema_config.hpp"
+
 namespace silkworm::db::state {
 
-using CommitmentDomainGetLatestQuery = datastore::DomainGetLatestQuery<
+using CommitmentDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
     datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
     datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
+
+struct CommitmentDomainGetLatestQuery : public CommitmentDomainGetLatestQueryBase {
+    CommitmentDomainGetLatestQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::ROTxn& tx,
+        const snapshots::SnapshotRepositoryROAccess& repository)
+        : CommitmentDomainGetLatestQueryBase{
+              db::state::kDomainNameCommitment,
+              database,
+              tx,
+              repository,
+          } {}
+};
+
 using CommitmentDomainPutQuery = datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
 using CommitmentDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
 

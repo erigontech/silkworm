@@ -49,6 +49,7 @@ struct DebugConfig {
     bool disable_memory{false};
     bool disable_stack{false};
     bool no_refunds{false};
+    std::optional<int32_t> tx_index;
 };
 
 std::string uint256_to_hex(const evmone::uint256& x);
@@ -135,9 +136,9 @@ class DebugExecutor {
 
     Task<void> trace_block(json::Stream& stream, const ChainStorage& storage, BlockNum block_num);
     Task<void> trace_block(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& block_hash);
-    Task<void> trace_call(json::Stream& stream, const BlockNumOrHash& block_num_or_hash, const ChainStorage& storage, const Call& call);
+    Task<void> trace_call(json::Stream& stream, const BlockNumOrHash& block_num_or_hash, const ChainStorage& storage, const Call& call, bool is_latest_block);
     Task<void> trace_transaction(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& tx_hash);
-    Task<void> trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context);
+    Task<void> trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context, bool is_latest_block);
 
   protected:
     Task<void> execute(json::Stream& stream, const ChainStorage& storage, const silkworm::Block& block, const Call& call);
@@ -151,14 +152,16 @@ class DebugExecutor {
         BlockNum block_num,
         const silkworm::Block& block,
         const Transaction& transaction,
-        int32_t = -1);
+        int32_t index = -1,
+        bool is_latest_block = false);
 
     Task<void> execute(
         json::Stream& stream,
         const ChainStorage& storage,
         std::shared_ptr<BlockWithHash> block_with_hash,
         const Bundles& bundles,
-        int32_t transaction_index);
+        int32_t transaction_index,
+        bool is_latest_block = false);
 
     BlockCache& block_cache_;
     WorkerPool& workers_;

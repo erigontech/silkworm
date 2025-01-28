@@ -37,7 +37,7 @@ inline constexpr std::uint64_t kTxGas = 21'000;
 inline constexpr std::uint64_t kGasCap = 50'000'000;
 
 using BlockHeaderProvider = std::function<Task<std::optional<silkworm::BlockHeader>>(uint64_t)>;
-using AccountReader = std::function<Task<std::optional<silkworm::Account>>(const evmc::address&, TxnId txn_id)>;
+using AccountReader = std::function<Task<std::optional<silkworm::Account>>(const evmc::address&, std::optional<TxnId> txn_id)>;
 
 struct EstimateGasException : public std::exception {
   public:
@@ -90,10 +90,10 @@ class EstimateGasOracle {
     EstimateGasOracle(const EstimateGasOracle&) = delete;
     EstimateGasOracle& operator=(const EstimateGasOracle&) = delete;
 
-    Task<intx::uint256> estimate_gas(const Call& call, const silkworm::Block& latest_block, TxnId txn_id, std::optional<BlockNum> block_num_for_gas_limit = {});
+    Task<intx::uint256> estimate_gas(const Call& call, const silkworm::Block& latest_block, std::optional<TxnId> txn_id, std::optional<BlockNum> block_num_for_gas_limit = {});
 
   protected:
-    virtual ExecutionResult try_execution(EVMExecutor& executor, const silkworm::Block& _block, const silkworm::Transaction& transaction);
+    virtual ExecutionResult try_execution(EVMExecutor& executor, const silkworm::Block& block, const silkworm::Transaction& transaction);
 
   private:
     void throw_exception(ExecutionResult& result);

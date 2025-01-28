@@ -84,7 +84,7 @@ using Tracers = std::vector<std::shared_ptr<EvmTracer>>;
 
 class EVMExecutor {
   public:
-    using StateFactory = std::function<std::shared_ptr<State>(boost::asio::any_io_executor&, BlockNum, const ChainStorage&)>;
+    using StateFactory = std::function<std::shared_ptr<State>(boost::asio::any_io_executor&, std::optional<TxnId>, const ChainStorage&)>;
 
     static Task<ExecutionResult> call(
         const silkworm::ChainConfig& config,
@@ -92,7 +92,7 @@ class EVMExecutor {
         WorkerPool& workers,
         const silkworm::Block& block,
         const silkworm::Transaction& txn,
-        TxnId txn_id,
+        std::optional<TxnId> txn_id,
         StateFactory state_factory,
         const Tracers& tracers = {},
         bool refund = true,

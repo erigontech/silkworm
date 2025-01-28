@@ -67,7 +67,7 @@ ValidationResult EthashRuleSet::validate_extra_data(const BlockHeader& header) c
 
 void EthashRuleSet::initialize(EVM& evm) {
     if (evm.block().header.number == evm.config().dao_block) {
-        dao::transfer_balances(evm.state());
+        transfer_dao_balances(evm.state());
     }
 }
 

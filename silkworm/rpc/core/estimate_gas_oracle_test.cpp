@@ -84,7 +84,7 @@ TEST_CASE("estimate gas") {
         co_return block_header;
     };
 
-    AccountReader account_reader = [&account](const evmc::address& /*address*/, BlockNum /*block_num*/) -> Task<std::optional<silkworm::Account>> {
+    AccountReader account_reader = [&account](const evmc::address& /*address*/, std::optional<TxnId> /* txn_id */) -> Task<std::optional<silkworm::Account>> {
         co_return account;
     };
 

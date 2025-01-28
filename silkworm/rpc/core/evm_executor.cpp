@@ -291,7 +291,7 @@ Task<ExecutionResult> EVMExecutor::call(
     WorkerPool& workers,
     const silkworm::Block& block,
     const silkworm::Transaction& txn,
-    const TxnId txn_id,
+    const std::optional<TxnId> txn_id,
     StateFactory state_factory,
     const Tracers& tracers,
     bool refund,

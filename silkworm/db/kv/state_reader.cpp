@@ -19,6 +19,7 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
+#include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
@@ -48,6 +49,11 @@ Task<std::optional<Account>> StateReader::read_account(const evmc::address& addr
     }
 
     if (!result.success) {
+        co_return std::nullopt;
+    }
+
+    // Non-existent account has empty encoded value
+    if (result.value.empty()) {
         co_return std::nullopt;
     }
 

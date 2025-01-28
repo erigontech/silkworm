@@ -24,6 +24,9 @@ debug_traceBlockByHash/test_10,\
 debug_traceBlockByNumber/test_09,\
 debug_traceBlockByNumber/test_10,\
 debug_traceBlockByNumber/test_29,\
+debug_traceCall/test_16,\
+debug_traceCall/test_17,\
+debug_traceCall/test_20,\
 debug_traceCall/test_21,\
 debug_traceTransaction/test_25,\
 debug_traceTransaction/test_36,\
@@ -36,11 +39,11 @@ debug_traceTransaction/test_90,\
 debug_traceTransaction/test_91,\
 debug_traceTransaction/test_92,\
 debug_traceTransaction/test_96,\
+trace_filter/test_24,\
 trace_replayBlockTransactions/test_29,\
-engine_,\
-trace_filter/test_24.json,\
-trace_replayTransaction/test_48.tar,\
-trace_transaction/test_37.json
+trace_replayTransaction/test_48,\
+trace_transaction/test_37,\
+engine_
 
 failed_test=$?
 

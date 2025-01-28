@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <silkworm/db/datastore/domain_get_as_of_query.hpp>
 #include <silkworm/db/datastore/domain_get_latest_query.hpp>
 #include <silkworm/db/datastore/history_get_query.hpp>
 #include <silkworm/db/datastore/kvdb/domain_queries.hpp>
@@ -50,6 +51,11 @@ using CodeDomainPutQuery = datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, d
 using CodeDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>;
 
 using CodeHistoryGetQuery = datastore::HistoryGetQuery<
+    AddressKVDBEncoder, AddressSnapshotsEncoder,
+    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
+    &kHistorySegmentAndIdxNamesCode>;
+
+using CodeDomainGetAsOfQuery = datastore::DomainGetAsOfQuery<
     AddressKVDBEncoder, AddressSnapshotsEncoder,
     datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
     &kHistorySegmentAndIdxNamesCode>;

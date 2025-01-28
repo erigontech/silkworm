@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <silkworm/db/datastore/domain_get_as_of_query.hpp>
 #include <silkworm/db/datastore/domain_get_latest_query.hpp>
 #include <silkworm/db/datastore/history_get_query.hpp>
 #include <silkworm/db/datastore/kvdb/domain_queries.hpp>
@@ -49,6 +50,11 @@ using CommitmentDomainPutQuery = datastore::kvdb::DomainPutQuery<datastore::kvdb
 using CommitmentDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
 
 using CommitmentHistoryGetQuery = datastore::HistoryGetQuery<
+    datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
+    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
+    &kHistorySegmentAndIdxNamesCommitment>;
+
+using CommitmentDomainGetAsOfQuery = datastore::DomainGetAsOfQuery<
     datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
     datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
     &kHistorySegmentAndIdxNamesCommitment>;

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <silkworm/db/datastore/domain_get_as_of_query.hpp>
 #include <silkworm/db/datastore/domain_get_latest_query.hpp>
 #include <silkworm/db/datastore/history_get_query.hpp>
 #include <silkworm/db/datastore/kvdb/domain_queries.hpp>
@@ -49,6 +50,11 @@ using StorageDomainPutQuery = datastore::kvdb::DomainPutQuery<StorageAddressAndL
 using StorageDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>;
 
 using StorageHistoryGetQuery = datastore::HistoryGetQuery<
+    StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
+    Bytes32KVDBCodec, Bytes32SnapshotsCodec,
+    &kHistorySegmentAndIdxNamesStorage>;
+
+using StorageDomainGetAsOfQuery = datastore::DomainGetAsOfQuery<
     StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
     Bytes32KVDBCodec, Bytes32SnapshotsCodec,
     &kHistorySegmentAndIdxNamesStorage>;

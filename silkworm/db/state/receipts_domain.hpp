@@ -18,6 +18,7 @@
 
 #include <stdexcept>
 
+#include <silkworm/db/datastore/domain_get_as_of_query.hpp>
 #include <silkworm/db/datastore/domain_get_latest_query.hpp>
 #include <silkworm/db/datastore/history_get_query.hpp>
 #include <silkworm/db/datastore/kvdb/domain_queries.hpp>
@@ -82,6 +83,11 @@ using ReceiptsDomainPutQuery = datastore::kvdb::DomainPutQuery<datastore::kvdb::
 using ReceiptsDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
 
 using ReceiptsHistoryGetQuery = datastore::HistoryGetQuery<
+    datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
+    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
+    &kHistorySegmentAndIdxNamesReceipts>;
+
+using ReceiptsDomainGetAsOfQuery = datastore::DomainGetAsOfQuery<
     datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
     datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
     &kHistorySegmentAndIdxNamesReceipts>;

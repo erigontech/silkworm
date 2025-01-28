@@ -31,12 +31,12 @@ using CommitmentDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
 
 struct CommitmentDomainGetLatestQuery : public CommitmentDomainGetLatestQueryBase {
     CommitmentDomainGetLatestQuery(
-        datastore::kvdb::DatabaseRef database,
+        const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
         : CommitmentDomainGetLatestQueryBase{
               db::state::kDomainNameCommitment,
-              std::move(database),
+              database,
               tx,
               repository,
           } {}

@@ -40,7 +40,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
                                                   const Bundles& bundles,
                                                   std::optional<std::uint64_t> opt_timeout,
                                                   const AccountsOverrides& accounts_overrides,
-                                                  TxnId txn_id,
+                                                  std::optional<TxnId> txn_id,
                                                   boost::asio::any_io_executor& this_executor) {
     CallManyResult result;
     const auto& block = block_with_hash->block;
@@ -151,12 +151,16 @@ Task<CallManyResult> CallExecutor::execute(
     if (!block_with_hash) {
         throw std::invalid_argument("read_block_by_block_num_or_hash: block not found");
     }
-    const uint64_t transaction_index =
-        context.transaction_index == -1 ? block_with_hash->block.transactions.size() : static_cast<uint64_t>(context.transaction_index);
 
     auto this_executor = co_await boost::asio::this_coro::executor;
-    const auto min_tx_num = co_await transaction_.first_txn_num_in_block(block_with_hash->block.header.number);
-    const auto txn_id = min_tx_num + transaction_index + 1;  // for system txn in the beginning of block
+
+    std::optional<TxnId> txn_id;
+
+    if (co_await block_reader_.is_latest_block_num(block_with_hash->block.header.number) == false) {
+        const uint32_t transaction_index =
+            context.transaction_index == -1 ? static_cast<uint32_t>(block_with_hash->block.transactions.size()) : static_cast<uint32_t>(context.transaction_index);
+        txn_id = co_await transaction_.user_txn_id_at(block_with_hash->block.header.number, transaction_index);
+    }
     result = co_await async_task(workers_.executor(), [&]() -> CallManyResult {
         return executes_all_bundles(chain_config,
                                     *chain_storage,

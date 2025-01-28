@@ -25,7 +25,7 @@
 
 namespace silkworm::rpc {
 
-Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block, TxnId txn_id, std::optional<BlockNum> block_num_for_gas_limit) {
+Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block, std::optional<TxnId> txn_id, std::optional<BlockNum> block_num_for_gas_limit) {
     SILK_DEBUG << "EstimateGasOracle::estimate_gas called";
 
     const auto block_num = block.header.number;

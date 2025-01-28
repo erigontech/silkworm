@@ -30,6 +30,7 @@
 #include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
+#include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/types/call.hpp>
 
@@ -45,8 +46,9 @@ class CallExecutor {
     explicit CallExecutor(
         db::kv::api::Transaction& transaction,
         BlockCache& block_cache,
-        WorkerPool& workers)
-        : transaction_(transaction), block_cache_(block_cache), workers_{workers} {}
+        WorkerPool& workers,
+        rpc::BlockReader& block_reader)
+        : transaction_(transaction), block_cache_(block_cache), workers_{workers}, block_reader_{block_reader} {}
     virtual ~CallExecutor() = default;
 
     CallExecutor(const CallExecutor&) = delete;
@@ -64,12 +66,13 @@ class CallExecutor {
                                         const Bundles& bundles,
                                         std::optional<std::uint64_t> opt_timeout,
                                         const AccountsOverrides& accounts_overrides,
-                                        TxnId txn_id,
+                                        std::optional<TxnId> txn_id,
                                         boost::asio::any_io_executor& executor);
 
   private:
     db::kv::api::Transaction& transaction_;
     BlockCache& block_cache_;
     WorkerPool& workers_;
+    rpc::BlockReader& block_reader_;
 };
 }  // namespace silkworm::rpc::call

@@ -52,7 +52,7 @@ TEST_CASE("DomainPutLatestQuery") {
     Domain entity = db.domain(name);
     RWAccess db_access = db.access_rw();
 
-    auto find_in = [&db_access, &entity](std::vector<DomainPutEntry>&& data, uint64_t key) -> std::optional<Result> {
+    auto find_in = [&db_access, &entity](const std::vector<DomainPutEntry>& data, uint64_t key) -> std::optional<Result> {
         {
             RWTxnManaged tx = db_access.start_rw_tx();
             DomainPutLatestQuery<BigEndianU64Codec, BigEndianU64Codec> query{tx, entity};

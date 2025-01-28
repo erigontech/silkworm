@@ -24,6 +24,8 @@
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/concurrency/timeout.hpp>
 #include <silkworm/rpc/json/client_version.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 #include <silkworm/rpc/types/execution_payload.hpp>
@@ -31,6 +33,7 @@
 namespace silkworm::rpc::commands {
 
 using namespace std::chrono_literals;
+using namespace concurrency::awaitable_wait_for_one;
 
 // Engine API standard timeouts
 static constexpr std::chrono::seconds kGetPayloadTimeout{1s};
@@ -425,10 +428,16 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v3(const nlohmann::json& requ
             .expected_blob_versioned_hashes = std::move(expected_blob_versioned_hashes),
             .parent_beacon_block_root = parent_beacon_block_root,
         };
-        const auto new_payload = co_await engine_->new_payload(new_payload_v3_request, kNewPayloadTimeout);
-
-        reply = make_json_content(request, new_payload);
+        // TODO(canepat) get rid of first timeout?
+        const auto status_var = co_await (engine_->new_payload(new_payload_v3_request, kNewPayloadTimeout) ||
+                                          concurrency::timeout(kNewPayloadTimeout));
+        ensure(std::holds_alternative<rpc::PayloadStatus>(status_var), "engine_newPayloadV3: unexpected awaitable operators outcome");
+        const auto payload_status = std::get<rpc::PayloadStatus>(status_var);
+        reply = make_json_content(request, payload_status);
 #ifndef BUILD_COVERAGE
+    } catch (const concurrency::TimeoutExpiredError& tee) {
+        SILK_WARN << "engine_newPayloadV3: timeout expired: " << tee.what();
+        reply = make_json_content(request, rpc::PayloadStatus::kSyncing);
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
         reply = make_json_error(request, se.code().value(), se.code().message());

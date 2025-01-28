@@ -166,14 +166,18 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
         }
         SILK_TRACE << "PoSSync: new_payload block_hash=" << block_hash << " block_num: " << block->header.number;
 
-        if (active_chain_validations_ > 0) {
+        const auto [valid, last_valid] = has_valid_ancestor(block_hash);
+        if (!valid) co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalidStr, last_valid, "bad ancestor"};
+
+        // Preliminary checks: if not satisfied, we're done because we're already syncing the chain
+        // - execution engine must be ready (i.e. sanity staged cycle during initialisation phase must be completed)
+        // - no chain validation must be already in progress
+        const bool exec_engine_ready = co_await exec_engine_->ready();
+        if (!exec_engine_ready || active_chain_validations_ > 0) {
             SILK_INFO << "PoSSync: new_payload block_hash=" << block_hash << " block_num: " << block->header.number
                       << " <- reply SYNCING";
             co_return rpc::PayloadStatus::kSyncing;
         }
-
-        const auto [valid, last_valid] = has_valid_ancestor(block_hash);
-        if (!valid) co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalidStr, last_valid, "bad ancestor"};
 
         // Find attaching point using chain fork view first to avoid remote access to execution
         auto parent_td = chain_fork_view_.get_total_difficulty(block->header.number - 1, block->header.parent_hash);
@@ -272,6 +276,15 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
         }
         SILK_INFO << "PoSSync: fork_choice_update head_block_hash=" << Hash(state.head_block_hash)
                   << " safe_block_hash=" << Hash(state.safe_block_hash) << " finalized_block_hash=" << Hash(state.finalized_block_hash);
+
+        // Preliminary checks: if not satisfied, we're done because we're already syncing the chain
+        // - execution engine must be ready (i.e. sanity staged cycle during initialisation phase must be completed)
+        // - no chain validation must be already in progress
+        const bool exec_engine_ready = co_await exec_engine_->ready();
+        if (!exec_engine_ready || active_chain_validations_ > 0) {
+            SILK_INFO << "PoSSync: fork_choice_update head_block_hash=" << Hash(state.head_block_hash) << " <- reply SYNCING";
+            co_return rpc::ForkChoiceUpdatedReply{rpc::PayloadStatus::kSyncing};
+        }
 
         Hash head_header_hash = state.head_block_hash;
         const auto head_header_var = co_await (exec_engine_->get_header(head_header_hash) ||

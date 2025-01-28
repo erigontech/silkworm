@@ -24,7 +24,9 @@ ActiveDirectService::ActiveDirectService(ExecutionEngine& exec_engine, boost::as
     : DirectService{exec_engine}, ioc_{ioc}, executor_{ioc_.get_executor()} {}
 
 void ActiveDirectService::execution_loop() {
+    ioc_.stop();
     exec_engine_.open();
+    ioc_.restart();
 
     boost::asio::executor_work_guard<decltype(executor_)> work{executor_};
     ioc_.run();
@@ -158,7 +160,10 @@ Task<ForkChoice> ActiveDirectService::get_fork_choice() {
 
 // rpc Ready(google.protobuf.Empty) returns(ReadyResponse);
 Task<bool> ActiveDirectService::ready() {
-    return concurrency::spawn_task(executor_, [](auto* self) {
+    if (ioc_.stopped()) {
+        co_return false;
+    }
+    co_return co_await concurrency::spawn_task(executor_, [](auto* self) {
         return self->DirectService::ready();
     }(this));
 }

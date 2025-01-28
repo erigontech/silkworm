@@ -314,6 +314,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::fork_choice_updated.get_header2_timeout"
     const execution::api::BlockNumOrHash head_parent_block_num_or_hash{head_parent_hash};
     EXPECT_CALL(*execution_service, get_header(head_parent_block_num_or_hash))
         .WillOnce(InvokeWithoutArgs([]() -> Task<std::optional<BlockHeader>> {
+            co_await sleep(1h);  // simulate exaggeratedly long-running task
             co_return BlockHeader{};
         }));
 

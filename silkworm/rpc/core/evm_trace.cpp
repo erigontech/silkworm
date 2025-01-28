@@ -805,7 +805,9 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
     current_depth_ = msg.depth;
 
     auto create = (!initial_ibs_.exists(recipient) && created_address_.find(recipient) == created_address_.end() && recipient != code_address);
-
+    if (last_opcode_) {
+        create = create || last_opcode_.value() == OP_CREATE2 || last_opcode_.value() == OP_CREATE;
+    }
     start_gas_.push(msg.gas);
 
     size_t index = traces_.size();
@@ -937,6 +939,8 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
         is_precompile_ = false;
         return;
     }
+    if (index_stack_.empty())
+        return;
 
     if (index_stack_.empty()) {
         return;
@@ -1042,6 +1046,7 @@ void TraceTracer::on_creation_completed(const evmc_result& result, const silkwor
     auto start_gas = start_gas_.top();
     index_stack_.pop();
     start_gas_.pop();
+
     Trace& trace = traces_[index];
     trace.trace_result->gas_used = start_gas - result.gas_left;
 }

@@ -164,7 +164,6 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
         if (payload.block_hash != block_hash) {
             co_return rpc::PayloadStatus::kInvalidBlockHash;
         }
-        SILK_TRACE << "PoSSync: new_payload block_hash=" << block_hash << " block_num: " << block->header.number;
 
         const auto [valid, last_valid] = has_valid_ancestor(block_hash);
         if (!valid) co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalidStr, last_valid, "bad ancestor"};
@@ -178,6 +177,7 @@ Task<rpc::PayloadStatus> PoSSync::new_payload(const rpc::NewPayloadRequest& requ
                       << " <- reply SYNCING";
             co_return rpc::PayloadStatus::kSyncing;
         }
+        SILK_INFO << "PoSSync: new_payload block_hash=" << block_hash << " block_num: " << block->header.number;
 
         // Find attaching point using chain fork view first to avoid remote access to execution
         auto parent_td = chain_fork_view_.get_total_difficulty(block->header.number - 1, block->header.parent_hash);
@@ -271,11 +271,10 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
     const auto& state{request.fork_choice_state};
     const auto& attributes{request.payload_attributes};
     try {
+        // Validations
         if (!state.head_block_hash) {
             co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalidStr, no_latest_valid_hash, "invalid head block hash"}};
         }
-        SILK_INFO << "PoSSync: fork_choice_update head_block_hash=" << Hash(state.head_block_hash)
-                  << " safe_block_hash=" << Hash(state.safe_block_hash) << " finalized_block_hash=" << Hash(state.finalized_block_hash);
 
         // Preliminary checks: if not satisfied, we're done because we're already syncing the chain
         // - execution engine must be ready (i.e. sanity staged cycle during initialisation phase must be completed)
@@ -285,6 +284,9 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
             SILK_INFO << "PoSSync: fork_choice_update head_block_hash=" << Hash(state.head_block_hash) << " <- reply SYNCING";
             co_return rpc::ForkChoiceUpdatedReply{rpc::PayloadStatus::kSyncing};
         }
+
+        SILK_INFO << "PoSSync: fork_choice_update head_block_hash=" << Hash(state.head_block_hash)
+                  << " safe_block_hash=" << Hash(state.safe_block_hash) << " finalized_block_hash=" << Hash(state.finalized_block_hash);
 
         Hash head_header_hash = state.head_block_hash;
         const auto head_header_var = co_await (exec_engine_->get_header(head_header_hash) ||
@@ -358,7 +360,7 @@ Task<rpc::ForkChoiceUpdatedReply> PoSSync::fork_choice_updated(const rpc::ForkCh
         SILK_INFO
             << "PoSSync: fork_choice_update " << (fcu_result ? "OK" : "KO")
             << " latest_valid_hash=" << (fcu_result ? Hash(state.head_block_hash).to_hex() : fcu_result.latest_valid_head.to_hex())
-            << " current_head=" << fcu_result.latest_valid_head << " current_block_num=";
+            << " current_head=" << fcu_result.latest_valid_head << " head_block_num=" << head_header->number;
         if (!fcu_result) {
             // at the moment application doesn't carry information to disambiguate between invalid head and
             // finalized_block_hash not found, so we need additional calls:

@@ -39,7 +39,7 @@ std::optional<Account> LocalState::read_account(const evmc::address& address) co
             return std::move(result->value);
         }
     } else {
-        // historical request on *txn_id timestamp
+        // TODO(canepat) historical AccountsDomainGetAsOfQuery on *txn_id timestamp
     }
     return std::nullopt;
 }
@@ -57,7 +57,7 @@ ByteView LocalState::read_code(const evmc::address& address, const evmc::bytes32
             return result->value;
         }
     } else {
-        // historical request on *txn_id timestamp
+        // TODO(canepat) historical CodeDomainGetAsOfQuery on *txn_id timestamp
     }
     return ByteView{};
 }
@@ -77,7 +77,7 @@ evmc::bytes32 LocalState::read_storage(
             return result->value;
         }
     } else {
-        // historical request on *txn_id timestamp
+        // TODO(canepat) historical StorageDomainGetAsOfQuery on *txn_id timestamp
     }
     return {};
 }
@@ -110,50 +110,6 @@ BlockNum LocalState::current_canonical_block() const {
 std::optional<evmc::bytes32> LocalState::canonical_hash(BlockNum block_num) const {
     // This method should not be called by EVM::execute
     return data_model().read_canonical_header_hash(block_num);
-}
-
-void LocalState::update_account(
-    const evmc::address& address,
-    std::optional<Account> initial,
-    std::optional<Account> current) {
-    /* should be managed request on Latest(txn_id == nullopt) and historical (txn_id != nullopt) */
-
-    Step current_step = Step::from_txn_id(*txn_id_);
-    if (current) {
-        AccountsDomainPutQuery query{tx_, data_store_.state_db().accounts_domain()};
-        query.exec(address, *current, *txn_id_, initial, current_step);
-    } else {
-        AccountsDomainDeleteQuery query{tx_, data_store_.state_db().accounts_domain()};
-        query.exec(address, *txn_id_, initial, current_step);
-    }
-}
-
-void LocalState::update_account_code(
-    const evmc::address& address,
-    uint64_t /*incarnation*/,
-    const evmc::bytes32& /*code_hash*/,
-    ByteView code) {
-    /* should be managed request on Latest(txn_id == nullopt) and historical (txn_id != nullopt) */
-
-    Step current_step = Step::from_txn_id(*txn_id_);
-    CodeDomainPutQuery query{tx_, data_store_.state_db().code_domain()};
-    std::optional<ByteView> initial_code = read_code(address, evmc::bytes32{});
-    if (initial_code && initial_code->empty())
-        initial_code = std::nullopt;
-    query.exec(address, code, *txn_id_, initial_code, current_step);
-}
-
-void LocalState::update_storage(
-    const evmc::address& address,
-    uint64_t /*incarnation*/,
-    const evmc::bytes32& location,
-    const evmc::bytes32& initial,
-    const evmc::bytes32& current) {
-    /* should be managed request on Latest(txn_id == nullopt) and historical (txn_id != nullopt) */
-
-    Step current_step = Step::from_txn_id(*txn_id_);
-    StorageDomainPutQuery query{tx_, data_store_.state_db().storage_domain()};
-    query.exec({address, location}, current, *txn_id_, initial, current_step);
 }
 
 }  // namespace silkworm::execution

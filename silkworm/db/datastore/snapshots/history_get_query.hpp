@@ -39,17 +39,16 @@ struct HistoryGetQuery {
 
     using Key = decltype(TKeyEncoder::value);
     using Value = decltype(TValueDecoder::value);
+    using AccessorIndexKey = typename HistoryAccessorIndexKeyEncoder<TKeyEncoder>::Value;
 
     std::optional<Value> exec(const Key& key, datastore::Timestamp timestamp) {
         auto result = timestamp_query_.exec(key, timestamp);
-        // TODO
-        // return result ? value_query_.exec(*result, {key, *result}) : std::nullopt;
-        return result ? value_query_.exec(*result, key) : std::nullopt;
+        return result ? value_query_.exec(*result, AccessorIndexKey{*result, key}) : std::nullopt;
     }
 
   private:
     InvertedIndexSeekQuery<TKeyEncoder> timestamp_query_;
-    FindByTimestampMapQuery<FindByKeySegmentQuery<TKeyEncoder, segment::SegmentReader<TValueDecoder>, segment_names>> value_query_;
+    FindByTimestampMapQuery<FindByKeySegmentQuery<HistoryAccessorIndexKeyEncoder<TKeyEncoder>, segment::SegmentReader<TValueDecoder>, segment_names>> value_query_;
 };
 
 }  // namespace silkworm::snapshots

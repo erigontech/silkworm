@@ -33,12 +33,14 @@ struct InterfaceLogSettings {
     std::filesystem::path container_folder{"logs/"};
     size_t max_file_size_mb{1};
     size_t max_files{100};
-    bool auto_flush{false};
+    bool auto_flush{true};
     bool dump_response{false};
 };
 
 class InterfaceLog final {
   public:
+    static const size_t kLogLineHeaderSize;
+
     explicit InterfaceLog(InterfaceLogSettings settings);
     ~InterfaceLog();
 

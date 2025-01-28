@@ -86,7 +86,6 @@ Task<std::optional<std::string>> RequestHandler::handle(const std::string& reque
 
     if (ifc_log_) {
         ifc_log_->log_rsp(response);
-        ifc_log_->flush();
     }
     SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 

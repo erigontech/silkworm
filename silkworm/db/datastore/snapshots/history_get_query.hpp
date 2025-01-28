@@ -20,6 +20,7 @@
 #include "basic_queries.hpp"
 #include "common/codec.hpp"
 #include "common/raw_codec.hpp"
+#include "inverted_index_seek_query.hpp"
 #include "snapshot_repository_ro_access.hpp"
 
 namespace silkworm::snapshots {
@@ -30,18 +31,25 @@ template <
     const SegmentAndAccessorIndexNames* segment_names>
 struct HistoryGetQuery {
     explicit HistoryGetQuery(const SnapshotRepositoryROAccess& repository)
-        : query_{repository} {}
+        : timestamp_query_{
+              repository,
+              [](const SnapshotBundle& bundle) { return bundle.domain(segment_names->front()).history->inverted_index; },
+          },
+          value_query_{repository} {}
 
     using Key = decltype(TKeyEncoder::value);
     using Value = decltype(TValueDecoder::value);
 
     std::optional<Value> exec(const Key& key, datastore::Timestamp timestamp) {
+        auto result = timestamp_query_.exec(key, timestamp);
         // TODO
-        return query_.exec(0, key);
+        // return result ? value_query_.exec(*result, {key, *result}) : std::nullopt;
+        return result ? value_query_.exec(*result, key) : std::nullopt;
     }
 
   private:
-    FindByTimestampMapQuery<FindByKeySegmentQuery<TKeyEncoder, segment::SegmentReader<TValueDecoder>, segment_names>> query_;
+    InvertedIndexSeekQuery<TKeyEncoder> timestamp_query_;
+    FindByTimestampMapQuery<FindByKeySegmentQuery<TKeyEncoder, segment::SegmentReader<TValueDecoder>, segment_names>> value_query_;
 };
 
 }  // namespace silkworm::snapshots

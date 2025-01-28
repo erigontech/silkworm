@@ -117,6 +117,11 @@ uint64_t EliasFanoList32::at(size_t i) const {
     return value;
 }
 
+std::optional<std::pair<size_t, uint64_t>> EliasFanoList32::seek([[maybe_unused]] uint64_t value) const {
+    // TODO
+    return std::nullopt;
+}
+
 void EliasFanoList32::add_offset(uint64_t offset) {
     if (l_ != 0) {
         set_bits(lower_bits_, i_ * l_, l_, offset & lower_bits_mask_);

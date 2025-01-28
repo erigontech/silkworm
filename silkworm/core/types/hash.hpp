@@ -17,6 +17,7 @@
 #pragma once
 
 #include <optional>
+#include <ostream>
 #include <span>
 #include <string>
 
@@ -60,6 +61,15 @@ namespace rlp {
         return decode(from, to.bytes, mode);
     }
 }  // namespace rlp
+
+inline std::ostream& operator<<(std::ostream& out, const Hash& h) {
+    out << "0x";
+    for (size_t i = 0; i < 4; ++i) {
+        out << std::hex << std::setw(2) << std::setfill('0') << int{h.bytes[i]};
+    }
+    out << "..." << std::dec;
+    return out;
+}
 
 }  // namespace silkworm
 

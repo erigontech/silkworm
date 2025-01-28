@@ -63,6 +63,29 @@ struct FindByIdSegmentQuery : public BasicSegmentQuery<TSegmentReader, segment_n
 };
 
 template <
+    EncoderConcept TKeyEncoder,
+    segment::SegmentReaderConcept TSegmentReader,
+    const SegmentAndAccessorIndexNames* segment_names>
+struct FindByKeySegmentQuery : public BasicSegmentQuery<TSegmentReader, segment_names> {
+    using BasicSegmentQuery<TSegmentReader, segment_names>::BasicSegmentQuery;
+
+    using Key = decltype(TKeyEncoder::value);
+
+    std::optional<typename TSegmentReader::Iterator::value_type> exec(const Key& key) {
+        TKeyEncoder key_encoder;
+        key_encoder.value = key;
+        ByteView key_data = key_encoder.encode_word();
+
+        auto offset = this->index_.lookup_by_key(key_data);
+        if (!offset) {
+            return std::nullopt;
+        }
+
+        return this->reader_.seek_one(*offset);
+    }
+};
+
+template <
     segment::SegmentReaderConcept TSegmentReader,
     const SegmentAndAccessorIndexNames* segment_names>
 struct FindByHashSegmentQuery : public BasicSegmentQuery<TSegmentReader, segment_names> {

@@ -95,6 +95,39 @@ struct SilkwormChainSnapshot {
     struct SilkwormTransactionsSnapshot transactions;
 };
 
+struct SilkwormInvertedIndexSnapshot {
+    struct SilkwormMemoryMappedFile segment;         // .ef
+    struct SilkwormMemoryMappedFile accessor_index;  // .efi
+};
+
+struct SilkwormHistorySnapshot {
+    struct SilkwormMemoryMappedFile segment;         // .v
+    struct SilkwormMemoryMappedFile accessor_index;  // .vi
+    struct SilkwormInvertedIndexSnapshot inverted_index;
+};
+
+struct SilkwormDomainSnapshot {
+    struct SilkwormMemoryMappedFile segment;          // .kv
+    struct SilkwormMemoryMappedFile existence_index;  // .kvei
+    struct SilkwormMemoryMappedFile btree_index;      // .bt
+    bool has_accessor_index;
+    struct SilkwormMemoryMappedFile accessor_index;  // .kvi
+    bool has_history;
+    struct SilkwormHistorySnapshot history;
+};
+
+struct SilkwormStateSnapshot {
+    struct SilkwormDomainSnapshot account;
+    struct SilkwormDomainSnapshot storage;
+    struct SilkwormDomainSnapshot code;
+    struct SilkwormDomainSnapshot commitment;
+    struct SilkwormDomainSnapshot receipt;
+    struct SilkwormInvertedIndexSnapshot log_address;
+    struct SilkwormInvertedIndexSnapshot log_topic;
+    struct SilkwormInvertedIndexSnapshot trace_from;
+    struct SilkwormInvertedIndexSnapshot trace_to;
+};
+
 #define SILKWORM_PATH_SIZE 260
 #define SILKWORM_GIT_VERSION_SIZE 32
 
@@ -120,6 +153,10 @@ struct SilkwormSettings {
     char data_dir_path[SILKWORM_PATH_SIZE];
     //! libmdbx version string in git describe format.
     char libmdbx_version[SILKWORM_GIT_VERSION_SIZE];
+    //! Index salt for block snapshots
+    uint32_t block_index_salt;
+    //! Index salt for state snapshots
+    uint32_t state_index_salt;
 };
 
 /**
@@ -140,12 +177,20 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
 SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struct SilkwormMemoryMappedFile* segments[], size_t len) SILKWORM_NOEXCEPT;
 
 /**
- * \brief Notify Silkworm about a new snapshot to use.
+ * \brief Notify Silkworm about a new *block* snapshot to use.
  * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
  * \param[in] snapshot A snapshot to use.
  * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
  */
 SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, struct SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT;
+
+/**
+ * \brief Notify Silkworm about a new *state* snapshot to use.
+ * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
+ * \param[in] snapshot A *state* snapshot to use.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
+ */
+SILKWORM_EXPORT int silkworm_add_state_snapshot(SilkwormHandle handle, const struct SilkwormStateSnapshot* snapshot) SILKWORM_NOEXCEPT;
 
 /**
  * \brief Get libmdbx version for compatibility checks.

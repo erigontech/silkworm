@@ -42,6 +42,7 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
+#include <silkworm/db/datastore/snapshots/snapshot_bundle.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/state/schema_config.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
@@ -56,13 +57,10 @@
 
 #include "common.hpp"
 #include "instance.hpp"
+#include "snapshots.hpp"
 
 using namespace std::chrono_literals;
 using namespace silkworm;
-
-static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
-    return {mmf.memory_address, mmf.memory_length};
-}
 
 static constexpr size_t kMaxBlockBufferSize{100};
 static constexpr size_t kMaxPrefetchedBlocks{10'240};
@@ -231,11 +229,11 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
     auto blocks_repository = db::blocks::make_blocks_repository(
         snapshots_dir_path,
         /* open = */ false,
-        /* index_salt = */ 0);  // TODO: pass from erigon
+        settings->block_index_salt);
     auto state_repository = db::state::make_state_repository(
         snapshots_dir_path,
         /* open = */ false,
-        /* index_salt = */ 0);  // TODO: pass from erigon
+        settings->state_index_salt);
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
     *handle = new SilkwormInstance{
@@ -411,6 +409,24 @@ SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSn
         std::move(bundle_data),
     };
     handle->blocks_repository->add_snapshot_bundle(std::move(bundle));
+    return SILKWORM_OK;
+}
+
+SILKWORM_EXPORT int silkworm_add_state_snapshot(SilkwormHandle handle, const SilkwormStateSnapshot* snapshot) SILKWORM_NOEXCEPT {
+    if (!handle || !handle->state_repository) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+    if (!snapshot) {
+        return SILKWORM_INVALID_SNAPSHOT;
+    }
+    if (!handle->state_repository->index_salt()) {
+        return SILKWORM_INTERNAL_ERROR;
+    }
+    auto snapshot_bundle = build_state_snapshot(snapshot, *handle->state_repository->index_salt());
+    if (!snapshot_bundle) {
+        return snapshot_bundle.error();
+    }
+    handle->state_repository->add_snapshot_bundle(std::move(*snapshot_bundle));
     return SILKWORM_OK;
 }
 

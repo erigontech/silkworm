@@ -35,8 +35,6 @@ set(LIBS_PUBLIC
     silkworm_core
     silkworm_infra
     silkworm_db
-    silkworm_block_execution
-    silkworm_snapshots
 )
 # cmake-format: on
 

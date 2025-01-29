@@ -58,6 +58,7 @@ evmc::bytes32 DomainState::read_storage(
     const evmc::address& address,
     uint64_t /*incarnation*/,
     const evmc::bytes32& location) const noexcept {
+
     StorageDomainGetLatestQuery query{database_, tx_, state_repository_};
     auto result = query.exec({address, location});
     if (result) {
@@ -106,11 +107,12 @@ void DomainState::update_account(
     const evmc::address& address,
     std::optional<Account> original,
     std::optional<Account> current) {
+
     if (!original) {
         AccountsDomainGetLatestQuery query_prev{database_, tx_, state_repository_};
         auto result_prev = query_prev.exec(address);
         if (result_prev) {
-            original = result_prev->value;
+            original = std::move(result_prev->value);
         }
     }
 
@@ -118,10 +120,10 @@ void DomainState::update_account(
 
     if (current) {
         AccountsDomainPutQuery query{database_, tx_};
-        query.exec(address, *current, txn_id_, original, prev_step);
+        query.exec(address, *current, txn_id_, original);
     } else {
         AccountsDomainDeleteQuery query{tx_, database_.domain(kDomainNameAccounts)};
-        query.exec(address, txn_id_, original, prev_step);
+        query.exec(address, txn_id_, original);
     }
 }
 
@@ -130,18 +132,17 @@ void DomainState::update_account_code(
     uint64_t /*incarnation*/,
     const evmc::bytes32& /*code_hash*/,
     ByteView code) {
+
     CodeDomainGetLatestQuery query_prev{database_, tx_, state_repository_};
     auto result_prev = query_prev.exec(address);
 
-    Step prev_step{0};
     std::optional<ByteView> original_code = std::nullopt;
     if (result_prev) {
-        prev_step = result_prev->step;
-        original_code = result_prev->value;
+        original_code = std::move(result_prev->value);
     }
 
     CodeDomainPutQuery query{database_, tx_};
-    query.exec(address, code, txn_id_, original_code, prev_step);
+    query.exec(address, code, txn_id_, original_code);
 }
 
 void DomainState::update_storage(
@@ -150,13 +151,14 @@ void DomainState::update_storage(
     const evmc::bytes32& location,
     const evmc::bytes32& initial,
     const evmc::bytes32& current) {
+
     evmc::bytes32 original_value{};
 
     if (initial == evmc::bytes32{}) {
         StorageDomainGetLatestQuery query_prev{database_, tx_, state_repository_};
         auto result_prev = query_prev.exec({address, location});
         if (result_prev) {
-            original_value = result_prev->value;
+            original_value = std::move(result_prev->value);
         }
     } else {
         original_value = initial;
@@ -165,7 +167,7 @@ void DomainState::update_storage(
     Step prev_step{0};
 
     StorageDomainPutQuery query{database_, tx_};
-    query.exec({address, location}, current, txn_id_, original_value, prev_step);
+    query.exec({address, location}, current, txn_id_, original_value);
 }
 
 }  // namespace silkworm::execution

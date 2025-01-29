@@ -42,8 +42,6 @@ struct DomainPutLatestQuery {
         value_encoder.value.timestamp.value = step;
         Slice value_data = value_encoder.encode();
 
-        // SILK_DEBUG << "Putting  " << entity.values_table.name << " with key " << to_hex(datastore::kvdb::from_slice(key_data), true) << " value " << to_hex(datastore::kvdb::from_slice(value_data), true);
-
         if (entity.values_table.value_mode == mdbx::value_mode::multi) {
             auto cursor = tx.rw_cursor_dup_sort(entity.values_table);
 
@@ -53,11 +51,8 @@ struct DomainPutLatestQuery {
             same_step_value_encoder.value.timestamp.value = step;
             Slice same_step_value = same_step_value_encoder.encode();
 
-            // SILK_DEBUG << "DupSort looking for existing value " << to_hex(datastore::kvdb::from_slice(same_step_value), true);
-
             CursorResult result = cursor->lower_bound_multivalue(key_data, same_step_value, false);
             if (result) {
-                // SILK_DEBUG << " found and ";
                 // the found value will have the same key, but the step part can be different,
                 // let's decode it ignoring the data part
                 DomainValueDecoder<RawDecoder<ByteView>> existing_value_decoder{entity.has_large_values};
@@ -65,12 +60,7 @@ struct DomainPutLatestQuery {
                 Step existing_value_step = existing_value_decoder.value.timestamp.value;
                 if (existing_value_step == step) {
                     cursor->erase();
-                    // SILK_DEBUG << "earasing";
-                } else {
-                    // SILK_DEBUG << "not earasing, existing_value_step: " << existing_value_step.to_string();
                 }
-            } else {
-                // SILK_DEBUG << " not found";
             }
 
             cursor->upsert(key_data, value_data);

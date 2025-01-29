@@ -31,8 +31,7 @@ struct DomainDeleteQuery {
     void exec(
         const Key& key,
         Timestamp timestamp,
-        const std::optional<Value>& prev_value,
-        Step current_step) {
+        const std::optional<Value>& prev_value) {
         if (prev_value) {
             TValueEncoder prev_value_encoder;
             prev_value_encoder.value = std::move(*prev_value);
@@ -43,7 +42,7 @@ struct DomainDeleteQuery {
             ByteView prev_value_data = prev_value_slice_decoder.value;
 
             DomainPutQuery<TKeyEncoder, RawEncoder<ByteView>> query{tx, entity};
-            query.exec(key, ByteView{}, timestamp, prev_value_data, current_step);
+            query.exec(key, ByteView{}, timestamp, prev_value_data);
         }
     }
 };

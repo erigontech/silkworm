@@ -34,11 +34,11 @@ struct StorageDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
         const snapshots::SnapshotRepositoryROAccess& repository)
         : datastore::DomainGetLatestQuery<
               StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
-              Bytes32KVDBCodec, Bytes32SnapshotsCodec>{
+              Bytes32KVDBCodec, Bytes32SnapshotsCodec>(
               db::state::kDomainNameStorage,
               database.domain(db::state::kDomainNameStorage),
               tx,
-              repository} {}
+              repository) {}
 };
 
 struct StorageDomainPutQuery : public datastore::kvdb::DomainPutQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec> {

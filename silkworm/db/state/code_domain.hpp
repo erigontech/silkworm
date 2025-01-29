@@ -35,12 +35,11 @@ struct CodeDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
         const snapshots::SnapshotRepositoryROAccess& repository)
         : datastore::DomainGetLatestQuery<
               AddressKVDBEncoder, AddressSnapshotsEncoder,
-              datastore::kvdb::RawDecoder<ByteView>, snapshots::RawDecoder<ByteView>>{
+              datastore::kvdb::RawDecoder<ByteView>, snapshots::RawDecoder<ByteView>>(
               db::state::kDomainNameCode,
               database.domain(db::state::kDomainNameCode),
               tx,
-              repository,
-          } {}
+              repository) {}
 };
 
 struct CodeDomainPutQuery : public datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>> {

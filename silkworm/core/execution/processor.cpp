@@ -165,7 +165,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     // evmone will not modify the state itself: state is read-only and the state modifications
     // are provided as the state diff in the returned receipt.
     auto evm1_receipt = evmone::state::transition(
-        evm1_state_view, evm1_block_, evm1_block_hashes, evm1_txn, rev, evm_.vm(), static_cast<int64_t>(execution_gas_limit));
+        evm1_state_view, evm1_block_, evm1_block_hashes, evm1_txn, rev, evm_.vm(), {.execution_gas_limit = static_cast<int64_t>(execution_gas_limit)});
 
     const auto gas_used = static_cast<uint64_t>(evm1_receipt.gas_used);
     cumulative_gas_used_ += gas_used;

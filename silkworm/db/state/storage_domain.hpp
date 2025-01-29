@@ -44,9 +44,9 @@ struct StorageDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
 struct StorageDomainPutQuery : public datastore::kvdb::DomainPutQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec> {
     StorageDomainPutQuery(
         const datastore::kvdb::DatabaseRef& database,
-        datastore::kvdb::RWTxn& tx)
+        datastore::kvdb::RWTxn& rw_tx)
         : datastore::kvdb::DomainPutQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>{
-              tx,
+              rw_tx,
               database.domain(db::state::kDomainNameStorage)} {}
 };
 

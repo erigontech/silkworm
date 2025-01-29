@@ -46,9 +46,9 @@ struct CodeDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
 struct CodeDomainPutQuery : public datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>> {
     CodeDomainPutQuery(
         const datastore::kvdb::DatabaseRef& database,
-        datastore::kvdb::RWTxn& tx)
+        datastore::kvdb::RWTxn& rw_tx)
         : datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>{
-              tx,
+              rw_tx,
               database.domain(db::state::kDomainNameCode)} {}
 };
 

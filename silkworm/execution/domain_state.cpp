@@ -58,7 +58,6 @@ evmc::bytes32 DomainState::read_storage(
     const evmc::address& address,
     uint64_t /*incarnation*/,
     const evmc::bytes32& location) const noexcept {
-
     StorageDomainGetLatestQuery query{database_, tx_, state_repository_};
     auto result = query.exec({address, location});
     if (result) {
@@ -107,7 +106,6 @@ void DomainState::update_account(
     const evmc::address& address,
     std::optional<Account> original,
     std::optional<Account> current) {
-
     if (!original) {
         AccountsDomainGetLatestQuery query_prev{database_, tx_, state_repository_};
         auto result_prev = query_prev.exec(address);
@@ -130,7 +128,6 @@ void DomainState::update_account_code(
     uint64_t /*incarnation*/,
     const evmc::bytes32& /*code_hash*/,
     ByteView code) {
-
     CodeDomainGetLatestQuery query_prev{database_, tx_, state_repository_};
     auto result_prev = query_prev.exec(address);
 
@@ -149,7 +146,6 @@ void DomainState::update_storage(
     const evmc::bytes32& location,
     const evmc::bytes32& initial,
     const evmc::bytes32& current) {
-
     evmc::bytes32 original_value{};
 
     if (initial == evmc::bytes32{}) {

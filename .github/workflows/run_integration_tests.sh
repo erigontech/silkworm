@@ -39,11 +39,11 @@ debug_traceTransaction/test_90,\
 debug_traceTransaction/test_91,\
 debug_traceTransaction/test_92,\
 debug_traceTransaction/test_96,\
+trace_filter/test_24,\
 trace_replayBlockTransactions/test_29,\
-engine_,\
-trace_filter/test_24.json,\
-trace_replayTransaction/test_48.tar,\
-trace_transaction/test_37.json
+trace_replayTransaction/test_48,\
+trace_transaction/test_37,\
+engine_
 
 failed_test=$?
 

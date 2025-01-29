@@ -91,10 +91,15 @@ uint64_t EliasFanoList32::at(size_t i) const {
         lower |= lower_bits_[idx64 + 1] << (64 - shift);
     }
 
+    const uint64_t value = ((upper(i) << l_) | (lower & lower_bits_mask_));
+    return value;
+}
+
+uint64_t EliasFanoList32::upper(uint64_t i) const {
     const uint64_t jump_super_q = (i / kSuperQ) * kSuperQSize32;
     const uint64_t jump_inside_super_q = (i % kSuperQ) / kQ;
-    idx64 = jump_super_q + 1 + (jump_inside_super_q >> 1);
-    shift = 32 * (jump_inside_super_q % 2);
+    const uint64_t idx64 = jump_super_q + 1 + (jump_inside_super_q >> 1);
+    const uint64_t shift = 32 * (jump_inside_super_q % 2);
     const uint64_t mask = uint64_t{0xffffffff} << shift;
     SILKWORM_ASSERT(jump_super_q < jump_.size());
     SILKWORM_ASSERT(idx64 < jump_.size());
@@ -113,12 +118,62 @@ uint64_t EliasFanoList32::at(size_t i) const {
     }
 
     const uint64_t sel = encoding::select64(window, d);
-    const auto value = ((current_word * 64 + sel - i) << l_ | (lower & lower_bits_mask_));
+    const uint64_t value = current_word * 64 + sel - i;
     return value;
 }
 
-std::optional<std::pair<size_t, uint64_t>> EliasFanoList32::seek([[maybe_unused]] uint64_t value) const {
-    // TODO
+std::optional<std::pair<size_t, uint64_t>> EliasFanoList32::seek([[maybe_unused]] uint64_t v, bool reverse) const {
+    struct IndexRange {
+        using value_type = size_t;
+
+        size_t start_index{0};
+        size_t end_index{0};
+
+        size_t size() const { return end_index - start_index; }
+        size_t operator[](size_t i) const { return i; }
+
+        using Iterator = ListIterator<IndexRange, size_t>;
+        Iterator begin() const { return Iterator{*this, start_index}; }
+        Iterator end() const { return Iterator{*this, end_index}; }
+    };
+    static_assert(IndexedListConcept<IndexRange>);
+
+    if (count_ == 0) {
+        return std::nullopt;
+    }
+
+    uint64_t min = this->min();
+    uint64_t max = this->max();
+
+    if (v == 0) {
+        if (!reverse || (min == 0)) return std::pair{0, min};
+        return std::nullopt;
+    }
+
+    size_t last = count_ - 1;
+
+    if (v == max) {
+        return std::pair{last, max};
+    }
+    if (v > max) {
+        if (reverse) return std::pair{last, max};
+        return std::nullopt;
+    }
+
+    uint64_t hi = v >> l_;
+    IndexRange index_range{0, count_};
+    IndexRange::Iterator start_it = std::ranges::partition_point(index_range, [=, this](size_t i) -> bool {
+        return reverse ? (upper(last - i) > hi) : (upper(i) < hi);
+    });
+
+    for (size_t j = *start_it; j < count_; j++) {
+        size_t idx = reverse ? last - j : j;
+        uint64_t val = at(idx);
+        if (reverse ? (val <= v) : (val >= v)) {
+            return std::pair{idx, val};
+        }
+    }
+
     return std::nullopt;
 }
 

@@ -71,6 +71,16 @@ static std::vector<uint64_t> generate_contiguous_offsets(uint64_t count) {
     return offsets;
 }
 
+static EliasFanoList32 make_list(const std::vector<uint64_t>& offsets) {
+    const uint64_t max_offset = *std::max_element(offsets.cbegin(), offsets.cend());
+    EliasFanoList32 list{offsets.size(), max_offset};
+    for (uint64_t offset : offsets) {
+        list.add_offset(offset);
+    }
+    list.build();
+    return list;
+}
+
 TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
     std::vector<EliasFanoList32Test> ef_test_vector{
         // Test Pattern 1
@@ -98,11 +108,7 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
     for (const auto& ef_test : ef_test_vector) {
         // Encode monotone ascending integer sequence using Elias-Fano representation
         const uint64_t max_offset = *std::max_element(ef_test.offsets.cbegin(), ef_test.offsets.cend());
-        EliasFanoList32 ef_list{ef_test.offsets.size(), max_offset};
-        for (const auto offset : ef_test.offsets) {
-            ef_list.add_offset(offset);
-        }
-        ef_list.build();
+        EliasFanoList32 ef_list = make_list(ef_test.offsets);
 
         CHECK(ef_list.min() == ef_test.offsets.at(0));
         CHECK(ef_list.max() == max_offset);
@@ -134,5 +140,29 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
 
 static_assert(IndexedListConcept<const EliasFanoList32>);
 static_assert(std::ranges::random_access_range<const EliasFanoList32>);
+
+TEST_CASE("EliasFanoList32::seek", "[silkworm][recsplit][elias_fano]") {
+    using SeekResult = std::pair<size_t, uint64_t>;
+    std::vector<uint64_t> offsets = {1, 4, 6, 8, 10, 14, 16, 19, 22, 34, 37, 39, 41, 43, 48, 51, 54, 58, 62};
+    EliasFanoList32 ef_list = make_list(offsets);
+
+    // seek forward
+    CHECK(ef_list.seek(0) == SeekResult{0, 1});
+    CHECK(ef_list.seek(1) == SeekResult{0, 1});
+    CHECK(ef_list.seek(2) == SeekResult{1, 4});
+    CHECK(ef_list.seek(4) == SeekResult{1, 4});
+    CHECK(ef_list.seek(20) == SeekResult{8, 22});
+    CHECK(ef_list.seek(62) == SeekResult{offsets.size() - 1, 62});
+    CHECK_FALSE(ef_list.seek(70).has_value());
+
+    // seek reverse
+    CHECK_FALSE(ef_list.seek(0, true).has_value());
+    CHECK(ef_list.seek(1, true) == SeekResult{0, 1});
+    CHECK(ef_list.seek(2, true) == SeekResult{0, 1});
+    CHECK(ef_list.seek(4, true) == SeekResult{1, 4});
+    CHECK(ef_list.seek(20, true) == SeekResult{7, 19});
+    CHECK(ef_list.seek(62, true) == SeekResult{offsets.size() - 1, 62});
+    CHECK(ef_list.seek(70, true) == SeekResult{offsets.size() - 1, 62});
+}
 
 }  // namespace silkworm::snapshots::elias_fano

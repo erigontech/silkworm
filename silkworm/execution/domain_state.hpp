@@ -37,7 +37,7 @@ class DomainState : public State {
     explicit DomainState(
         TxnId txn_id,
         datastore::kvdb::RWTxn& tx,
-        datastore::kvdb::DatabaseBase& database,
+        datastore::kvdb::DatabaseRef& database,
         snapshots::SnapshotRepository& blocks_repository,
         snapshots::SnapshotRepository& state_repository)
         : txn_id_{txn_id},
@@ -49,7 +49,7 @@ class DomainState : public State {
     explicit DomainState(
         TxnId txn_id,
         datastore::kvdb::RWTxn& tx,
-        datastore::kvdb::DatabaseBase& database,
+        datastore::kvdb::DatabaseRef& database,
         snapshots::SnapshotRepository& state_repository,
         db::DataModel& data_model)
 
@@ -114,7 +114,7 @@ class DomainState : public State {
   private:
     TxnId txn_id_;
     datastore::kvdb::RWTxn& tx_;
-    datastore::kvdb::DatabaseBase& database_;
+    datastore::kvdb::DatabaseRef& database_;
     snapshots::SnapshotRepository& state_repository_;
     db::DataModel data_model_;
 };

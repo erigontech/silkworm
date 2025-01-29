@@ -50,7 +50,8 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
 
     auto rw_tx = ds_context.chaindata_rw().start_rw_tx();
 
-    auto sut = DomainState{1, rw_tx, ds_context->chaindata(), ds_context->blocks_repository(), ds_context->state_repository()};
+    auto db_ref = ds_context->chaindata().ref();
+    auto sut = DomainState{1, rw_tx, db_ref, ds_context->blocks_repository(), ds_context->state_repository()};
     auto header0_hash = sut.canonical_hash(0);
     auto header0 = sut.read_header(0, header0_hash.value());
 
@@ -169,7 +170,7 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
         CHECK(account_66_read->balance == account_66_v2.balance);
 
         auto next_step_txn_id = silkworm::datastore::kStepSizeForTemporalSnapshots + 1;
-        auto sut2 = DomainState{next_step_txn_id, rw_tx, ds_context->chaindata(), ds_context->blocks_repository(), ds_context->state_repository()};
+        auto sut2 = DomainState{next_step_txn_id, rw_tx, db_ref, ds_context->blocks_repository(), ds_context->state_repository()};
         Account account_66_v3{
             .nonce = 10,
             .balance = 262,
@@ -228,7 +229,7 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
         CHECK(code_66_read == code_66);
 
         auto next_step_txn_id = silkworm::datastore::kStepSizeForTemporalSnapshots + 1;
-        auto sut2 = DomainState{next_step_txn_id, rw_tx, ds_context->chaindata(), ds_context->blocks_repository(), ds_context->state_repository()};
+        auto sut2 = DomainState{next_step_txn_id, rw_tx, db_ref, ds_context->blocks_repository(), ds_context->state_repository()};
         code_66 = *from_hex("0x6044");
         code_hash_66 = std::bit_cast<evmc_bytes32>(keccak256(code_66));
         sut2.update_account_code(
@@ -285,7 +286,7 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
         CHECK(storage_66_01 == 0x0124_bytes32);
 
         auto next_step_txn_id = silkworm::datastore::kStepSizeForTemporalSnapshots + 1;
-        auto sut2 = DomainState{next_step_txn_id, rw_tx, ds_context->chaindata(), ds_context->blocks_repository(), ds_context->state_repository()};
+        auto sut2 = DomainState{next_step_txn_id, rw_tx, db_ref, ds_context->blocks_repository(), ds_context->state_repository()};
         sut2.update_storage(
             0x668bdf435d810c91414ec09147daa6db62406379_address,
             kDefaultIncarnation,
@@ -306,7 +307,8 @@ TEST_CASE("DomainState empty overriden methods do nothing", "[execution][domain]
 
     auto rw_tx = ds_context.chaindata_rw().start_rw_tx();
 
-    auto sut = DomainState{1, rw_tx, ds_context->chaindata(), ds_context->blocks_repository(), ds_context->state_repository()};
+    auto db_ref = ds_context->chaindata().ref();
+    auto sut = DomainState{1, rw_tx, db_ref, ds_context->blocks_repository(), ds_context->state_repository()};
 
     CHECK_NOTHROW(sut.insert_block(Block{}, evmc::bytes32{}));
     CHECK_NOTHROW(sut.canonize_block(0, evmc::bytes32{}));

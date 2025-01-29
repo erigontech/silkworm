@@ -26,24 +26,32 @@
 
 namespace silkworm::db::state {
 
-using CodeDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
-    AddressKVDBEncoder, AddressSnapshotsEncoder,
-    datastore::kvdb::RawDecoder<ByteView>, snapshots::RawDecoder<ByteView>>;
-
-struct CodeDomainGetLatestQuery : public CodeDomainGetLatestQueryBase {
+struct CodeDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
+                                      AddressKVDBEncoder, AddressSnapshotsEncoder,
+                                      datastore::kvdb::RawDecoder<ByteView>, snapshots::RawDecoder<ByteView>> {
     CodeDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
-        : CodeDomainGetLatestQueryBase{
+        : datastore::DomainGetLatestQuery<
+              AddressKVDBEncoder, AddressSnapshotsEncoder,
+              datastore::kvdb::RawDecoder<ByteView>, snapshots::RawDecoder<ByteView>>{
               db::state::kDomainNameCode,
-              database,
+              database.domain(db::state::kDomainNameCode),
               tx,
               repository,
           } {}
 };
 
-using CodeDomainPutQuery = datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>;
+struct CodeDomainPutQuery : public datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>> {
+    CodeDomainPutQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& tx)
+        : datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>{
+              tx,
+              database.domain(db::state::kDomainNameCode)} {}
+};
+
 using CodeDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>;
 
 using CodeDomainKVSegmentReader = snapshots::segment::KVSegmentReader<AddressSnapshotsDecoder, snapshots::RawDecoder<Bytes>>;

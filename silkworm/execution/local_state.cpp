@@ -120,7 +120,7 @@ void LocalState::update_account(
 
     Step current_step = Step::from_txn_id(*txn_id_);
     if (current) {
-        AccountsDomainPutQuery query{tx_, data_store_.state_db().accounts_domain()};
+        AccountsDomainPutQuery query{data_store_.chaindata, tx_};
         query.exec(address, *current, *txn_id_, initial, current_step);
     } else {
         AccountsDomainDeleteQuery query{tx_, data_store_.state_db().accounts_domain()};
@@ -136,7 +136,7 @@ void LocalState::update_account_code(
     /* should be managed request on Latest(txn_id == nullopt) and historical (txn_id != nullopt) */
 
     Step current_step = Step::from_txn_id(*txn_id_);
-    CodeDomainPutQuery query{tx_, data_store_.state_db().code_domain()};
+    CodeDomainPutQuery query{data_store_.chaindata, tx_};
     std::optional<ByteView> initial_code = read_code(address, evmc::bytes32{});
     if (initial_code && initial_code->empty())
         initial_code = std::nullopt;
@@ -152,7 +152,7 @@ void LocalState::update_storage(
     /* should be managed request on Latest(txn_id == nullopt) and historical (txn_id != nullopt) */
 
     Step current_step = Step::from_txn_id(*txn_id_);
-    StorageDomainPutQuery query{tx_, data_store_.state_db().storage_domain()};
+    StorageDomainPutQuery query{data_store_.chaindata, tx_};
     query.exec({address, location}, current, *txn_id_, initial, current_step);
 }
 

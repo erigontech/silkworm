@@ -37,12 +37,7 @@ using namespace datastore;
 //  - add base_txn_id to block and get_txn_by_id method
 
 std::optional<Account> DomainState::read_account(const evmc::address& address) const noexcept {
-    AccountsDomainGetLatestQuery query{
-        db::state::kDomainNameAccounts,
-        database_.domain(db::state::kDomainNameAccounts),
-        tx_,
-        state_repository_,
-    };
+    AccountsDomainGetLatestQuery query{database_, tx_, state_repository_};
     auto result = query.exec(address);
     if (result) {
         return std::move(result->value);
@@ -51,12 +46,7 @@ std::optional<Account> DomainState::read_account(const evmc::address& address) c
 }
 
 ByteView DomainState::read_code(const evmc::address& address, const evmc::bytes32& /*code_hash*/) const noexcept {
-    CodeDomainGetLatestQuery query{
-        db::state::kDomainNameCode,
-        database_.domain(db::state::kDomainNameCode),
-        tx_,
-        state_repository_,
-    };
+    CodeDomainGetLatestQuery query{database_, tx_, state_repository_};
     auto result = query.exec(address);
     if (result) {
         return std::move(result->value);
@@ -68,12 +58,7 @@ evmc::bytes32 DomainState::read_storage(
     const evmc::address& address,
     uint64_t /*incarnation*/,
     const evmc::bytes32& location) const noexcept {
-    StorageDomainGetLatestQuery query{
-        db::state::kDomainNameStorage,
-        database_.domain(db::state::kDomainNameStorage),
-        tx_,
-        state_repository_,
-    };
+    StorageDomainGetLatestQuery query{database_, tx_, state_repository_};
     auto result = query.exec({address, location});
     if (result) {
         return std::move(result->value);
@@ -119,24 +104,25 @@ void DomainState::insert_receipts(BlockNum block_num, const std::vector<Receipt>
 
 void DomainState::update_account(
     const evmc::address& address,
-    std::optional<Account> initial,
+    std::optional<Account> original,
     std::optional<Account> current) {
-    AccountsDomainGetLatestQuery query_prev{
-        db::state::kDomainNameAccounts,
-        database_.domain(db::state::kDomainNameAccounts),
-        tx_,
-        state_repository_,
-    };
-    auto result_prev = query_prev.exec(address);
-
-    Step prev_step{0};
-    if (result_prev) {
-        prev_step = result_prev->step;
+    if (!original) {
+        AccountsDomainGetLatestQuery query_prev{database_, tx_, state_repository_};
+        auto result_prev = query_prev.exec(address);
+        if (result_prev) {
+            original = result_prev->value;
+        }
     }
 
-    // TODO: handle current == nullopt
-    AccountsDomainPutQuery query{tx_, database_.domain(db::state::kDomainNameAccounts)};
-    query.exec(address, *current, txn_id_, initial, prev_step);
+    auto prev_step = Step{0};  // TODO: JG remove
+
+    if (current) {
+        AccountsDomainPutQuery query{database_, tx_};
+        query.exec(address, *current, txn_id_, original, prev_step);
+    } else {
+        AccountsDomainDeleteQuery query{tx_, database_.domain(kDomainNameAccounts)};
+        query.exec(address, txn_id_, original, prev_step);
+    }
 }
 
 void DomainState::update_account_code(
@@ -144,23 +130,18 @@ void DomainState::update_account_code(
     uint64_t /*incarnation*/,
     const evmc::bytes32& /*code_hash*/,
     ByteView code) {
-    CodeDomainGetLatestQuery query_prev{
-        db::state::kDomainNameCode,
-        database_.domain(db::state::kDomainNameCode),
-        tx_,
-        state_repository_,
-    };
+    CodeDomainGetLatestQuery query_prev{database_, tx_, state_repository_};
     auto result_prev = query_prev.exec(address);
 
     Step prev_step{0};
-    std::optional<ByteView> initial_code = std::nullopt;
+    std::optional<ByteView> original_code = std::nullopt;
     if (result_prev) {
         prev_step = result_prev->step;
-        initial_code = result_prev->value;
+        original_code = result_prev->value;
     }
 
-    CodeDomainPutQuery query{tx_, database_.domain(db::state::kDomainNameCode)};
-    query.exec(address, code, txn_id_, initial_code, prev_step);
+    CodeDomainPutQuery query{database_, tx_};
+    query.exec(address, code, txn_id_, original_code, prev_step);
 }
 
 void DomainState::update_storage(
@@ -169,22 +150,22 @@ void DomainState::update_storage(
     const evmc::bytes32& location,
     const evmc::bytes32& initial,
     const evmc::bytes32& current) {
-    StorageDomainGetLatestQuery query_prev{
-        db::state::kDomainNameStorage,
-        database_.domain(db::state::kDomainNameStorage),
-        tx_,
-        state_repository_,
-    };
-    auto result_prev = query_prev.exec({address, location});
+    evmc::bytes32 original_value{};
 
-    Step prev_step{0};
-    if (result_prev) {
-        SILK_DEBUG << "Found previous value " << to_hex(result_prev->value, true) << " step " << result_prev->step.to_string();
-        prev_step = result_prev->step;
+    if (initial == evmc::bytes32{}) {
+        StorageDomainGetLatestQuery query_prev{database_, tx_, state_repository_};
+        auto result_prev = query_prev.exec({address, location});
+        if (result_prev) {
+            original_value = result_prev->value;
+        }
+    } else {
+        original_value = initial;
     }
 
-    StorageDomainPutQuery query{tx_, database_.domain(db::state::kDomainNameStorage)};
-    query.exec({address, location}, current, txn_id_, initial, prev_step);
+    Step prev_step{0};
+
+    StorageDomainPutQuery query{database_, tx_};
+    query.exec({address, location}, current, txn_id_, original_value, prev_step);
 }
 
 }  // namespace silkworm::execution

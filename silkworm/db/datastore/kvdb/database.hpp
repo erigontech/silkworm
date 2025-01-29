@@ -59,20 +59,7 @@ class DatabaseRef {
 
 DatabaseRef::EntitiesMap make_entities(const Schema::DatabaseDef& schema);
 
-class DatabaseBase {
-  public:
-    virtual ~DatabaseBase() = default;
-
-    ROAccess access_ro() const { return ref().access_ro(); }
-    RWAccess access_rw() const { return ref().access_rw(); }
-
-    Domain domain(datastore::EntityName name) const { return ref().domain(name); }
-    InvertedIndex inverted_index(datastore::EntityName name) { return ref().inverted_index(name); }
-
-    virtual DatabaseRef ref() const = 0;
-};
-
-class Database : public DatabaseBase {
+class Database {
   public:
     Database(
         mdbx::env_managed env,
@@ -81,7 +68,13 @@ class Database : public DatabaseBase {
           schema_{std::move(schema)},
           entities_{make_entities(schema_)} {}
 
-    DatabaseRef ref() const override { return {env_, schema_, entities_}; }  // NOLINT(cppcoreguidelines-slicing)
+    ROAccess access_ro() const { return ref().access_ro(); }
+    RWAccess access_rw() const { return ref().access_rw(); }
+
+    Domain domain(datastore::EntityName name) const { return ref().domain(name); }
+    InvertedIndex inverted_index(datastore::EntityName name) const { return ref().inverted_index(name); }
+
+    DatabaseRef ref() const { return {env_, schema_, entities_}; }  // NOLINT(cppcoreguidelines-slicing)
 
     void create_tables();
 
@@ -91,7 +84,7 @@ class Database : public DatabaseBase {
     std::map<datastore::EntityName, std::map<datastore::EntityName, MapConfig>> entities_;
 };
 
-class DatabaseUnmanaged : public DatabaseBase {
+class DatabaseUnmanaged {
   public:
     DatabaseUnmanaged(
         EnvUnmanaged env,
@@ -100,7 +93,13 @@ class DatabaseUnmanaged : public DatabaseBase {
           schema_{std::move(schema)},
           entities_{make_entities(schema_)} {}
 
-    DatabaseRef ref() const override { return {env_, schema_, entities_}; }  // NOLINT(cppcoreguidelines-slicing)
+    ROAccess access_ro() const { return ref().access_ro(); }
+    RWAccess access_rw() const { return ref().access_rw(); }
+
+    Domain domain(datastore::EntityName name) const { return ref().domain(name); }
+    InvertedIndex inverted_index(datastore::EntityName name) const { return ref().inverted_index(name); }
+
+    DatabaseRef ref() const { return {env_, schema_, entities_}; }  // NOLINT(cppcoreguidelines-slicing)
 
   private:
     EnvUnmanaged env_;

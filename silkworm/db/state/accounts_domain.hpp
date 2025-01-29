@@ -26,24 +26,32 @@
 
 namespace silkworm::db::state {
 
-using AccountsDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
-    AddressKVDBEncoder, AddressSnapshotsEncoder,
-    AccountKVDBCodec, AccountSnapshotsCodec>;
-
-struct AccountsDomainGetLatestQuery : public AccountsDomainGetLatestQueryBase {
+struct AccountsDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
+                                          AddressKVDBEncoder, AddressSnapshotsEncoder,
+                                          AccountKVDBCodec, AccountSnapshotsCodec> {
     AccountsDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
-        : AccountsDomainGetLatestQueryBase{
+        : datastore::DomainGetLatestQuery<
+              AddressKVDBEncoder, AddressSnapshotsEncoder,
+              AccountKVDBCodec, AccountSnapshotsCodec>{
               db::state::kDomainNameAccounts,
-              database,
+              database.domain(db::state::kDomainNameAccounts),
               tx,
               repository,
           } {}
 };
 
-using AccountsDomainPutQuery = datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, AccountKVDBCodec>;
+struct AccountsDomainPutQuery : public datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, AccountKVDBCodec> {
+    AccountsDomainPutQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& tx)
+        : datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, AccountKVDBCodec>{
+              tx,
+              database.domain(db::state::kDomainNameAccounts)} {}
+};
+
 using AccountsDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, AccountKVDBCodec>;
 
 using AccountsDomainKVSegmentReader = snapshots::segment::KVSegmentReader<AddressSnapshotsDecoder, AccountSnapshotsCodec>;

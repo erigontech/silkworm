@@ -778,7 +778,8 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx
     auto unmanaged_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_tx};
     auto unmanaged_env = unmanaged_tx.unmanaged_env();
     auto chain_db = db::DataStore::make_chaindata_database(std::move(unmanaged_env));
-    auto state = silkworm::execution::DomainState{txn_id_, unmanaged_tx, chain_db, *handle->blocks_repository, *handle->state_repository};
+    auto db_ref = chain_db.ref();
+    auto state = silkworm::execution::DomainState{txn_id_, unmanaged_tx, db_ref, *handle->blocks_repository, *handle->state_repository};
     if (!handle->chain_config) {
         handle->chain_config = db::read_chain_config(unmanaged_tx);
     }

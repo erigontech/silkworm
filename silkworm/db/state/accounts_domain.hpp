@@ -39,7 +39,7 @@ struct AccountsDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
               db::state::kDomainNameAccounts,
               database.domain(db::state::kDomainNameAccounts),
               tx,
-              repository ) {}
+              repository) {}
 };
 
 struct AccountsDomainPutQuery : public datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, AccountKVDBCodec> {

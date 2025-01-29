@@ -116,8 +116,6 @@ void DomainState::update_account(
         }
     }
 
-    auto prev_step = Step{0};  // TODO: JG remove
-
     if (current) {
         AccountsDomainPutQuery query{database_, tx_};
         query.exec(address, *current, txn_id_, original);

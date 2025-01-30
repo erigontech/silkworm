@@ -48,7 +48,7 @@ struct HistoryGetQuery {
 
   private:
     InvertedIndexSeekQuery<TKeyEncoder> timestamp_query_;
-    FindByTimestampMapQuery<FindByKeySegmentQuery<HistoryAccessorIndexKeyEncoder<TKeyEncoder>, segment::SegmentReader<TValueDecoder>, segment_names>> value_query_;
+    FindByTimestampMapQuery<FindByKeySegmentQuery<HistoryAccessorIndexKeyEncoder<TKeyEncoder>, TValueDecoder, segment_names>> value_query_;
 };
 
 }  // namespace silkworm::snapshots

@@ -19,7 +19,6 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/state/accounts_domain.hpp>
 #include <silkworm/db/state/code_domain.hpp>
-#include <silkworm/db/state/schema_config.hpp>
 #include <silkworm/db/state/storage_domain.hpp>
 
 namespace silkworm::execution {
@@ -28,18 +27,14 @@ using namespace db::state;
 using namespace datastore;
 
 std::optional<Account> LocalState::read_account(const evmc::address& address) const noexcept {
-    if (!txn_id_) {
-        AccountsDomainGetLatestQuery query{
-            data_store_.chaindata,
-            tx_,
-            data_store_.state_repository,
-        };
-        auto result = query.exec(address);
-        if (result) {
-            return std::move(result->value);
-        }
-    } else {
-        // TODO(canepat) historical AccountsDomainGetAsOfQuery on *txn_id timestamp
+    if (txn_id_) {
+        // Query historical state at required timestamp
+        return make_query<AccountsDomainGetAsOfQuery>().exec(address, *txn_id_);
+    }
+    // Query latest i.e. current state
+    auto result = make_query<AccountsDomainGetLatestQuery>().exec(address);
+    if (result) {
+        return std::move(result->value);
     }
     return std::nullopt;
 }
@@ -49,39 +44,34 @@ ByteView LocalState::read_code(const evmc::address& address, const evmc::bytes32
         return code_[address];  // NOLINT(runtime/arrays)
     }
 
-    if (!txn_id_) {
-        CodeDomainGetLatestQuery query{
-            data_store_.chaindata,
-            tx_,
-            data_store_.state_repository,
-        };
-        auto result = query.exec(address);
+    if (txn_id_) {
+        // Query historical state at required timestamp
+        auto result = make_query<CodeDomainGetAsOfQuery>().exec(address, *txn_id_);
         if (result) {
-            auto [it, _] = code_.emplace(address, std::move(result->value));
+            auto [it, _] = code_.emplace(address, std::move(*result));
             return it->second;
         }
-    } else {
-        // TODO(canepat) historical CodeDomainGetAsOfQuery on *txn_id timestamp
+        return ByteView{};
+    }
+    // Query latest i.e. current state
+    auto result = make_query<CodeDomainGetLatestQuery>().exec(address);
+    if (result) {
+        auto [it, _] = code_.emplace(address, std::move(result->value));
+        return it->second;
     }
     return ByteView{};
 }
 
-evmc::bytes32 LocalState::read_storage(
-    const evmc::address& address,
-    uint64_t /*incarnation*/,
-    const evmc::bytes32& location) const noexcept {
-    if (!txn_id_) {
-        StorageDomainGetLatestQuery query{
-            data_store_.chaindata,
-            tx_,
-            data_store_.state_repository,
-        };
-        auto result = query.exec({address, location});
-        if (result) {
-            return result->value;
-        }
-    } else {
-        // TODO(canepat) historical StorageDomainGetAsOfQuery on *txn_id timestamp
+evmc::bytes32 LocalState::read_storage(const evmc::address& address, uint64_t /*incarnation*/, const evmc::bytes32& location) const noexcept {
+    if (txn_id_) {
+        // Query historical state at required timestamp
+        auto result = make_query<StorageDomainGetAsOfQuery>().exec({address, location}, *txn_id_);
+        return result.value_or(evmc::bytes32{});
+    }
+    // Query latest i.e. current state
+    auto result = make_query<StorageDomainGetLatestQuery>().exec({address, location});
+    if (result) {
+        return result->value;
     }
     return {};
 }

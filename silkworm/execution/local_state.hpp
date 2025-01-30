@@ -100,6 +100,8 @@ class LocalState : public State {
     std::optional<TxnId> txn_id_;
     db::DataStoreRef data_store_;
     mutable datastore::kvdb::ROTxnManaged tx_;
+
+    mutable std::unordered_map<evmc::address, Bytes> code_;
 };
 
 }  // namespace silkworm::execution

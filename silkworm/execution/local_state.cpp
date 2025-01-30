@@ -45,6 +45,10 @@ std::optional<Account> LocalState::read_account(const evmc::address& address) co
 }
 
 ByteView LocalState::read_code(const evmc::address& address, const evmc::bytes32& /*code_hash*/) const noexcept {
+    if (code_.contains(address)) {
+        return code_[address];  // NOLINT(runtime/arrays)
+    }
+
     if (!txn_id_) {
         CodeDomainGetLatestQuery query{
             data_store_.chaindata,
@@ -53,8 +57,8 @@ ByteView LocalState::read_code(const evmc::address& address, const evmc::bytes32
         };
         auto result = query.exec(address);
         if (result) {
-            static_assert(std::is_same_v<decltype(result->value), ByteView>);
-            return result->value;
+            auto [it, _] = code_.emplace(address, std::move(result->value));
+            return it->second;
         }
     } else {
         // TODO(canepat) historical CodeDomainGetAsOfQuery on *txn_id timestamp

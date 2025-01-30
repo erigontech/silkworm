@@ -24,7 +24,7 @@
 
 namespace silkworm::snapshots {
 
-using BodyFindByBlockNumSegmentQuery = FindByIdSegmentQuery<BodySegmentReader, &db::blocks::kBodySegmentAndIdxNames>;
+using BodyFindByBlockNumSegmentQuery = FindByIdSegmentQuery<BodySegmentWordDecoder, &db::blocks::kBodySegmentAndIdxNames>;
 
 struct BodyFindByBlockNumQuery : public FindByTimestampMapQuery<BodyFindByBlockNumSegmentQuery> {
     using FindByTimestampMapQuery::FindByTimestampMapQuery;

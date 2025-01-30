@@ -18,7 +18,9 @@
 
 #include <stdexcept>
 
+#include <silkworm/db/datastore/domain_get_as_of_query.hpp>
 #include <silkworm/db/datastore/domain_get_latest_query.hpp>
+#include <silkworm/db/datastore/history_get_query.hpp>
 #include <silkworm/db/datastore/kvdb/domain_queries.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 #include <silkworm/db/datastore/snapshots/segment/seg/common/varint.hpp>
@@ -93,5 +95,35 @@ struct VarintSnapshotsDecoder : public snapshots::Decoder {
 static_assert(snapshots::DecoderConcept<VarintSnapshotsDecoder>);
 
 using ReceiptsDomainKVSegmentReader = snapshots::segment::KVSegmentReader<ReceiptsDomainKeySnapshotsDecoder, VarintSnapshotsDecoder>;
+
+using ReceiptsDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
+    datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
+    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
+
+struct ReceiptsDomainGetLatestQuery : public ReceiptsDomainGetLatestQueryBase {
+    ReceiptsDomainGetLatestQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::ROTxn& tx,
+        const snapshots::SnapshotRepositoryROAccess& repository)
+        : ReceiptsDomainGetLatestQueryBase{
+              db::state::kDomainNameReceipts,
+              database,
+              tx,
+              repository,
+          } {}
+};
+
+using ReceiptsDomainPutQuery = datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
+using ReceiptsDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
+
+using ReceiptsHistoryGetQuery = datastore::HistoryGetQuery<
+    datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
+    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
+    &kHistorySegmentAndIdxNamesReceipts>;
+
+using ReceiptsDomainGetAsOfQuery = datastore::DomainGetAsOfQuery<
+    datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
+    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
+    &kHistorySegmentAndIdxNamesReceipts>;
 
 }  // namespace silkworm::db::state

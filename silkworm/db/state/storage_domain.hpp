@@ -16,7 +16,9 @@
 
 #pragma once
 
+#include <silkworm/db/datastore/domain_get_as_of_query.hpp>
 #include <silkworm/db/datastore/domain_get_latest_query.hpp>
+#include <silkworm/db/datastore/history_get_query.hpp>
 #include <silkworm/db/datastore/kvdb/domain_queries.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 
@@ -24,6 +26,8 @@
 #include "storage_codecs.hpp"
 
 namespace silkworm::db::state {
+
+using StorageDomainKVSegmentReader = snapshots::segment::KVSegmentReader<StorageAddressAndLocationSnapshotsCodec, Bytes32SnapshotsCodec>;
 
 struct StorageDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
                                          StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
@@ -59,6 +63,14 @@ struct StorageDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<StorageAddr
               database.domain(db::state::kDomainNameStorage)} {}
 };
 
-using StorageDomainKVSegmentReader = snapshots::segment::KVSegmentReader<StorageAddressAndLocationSnapshotsCodec, Bytes32SnapshotsCodec>;
+using StorageHistoryGetQuery = datastore::HistoryGetQuery<
+    StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
+    Bytes32KVDBCodec, Bytes32SnapshotsCodec,
+    &kHistorySegmentAndIdxNamesStorage>;
+
+using StorageDomainGetAsOfQuery = datastore::DomainGetAsOfQuery<
+    StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
+    Bytes32KVDBCodec, Bytes32SnapshotsCodec,
+    &kHistorySegmentAndIdxNamesStorage>;
 
 }  // namespace silkworm::db::state

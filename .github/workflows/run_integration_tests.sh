@@ -12,8 +12,8 @@ set -o pipefail
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
-# eth_getLogs: waiting fix on erigon DB (Receipt Domain) sync 
-# debug_traceBlockByNumber[24-28]:  response different with erigon
+# eth_getLogs: waiting erigon fix on wrong FirstLogIndex in ReceiptsDomain
+# debug_traceBlockByNumber[24-28]: response different wrt erigon
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --json-diff --port 51515 --transport_type http,websocket -x \
 eth_getLogs/test_16,\
 eth_getLogs/test_17,\

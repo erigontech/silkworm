@@ -91,7 +91,7 @@ Task<HistoryPointResult> LocalTransaction::history_seek(HistoryPointQuery /*quer
 Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery query) {
     // TODO: convert query.table to II EntityName
     datastore::EntityName inverted_index_name = state::kInvIdxNameLogAddress;
-    InvertedIndexRangeByKeyQuery<kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>> store_query{
+    InvertedIndexRangeByKeyQuery<kvdb::RawEncoder<Bytes>, snapshots::RawEncoder<Bytes>> store_query{
         inverted_index_name,
         data_store_.chaindata,
         txn_,

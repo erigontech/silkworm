@@ -1,5 +1,5 @@
 /*
-   Copyright 2024 The Silkworm Authors
+   Copyright 2025 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,6 +16,4 @@
 
 #pragma once
 
-#include "history_delete_query.hpp"
-#include "history_get_query.hpp"
-#include "history_put_query.hpp"
+#include "domain_get_latest_query.hpp"

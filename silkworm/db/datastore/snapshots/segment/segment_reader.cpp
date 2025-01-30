@@ -82,12 +82,11 @@ SegmentFileReader::Iterator SegmentFileReader::end() const {
     return SegmentFileReader::Iterator{decompressor_.end(), {}, path()};
 }
 
-seg::Decompressor::Iterator SegmentFileReader::seek_decompressor(uint64_t offset, std::optional<Hash> hash_prefix) const {
-    return decompressor_.seek(offset, hash_prefix ? ByteView{hash_prefix->bytes, 1} : ByteView{});
-}
-
-SegmentFileReader::Iterator SegmentFileReader::seek(uint64_t offset, std::optional<Hash> hash_prefix, std::shared_ptr<Decoder> decoder) const {
-    auto it = seek_decompressor(offset, hash_prefix);
+SegmentFileReader::Iterator SegmentFileReader::seek(
+    uint64_t offset,
+    std::optional<ByteView> check_prefix,
+    std::shared_ptr<Decoder> decoder) const {
+    auto it = decompressor_.seek(offset, check_prefix.value_or(ByteView{}));
     if (it == decompressor_.end()) {
         return end();
     }

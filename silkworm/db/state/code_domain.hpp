@@ -16,7 +16,9 @@
 
 #pragma once
 
+#include <silkworm/db/datastore/domain_get_as_of_query.hpp>
 #include <silkworm/db/datastore/domain_get_latest_query.hpp>
+#include <silkworm/db/datastore/history_get_query.hpp>
 #include <silkworm/db/datastore/kvdb/domain_queries.hpp>
 #include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
@@ -26,9 +28,11 @@
 
 namespace silkworm::db::state {
 
+using CodeDomainKVSegmentReader = snapshots::segment::KVSegmentReader<AddressSnapshotsDecoder, snapshots::RawDecoder<Bytes>>;
+
 using CodeDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
     AddressKVDBEncoder, AddressSnapshotsEncoder,
-    datastore::kvdb::RawDecoder<ByteView>, snapshots::RawDecoder<ByteView>>;
+    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
 
 struct CodeDomainGetLatestQuery : public CodeDomainGetLatestQueryBase {
     CodeDomainGetLatestQuery(
@@ -46,6 +50,14 @@ struct CodeDomainGetLatestQuery : public CodeDomainGetLatestQueryBase {
 using CodeDomainPutQuery = datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>;
 using CodeDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>;
 
-using CodeDomainKVSegmentReader = snapshots::segment::KVSegmentReader<AddressSnapshotsDecoder, snapshots::RawDecoder<Bytes>>;
+using CodeHistoryGetQuery = datastore::HistoryGetQuery<
+    AddressKVDBEncoder, AddressSnapshotsEncoder,
+    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
+    &kHistorySegmentAndIdxNamesCode>;
+
+using CodeDomainGetAsOfQuery = datastore::DomainGetAsOfQuery<
+    AddressKVDBEncoder, AddressSnapshotsEncoder,
+    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
+    &kHistorySegmentAndIdxNamesCode>;
 
 }  // namespace silkworm::db::state

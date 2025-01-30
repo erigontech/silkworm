@@ -27,9 +27,9 @@
 
 namespace silkworm::db::state {
 
-struct ReceiptsDomainGetLatestQuery: public datastore::DomainGetLatestQuery<
-    datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
-    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>> {
+struct ReceiptsDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
+                                          datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
+                                          datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>> {
     ReceiptsDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
@@ -43,7 +43,7 @@ struct ReceiptsDomainGetLatestQuery: public datastore::DomainGetLatestQuery<
               repository) {}
 };
 
-struct ReceiptsDomainPutQuery: public datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>> {
+struct ReceiptsDomainPutQuery : public datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>> {
     ReceiptsDomainPutQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::RWTxn& rw_tx)
@@ -52,13 +52,13 @@ struct ReceiptsDomainPutQuery: public datastore::kvdb::DomainPutQuery<datastore:
               database.domain(db::state::kDomainNameReceipts)} {}
 };
 
-struct ReceiptsDomainDeleteQuery: datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>> {
+struct ReceiptsDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>> {
     ReceiptsDomainDeleteQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::RWTxn& rw_tx)
         : datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>{
-            rw_tx, 
-            database.domain(db::state::kDomainNameReceipts)} {}
+              rw_tx,
+              database.domain(db::state::kDomainNameReceipts)} {}
 };
 
 enum class ReceiptsDomainKey : uint8_t {

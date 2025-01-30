@@ -51,13 +51,13 @@ struct AccountsDomainPutQuery : public datastore::kvdb::DomainPutQuery<AddressKV
               database.domain(db::state::kDomainNameAccounts)} {}
 };
 
-struct AccountsDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, AccountKVDBCodec>{
+struct AccountsDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, AccountKVDBCodec> {
     AccountsDomainDeleteQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::RWTxn& rw_tx)
         : datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, AccountKVDBCodec>{
-            rw_tx, 
-            database.domain(db::state::kDomainNameAccounts)} {}
+              rw_tx,
+              database.domain(db::state::kDomainNameAccounts)} {}
 };
 
 using AccountsDomainKVSegmentReader = snapshots::segment::KVSegmentReader<AddressSnapshotsDecoder, AccountSnapshotsCodec>;

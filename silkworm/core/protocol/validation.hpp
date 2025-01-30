@@ -149,6 +149,8 @@ namespace protocol {
 
     intx::uint256 compute_call_cost(const Transaction& txn, const intx::uint256& effective_gas_price, const EVM& evm);
 
+    intx::uint256 compute_call_required_funds(const Transaction& txn, const intx::uint256& effective_gas_price, const EVM& evm);
+
     //! \see EIP-1559: Fee market change for ETH 1.0 chain
     intx::uint256 expected_base_fee_per_gas(const BlockHeader& parent);
 

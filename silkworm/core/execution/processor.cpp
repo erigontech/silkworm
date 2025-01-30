@@ -280,11 +280,14 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
         state_.set_nonce(*sender, state_.get_nonce(*txn.sender()) + 1);
     }
 
-    const intx::uint256 required_funds = protocol::compute_call_cost(txn, effective_gas_price, evm_);
+    intx::uint256 required_funds{0};
     if (evm().bailout) {
+        required_funds = protocol::compute_call_required_funds(txn, effective_gas_price, evm_);
         // If the bailout option is on, add the required funds to the sender's balance
         // so that after the transaction costs are deducted, the sender's balance is unchanged.
         state_.add_to_balance(*txn.sender(), required_funds);
+    } else {
+        required_funds = protocol::compute_call_cost(txn, effective_gas_price, evm_);
     }
 
     SILKWORM_ASSERT(protocol::validate_call_funds(txn, evm_, state_.get_balance(*txn.sender())) == ValidationResult::kOk);

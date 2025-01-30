@@ -227,12 +227,8 @@ ValidationResult validate_call_funds(const Transaction& txn, const EVM& evm, con
     const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= evm.block().header.base_fee_per_gas ? txn.effective_gas_price(base_fee)
                                                                                                        : txn.max_priority_fee_per_gas};
 
-    const auto required_funds = compute_call_cost(txn, effective_gas_price, evm);
-    intx::uint512 maximum_cost = required_funds;
-    if (txn.type != TransactionType::kLegacy && txn.type != TransactionType::kAccessList) {
-        maximum_cost = txn.maximum_gas_cost();
-    }
-    if (owned_funds < maximum_cost + txn.value) {
+    const auto required_funds = compute_call_required_funds(txn, effective_gas_price, evm);
+    if (owned_funds < required_funds) {
         return ValidationResult::kInsufficientFunds;
     }
     return ValidationResult::kOk;
@@ -257,6 +253,18 @@ intx::uint256 compute_call_cost(const Transaction& txn, const intx::uint256& eff
 
     return required_funds;
 }
+
+intx::uint256 compute_call_required_funds(const Transaction& txn, const intx::uint256& effective_gas_price, const EVM& evm) {
+    auto required_funds = compute_call_cost(txn, effective_gas_price, evm);
+
+    intx::uint512 maximum_cost = required_funds;
+    if (txn.type != TransactionType::kLegacy && txn.type != TransactionType::kAccessList) {
+        maximum_cost = txn.maximum_gas_cost();
+    }
+
+    return static_cast<intx::uint256>(maximum_cost) + txn.value;
+}
+
 
 intx::uint256 expected_base_fee_per_gas(const BlockHeader& parent) {
     if (!parent.base_fee_per_gas) {

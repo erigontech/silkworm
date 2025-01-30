@@ -248,8 +248,8 @@ SILKWORM_EXPORT int silkworm_sentry_stop(SilkwormHandle handle) SILKWORM_NOEXCEP
 
 //! Silkworm Fork Validator configuration options
 struct SilkwormForkValidatorSettings {
-    uint_t batch_size;                    // Batch size to use in stages
-    uint_t etl_buffer_size;               // Buffer size for ETL operations
+    size_t batch_size;                    // Batch size to use in stages
+    size_t etl_buffer_size;               // Buffer size for ETL operations
     uint32_t sync_loop_throttle_seconds;  // Minimum interval amongst sync cycle
     bool stop_before_senders_stage;       // Stop before senders stage
 };

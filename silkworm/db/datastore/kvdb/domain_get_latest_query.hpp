@@ -45,7 +45,8 @@ struct DomainGetLatestQuery {
         key_encoder.value.timestamp.value = Step{std::numeric_limits<decltype(Step::value)>::max()};
         Slice key_slice = key_encoder.encode();
 
-        auto result = entity.has_large_values ? tx.ro_cursor(entity.values_table)->lower_bound(key_slice, false) : tx.ro_cursor(entity.values_table)->find(key_slice, false);
+        auto db_cursor = tx.ro_cursor(entity.values_table);
+        auto result = entity.has_large_values ? db_cursor->lower_bound(key_slice, false) : db_cursor->find(key_slice, false);
 
         if (!result) {
             return std::nullopt;

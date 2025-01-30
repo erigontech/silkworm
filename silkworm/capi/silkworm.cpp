@@ -751,9 +751,8 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
     }
 }
 
-// todo: add available gas, add txn, add block header
-SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx, uint64_t block_num, struct SilkwormBytes32 head_hash_bytes, uint64_t txn_index, uint64_t txn_id, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT {
-    log::Info{"silkworm_execute_tx", {"block_num", std::to_string(block_num), "txn_index", std::to_string(txn_index)}};
+SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_tx, uint64_t block_num, struct SilkwormBytes32 block_hash, uint64_t txn_index, uint64_t txn_num, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT {
+    log::Info{"silkworm_execute_txn", {"block_num", std::to_string(block_num), "txn_index", std::to_string(txn_index)}};
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -770,13 +769,13 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx
         *blob_gas_used = 0;
     }
 
-    silkworm::Hash head_hash{};
-    memcpy(head_hash.bytes, head_hash_bytes.bytes, sizeof(head_hash.bytes));
+    silkworm::Hash block_header_hash{};
+    memcpy(block_header_hash.bytes, block_hash.bytes, sizeof(block_hash.bytes));
     BlockNum block_number{block_num};
-    TxnId txn_id_{txn_id};
+    TxnId txn_id_{txn_num};
 
     auto unmanaged_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_tx};
-    auto unmanaged_env = unmanaged_tx.unmanaged_env();
+    auto unmanaged_env = silkworm::datastore::kvdb::EnvUnmanaged{::mdbx_txn_env(mdbx_tx)};
     auto chain_db = db::DataStore::make_chaindata_database(std::move(unmanaged_env));
     auto db_ref = chain_db.ref();
     auto state = silkworm::execution::DomainState{txn_id_, unmanaged_tx, db_ref, *handle->blocks_repository, *handle->state_repository};
@@ -784,47 +783,18 @@ SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx
         handle->chain_config = db::read_chain_config(unmanaged_tx);
     }
 
-    //! Manual tests: remove when done
-    // auto b_hash = to_bytes32(*from_hex("0xe8b28e4882bcbd6293ef56433c69b34e9e3e5bf512a05ddbed6bb94aa65948f4"));
-    // auto b_number = BlockNum{2910651};
-    // auto b_hash = to_bytes32(*from_hex("0x6f81fc8bb897eb2075ffa53a2b28c3216022fd1841d361af7908198f8ff2faa3"));
-    // auto b_number = BlockNum{1};
-    // auto header = state.read_header(b_number, b_hash);
-    // if (header) {
-    //     log::Info{"JG header", {"number", std::to_string(header->number), "gas_used", std::to_string(header->gas_used)}};
-    // } else {
-    //     log::Warning{"header not found"};
-    //     return SILKWORM_INVALID_BLOCK;
-    // }
-    // silkworm::Block block{};
-    // auto block_read_ok = state.read_body(b_number, b_hash, block);
-    // if (block_read_ok) {
-    //     log::Info{"JG body", {"number", std::to_string(block.header.number), "transactions", std::to_string(block.transactions.size())}};
-    // } else {
-    //     log::Warning{"body not found"};
-    //     return SILKWORM_INVALID_BLOCK;
-    // }
-    // block.header = header.value();
-    // auto a = hex_to_address("0x71562b71999873db5b286df957af199ec94617f7");
-    // auto acc = state.read_account(a);
-    // if (acc) {
-    //     log::Info{"account2", {"balance", std::to_string(acc->balance.num_bits)}};
-    // } else {
-    //     log::Info{"account2 not found"};
-    // }
-
     // TODO: cache block, also consider preloading
     silkworm::Block block{};
-    auto block_read_ok = state.read_body(block_number, head_hash, block);
+    auto block_read_ok = state.read_body(block_number, block_header_hash, block);
     if (!block_read_ok) {
         SILK_ERROR << "Block not found"
-                   << " block_number: " << block_number << " head_hash: " << head_hash;
+                   << " block_number: " << block_number << " block_hash: " << block_header_hash;
         return SILKWORM_INVALID_BLOCK;
     }
-    auto header = state.read_header(block_number, head_hash);
+    auto header = state.read_header(block_number, block_header_hash);
     if (!header) {
         SILK_ERROR << "Header not found"
-                   << " block_number: " << block_number << " head_hash: " << head_hash;
+                   << " block_number: " << block_number << " block_hash: " << block_header_hash;
         return SILKWORM_INVALID_BLOCK;
     }
     block.header = header.value();

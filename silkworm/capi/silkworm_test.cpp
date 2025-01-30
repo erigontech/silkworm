@@ -177,11 +177,11 @@ struct SilkwormLibrary {
         return result;
     }
 
-    int exectute_single_tx(MDBX_txn* txn, uint64_t block_num, silkworm::Hash head_hash, uint64_t txn_index, uint64_t txn_id) const {
+    int execute_txn(MDBX_txn* txn, uint64_t block_num, silkworm::Hash head_hash, uint64_t txn_index, uint64_t txn_id) const {
         SilkwormBytes32 head_hash_bytes{};
         std::memcpy(head_hash_bytes.bytes, head_hash.bytes, 32);
 
-        return silkworm_execute_tx(handle_, txn, block_num, head_hash_bytes, txn_index, txn_id, nullptr, nullptr);
+        return silkworm_execute_txn(handle_, txn, block_num, head_hash_bytes, txn_index, txn_id, nullptr, nullptr);
     }
 
     int add_snapshot(SilkwormChainSnapshot* snapshot) const {
@@ -1194,7 +1194,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_tx: single", "[silkworm][capi]") {
     insert_block(env, block);
 
     RWTxnManaged external_txn{env};
-    auto result = silkworm_lib.exectute_single_tx(*external_txn, 10, block.header.hash(), 0, 9);
+    auto result = silkworm_lib.execute_txn(*external_txn, 10, block.header.hash(), 0, 9);
     CHECK(result == SILKWORM_INVALID_BLOCK);
     CHECK_NOTHROW(external_txn.abort());
 }

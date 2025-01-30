@@ -51,7 +51,14 @@ struct CodeDomainPutQuery : public datastore::kvdb::DomainPutQuery<AddressKVDBEn
               database.domain(db::state::kDomainNameCode)} {}
 };
 
-using CodeDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>;
+struct CodeDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>> {
+    CodeDomainDeleteQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& rw_tx)
+        : datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>{
+            rw_tx, 
+            database.domain(db::state::kDomainNameCode)} {}
+};
 
 using CodeDomainKVSegmentReader = snapshots::segment::KVSegmentReader<AddressSnapshotsDecoder, snapshots::RawDecoder<Bytes>>;
 

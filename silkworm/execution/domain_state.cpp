@@ -116,10 +116,10 @@ void DomainState::update_account(
 
     if (current) {
         AccountsDomainPutQuery query{database_, tx_};
-        query.exec(address, *current, txn_id_, original);
+        query.exec(address, *current, txn_id_, original, Step::from_txn_id(txn_id_));
     } else {
-        AccountsDomainDeleteQuery query{tx_, database_.domain(kDomainNameAccounts)};
-        query.exec(address, txn_id_, original);
+        AccountsDomainDeleteQuery query{database_, tx_};
+        query.exec(address, txn_id_, original, Step::from_txn_id(txn_id_));
     }
 }
 
@@ -137,7 +137,7 @@ void DomainState::update_account_code(
     }
 
     CodeDomainPutQuery query{database_, tx_};
-    query.exec(address, code, txn_id_, original_code);
+    query.exec(address, code, txn_id_, original_code, Step::from_txn_id(txn_id_));
 }
 
 void DomainState::update_storage(
@@ -161,7 +161,7 @@ void DomainState::update_storage(
     Step prev_step{0};
 
     StorageDomainPutQuery query{database_, tx_};
-    query.exec({address, location}, current, txn_id_, original_value);
+    query.exec({address, location}, current, txn_id_, original_value, Step::from_txn_id(txn_id_));
 }
 
 }  // namespace silkworm::execution

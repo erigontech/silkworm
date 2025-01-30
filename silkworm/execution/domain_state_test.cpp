@@ -30,10 +30,9 @@
 #include <silkworm/db/test_util/mock_cursor.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/db/test_util/mock_txn.hpp>
-#include <silkworm/execution/database_tcontext.hpp>
+#include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test_util/context_test_base.cpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
 
 namespace silkworm::execution {
@@ -45,7 +44,7 @@ using testing::Unused;
 
 TEST_CASE("DomainState data access", "[execution][domain][state]") {
     TemporaryDirectory tmp_dir;
-    TestDataStore ds_context{tmp_dir};
+    silkworm::db::test_util::TestDataStore ds_context{tmp_dir};
     log::init(log::Settings{.log_verbosity = log::Level::kDebug});
 
     auto rw_tx = ds_context.chaindata_rw().start_rw_tx();
@@ -303,7 +302,7 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
 
 TEST_CASE("DomainState empty overriden methods do nothing", "[execution][domain][state]") {
     TemporaryDirectory tmp_dir;
-    TestDataStore ds_context{tmp_dir};
+    silkworm::db::test_util::TestDataStore ds_context{tmp_dir};
 
     auto rw_tx = ds_context.chaindata_rw().start_rw_tx();
 

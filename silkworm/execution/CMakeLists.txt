@@ -44,4 +44,4 @@ silkworm_library(
   PRIVATE ${LIBS_PRIVATE}
 )
 
-target_link_libraries(silkworm_execution_test PRIVATE GTest::gmock silkworm_infra_test_util)
+target_link_libraries(silkworm_execution_test PRIVATE GTest::gmock silkworm_infra_test_util silkworm_db_test_util)

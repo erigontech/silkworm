@@ -362,15 +362,15 @@ SILKWORM_EXPORT int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDB
  * \brief Execute a transaction in a block.
  * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
  * \param[in] mdbx_tx A valid external read-write MDBX transaction.
- * \param[in] block_num The block number.
- * \param[in] head_hash_bytes The hash of the head block.
- * \param[in] txn_num The transaction number in the block.
- * \param[in] txn_id The transaction ID.
+ * \param[in] block_num The number of the block containing the transaction.
+ * \param[in] block_hash The hash of the block.
+ * \param[in] txn_index The transaction number in the block.
+ * \param[in] txn_num The canonical transaction ID.
  * \param[out] gas_used The gas used by the transaction.
  * \param[out] blob_gas_used The blob gas used by the transaction.
  * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
  */
-SILKWORM_EXPORT int silkworm_execute_tx(SilkwormHandle handle, MDBX_txn* mdbx_tx, uint64_t block_num, struct SilkwormBytes32 head_hash_bytes, uint64_t txn_index, uint64_t txn_id, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT;
+SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_tx, uint64_t block_num, struct SilkwormBytes32 block_hash, uint64_t txn_index, uint64_t txn_num, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT;
 
 /**
  * \brief Finalize the Silkworm C API library.

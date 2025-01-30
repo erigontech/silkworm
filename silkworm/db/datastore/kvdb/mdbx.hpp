@@ -324,12 +324,6 @@ class RWTxnManaged : public RWTxn {
     mdbx::txn_managed managed_txn_;
 };
 
-//! \brief EnvUnmanaged wraps an *unmanaged* MDBX environment, which means the underlying environment
-//! lifecycle is not touched by this class.
-struct EnvUnmanaged : public ::mdbx::env {
-    explicit EnvUnmanaged(MDBX_env* ptr) : ::mdbx::env{ptr} {}
-};
-
 //! \brief RWTxnUnmanaged wraps an *unmanaged* read-write transaction, which means the underlying transaction
 //! lifecycle is not touched by this class: the transaction is neither committed nor aborted.
 class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
@@ -340,8 +334,6 @@ class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
     void abort() override { throw std::runtime_error{"RWTxnUnmanaged must not be aborted"}; }
     void commit_and_renew() override { throw std::runtime_error{"RWTxnUnmanaged must not be committed"}; }
     void commit_and_stop() override { throw std::runtime_error{"RWTxnUnmanaged must not be committed"}; }
-
-    EnvUnmanaged unmanaged_env() const { return EnvUnmanaged{env()}; }
 };
 
 //! \brief This class create ROTxn(s) on demand, it is used to enforce in some method signatures the type of db access
@@ -389,6 +381,12 @@ struct EnvConfig {
     size_t growth_size{2_Gibi};         // Increment size for each extension
     uint32_t max_tables{256};           // Default max number of named tables
     uint32_t max_readers{100};          // Default max number of readers
+};
+
+//! \brief EnvUnmanaged wraps an *unmanaged* MDBX environment, which means the underlying environment
+//! lifecycle is not touched by this class.
+struct EnvUnmanaged : public ::mdbx::env {
+    explicit EnvUnmanaged(MDBX_env* ptr) : ::mdbx::env{ptr} {}
 };
 
 //! \brief Opens an mdbx environment using the provided environment config

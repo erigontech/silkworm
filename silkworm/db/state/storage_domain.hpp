@@ -50,7 +50,14 @@ struct StorageDomainPutQuery : public datastore::kvdb::DomainPutQuery<StorageAdd
               database.domain(db::state::kDomainNameStorage)} {}
 };
 
-using StorageDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>;
+struct StorageDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec> {
+    StorageDomainDeleteQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& rw_tx)
+        : datastore::kvdb::DomainDeleteQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>{
+              rw_tx,
+              database.domain(db::state::kDomainNameStorage)} {}
+};
 
 using StorageDomainKVSegmentReader = snapshots::segment::KVSegmentReader<StorageAddressAndLocationSnapshotsCodec, Bytes32SnapshotsCodec>;
 

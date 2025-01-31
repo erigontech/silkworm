@@ -25,7 +25,7 @@ namespace silkworm::datastore {
 template <
     kvdb::EncoderConcept TKeyEncoder1, snapshots::EncoderConcept TKeyEncoder2,
     kvdb::DecoderConcept TValueDecoder1, snapshots::DecoderConcept TValueDecoder2,
-    const snapshots::SegmentAndAccessorIndexNames* segment_names>
+    const snapshots::SegmentAndAccessorIndexNames& segment_names>
 struct HistoryGetQuery {
     HistoryGetQuery(
         kvdb::History kvdb_entity,
@@ -39,7 +39,7 @@ struct HistoryGetQuery {
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
         : HistoryGetQuery{
-              database.domain(segment_names->front()).history.value(),
+              database.domain(segment_names.front()).history.value(),
               tx,
               repository,
           } {}

@@ -23,7 +23,7 @@
 
 namespace silkworm::snapshots {
 
-using HeaderFindByBlockNumSegmentQuery = FindByIdSegmentQuery<HeaderSegmentWordDecoder, &db::blocks::kHeaderSegmentAndIdxNames>;
+using HeaderFindByBlockNumSegmentQuery = FindByIdSegmentQuery<HeaderSegmentWordDecoder, db::blocks::kHeaderSegmentAndIdxNames>;
 
 struct HeaderFindByBlockNumQuery : public FindByTimestampMapQuery<HeaderFindByBlockNumSegmentQuery> {
     using FindByTimestampMapQuery::FindByTimestampMapQuery;
@@ -32,7 +32,7 @@ struct HeaderFindByBlockNumQuery : public FindByTimestampMapQuery<HeaderFindByBl
     }
 };
 
-using HeaderFindByHashSegmentQuery = FindByHashSegmentQuery<HeaderSegmentWordDecoder, &db::blocks::kHeaderSegmentAndIdxNames>;
+using HeaderFindByHashSegmentQuery = FindByHashSegmentQuery<HeaderSegmentWordDecoder, db::blocks::kHeaderSegmentAndIdxNames>;
 using HeaderFindByHashQuery = FindMapQuery<HeaderFindByHashSegmentQuery>;
 
 }  // namespace silkworm::snapshots

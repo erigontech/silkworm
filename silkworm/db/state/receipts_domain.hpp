@@ -99,11 +99,11 @@ struct ReceiptsDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<datastore:
 using ReceiptsHistoryGetQuery = datastore::HistoryGetQuery<
     datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
     datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
-    &kHistorySegmentAndIdxNamesReceipts>;
+    kHistorySegmentAndIdxNamesReceipts>;
 
 using ReceiptsDomainGetAsOfQuery = datastore::DomainGetAsOfQuery<
     datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
     datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
-    &kHistorySegmentAndIdxNamesReceipts>;
+    kHistorySegmentAndIdxNamesReceipts>;
 
 }  // namespace silkworm::db::state

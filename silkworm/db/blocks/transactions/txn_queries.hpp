@@ -28,13 +28,13 @@
 
 namespace silkworm::snapshots {
 
-using TransactionFindByIdSegmentQuery = FindByIdSegmentQuery<TransactionSegmentWordDecoder, &db::blocks::kTxnSegmentAndIdxNames>;
-using TransactionFindByHashSegmentQuery = FindByHashSegmentQuery<TransactionSegmentWordDecoder, &db::blocks::kTxnSegmentAndIdxNames>;
+using TransactionFindByIdSegmentQuery = FindByIdSegmentQuery<TransactionSegmentWordDecoder, db::blocks::kTxnSegmentAndIdxNames>;
+using TransactionFindByHashSegmentQuery = FindByHashSegmentQuery<TransactionSegmentWordDecoder, db::blocks::kTxnSegmentAndIdxNames>;
 
-using TransactionRangeFromIdSegmentQuery = RangeFromIdSegmentQuery<TransactionSegmentWordDecoder, &db::blocks::kTxnSegmentAndIdxNames>;
+using TransactionRangeFromIdSegmentQuery = RangeFromIdSegmentQuery<TransactionSegmentWordDecoder, db::blocks::kTxnSegmentAndIdxNames>;
 using TransactionRangeFromIdQuery = FindByTimestampMapQuery<TransactionRangeFromIdSegmentQuery>;
 
-using TransactionPayloadRlpRangeFromIdSegmentQuery = RangeFromIdSegmentQuery<TransactionSegmentWordPayloadRlpDecoder<Bytes>, &db::blocks::kTxnSegmentAndIdxNames>;
+using TransactionPayloadRlpRangeFromIdSegmentQuery = RangeFromIdSegmentQuery<TransactionSegmentWordPayloadRlpDecoder<Bytes>, db::blocks::kTxnSegmentAndIdxNames>;
 using TransactionPayloadRlpRangeFromIdQuery = FindByTimestampMapQuery<TransactionPayloadRlpRangeFromIdSegmentQuery>;
 
 class TransactionBlockNumByTxnHashSegmentQuery {

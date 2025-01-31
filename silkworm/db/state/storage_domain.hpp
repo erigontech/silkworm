@@ -66,11 +66,11 @@ struct StorageDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<StorageAddr
 using StorageHistoryGetQuery = datastore::HistoryGetQuery<
     StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
     Bytes32KVDBCodec, Bytes32SnapshotsCodec,
-    &kHistorySegmentAndIdxNamesStorage>;
+    kHistorySegmentAndIdxNamesStorage>;
 
 using StorageDomainGetAsOfQuery = datastore::DomainGetAsOfQuery<
     StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
     Bytes32KVDBCodec, Bytes32SnapshotsCodec,
-    &kHistorySegmentAndIdxNamesStorage>;
+    kHistorySegmentAndIdxNamesStorage>;
 
 }  // namespace silkworm::db::state

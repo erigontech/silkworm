@@ -28,12 +28,12 @@ namespace silkworm::snapshots {
 template <
     EncoderConcept TKeyEncoder,
     DecoderConcept TValueDecoder,
-    const SegmentAndAccessorIndexNames* segment_names>
+    const SegmentAndAccessorIndexNames& segment_names>
 struct HistoryGetQuery {
     explicit HistoryGetQuery(const SnapshotRepositoryROAccess& repository)
         : timestamp_query_{
               repository,
-              [](const SnapshotBundle& bundle) { return bundle.domain(segment_names->front()).history->inverted_index; },
+              [](const SnapshotBundle& bundle) { return bundle.domain(segment_names.front()).history->inverted_index; },
           },
           value_query_{repository} {}
 

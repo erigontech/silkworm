@@ -24,21 +24,21 @@ namespace silkworm::datastore {
 template <
     kvdb::EncoderConcept TKeyEncoder1, snapshots::EncoderConcept TKeyEncoder2,
     kvdb::DecoderConcept TValueDecoder1, snapshots::DecoderConcept TValueDecoder2,
-    const snapshots::SegmentAndAccessorIndexNames* history_segment_names>
+    const snapshots::SegmentAndAccessorIndexNames& history_segment_names>
 struct DomainGetAsOfQuery {
     DomainGetAsOfQuery(
         kvdb::Domain kvdb_entity,
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
         : query1_{*kvdb_entity.history, tx, repository},
-          query2_{history_segment_names->front(), kvdb_entity, tx, repository} {}
+          query2_{history_segment_names.front(), kvdb_entity, tx, repository} {}
 
     DomainGetAsOfQuery(
         const kvdb::DatabaseRef& database,
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
         : query1_{database, tx, repository},
-          query2_{history_segment_names->front(), database, tx, repository} {}
+          query2_{history_segment_names.front(), database, tx, repository} {}
 
     using Key = decltype(TKeyEncoder1::value);
     using Value = decltype(TValueDecoder1::value);

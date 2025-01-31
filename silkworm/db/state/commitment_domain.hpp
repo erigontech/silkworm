@@ -66,11 +66,11 @@ struct CommitmentDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<datastor
 using CommitmentHistoryGetQuery = datastore::HistoryGetQuery<
     datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
     datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
-    &kHistorySegmentAndIdxNamesCommitment>;
+    kHistorySegmentAndIdxNamesCommitment>;
 
 using CommitmentDomainGetAsOfQuery = datastore::DomainGetAsOfQuery<
     datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
     datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
-    &kHistorySegmentAndIdxNamesCommitment>;
+    kHistorySegmentAndIdxNamesCommitment>;
 
 }  // namespace silkworm::db::state

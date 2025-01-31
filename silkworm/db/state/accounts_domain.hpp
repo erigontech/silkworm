@@ -67,11 +67,11 @@ struct AccountsDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<AddressKVD
 using AccountsHistoryGetQuery = datastore::HistoryGetQuery<
     AddressKVDBEncoder, AddressSnapshotsEncoder,
     AccountKVDBCodec, AccountSnapshotsCodec,
-    &kHistorySegmentAndIdxNamesAccounts>;
+    kHistorySegmentAndIdxNamesAccounts>;
 
 using AccountsDomainGetAsOfQuery = datastore::DomainGetAsOfQuery<
     AddressKVDBEncoder, AddressSnapshotsEncoder,
     AccountKVDBCodec, AccountSnapshotsCodec,
-    &kHistorySegmentAndIdxNamesAccounts>;
+    kHistorySegmentAndIdxNamesAccounts>;
 
 }  // namespace silkworm::db::state

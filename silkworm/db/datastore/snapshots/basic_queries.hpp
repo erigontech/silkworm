@@ -30,7 +30,7 @@ namespace silkworm::snapshots {
 
 template <
     DecoderConcept TDecoder,
-    const SegmentAndAccessorIndexNames* segment_names>
+    const SegmentAndAccessorIndexNames& segment_names>
 class BasicSegmentQuery {
   public:
     explicit BasicSegmentQuery(
@@ -39,7 +39,7 @@ class BasicSegmentQuery {
           index_{segment_and_index.index} {}
 
     explicit BasicSegmentQuery(const SegmentAndAccessorIndexProvider& bundle)
-        : BasicSegmentQuery{bundle.segment_and_accessor_index(*segment_names)} {}
+        : BasicSegmentQuery{bundle.segment_and_accessor_index(segment_names)} {}
 
   protected:
     segment::SegmentReader<TDecoder> reader_;
@@ -48,7 +48,7 @@ class BasicSegmentQuery {
 
 template <
     DecoderConcept TDecoder,
-    const SegmentAndAccessorIndexNames* segment_names>
+    const SegmentAndAccessorIndexNames& segment_names>
 struct FindByIdSegmentQuery : public BasicSegmentQuery<TDecoder, segment_names> {
     using BasicSegmentQuery<TDecoder, segment_names>::BasicSegmentQuery;
 
@@ -65,7 +65,7 @@ struct FindByIdSegmentQuery : public BasicSegmentQuery<TDecoder, segment_names> 
 template <
     EncoderConcept TKeyEncoder,
     DecoderConcept TValueDecoder,
-    const SegmentAndAccessorIndexNames* segment_names>
+    const SegmentAndAccessorIndexNames& segment_names>
 struct FindByKeySegmentQuery : public BasicSegmentQuery<TValueDecoder, segment_names> {
     using BasicSegmentQuery<TValueDecoder, segment_names>::BasicSegmentQuery;
 
@@ -87,7 +87,7 @@ struct FindByKeySegmentQuery : public BasicSegmentQuery<TValueDecoder, segment_n
 
 template <
     DecoderConcept TDecoder,
-    const SegmentAndAccessorIndexNames* segment_names>
+    const SegmentAndAccessorIndexNames& segment_names>
 struct FindByHashSegmentQuery : public BasicSegmentQuery<TDecoder, segment_names> {
     using BasicSegmentQuery<TDecoder, segment_names>::BasicSegmentQuery;
 
@@ -110,7 +110,7 @@ struct FindByHashSegmentQuery : public BasicSegmentQuery<TDecoder, segment_names
 
 template <
     DecoderConcept TDecoder,
-    const SegmentAndAccessorIndexNames* segment_names>
+    const SegmentAndAccessorIndexNames& segment_names>
 struct RangeFromIdSegmentQuery : public BasicSegmentQuery<TDecoder, segment_names> {
     using BasicSegmentQuery<TDecoder, segment_names>::BasicSegmentQuery;
 

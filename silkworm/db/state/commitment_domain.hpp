@@ -29,25 +29,39 @@ namespace silkworm::db::state {
 
 using CommitmentDomainKVSegmentReader = snapshots::segment::KVSegmentReader<snapshots::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
 
-using CommitmentDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
-    datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
-    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
-
-struct CommitmentDomainGetLatestQuery : public CommitmentDomainGetLatestQueryBase {
+struct CommitmentDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
+                                            datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
+                                            datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>> {
     CommitmentDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
-        : CommitmentDomainGetLatestQueryBase{
+        : datastore::DomainGetLatestQuery<
+              datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
+              datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>(
               db::state::kDomainNameCommitment,
-              database,
+              database.domain(db::state::kDomainNameCommitment),
               tx,
-              repository,
-          } {}
+              repository) {}
 };
 
-using CommitmentDomainPutQuery = datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
-using CommitmentDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
+struct CommitmentDomainPutQuery : public datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>> {
+    CommitmentDomainPutQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& rw_tx)
+        : datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>{
+              rw_tx,
+              database.domain(db::state::kDomainNameCommitment)} {}
+};
+
+struct CommitmentDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>> {
+    CommitmentDomainDeleteQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& rw_tx)
+        : datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>{
+              rw_tx,
+              database.domain(db::state::kDomainNameCommitment)} {}
+};
 
 using CommitmentHistoryGetQuery = datastore::HistoryGetQuery<
     datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,

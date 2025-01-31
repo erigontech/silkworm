@@ -53,6 +53,8 @@ struct SilkwormInstance {
     std::unique_ptr<silkworm::rpc::Daemon> rpcdaemon;
     std::unique_ptr<silkworm::stagedsync::ExecutionEngine> execution_engine;
 
+    std::optional<silkworm::ChainConfig> chain_config;
+
     // sentry
     std::unique_ptr<std::thread> sentry_thread;
     boost::asio::cancellation_signal sentry_stop_signal;

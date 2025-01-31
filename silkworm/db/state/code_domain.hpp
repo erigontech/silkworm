@@ -30,25 +30,39 @@ namespace silkworm::db::state {
 
 using CodeDomainKVSegmentReader = snapshots::segment::KVSegmentReader<AddressSnapshotsDecoder, snapshots::RawDecoder<Bytes>>;
 
-using CodeDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
-    AddressKVDBEncoder, AddressSnapshotsEncoder,
-    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
-
-struct CodeDomainGetLatestQuery : public CodeDomainGetLatestQueryBase {
+struct CodeDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
+                                      AddressKVDBEncoder, AddressSnapshotsEncoder,
+                                      datastore::kvdb::RawDecoder<ByteView>, snapshots::RawDecoder<ByteView>> {
     CodeDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
-        : CodeDomainGetLatestQueryBase{
+        : datastore::DomainGetLatestQuery<
+              AddressKVDBEncoder, AddressSnapshotsEncoder,
+              datastore::kvdb::RawDecoder<ByteView>, snapshots::RawDecoder<ByteView>>(
               db::state::kDomainNameCode,
-              database,
+              database.domain(db::state::kDomainNameCode),
               tx,
-              repository,
-          } {}
+              repository) {}
 };
 
-using CodeDomainPutQuery = datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>;
-using CodeDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>;
+struct CodeDomainPutQuery : public datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>> {
+    CodeDomainPutQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& rw_tx)
+        : datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>{
+              rw_tx,
+              database.domain(db::state::kDomainNameCode)} {}
+};
+
+struct CodeDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>> {
+    CodeDomainDeleteQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& rw_tx)
+        : datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>>{
+              rw_tx,
+              database.domain(db::state::kDomainNameCode)} {}
+};
 
 using CodeHistoryGetQuery = datastore::HistoryGetQuery<
     AddressKVDBEncoder, AddressSnapshotsEncoder,

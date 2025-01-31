@@ -29,25 +29,39 @@ namespace silkworm::db::state {
 
 using StorageDomainKVSegmentReader = snapshots::segment::KVSegmentReader<StorageAddressAndLocationSnapshotsCodec, Bytes32SnapshotsCodec>;
 
-using StorageDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
-    StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
-    Bytes32KVDBCodec, Bytes32SnapshotsCodec>;
-
-struct StorageDomainGetLatestQuery : public StorageDomainGetLatestQueryBase {
+struct StorageDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
+                                         StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
+                                         Bytes32KVDBCodec, Bytes32SnapshotsCodec> {
     StorageDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
-        : StorageDomainGetLatestQueryBase{
+        : datastore::DomainGetLatestQuery<
+              StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
+              Bytes32KVDBCodec, Bytes32SnapshotsCodec>(
               db::state::kDomainNameStorage,
-              database,
+              database.domain(db::state::kDomainNameStorage),
               tx,
-              repository,
-          } {}
+              repository) {}
 };
 
-using StorageDomainPutQuery = datastore::kvdb::DomainPutQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>;
-using StorageDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>;
+struct StorageDomainPutQuery : public datastore::kvdb::DomainPutQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec> {
+    StorageDomainPutQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& rw_tx)
+        : datastore::kvdb::DomainPutQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>{
+              rw_tx,
+              database.domain(db::state::kDomainNameStorage)} {}
+};
+
+struct StorageDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec> {
+    StorageDomainDeleteQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& rw_tx)
+        : datastore::kvdb::DomainDeleteQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>{
+              rw_tx,
+              database.domain(db::state::kDomainNameStorage)} {}
+};
 
 using StorageHistoryGetQuery = datastore::HistoryGetQuery<
     StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,

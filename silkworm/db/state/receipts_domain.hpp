@@ -62,25 +62,39 @@ static_assert(snapshots::DecoderConcept<VarintSnapshotsDecoder>);
 
 using ReceiptsDomainKVSegmentReader = snapshots::segment::KVSegmentReader<ReceiptsDomainKeySnapshotsDecoder, VarintSnapshotsDecoder>;
 
-using ReceiptsDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
-    datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
-    datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
-
-struct ReceiptsDomainGetLatestQuery : public ReceiptsDomainGetLatestQueryBase {
+struct ReceiptsDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
+                                          datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
+                                          datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>> {
     ReceiptsDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
-        : ReceiptsDomainGetLatestQueryBase{
+        : datastore::DomainGetLatestQuery<
+              datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
+              datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>(
               db::state::kDomainNameReceipts,
-              database,
+              database.domain(db::state::kDomainNameReceipts),
               tx,
-              repository,
-          } {}
+              repository) {}
 };
 
-using ReceiptsDomainPutQuery = datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
-using ReceiptsDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>;
+struct ReceiptsDomainPutQuery : public datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>> {
+    ReceiptsDomainPutQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& rw_tx)
+        : datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>{
+              rw_tx,
+              database.domain(db::state::kDomainNameReceipts)} {}
+};
+
+struct ReceiptsDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>> {
+    ReceiptsDomainDeleteQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& rw_tx)
+        : datastore::kvdb::DomainDeleteQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>>{
+              rw_tx,
+              database.domain(db::state::kDomainNameReceipts)} {}
+};
 
 using ReceiptsHistoryGetQuery = datastore::HistoryGetQuery<
     datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,

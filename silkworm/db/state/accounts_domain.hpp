@@ -30,25 +30,39 @@ namespace silkworm::db::state {
 
 using AccountsDomainKVSegmentReader = snapshots::segment::KVSegmentReader<AddressSnapshotsDecoder, AccountSnapshotsCodec>;
 
-using AccountsDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
-    AddressKVDBEncoder, AddressSnapshotsEncoder,
-    AccountKVDBCodec, AccountSnapshotsCodec>;
-
-struct AccountsDomainGetLatestQuery : public AccountsDomainGetLatestQueryBase {
+struct AccountsDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
+                                          AddressKVDBEncoder, AddressSnapshotsEncoder,
+                                          AccountKVDBCodec, AccountSnapshotsCodec> {
     AccountsDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
-        : AccountsDomainGetLatestQueryBase{
+        : datastore::DomainGetLatestQuery<
+              AddressKVDBEncoder, AddressSnapshotsEncoder,
+              AccountKVDBCodec, AccountSnapshotsCodec>(
               db::state::kDomainNameAccounts,
-              database,
+              database.domain(db::state::kDomainNameAccounts),
               tx,
-              repository,
-          } {}
+              repository) {}
 };
 
-using AccountsDomainPutQuery = datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, AccountKVDBCodec>;
-using AccountsDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, AccountKVDBCodec>;
+struct AccountsDomainPutQuery : public datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, AccountKVDBCodec> {
+    AccountsDomainPutQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& rw_tx)
+        : datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, AccountKVDBCodec>{
+              rw_tx,
+              database.domain(db::state::kDomainNameAccounts)} {}
+};
+
+struct AccountsDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, AccountKVDBCodec> {
+    AccountsDomainDeleteQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& rw_tx)
+        : datastore::kvdb::DomainDeleteQuery<AddressKVDBEncoder, AccountKVDBCodec>{
+              rw_tx,
+              database.domain(db::state::kDomainNameAccounts)} {}
+};
 
 using AccountsHistoryGetQuery = datastore::HistoryGetQuery<
     AddressKVDBEncoder, AddressSnapshotsEncoder,

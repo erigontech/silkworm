@@ -97,6 +97,11 @@ class LocalState : public State {
         return db::DataModelFactory{data_store_}(tx_);
     }
 
+    template <typename DomainQuery>
+    auto make_query() const {
+        return DomainQuery{data_store_.chaindata, tx_, data_store_.state_repository};
+    }
+
     std::optional<TxnId> txn_id_;
     db::DataStoreRef data_store_;
     mutable datastore::kvdb::ROTxnManaged tx_;

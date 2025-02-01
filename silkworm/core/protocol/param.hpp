@@ -89,7 +89,7 @@ inline constexpr auto kWithdrawalRequestAddress{0x0c15F14308530b7CDB8460094BbB9c
 inline constexpr auto kConsolidationRequestAddress{0x00431F263cE400f4455c2dCf564e53007Ca4bbBb_address};
 
 // EIP-2935: Serve historical block hashes from state
-inline constexpr evmc::address kHistoryStorageAddress{0x0aae40965e6800cd9b1f4b05ff21581047e3f91e_address};
+inline constexpr evmc::address kHistoryStorageAddress{0x0F792be4B0c0cb4DAE440Ef133E90C0eCD48CCCC_address};
 
 // Used in Bor
 inline constexpr size_t kExtraSealSize{65};

@@ -83,10 +83,10 @@ inline constexpr evmc::address kBeaconRootsAddress{0x000F3df6D732807Ef1319fB7B8b
 inline constexpr auto kDepositContractAddress{0x00000000219ab540356cbb839cbe05303d7705fa_address};
 
 // EIP-7002: Execution layer triggerable withdrawals
-inline constexpr auto kWithdrawalRequestAddress{0x09Fc772D0857550724b07B850a4323f39112aAaA_address};
+inline constexpr auto kWithdrawalRequestAddress{0x0c15F14308530b7CDB8460094BbB9cC28b9AaaAA_address};
 
 // EIP-7251: Increase the MAX_EFFECTIVE_BALANCE
-inline constexpr auto kConsolidationRequestAddress{0x01aBEa29659e5e97C95107F20bb753cD3e09bBBb_address};
+inline constexpr auto kConsolidationRequestAddress{0x00431F263cE400f4455c2dCf564e53007Ca4bbBb_address};
 
 // EIP-2935: Serve historical block hashes from state
 inline constexpr evmc::address kHistoryStorageAddress{0x0aae40965e6800cd9b1f4b05ff21581047e3f91e_address};

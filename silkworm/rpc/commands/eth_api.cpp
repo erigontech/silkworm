@@ -198,7 +198,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& re
         const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (block_with_hash) {
-            const Block extended_block{block_with_hash, full_tx };
+            const Block extended_block{block_with_hash, full_tx};
             make_glaze_json_content(request, extended_block, reply);
         } else {
             make_glaze_json_null_content(request, reply);

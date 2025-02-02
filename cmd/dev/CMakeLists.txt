@@ -22,28 +22,25 @@ find_package(magic_enum REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(tomlplusplus REQUIRED)
 
-add_executable(backend_kv_server backend_kv_server.cpp)
+add_executable(backend_kv_server "${SILKWORM_MAIN_DIR}/silkworm/node/cli/backend_kv_server.cpp")
 target_link_libraries(backend_kv_server PRIVATE silkworm_db_cli silkworm_node silkworm_sync)
 
-add_executable(check_blockhashes check_blockhashes.cpp)
+add_executable(check_blockhashes "${SILKWORM_MAIN_DIR}/silkworm/db/cli/check_blockhashes.cpp")
 target_link_libraries(check_blockhashes PRIVATE silkworm_node CLI11::CLI11)
 
-add_executable(check_changes check_changes.cpp)
+add_executable(check_changes "${SILKWORM_MAIN_DIR}/silkworm/db/cli/check_changes.cpp")
 target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)
 
-add_executable(check_hashstate check_hashstate.cpp)
+add_executable(check_hashstate "${SILKWORM_MAIN_DIR}/silkworm/db/cli/check_hashstate.cpp")
 target_link_libraries(check_hashstate PRIVATE silkworm_node CLI11::CLI11)
 
-add_executable(check_log_indices check_log_indices.cpp)
+add_executable(check_log_indices "${SILKWORM_MAIN_DIR}/silkworm/db/cli/check_log_indices.cpp")
 target_link_libraries(check_log_indices PRIVATE silkworm_infra_cli silkworm_node cborcpp CLI11::CLI11)
 
-add_executable(check_pow check_pow.cpp)
-target_link_libraries(check_pow PRIVATE silkworm_node CLI11::CLI11)
-
-add_executable(check_senders check_senders.cpp)
+add_executable(check_senders "${SILKWORM_MAIN_DIR}/silkworm/db/cli/check_senders.cpp")
 target_link_libraries(check_senders PRIVATE silkworm_infra_cli silkworm_node)
 
-add_executable(check_tx_lookup check_tx_lookup.cpp)
+add_executable(check_tx_lookup "${SILKWORM_MAIN_DIR}/silkworm/db/cli/check_tx_lookup.cpp")
 target_link_libraries(check_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
 
 add_executable(embed_toml embed_toml.cpp)

@@ -164,12 +164,19 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     // This must be done before the Silkworm execution so that the state is unmodified.
     // evmone will not modify the state itself: state is read-only and the state modifications
     // are provided as the state diff in the returned receipt.
+
+    // EIP-7623: Increase calldata cost
+    const int64_t floor_cost = rev >= EVMC_PRAGUE ? static_cast<int64_t>(protocol::floor_cost(txn)) : 0;
     auto evm1_receipt = evmone::state::transition(
-        evm1_state_view, evm1_block_, evm1_block_hashes, evm1_txn, rev, evm_.vm(), {.execution_gas_limit = static_cast<int64_t>(execution_gas_limit)});
+        evm1_state_view, evm1_block_, evm1_block_hashes, evm1_txn, rev, evm_.vm(), {.execution_gas_limit = static_cast<int64_t>(execution_gas_limit), .min_gas_cost = floor_cost});
+
+    auto gas_used = static_cast<uint64_t>(evm1_receipt.gas_used);
+    cumulative_gas_used_ += gas_used;
 
     // Prepare the receipt using the result from evmone.
     receipt.type = txn.type;
     receipt.success = evm1_receipt.status == EVMC_SUCCESS;
+    receipt.cumulative_gas_used = cumulative_gas_used_;
     receipt.logs.clear();  // can be dirty
     receipt.logs.reserve(evm1_receipt.logs.size());
     for (auto& [addr, data, topics] : evm1_receipt.logs)
@@ -177,10 +184,6 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     receipt.bloom = logs_bloom(receipt.logs);
 
     if (evm1_v2_) {
-        const auto gas_used = static_cast<uint64_t>(evm1_receipt.gas_used);
-        cumulative_gas_used_ += gas_used;
-        receipt.cumulative_gas_used = cumulative_gas_used_;
-
         // Apply the state diff produced by evmone APIv2 to the state and skip the Silkworm execution.
         const auto& state_diff = evm1_receipt.state_diff;
         for (const auto& m : state_diff.modified_accounts) {
@@ -237,18 +240,16 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     auto gas_left = calculate_refund_gas(txn, vm_res.gas_left, vm_res.gas_refund);
 
-    auto gas_used = txn.gas_limit - gas_left;
+    gas_used = txn.gas_limit - gas_left;
 
     //  EIP-7623: Increase calldata cost
     if (evm().revision() >= EVMC_PRAGUE) {
         gas_used = std::max(gas_used, protocol::floor_cost(txn));
         SILKWORM_ASSERT(gas_used <= txn.gas_limit);
     }
-    cumulative_gas_used_ += gas_used;
 
     gas_left = txn.gas_limit - gas_used;
     state_.add_to_balance(*txn.sender(), gas_left * effective_gas_price);
-    receipt.cumulative_gas_used = cumulative_gas_used_;
 
     // award the fee recipient
     const intx::uint256 amount{txn.priority_fee_per_gas(base_fee_per_gas) * gas_used};

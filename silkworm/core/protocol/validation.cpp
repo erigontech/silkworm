@@ -228,7 +228,7 @@ ValidationResult validate_call_funds(const Transaction& txn, const EVM& evm, con
                                                                                                        : txn.max_priority_fee_per_gas};
 
     const auto required_funds = compute_call_cost(txn, effective_gas_price, evm);
-    const intx::uint256 value = (bailout) ? 0 : txn.value;
+    const intx::uint256 value = bailout ? 0 : txn.value;
 
     if (owned_funds < required_funds + value) {
         return ValidationResult::kInsufficientFunds;

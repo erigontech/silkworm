@@ -1312,7 +1312,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
     }
     const auto call = params[0].get<Call>();
     const auto block_num_or_hash = params[1].get<BlockNumOrHash>();
-    bool optimize_gas = true;
+    bool optimize_gas = false;
     if (params.size() == 3) {
         optimize_gas = params[2];
     }

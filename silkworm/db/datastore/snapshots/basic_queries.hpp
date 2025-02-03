@@ -29,8 +29,8 @@
 namespace silkworm::snapshots {
 
 template <
-    segment::SegmentReaderConcept TSegmentReader,
-    const SegmentAndAccessorIndexNames* segment_names>
+    DecoderConcept TDecoder,
+    const SegmentAndAccessorIndexNames& segment_names>
 class BasicSegmentQuery {
   public:
     explicit BasicSegmentQuery(
@@ -39,20 +39,20 @@ class BasicSegmentQuery {
           index_{segment_and_index.index} {}
 
     explicit BasicSegmentQuery(const SegmentAndAccessorIndexProvider& bundle)
-        : BasicSegmentQuery{bundle.segment_and_accessor_index(*segment_names)} {}
+        : BasicSegmentQuery{bundle.segment_and_accessor_index(segment_names)} {}
 
   protected:
-    TSegmentReader reader_;
+    segment::SegmentReader<TDecoder> reader_;
     const rec_split::AccessorIndex& index_;
 };
 
 template <
-    segment::SegmentReaderConcept TSegmentReader,
-    const SegmentAndAccessorIndexNames* segment_names>
-struct FindByIdSegmentQuery : public BasicSegmentQuery<TSegmentReader, segment_names> {
-    using BasicSegmentQuery<TSegmentReader, segment_names>::BasicSegmentQuery;
+    DecoderConcept TDecoder,
+    const SegmentAndAccessorIndexNames& segment_names>
+struct FindByIdSegmentQuery : public BasicSegmentQuery<TDecoder, segment_names> {
+    using BasicSegmentQuery<TDecoder, segment_names>::BasicSegmentQuery;
 
-    std::optional<typename TSegmentReader::Iterator::value_type> exec(uint64_t id) {
+    std::optional<decltype(TDecoder::value)> exec(uint64_t id) {
         auto offset = this->index_.lookup_by_data_id(id);
         if (!offset) {
             return std::nullopt;
@@ -63,18 +63,41 @@ struct FindByIdSegmentQuery : public BasicSegmentQuery<TSegmentReader, segment_n
 };
 
 template <
-    segment::SegmentReaderConcept TSegmentReader,
-    const SegmentAndAccessorIndexNames* segment_names>
-struct FindByHashSegmentQuery : public BasicSegmentQuery<TSegmentReader, segment_names> {
-    using BasicSegmentQuery<TSegmentReader, segment_names>::BasicSegmentQuery;
+    EncoderConcept TKeyEncoder,
+    DecoderConcept TValueDecoder,
+    const SegmentAndAccessorIndexNames& segment_names>
+struct FindByKeySegmentQuery : public BasicSegmentQuery<TValueDecoder, segment_names> {
+    using BasicSegmentQuery<TValueDecoder, segment_names>::BasicSegmentQuery;
 
-    std::optional<typename TSegmentReader::Iterator::value_type> exec(const Hash& hash) {
+    using Key = decltype(TKeyEncoder::value);
+
+    std::optional<decltype(TValueDecoder::value)> exec(const Key& key) {
+        TKeyEncoder key_encoder;
+        key_encoder.value = key;
+        ByteView key_data = key_encoder.encode_word();
+
+        auto offset = this->index_.lookup_by_key(key_data);
+        if (!offset) {
+            return std::nullopt;
+        }
+
+        return this->reader_.seek_one(*offset);
+    }
+};
+
+template <
+    DecoderConcept TDecoder,
+    const SegmentAndAccessorIndexNames& segment_names>
+struct FindByHashSegmentQuery : public BasicSegmentQuery<TDecoder, segment_names> {
+    using BasicSegmentQuery<TDecoder, segment_names>::BasicSegmentQuery;
+
+    std::optional<decltype(TDecoder::value)> exec(const Hash& hash) {
         auto offset = this->index_.lookup_by_key(hash);
         if (!offset) {
             return std::nullopt;
         }
 
-        auto result = this->reader_.seek_one(*offset, hash);
+        auto result = this->reader_.seek_one(*offset, ByteView{hash.bytes, 1});
 
         // We *must* ensure that the retrieved txn hash matches because there is no way to know if key exists in MPHF
         if (result && (result->hash() != hash)) {
@@ -86,12 +109,12 @@ struct FindByHashSegmentQuery : public BasicSegmentQuery<TSegmentReader, segment
 };
 
 template <
-    segment::SegmentReaderConcept TSegmentReader,
-    const SegmentAndAccessorIndexNames* segment_names>
-struct RangeFromIdSegmentQuery : public BasicSegmentQuery<TSegmentReader, segment_names> {
-    using BasicSegmentQuery<TSegmentReader, segment_names>::BasicSegmentQuery;
+    DecoderConcept TDecoder,
+    const SegmentAndAccessorIndexNames& segment_names>
+struct RangeFromIdSegmentQuery : public BasicSegmentQuery<TDecoder, segment_names> {
+    using BasicSegmentQuery<TDecoder, segment_names>::BasicSegmentQuery;
 
-    std::optional<std::vector<typename TSegmentReader::Iterator::value_type>> exec(uint64_t first_id, uint64_t count) {
+    std::optional<std::vector<decltype(TDecoder::value)>> exec(uint64_t first_id, uint64_t count) {
         auto offset = this->index_.lookup_by_data_id(first_id);
         if (!offset) {
             return std::nullopt;

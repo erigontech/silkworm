@@ -151,10 +151,12 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
         CHECK(json == R"({
-            "failed":true,
-            "gas":50000,
-            "returnValue":"",
-            "structLogs":[]
+            "result": {
+                "failed":true,
+                "gas":50000,
+                "returnValue":"",
+                "structLogs":[]
+            }
         })"_json);
     }
 }
@@ -200,8 +202,16 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
         CHECK(json == R"({
-            "failed": true,
-            "structLogs":[]
+          "error":
+          {
+            "code": -32000,
+            "message": "tracing failed: intrinsic gas too low: have 50000, want 53072"
+          },
+          "result":
+          {
+            "structLogs":
+            []
+          }
         })"_json);
     }
 
@@ -272,55 +282,68 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
         CHECK(json == R"({
+          "result":
+          {
             "failed": false,
             "gas": 75178,
             "returnValue": "",
-            "structLogs": [
+            "structLogs":
+            [
+              {
+                "depth": 1,
+                "gas": 65864,
+                "gasCost": 3,
+                "memory":
+                [],
+                "op": "PUSH1",
+                "pc": 0,
+                "stack":
+                []
+              },
+              {
+                "depth": 1,
+                "gas": 65861,
+                "gasCost": 3,
+                "memory":
+                [],
+                "op": "PUSH1",
+                "pc": 2,
+                "stack":
+                [
+                  "0x2a"
+                ]
+              },
+              {
+                "depth": 1,
+                "gas": 65858,
+                "gasCost": 22100,
+                "memory":
+                [],
+                "op": "SSTORE",
+                "pc": 4,
+                "stack":
+                [
+                  "0x2a",
+                  "0x0"
+                ],
+                "storage":
                 {
-                    "depth": 1,
-                    "gas": 65864,
-                    "gasCost": 3,
-                    "memory": [],
-                    "op": "PUSH1",
-                    "pc": 0,
-                    "stack": []
-                },
-                {
-                    "depth": 1,
-                    "gas": 65861,
-                    "gasCost": 3,
-                    "memory": [],
-                    "op": "PUSH1",
-                    "pc": 2,
-                    "stack": [
-                        "0x2a"
-                    ]
-                },
-                {
-                    "depth": 1,
-                    "gas": 65858,
-                    "gasCost": 22100,
-                    "memory": [],
-                    "op": "SSTORE",
-                    "pc": 4,
-                    "stack": [
-                        "0x2a",
-                        "0x0"
-                    ],
-                    "storage": {
-                        "0000000000000000000000000000000000000000000000000000000000000000": "000000000000000000000000000000000000000000000000000000000000002a"
-                    }
-                },
-                {
-                    "depth": 1,
-                    "gas": 43758,
-                    "gasCost": 0,
-                    "memory": [],
-                    "op": "STOP",
-                    "pc": 5,
-                    "stack": []
+                  "0000000000000000000000000000000000000000000000000000000000000000": "000000000000000000000000000000000000000000000000000000000000002a"
                 }
+              },
+              {
+                "depth": 1,
+                "gas": 43758,
+                "gasCost": 0,
+                "memory":
+                [],
+                "op": "STOP",
+                "pc": 5,
+                "stack":
+                []
+              }
             ]
+          }
         })"_json);
     }
 
@@ -391,46 +414,55 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
         CHECK(json == R"({
+          "result":
+          {
             "failed": false,
             "gas": 75178,
             "returnValue": "",
-            "structLogs": [
+            "structLogs":
+            [
+              {
+                "depth": 1,
+                "gas": 65864,
+                "gasCost": 3,
+                "memory":
+                [],
+                "op": "PUSH1",
+                "pc": 0
+              },
+              {
+                "depth": 1,
+                "gas": 65861,
+                "gasCost": 3,
+                "memory":
+                [],
+                "op": "PUSH1",
+                "pc": 2
+              },
+              {
+                "depth": 1,
+                "gas": 65858,
+                "gasCost": 22100,
+                "memory":
+                [],
+                "op": "SSTORE",
+                "pc": 4,
+                "storage":
                 {
-                    "depth": 1,
-                    "gas": 65864,
-                    "gasCost": 3,
-                    "memory": [],
-                    "op": "PUSH1",
-                    "pc": 0
-                },
-                {
-                    "depth": 1,
-                    "gas": 65861,
-                    "gasCost": 3,
-                    "memory": [],
-                    "op": "PUSH1",
-                    "pc": 2
-                },
-                {
-                    "depth": 1,
-                    "gas": 65858,
-                    "gasCost": 22100,
-                    "memory": [],
-                    "op": "SSTORE",
-                    "pc": 4,
-                    "storage": {
-                        "0000000000000000000000000000000000000000000000000000000000000000": "000000000000000000000000000000000000000000000000000000000000002a"
-                    }
-                },
-                {
-                    "depth": 1,
-                    "gas": 43758,
-                    "gasCost": 0,
-                    "memory": [],
-                    "op": "STOP",
-                    "pc": 5
+                  "0000000000000000000000000000000000000000000000000000000000000000": "000000000000000000000000000000000000000000000000000000000000002a"
                 }
+              },
+              {
+                "depth": 1,
+                "gas": 43758,
+                "gasCost": 0,
+                "memory":
+                [],
+                "op": "STOP",
+                "pc": 5
+              }
             ]
+          }
         })"_json);
     }
 
@@ -501,51 +533,60 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
         CHECK(json == R"({
+          "result":
+          {
             "failed": false,
             "gas": 75178,
             "returnValue": "",
-            "structLogs": [
+            "structLogs":
+            [
+              {
+                "depth": 1,
+                "gas": 65864,
+                "gasCost": 3,
+                "op": "PUSH1",
+                "pc": 0,
+                "stack":
+                []
+              },
+              {
+                "depth": 1,
+                "gas": 65861,
+                "gasCost": 3,
+                "op": "PUSH1",
+                "pc": 2,
+                "stack":
+                [
+                  "0x2a"
+                ]
+              },
+              {
+                "depth": 1,
+                "gas": 65858,
+                "gasCost": 22100,
+                "op": "SSTORE",
+                "pc": 4,
+                "stack":
+                [
+                  "0x2a",
+                  "0x0"
+                ],
+                "storage":
                 {
-                    "depth": 1,
-                    "gas": 65864,
-                    "gasCost": 3,
-                    "op": "PUSH1",
-                    "pc": 0,
-                    "stack": []
-                },
-                {
-                    "depth": 1,
-                    "gas": 65861,
-                    "gasCost": 3,
-                    "op": "PUSH1",
-                    "pc": 2,
-                    "stack": [
-                        "0x2a"
-                    ]
-                },
-                {
-                    "depth": 1,
-                    "gas": 65858,
-                    "gasCost": 22100,
-                    "op": "SSTORE",
-                    "pc": 4,
-                    "stack": [
-                        "0x2a",
-                        "0x0"
-                    ],
-                    "storage": {
-                        "0000000000000000000000000000000000000000000000000000000000000000": "000000000000000000000000000000000000000000000000000000000000002a"
-                    }
-                },
-                {
-                    "depth": 1,
-                    "gas": 43758,
-                    "gasCost": 0,
-                    "op": "STOP",
-                    "pc": 5,
-                    "stack": []
+                  "0000000000000000000000000000000000000000000000000000000000000000": "000000000000000000000000000000000000000000000000000000000000002a"
                 }
+              },
+              {
+                "depth": 1,
+                "gas": 43758,
+                "gasCost": 0,
+                "op": "STOP",
+                "pc": 5,
+                "stack":
+                []
+              }
             ]
+          }
         })"_json);
     }
 
@@ -616,52 +657,64 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
         CHECK(json == R"({
+          "result":
+          {
             "failed": false,
             "gas": 75178,
             "returnValue": "",
-            "structLogs": [
-                {
-                    "depth": 1,
-                    "gas": 65864,
-                    "gasCost": 3,
-                    "memory": [],
-                    "op": "PUSH1",
-                    "pc": 0,
-                    "stack": []
-                },
-                {
-                    "depth": 1,
-                    "gas": 65861,
-                    "gasCost": 3,
-                    "memory": [],
-                    "op": "PUSH1",
-                    "pc": 2,
-                    "stack": [
-                        "0x2a"
-                    ]
-                },
-                {
-                    "depth": 1,
-                    "gas": 65858,
-                    "gasCost": 22100,
-                    "memory": [],
-                    "op": "SSTORE",
-                    "pc": 4,
-                    "stack": [
-                        "0x2a",
-                        "0x0"
-                    ]
-                },
-                {
-                    "depth": 1,
-                    "gas": 43758,
-                    "gasCost": 0,
-                    "memory": [],
-                    "op": "STOP",
-                    "pc": 5,
-                    "stack": []
-                }
+            "structLogs":
+            [
+              {
+                "depth": 1,
+                "gas": 65864,
+                "gasCost": 3,
+                "memory":
+                [],
+                "op": "PUSH1",
+                "pc": 0,
+                "stack":
+                []
+              },
+              {
+                "depth": 1,
+                "gas": 65861,
+                "gasCost": 3,
+                "memory":
+                [],
+                "op": "PUSH1",
+                "pc": 2,
+                "stack":
+                [
+                  "0x2a"
+                ]
+              },
+              {
+                "depth": 1,
+                "gas": 65858,
+                "gasCost": 22100,
+                "memory":
+                [],
+                "op": "SSTORE",
+                "pc": 4,
+                "stack":
+                [
+                  "0x2a",
+                  "0x0"
+                ]
+              },
+              {
+                "depth": 1,
+                "gas": 43758,
+                "gasCost": 0,
+                "memory":
+                [],
+                "op": "STOP",
+                "pc": 5,
+                "stack":
+                []
+              }
             ]
+          }
         })"_json);
     }
 
@@ -732,39 +785,43 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
         CHECK(json == R"({
+          "result":
+          {
             "failed": false,
             "gas": 75178,
             "returnValue": "",
-            "structLogs": [
-                {
-                    "depth": 1,
-                    "gas": 65864,
-                    "gasCost": 3,
-                    "op": "PUSH1",
-                    "pc": 0
-                },
-                {
-                    "depth": 1,
-                    "gas": 65861,
-                    "gasCost": 3,
-                    "op": "PUSH1",
-                    "pc": 2
-                },
-                {
-                    "depth": 1,
-                    "gas": 65858,
-                    "gasCost": 22100,
-                    "op": "SSTORE",
-                    "pc": 4
-                },
-                {
-                    "depth": 1,
-                    "gas": 43758,
-                    "gasCost": 0,
-                    "op": "STOP",
-                    "pc": 5
-                }
+            "structLogs":
+            [
+              {
+                "depth": 1,
+                "gas": 65864,
+                "gasCost": 3,
+                "op": "PUSH1",
+                "pc": 0
+              },
+              {
+                "depth": 1,
+                "gas": 65861,
+                "gasCost": 3,
+                "op": "PUSH1",
+                "pc": 2
+              },
+              {
+                "depth": 1,
+                "gas": 65858,
+                "gasCost": 22100,
+                "op": "SSTORE",
+                "pc": 4
+              },
+              {
+                "depth": 1,
+                "gas": 43758,
+                "gasCost": 0,
+                "op": "STOP",
+                "pc": 5
+              }
             ]
+          }
         })"_json);
     }
 
@@ -835,39 +892,43 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
         CHECK(json == R"({
+          "result":
+          {
             "failed": false,
             "gas": 75178,
             "returnValue": "",
-            "structLogs": [
-                {
-                    "depth": 1,
-                    "gas": 65864,
-                    "gasCost": 3,
-                    "op": "PUSH1",
-                    "pc": 0
-                },
-                {
-                    "depth": 1,
-                    "gas": 65861,
-                    "gasCost": 3,
-                    "op": "PUSH1",
-                    "pc": 2
-                },
-                {
-                    "depth": 1,
-                    "gas": 65858,
-                    "gasCost": 22100,
-                    "op": "SSTORE",
-                    "pc": 4
-                },
-                {
-                    "depth": 1,
-                    "gas": 43758,
-                    "gasCost": 0,
-                    "op": "STOP",
-                    "pc": 5
-                }
+            "structLogs":
+            [
+              {
+                "depth": 1,
+                "gas": 65864,
+                "gasCost": 3,
+                "op": "PUSH1",
+                "pc": 0
+              },
+              {
+                "depth": 1,
+                "gas": 65861,
+                "gasCost": 3,
+                "op": "PUSH1",
+                "pc": 2
+              },
+              {
+                "depth": 1,
+                "gas": 65858,
+                "gasCost": 22100,
+                "op": "SSTORE",
+                "pc": 4
+              },
+              {
+                "depth": 1,
+                "gas": 43758,
+                "gasCost": 0,
+                "op": "STOP",
+                "pc": 5
+              }
             ]
+          }
         })"_json);
     }
 }
@@ -950,10 +1011,14 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
         CHECK(json == R"({
+          "result":
+          {
             "failed": false,
             "gas": 21004,
             "returnValue": "",
-            "structLogs": []
+            "structLogs":
+            []
+          }
         })"_json);
     }
 }
@@ -1039,31 +1104,39 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
     CHECK(json == R"({
+      "result":
+      {
         "failed": true,
         "gas": 211190,
         "returnValue": "",
-        "structLogs": [
-            {
-                "depth": 1,
-                "gas": 156082,
-                "gasCost": 2,
-                "memory": [],
-                "op": "COINBASE",
-                "pc": 0,
-                "stack": []
-            },
-            {
-                "depth": 1,
-                "gas": 156080,
-                "gasCost": 0,
-                "memory": [],
-                "op": "opcode 0x4b not defined",
-                "pc": 1,
-                "stack": [
-                    "0x0"
-                ]
-            }
+        "structLogs":
+        [
+          {
+            "depth": 1,
+            "gas": 156082,
+            "gasCost": 2,
+            "memory":
+            [],
+            "op": "COINBASE",
+            "pc": 0,
+            "stack":
+            []
+          },
+          {
+            "depth": 1,
+            "gas": 156080,
+            "gasCost": 0,
+            "memory":
+            [],
+            "op": "opcode 0x4b not defined",
+            "pc": 1,
+            "stack":
+            [
+              "0x0"
+            ]
+          }
         ]
+      }
     })"_json);
 }
 

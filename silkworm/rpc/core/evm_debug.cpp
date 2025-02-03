@@ -383,7 +383,7 @@ Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& 
     co_return;
 }
 
-Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash& block_num_or_hash, const ChainStorage& storage, const Call& call) {
+Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash& block_num_or_hash, const ChainStorage& storage, const Call& call, bool is_latest_block) {
     const auto block_with_hash = co_await rpc::core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, block_num_or_hash);
     if (!block_with_hash) {
         co_return;
@@ -401,15 +401,12 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash&
             co_return;
         }
     }
-    stream.write_field("result");
-    stream.open_object();
 
     const auto& block = block_with_hash->block;
     const auto block_num = block.header.number + (config_.tx_index ? 0 : 1);
     const auto index = config_.tx_index ? config_.tx_index.value() : 0;
     // trace_call semantics: we must execute the call from the state at the end of the given block, so we pass block.header.number + 1
-    co_await execute(stream, storage, block_num, block, transaction, index);
-    stream.close_object();
+    co_await execute(stream, storage, block_num, block, transaction, index, is_latest_block);
 
     co_return;
 }
@@ -427,17 +424,14 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
         const auto& transaction = tx_with_block->transaction;
         const auto block_num = block.header.number;
 
-        stream.write_field("result");
-        stream.open_object();
         // trace_transaction semantics: we must execute the txn from the state at the current block
         co_await execute(stream, storage, block_num, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
-        stream.close_object();
     }
 
     co_return;
 }
 
-Task<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context) {
+Task<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context, bool is_latest_block) {
     const auto block_with_hash = co_await rpc::core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, context.block_num);
     if (!block_with_hash) {
         co_return;
@@ -449,7 +443,7 @@ Task<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStora
 
     stream.write_field("result");
     stream.open_array();
-    co_await execute(stream, storage, block_with_hash, bundles, transaction_index);
+    co_await execute(stream, storage, block_with_hash, bundles, transaction_index, is_latest_block);
     stream.close_array();
 
     co_return;
@@ -522,7 +516,8 @@ Task<void> DebugExecutor::execute(
     BlockNum block_num,
     const silkworm::Block& block,
     const Transaction& transaction,
-    int32_t index) {
+    int32_t index,
+    bool is_latest_block) {
     SILK_TRACE << "DebugExecutor::execute: "
                << " block_num: " << block_num
                << " transaction: {" << transaction << "}"
@@ -534,15 +529,21 @@ Task<void> DebugExecutor::execute(
 
     // We must do the execution at the state after the txn identified by the given index within the given block
     // at the state after the block identified by the given block_num
-    execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await tx_.user_txn_id_at(block_num, static_cast<uint32_t>(index));
+    std::optional<TxnId> txn_id;
+    if (!is_latest_block) {
+        txn_id = co_await tx_.user_txn_id_at(block_num, static_cast<uint32_t>(index));
+    }
 
     co_await async_task(workers_.executor(), [&]() {
+        execution::StateFactory state_factory{tx_};
         const auto state = state_factory.create_state(current_executor, storage, txn_id);
 
         EVMExecutor executor{block, chain_config, workers_, state};
 
         auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
+
+        stream.write_field("result");
+        stream.open_object();
 
         stream.write_field("structLogs");
         stream.open_array();
@@ -556,10 +557,16 @@ Task<void> DebugExecutor::execute(
 
         SILK_DEBUG << "debug return: " << execution_result.error_message();
 
-        stream.write_json_field("failed", !execution_result.success());
         if (!execution_result.pre_check_error) {
+            stream.write_json_field("failed", !execution_result.success());
             stream.write_field("gas", transaction.gas_limit - execution_result.gas_left);
             stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
+        }
+        stream.close_object();
+
+        if (execution_result.pre_check_error) {
+            const Error error{-32000, "tracing failed: " + execution_result.pre_check_error.value()};
+            stream.write_json_field("error", error);
         }
     });
 
@@ -571,7 +578,8 @@ Task<void> DebugExecutor::execute(
     const ChainStorage& storage,
     std::shared_ptr<BlockWithHash> block_with_hash,
     const Bundles& bundles,
-    int32_t transaction_index) {
+    int32_t transaction_index,
+    bool is_latest_block) {
     const auto& block = block_with_hash->block;
     const auto& block_transactions = block.transactions;
 
@@ -588,7 +596,11 @@ Task<void> DebugExecutor::execute(
     // We must do the execution at the state after the txn identified by transaction_with_block param in the same block
     // at the state of the block identified by the given block_num, i.e. at the start of the block (block_num)
     execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await tx_.user_txn_id_at(block.header.number, static_cast<uint32_t>(transaction_index));
+
+    std::optional<TxnId> txn_id;
+    if (!is_latest_block) {
+        txn_id = co_await tx_.user_txn_id_at(block.header.number, static_cast<uint32_t>(transaction_index));
+    }
 
     co_await async_task(workers_.executor(), [&]() {
         auto state = state_factory.create_state(current_executor, storage, txn_id);

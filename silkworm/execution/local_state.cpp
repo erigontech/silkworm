@@ -19,7 +19,6 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/state/accounts_domain.hpp>
 #include <silkworm/db/state/code_domain.hpp>
-#include <silkworm/db/state/schema_config.hpp>
 #include <silkworm/db/state/storage_domain.hpp>
 
 namespace silkworm::execution {
@@ -28,12 +27,12 @@ using namespace db::state;
 using namespace datastore;
 
 std::optional<Account> LocalState::read_account(const evmc::address& address) const noexcept {
-    AccountsDomainGetLatestQuery query{
-        data_store_.chaindata,
-        tx_,
-        data_store_.state_repository,
-    };
-    auto result = query.exec(address);
+    if (txn_id_) {
+        // Query historical state at required timestamp
+        return make_query<AccountsDomainGetAsOfQuery>().exec(address, *txn_id_);
+    }
+    // Query latest i.e. current state
+    auto result = make_query<AccountsDomainGetLatestQuery>().exec(address);
     if (result) {
         return std::move(result->value);
     }
@@ -41,29 +40,36 @@ std::optional<Account> LocalState::read_account(const evmc::address& address) co
 }
 
 ByteView LocalState::read_code(const evmc::address& address, const evmc::bytes32& /*code_hash*/) const noexcept {
-    CodeDomainGetLatestQuery query{
-        data_store_.chaindata,
-        tx_,
-        data_store_.state_repository,
-    };
-    auto result = query.exec(address);
+    if (code_.contains(address)) {
+        return code_[address];  // NOLINT(runtime/arrays)
+    }
+
+    if (txn_id_) {
+        // Query historical state at required timestamp
+        auto result = make_query<CodeDomainGetAsOfQuery>().exec(address, *txn_id_);
+        if (result) {
+            auto [it, _] = code_.emplace(address, std::move(*result));
+            return it->second;
+        }
+        return ByteView{};
+    }
+    // Query latest i.e. current state
+    auto result = make_query<CodeDomainGetLatestQuery>().exec(address);
     if (result) {
-        static_assert(std::is_same_v<decltype(result->value), ByteView>);
-        return result->value;
+        auto [it, _] = code_.emplace(address, std::move(result->value));
+        return it->second;
     }
     return ByteView{};
 }
 
-evmc::bytes32 LocalState::read_storage(
-    const evmc::address& address,
-    uint64_t /*incarnation*/,
-    const evmc::bytes32& location) const noexcept {
-    StorageDomainGetLatestQuery query{
-        data_store_.chaindata,
-        tx_,
-        data_store_.state_repository,
-    };
-    auto result = query.exec({address, location});
+evmc::bytes32 LocalState::read_storage(const evmc::address& address, uint64_t /*incarnation*/, const evmc::bytes32& location) const noexcept {
+    if (txn_id_) {
+        // Query historical state at required timestamp
+        auto result = make_query<StorageDomainGetAsOfQuery>().exec({address, location}, *txn_id_);
+        return result.value_or(evmc::bytes32{});
+    }
+    // Query latest i.e. current state
+    auto result = make_query<StorageDomainGetLatestQuery>().exec({address, location});
     if (result) {
         return result->value;
     }
@@ -98,44 +104,6 @@ BlockNum LocalState::current_canonical_block() const {
 std::optional<evmc::bytes32> LocalState::canonical_hash(BlockNum block_num) const {
     // This method should not be called by EVM::execute
     return data_model().read_canonical_header_hash(block_num);
-}
-
-void LocalState::update_account(
-    const evmc::address& address,
-    std::optional<Account> initial,
-    std::optional<Account> current) {
-    Step current_step = Step::from_txn_id(txn_id_);
-    if (current) {
-        AccountsDomainPutQuery query{tx_, data_store_.state_db().accounts_domain()};
-        query.exec(address, *current, txn_id_, initial, current_step);
-    } else {
-        AccountsDomainDeleteQuery query{tx_, data_store_.state_db().accounts_domain()};
-        query.exec(address, txn_id_, initial, current_step);
-    }
-}
-
-void LocalState::update_account_code(
-    const evmc::address& address,
-    uint64_t /*incarnation*/,
-    const evmc::bytes32& /*code_hash*/,
-    ByteView code) {
-    Step current_step = Step::from_txn_id(txn_id_);
-    CodeDomainPutQuery query{tx_, data_store_.state_db().code_domain()};
-    std::optional<ByteView> initial_code = read_code(address, evmc::bytes32{});
-    if (initial_code && initial_code->empty())
-        initial_code = std::nullopt;
-    query.exec(address, code, txn_id_, initial_code, current_step);
-}
-
-void LocalState::update_storage(
-    const evmc::address& address,
-    uint64_t /*incarnation*/,
-    const evmc::bytes32& location,
-    const evmc::bytes32& initial,
-    const evmc::bytes32& current) {
-    Step current_step = Step::from_txn_id(txn_id_);
-    StorageDomainPutQuery query{tx_, data_store_.state_db().storage_domain()};
-    query.exec({address, location}, current, txn_id_, initial, current_step);
 }
 
 }  // namespace silkworm::execution

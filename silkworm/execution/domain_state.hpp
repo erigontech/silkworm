@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -28,17 +28,36 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/kvdb/mdbx.hpp>
+#include <silkworm/execution/remote_state.hpp>
 
 namespace silkworm::execution {
 
-class LocalState : public State {
+class DomainState : public State {
   public:
-    explicit LocalState(
-        std::optional<TxnId> txn_id,
-        db::DataStoreRef data_store)
+    explicit DomainState(
+        TxnId txn_id,
+        datastore::kvdb::RWTxn& tx,
+        datastore::kvdb::DatabaseRef& database,
+        snapshots::SnapshotRepository& blocks_repository,
+        snapshots::SnapshotRepository& state_repository)
         : txn_id_{txn_id},
-          data_store_{std::move(data_store)},
-          tx_{data_store_.chaindata.access_ro().start_ro_tx()} {}
+          tx_{tx},
+          database_{database},
+          state_repository_{state_repository},
+          data_model_{db::DataModel{tx_, blocks_repository}} {}
+
+    explicit DomainState(
+        TxnId txn_id,
+        datastore::kvdb::RWTxn& tx,
+        datastore::kvdb::DatabaseRef& database,
+        snapshots::SnapshotRepository& state_repository,
+        db::DataModel& data_model)
+
+        : txn_id_{txn_id},
+          tx_{tx},
+          database_{database},
+          state_repository_{state_repository},
+          data_model_{data_model} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -66,47 +85,38 @@ class LocalState : public State {
 
     void decanonize_block(BlockNum /*block_num*/) override {}
 
-    void insert_receipts(BlockNum /*block_num*/, const std::vector<Receipt>& /*receipts*/) override {}
+    void insert_receipts(BlockNum block_num, const std::vector<Receipt>& receipts) override;
 
     void insert_call_traces(BlockNum /*block_num*/, const CallTraces& /*traces*/) override {}
 
     void begin_block(BlockNum /*block_num*/, size_t /*updated_accounts_count*/) override {}
 
     void update_account(
-        const evmc::address& /*address*/,
-        std::optional<Account> /*initial*/,
-        std::optional<Account> /*current*/) override {}
+        const evmc::address& address,
+        std::optional<Account> initial,
+        std::optional<Account> current) override;
 
     void update_account_code(
-        const evmc::address& /*address*/,
-        uint64_t /*incarnation*/,
-        const evmc::bytes32& /*code_hash*/,
-        ByteView /*code*/) override {}
+        const evmc::address& address,
+        uint64_t incarnation,
+        const evmc::bytes32& code_hash,
+        ByteView code) override;
 
     void update_storage(
-        const evmc::address& /*address*/,
-        uint64_t /*incarnation*/,
-        const evmc::bytes32& /*location*/,
-        const evmc::bytes32& /*initial*/,
-        const evmc::bytes32& /*current*/) override {}
+        const evmc::address& address,
+        uint64_t incarnation,
+        const evmc::bytes32& location,
+        const evmc::bytes32& initial,
+        const evmc::bytes32& current) override;
 
     void unwind_state_changes(BlockNum /*block_num*/) override {}
 
   private:
-    db::DataModel data_model() const {
-        return db::DataModelFactory{data_store_}(tx_);
-    }
-
-    template <typename DomainQuery>
-    auto make_query() const {
-        return DomainQuery{data_store_.chaindata, tx_, data_store_.state_repository};
-    }
-
-    std::optional<TxnId> txn_id_;
-    db::DataStoreRef data_store_;
-    mutable datastore::kvdb::ROTxnManaged tx_;
-
-    mutable std::unordered_map<evmc::address, Bytes> code_;
+    TxnId txn_id_;
+    datastore::kvdb::RWTxn& tx_;
+    datastore::kvdb::DatabaseRef& database_;
+    snapshots::SnapshotRepository& state_repository_;
+    db::DataModel data_model_;
 };
 
 }  // namespace silkworm::execution

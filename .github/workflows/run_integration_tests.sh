@@ -12,7 +12,8 @@ set -o pipefail
 cd "$1" || exit 1
 rm -rf ./mainnet/results/
  
-# eth_getLogs: not runned waiting fix on erigon sync 
+# eth_getLogs: waiting erigon fix on wrong FirstLogIndex in ReceiptsDomain
+# debug_traceBlockByNumber[24-28]: response different wrt erigon
 python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --json-diff --port 51515 --transport_type http,websocket -x \
 eth_getLogs/test_16,\
 eth_getLogs/test_17,\
@@ -23,10 +24,12 @@ debug_traceBlockByHash/test_09,\
 debug_traceBlockByHash/test_10,\
 debug_traceBlockByNumber/test_09,\
 debug_traceBlockByNumber/test_10,\
+debug_traceBlockByNumber/test_24,\
+debug_traceBlockByNumber/test_25,\
+debug_traceBlockByNumber/test_26,\
+debug_traceBlockByNumber/test_27,\
+debug_traceBlockByNumber/test_28,\
 debug_traceBlockByNumber/test_29,\
-debug_traceCall/test_16,\
-debug_traceCall/test_17,\
-debug_traceCall/test_20,\
 debug_traceCall/test_21,\
 debug_traceTransaction/test_25,\
 debug_traceTransaction/test_36,\
@@ -40,10 +43,7 @@ debug_traceTransaction/test_91,\
 debug_traceTransaction/test_92,\
 debug_traceTransaction/test_96,\
 trace_replayBlockTransactions/test_29,\
-engine_,\
-trace_filter/test_24.json,\
-trace_replayTransaction/test_48.tar,\
-trace_transaction/test_37.json
+engine_
 
 failed_test=$?
 

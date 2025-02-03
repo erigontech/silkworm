@@ -146,7 +146,7 @@ std::pair<BTree::Node, size_t> BTree::Node::from_encoded_data(std::span<uint8_t>
     const auto key_length = endian::load_big_u16(encoded_key.data());
     const auto encoded_size = kEncodedIndexPlusKeyLengthSize + key_length;
     ensure(encoded_node.size() >= encoded_size, "snapshots::index::BTree invalid encoded node size");
-    const auto key = encoded_key.subspan(sizeof(uint16_t));
+    const auto key = encoded_key.subspan(sizeof(uint16_t), key_length);
     return {Node{key_index, Bytes{key.data(), key.size()}}, encoded_size};
 }
 

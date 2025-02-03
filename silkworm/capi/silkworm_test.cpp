@@ -177,6 +177,13 @@ struct SilkwormLibrary {
         return result;
     }
 
+    int execute_txn(MDBX_txn* txn, uint64_t block_num, silkworm::Hash head_hash, uint64_t txn_index, uint64_t txn_id) const {
+        SilkwormBytes32 head_hash_bytes{};
+        std::memcpy(head_hash_bytes.bytes, head_hash.bytes, 32);
+
+        return silkworm_execute_txn(handle_, txn, block_num, head_hash_bytes, txn_index, txn_id, nullptr, nullptr);
+    }
+
     int add_snapshot(SilkwormChainSnapshot* snapshot) const {
         return silkworm_add_snapshot(handle_, snapshot);
     }
@@ -1151,6 +1158,45 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[silkworm][capi]") {
         auto safe_header = silkworm_lib.execution_engine().last_safe_block();
         CHECK(safe_header.block_num == new_block->header.number);
     }
+}
+
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_tx: single", "[silkworm][capi]") {
+    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
+    SilkwormLibrary silkworm_lib{env_path()};
+    silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings);
+
+    // Prepare and insert block 10 (just 1 tx w/ value transfer)
+    evmc::address from{0x658bdf435d810c91414ec09147daa6db62406379_address};  // funded in genesis
+    evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb521_address};    // untouched address
+    intx::uint256 value{1 * kEther};
+
+    Block block{};
+    block.header.number = 10;
+    block.header.gas_limit = 5'000'000;
+    block.header.gas_used = 21'000;
+
+    static constexpr auto kEncoder = [](Bytes& dest, const Receipt& r) { rlp::encode(dest, r); };
+    std::vector<Receipt> receipts{
+        {TransactionType::kLegacy, true, block.header.gas_used, {}, {}},
+    };
+    block.header.receipts_root = trie::root_hash(receipts, kEncoder);
+    block.transactions.resize(1);
+    block.transactions[0].to = to;
+    block.transactions[0].gas_limit = block.header.gas_limit;
+    block.transactions[0].type = TransactionType::kLegacy;
+    block.transactions[0].max_priority_fee_per_gas = 0;
+    block.transactions[0].max_fee_per_gas = 20 * kGiga;
+    block.transactions[0].value = value;
+    block.transactions[0].r = 1;  // dummy
+    block.transactions[0].s = 1;  // dummy
+    block.transactions[0].set_sender(from);
+
+    insert_block(env, block);
+
+    RWTxnManaged external_txn{env};
+    auto result = silkworm_lib.execute_txn(*external_txn, 10, block.header.hash(), 0, 9);
+    CHECK(result == SILKWORM_INVALID_BLOCK);
+    CHECK_NOTHROW(external_txn.abort());
 }
 
 }  // namespace silkworm

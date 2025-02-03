@@ -16,6 +16,9 @@
 
 #include "domain_put_latest_query.hpp"
 
+#include <functional>
+
+#include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/common/directories.hpp>
@@ -39,20 +42,31 @@ bool operator==(const Result& lhs, const Result& rhs) {
     return (lhs.value == rhs.value) && (lhs.step == rhs.step);
 };
 
-TEST_CASE("DomainPutLatestQuery") {
+// by default has_large_values = false, is_multi_value = true
+using DomainDefault = std::identity;
+
+struct DomainWithLargeValues {
+    Schema::DomainDef& operator()(Schema::DomainDef& domain) const {
+        domain.enable_large_values().values_disable_multi_value();
+        return domain;
+    }
+};
+
+TEMPLATE_TEST_CASE("DomainPutLatestQuery", "", DomainDefault, DomainWithLargeValues) {
     const TemporaryDirectory tmp_dir;
     ::mdbx::env_managed env = open_env(EnvConfig{.path = tmp_dir.path().string(), .create = true, .in_memory = true});
 
     EntityName name{"Test"};
     Schema::DatabaseDef schema;
-    schema.domain(name);
+    TestType domain_config;
+    [[maybe_unused]] auto _ = domain_config(schema.domain(name));
 
     Database db{std::move(env), schema};
     db.create_tables();
     Domain entity = db.domain(name);
     RWAccess db_access = db.access_rw();
 
-    auto find_in = [&db_access, &entity](std::vector<DomainPutEntry>&& data, uint64_t key) -> std::optional<Result> {
+    auto find_in = [&db_access, &entity](const std::vector<DomainPutEntry>& data, uint64_t key) -> std::optional<Result> {
         {
             RWTxnManaged tx = db_access.start_rw_tx();
             DomainPutLatestQuery<BigEndianU64Codec, BigEndianU64Codec> query{tx, entity};

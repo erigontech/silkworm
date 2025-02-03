@@ -148,7 +148,9 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         .value = txn.value,
         // access_list
         // blob_hashes
-        .chain_id = static_cast<uint64_t>(txn.chain_id.value_or(0)),
+        // TODO: This should be corrected in the evmone APIv2,
+        //   because it uses transaction's chain id for CHAINID instruction.
+        .chain_id = evm().config().chain_id,
         .nonce = txn.nonce};
     for (const auto& [account, storage_keys] : txn.access_list)
         evm1_txn.access_list.emplace_back(account, storage_keys);

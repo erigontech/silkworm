@@ -321,7 +321,7 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
 
     evm_.remove_tracers();
 
-    return {result.status, gas_left, gas_used, result.data, result.error_message};
+    return {ValidationResult::kOk, result.status, gas_left, gas_used, result.data, result.error_message};
 }
 
 void ExecutionProcessor::reset() {

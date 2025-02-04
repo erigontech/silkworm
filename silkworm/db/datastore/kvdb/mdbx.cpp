@@ -340,6 +340,12 @@ void PooledCursor::bind(::mdbx::txn& txn, const MapConfig& config) {
     ::mdbx::cursor::bind(txn, map);
 }
 
+std::unique_ptr<ROCursor> PooledCursor::clone() {
+    auto clone = std::make_unique<PooledCursor>();
+    mdbx::error::success_or_throw(::mdbx_cursor_copy(handle_, clone->handle_));
+    return clone;
+}
+
 void PooledCursor::close() {
     ::mdbx_cursor_close(handle_);
     handle_ = nullptr;

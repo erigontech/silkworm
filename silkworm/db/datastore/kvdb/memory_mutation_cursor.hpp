@@ -33,6 +33,8 @@ class MemoryMutationCursor : public RWCursorDupSort {
 
     void bind(ROTxn& txn, const MapConfig& config) override;
 
+    std::unique_ptr<ROCursor> clone() override;
+
     ::mdbx::map_handle map() const override;
 
     size_t size() const override;

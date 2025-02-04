@@ -28,6 +28,7 @@ class MockROCursor : public datastore::kvdb::ROCursor {
     using Slice = datastore::kvdb::Slice;
 
     MOCK_METHOD((void), bind, (datastore::kvdb::ROTxn&, const datastore::kvdb::MapConfig&), (override));
+    MOCK_METHOD((std::unique_ptr<ROCursor>), clone, (), (override));
     MOCK_METHOD((size_t), size, (), (const, override));
     MOCK_METHOD((bool), empty, (), (const));
     MOCK_METHOD((bool), is_multi_value, (), (const, override));

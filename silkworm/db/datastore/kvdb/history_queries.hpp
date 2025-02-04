@@ -19,3 +19,4 @@
 #include "history_delete_query.hpp"
 #include "history_get_query.hpp"
 #include "history_put_query.hpp"
+#include "history_range_query.hpp"

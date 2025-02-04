@@ -233,6 +233,7 @@ ExecutionResult EVMExecutor::call(
         return {std::nullopt, txn.gas_limit, Bytes{}, "malformed transaction: cannot recover sender"};
     }
 
+#ifdef notdef
     if (const auto result = protocol::validate_call_precheck(txn, evm);
         result != ValidationResult::kOk) {
         return convert_validated_precheck(result, block, txn, evm);
@@ -244,8 +245,18 @@ ExecutionResult EVMExecutor::call(
         !bailout && result != ValidationResult::kOk) {
         return convert_validated_funds(block, txn, evm, owned_funds);
     }
+#endif
 
     const auto result = execution_processor_.call(txn, tracers, refund);
+    if (result.validation_result != ValidationResult::kOk) {
+        return convert_validated_precheck(result.validation_result, block, txn, evm);
+    }
+
+    if (0) {
+        const auto owned_funds = execution_processor_.intra_block_state().get_balance(*txn.sender());
+
+        return convert_validated_funds(block, txn, evm, owned_funds);
+    }
 
     ExecutionResult exec_result{result.status, result.gas_left, result.data};
 

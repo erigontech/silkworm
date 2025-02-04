@@ -39,7 +39,6 @@
 
 namespace silkworm {
 
-
 struct CallResult {
     ValidationResult validation_result{ValidationResult::kOk};
     evmc_status_code status{EVMC_SUCCESS};

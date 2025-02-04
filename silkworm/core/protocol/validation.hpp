@@ -20,12 +20,13 @@
 
 #include <evmc/evmc.h>
 
-#include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
 
 namespace silkworm {
+
+class EVM;
 
 // Classification of invalid transactions and blocks.
 enum class [[nodiscard]] ValidationResult {

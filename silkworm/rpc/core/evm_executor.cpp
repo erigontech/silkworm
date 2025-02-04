@@ -235,7 +235,10 @@ ExecutionResult EVMExecutor::call(
 
     const auto result = execution_processor_.call(txn, tracers, refund);
     if (result.validation_result != ValidationResult::kOk) {
-        const auto owned_funds = execution_processor_.intra_block_state().get_balance(*txn.sender());
+        intx::uint256 owned_funds{0};
+        if (result.validation_result == ValidationResult::kInsufficientFunds) {
+            owned_funds = execution_processor_.intra_block_state().get_balance(*txn.sender());
+        }
 
         return convert_validated_result(result.validation_result, block, txn, evm, owned_funds);
     }

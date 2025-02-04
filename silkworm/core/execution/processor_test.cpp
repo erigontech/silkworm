@@ -383,4 +383,42 @@ TEST_CASE("Empty suicide beneficiary") {
     CHECK(!state.read_account(suicide_beneficiary));
 }
 
+TEST_CASE("CHAINID instruction") {
+    // Set chain_id to a value other than 1
+    ChainConfig config = kMainnetConfig;
+    config.chain_id = 42;
+
+    Block block{};
+    block.header.number = 20'000'000;  // PUSH0 enabled
+    block.header.gas_limit = 50'000;
+    const auto caller = 0x5ed8cee6b63b1c6afce3ad7c92f4fd7e1b8fad9f_address;
+
+    const auto code = *from_hex("465955");  // SSTORE(0, CHAINID)
+
+    Transaction txn{};
+    txn.to = 0xc0de_address;
+    txn.gas_limit = block.header.gas_limit;
+    txn.set_sender(caller);
+
+    SECTION("protected") {
+        txn.chain_id = config.chain_id;  // chain id matches in a valid transaction
+    }
+    SECTION("legacy") {
+        txn.chain_id = std::nullopt;  // valid legacy transaction may not have the chain id
+    }
+
+    InMemoryState state;
+
+    ExecutionProcessor processor{block, *protocol::rule_set_factory(config), state, config, true};
+    processor.evm().state().add_to_balance(caller, kEther);
+    processor.evm().state().set_code(*txn.to, code);
+
+    Receipt receipt;
+    processor.execute_transaction(txn, receipt);
+    CHECK(receipt.success);
+
+    const auto v = processor.evm().state().get_current_storage(*txn.to, 0x00_bytes32);
+    CHECK(v == evmc::bytes32{config.chain_id});
+}
+
 }  // namespace silkworm

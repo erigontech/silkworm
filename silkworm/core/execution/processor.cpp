@@ -266,7 +266,7 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
 
     ValidationResult validation_result = protocol::validate_call_precheck(txn, evm_);
     if (validation_result != ValidationResult::kOk) {
-       return {validation_result, EVMC_SUCCESS, 0, {}, {}};
+        return {validation_result, EVMC_SUCCESS, 0, {}, {}};
     }
 
     const BlockHeader& header{evm_.block().header};

@@ -16,7 +16,9 @@
 
 #pragma once
 
+#include <silkworm/db/datastore/domain_get_as_of_query.hpp>
 #include <silkworm/db/datastore/domain_get_latest_query.hpp>
+#include <silkworm/db/datastore/history_get_query.hpp>
 #include <silkworm/db/datastore/kvdb/domain_queries.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 
@@ -25,26 +27,50 @@
 
 namespace silkworm::db::state {
 
-using StorageDomainGetLatestQueryBase = datastore::DomainGetLatestQuery<
-    StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
-    Bytes32KVDBCodec, Bytes32SnapshotsCodec>;
+using StorageDomainKVSegmentReader = snapshots::segment::KVSegmentReader<StorageAddressAndLocationSnapshotsCodec, Bytes32SnapshotsCodec>;
 
-struct StorageDomainGetLatestQuery : public StorageDomainGetLatestQueryBase {
+struct StorageDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
+                                         StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
+                                         Bytes32KVDBCodec, Bytes32SnapshotsCodec> {
     StorageDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
-        : StorageDomainGetLatestQueryBase{
+        : datastore::DomainGetLatestQuery<
+              StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
+              Bytes32KVDBCodec, Bytes32SnapshotsCodec>(
               db::state::kDomainNameStorage,
-              database,
+              database.domain(db::state::kDomainNameStorage),
               tx,
-              repository,
-          } {}
+              repository) {}
 };
 
-using StorageDomainPutQuery = datastore::kvdb::DomainPutQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>;
-using StorageDomainDeleteQuery = datastore::kvdb::DomainDeleteQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>;
+struct StorageDomainPutQuery : public datastore::kvdb::DomainPutQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec> {
+    StorageDomainPutQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& rw_tx)
+        : datastore::kvdb::DomainPutQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>{
+              rw_tx,
+              database.domain(db::state::kDomainNameStorage)} {}
+};
 
-using StorageDomainKVSegmentReader = snapshots::segment::KVSegmentReader<StorageAddressAndLocationSnapshotsCodec, Bytes32SnapshotsCodec>;
+struct StorageDomainDeleteQuery : datastore::kvdb::DomainDeleteQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec> {
+    StorageDomainDeleteQuery(
+        const datastore::kvdb::DatabaseRef& database,
+        datastore::kvdb::RWTxn& rw_tx)
+        : datastore::kvdb::DomainDeleteQuery<StorageAddressAndLocationKVDBEncoder, Bytes32KVDBCodec>{
+              rw_tx,
+              database.domain(db::state::kDomainNameStorage)} {}
+};
+
+using StorageHistoryGetQuery = datastore::HistoryGetQuery<
+    StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
+    Bytes32KVDBCodec, Bytes32SnapshotsCodec,
+    kHistorySegmentAndIdxNamesStorage>;
+
+using StorageDomainGetAsOfQuery = datastore::DomainGetAsOfQuery<
+    StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
+    Bytes32KVDBCodec, Bytes32SnapshotsCodec,
+    kHistorySegmentAndIdxNamesStorage>;
 
 }  // namespace silkworm::db::state

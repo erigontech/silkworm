@@ -18,18 +18,11 @@
 
 #include "../common/timestamp.hpp"
 #include "history.hpp"
+#include "history_codecs.hpp"
 #include "inverted_index_put_query.hpp"
-#include "kvts_codec.hpp"
 #include "mdbx.hpp"
-#include "timestamp_codec.hpp"
 
 namespace silkworm::datastore::kvdb {
-
-template <EncoderConcept TEncoder>
-using HistoryKeyEncoder = KVTSKeyEncoder<TEncoder, TimestampEncoder>;
-
-template <EncoderConcept TEncoder>
-using HistoryValueEncoder = KVTSValueEncoder<TEncoder, TimestampEncoder>;
 
 template <EncoderConcept TKeyEncoder, EncoderConcept TValueEncoder>
 struct HistoryPutQuery {

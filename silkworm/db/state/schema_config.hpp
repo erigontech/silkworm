@@ -85,4 +85,30 @@ struct StateDatabaseRef {
     datastore::kvdb::InvertedIndex traces_to_inverted_index() const { return {database.inverted_index(kInvIdxNameTracesTo)}; }
 };
 
+inline constexpr snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesAccounts{
+    kDomainNameAccounts,
+    snapshots::Schema::kHistorySegmentName,
+    snapshots::Schema::kHistoryAccessorIndexName,
+};
+inline constexpr snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesStorage{
+    kDomainNameStorage,
+    snapshots::Schema::kHistorySegmentName,
+    snapshots::Schema::kHistoryAccessorIndexName,
+};
+inline constexpr snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesCode{
+    kDomainNameCode,
+    snapshots::Schema::kHistorySegmentName,
+    snapshots::Schema::kHistoryAccessorIndexName,
+};
+inline constexpr snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesCommitment{
+    kDomainNameCommitment,
+    snapshots::Schema::kHistorySegmentName,
+    snapshots::Schema::kHistoryAccessorIndexName,
+};
+inline constexpr snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesReceipts{
+    kDomainNameReceipts,
+    snapshots::Schema::kHistorySegmentName,
+    snapshots::Schema::kHistoryAccessorIndexName,
+};
+
 }  // namespace silkworm::db::state

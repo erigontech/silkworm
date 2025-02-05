@@ -45,15 +45,22 @@
 #include <silkworm/db/datastore/snapshots/snapshot_bundle.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/state/schema_config.hpp>
+#include <silkworm/execution/domain_state.hpp>
+#include <silkworm/execution/remote_state.hpp>
+#include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
+#include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/node/execution/block/block_executor.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/rpc/daemon.hpp>
+#include <silkworm/rpc/ethbackend/remote_backend.hpp>
+#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 
 #include "common.hpp"
 #include "instance.hpp"
@@ -755,6 +762,84 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         SILK_ERROR << "unknown exception";
         return SILKWORM_UNKNOWN_ERROR;
     }
+}
+
+SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_tx, uint64_t block_num, struct SilkwormBytes32 block_hash, uint64_t txn_index, uint64_t txn_num, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT {
+    log::Info{"silkworm_execute_txn", {"block_num", std::to_string(block_num), "txn_index", std::to_string(txn_index)}};
+    if (!handle) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+
+    if (!mdbx_tx) {
+        return SILKWORM_INVALID_MDBX_TXN;
+    }
+
+    if (gas_used) {
+        *gas_used = 0;
+    }
+
+    if (blob_gas_used) {
+        *blob_gas_used = 0;
+    }
+
+    silkworm::Hash block_header_hash{};
+    memcpy(block_header_hash.bytes, block_hash.bytes, sizeof(block_hash.bytes));
+    BlockNum block_number{block_num};
+    TxnId txn_id_{txn_num};
+
+    auto unmanaged_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_tx};
+    auto unmanaged_env = silkworm::datastore::kvdb::EnvUnmanaged{::mdbx_txn_env(mdbx_tx)};
+    auto chain_db = db::DataStore::make_chaindata_database(std::move(unmanaged_env));
+    auto db_ref = chain_db.ref();
+    auto state = silkworm::execution::DomainState{txn_id_, unmanaged_tx, db_ref, *handle->blocks_repository, *handle->state_repository};
+    if (!handle->chain_config) {
+        handle->chain_config = db::read_chain_config(unmanaged_tx);
+    }
+
+    // TODO: cache block, also consider preloading
+    silkworm::Block block{};
+    auto block_read_ok = state.read_body(block_number, block_header_hash, block);
+    if (!block_read_ok) {
+        SILK_ERROR << "Block not found"
+                   << " block_number: " << block_number << " block_hash: " << block_header_hash;
+        return SILKWORM_INVALID_BLOCK;
+    }
+    auto header = state.read_header(block_number, block_header_hash);
+    if (!header) {
+        SILK_ERROR << "Header not found"
+                   << " block_number: " << block_number << " block_hash: " << block_header_hash;
+        return SILKWORM_INVALID_BLOCK;
+    }
+    block.header = header.value();
+
+    if (txn_index >= block.transactions.size()) {
+        SILK_ERROR << "Transaction not found"
+                   << " txn_index: " << txn_index;
+        return SILKWORM_INVALID_BLOCK;
+    }
+
+    auto& transaction = block.transactions[txn_index];
+
+    auto protocol_rule_set_{protocol::rule_set_factory(*handle->chain_config)};
+    ExecutionProcessor processor{block, *protocol_rule_set_, state, *handle->chain_config, false};
+    // TODO: add analysis cache, check block exec for more
+
+    silkworm::Receipt receipt{};
+    const ValidationResult err{protocol::validate_transaction(transaction, processor.intra_block_state(), processor.available_gas())};
+    if (err != ValidationResult::kOk) {
+        return SILKWORM_INVALID_BLOCK;
+    }
+    processor.execute_transaction(transaction, receipt);
+    state.insert_receipts(block_number, std::vector<silkworm::Receipt>{receipt});
+
+    if (gas_used) {
+        *gas_used = receipt.cumulative_gas_used;
+    }
+    if (blob_gas_used) {
+        *blob_gas_used = transaction.total_blob_gas();
+    }
+
+    return SILKWORM_OK;
 }
 
 SILKWORM_EXPORT int silkworm_fini(SilkwormHandle handle) SILKWORM_NOEXCEPT {

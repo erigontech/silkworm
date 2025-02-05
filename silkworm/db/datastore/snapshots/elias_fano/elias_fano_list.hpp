@@ -46,7 +46,9 @@
 
 #include <cstdint>
 #include <iostream>
+#include <optional>
 #include <span>
+#include <utility>
 
 #include "../common/encoding/sequence.hpp"
 #include "list_iterator.hpp"
@@ -73,9 +75,9 @@ class EliasFanoList32 {
 
     size_t size() const { return count_; }
 
-    size_t max() const { return u_ - 1; }
+    uint64_t max() const { return u_ - 1; }
 
-    size_t min() const { return at(0); }
+    uint64_t min() const { return at(0); }
 
     const Uint64Sequence& data() const { return data_; }
 
@@ -83,6 +85,9 @@ class EliasFanoList32 {
 
     uint64_t at(size_t i) const;
     uint64_t operator[](size_t i) const { return at(i); }
+
+    //! Find the first index where at(i) >= value, and return (i, value) or nullopt if not found
+    std::optional<std::pair<size_t, uint64_t>> seek(uint64_t value, bool reverse = false) const;
 
     void add_offset(uint64_t offset);
     void push_back(uint64_t offset) { add_offset(offset); }
@@ -108,8 +113,8 @@ class EliasFanoList32 {
   private:
     EliasFanoList32() = default;
 
+    uint64_t upper(uint64_t c) const;
     uint64_t derive_fields();
-
     uint64_t jump_size_words() const;
 
     static constexpr size_t kCountLength{sizeof(uint64_t)};

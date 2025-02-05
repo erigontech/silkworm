@@ -99,13 +99,11 @@ class KVSegmentFileReader {
 
     Iterator seek(
         uint64_t offset,
-        std::optional<Hash> hash_prefix,
+        std::optional<ByteView> check_prefix,
         std::shared_ptr<Decoder> key_decoder,
         std::shared_ptr<Decoder> value_decoder) const;
 
   private:
-    seg::Decompressor::Iterator seek_decompressor(uint64_t offset, std::optional<Hash> hash_prefix) const;
-
     //! The path of the segment file for this snapshot
     SnapshotPath path_;
 
@@ -177,12 +175,12 @@ class KVSegmentReader {
         return Iterator{reader_.end()};
     }
 
-    Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
-        return Iterator{reader_.seek(offset, hash_prefix, std::make_shared<TKeyDecoder>(), std::make_shared<TValueDecoder>())};
+    Iterator seek(uint64_t offset) const {
+        return Iterator{reader_.seek(offset, std::nullopt, std::make_shared<TKeyDecoder>(), std::make_shared<TValueDecoder>())};
     }
 
-    std::optional<typename Iterator::value_type_owned> seek_one(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
-        auto it = seek(offset, hash_prefix);
+    std::optional<typename Iterator::value_type_owned> seek_one(uint64_t offset) const {
+        auto it = seek(offset);
         return (it != end()) ? std::optional{it.move_value()} : std::nullopt;
     }
 
@@ -248,12 +246,12 @@ class KVSegmentKeysReader {
         return Iterator{reader_.end()};
     }
 
-    Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
-        return Iterator{reader_.seek(offset, hash_prefix, std::make_shared<TKeyDecoder>(), {})};
+    Iterator seek(uint64_t offset) const {
+        return Iterator{reader_.seek(offset, std::nullopt, std::make_shared<TKeyDecoder>(), {})};
     }
 
-    std::optional<typename Iterator::value_type> seek_one(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
-        auto it = seek(offset, hash_prefix);
+    std::optional<typename Iterator::value_type> seek_one(uint64_t offset) const {
+        auto it = seek(offset);
         return (it != end()) ? std::optional{std::move(*it)} : std::nullopt;
     }
 
@@ -319,12 +317,12 @@ class KVSegmentValuesReader {
         return Iterator{reader_.end()};
     }
 
-    Iterator seek(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
-        return Iterator{reader_.seek(offset, hash_prefix, {}, std::make_shared<TValueDecoder>())};
+    Iterator seek(uint64_t offset) const {
+        return Iterator{reader_.seek(offset, std::nullopt, {}, std::make_shared<TValueDecoder>())};
     }
 
-    std::optional<typename Iterator::value_type> seek_one(uint64_t offset, std::optional<Hash> hash_prefix = std::nullopt) const {
-        auto it = seek(offset, hash_prefix);
+    std::optional<typename Iterator::value_type> seek_one(uint64_t offset) const {
+        auto it = seek(offset);
         return (it != end()) ? std::optional{std::move(*it)} : std::nullopt;
     }
 

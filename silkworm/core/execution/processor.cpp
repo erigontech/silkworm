@@ -148,7 +148,9 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         .value = txn.value,
         // access_list
         // blob_hashes
-        .chain_id = static_cast<uint64_t>(txn.chain_id.value_or(0)),
+        // TODO: This should be corrected in the evmone APIv2,
+        //   because it uses transaction's chain id for CHAINID instruction.
+        .chain_id = evm().config().chain_id,
         .nonce = txn.nonce};
     for (const auto& [account, storage_keys] : txn.access_list)
         evm1_txn.access_list.emplace_back(account, storage_keys);
@@ -264,10 +266,6 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
 
     SILKWORM_ASSERT(protocol::validate_call_precheck(txn, evm_) == ValidationResult::kOk);
 
-    if (!evm().bailout) {
-        SILKWORM_ASSERT(protocol::validate_call_funds(txn, evm_, state_.get_balance(*txn.sender())) == ValidationResult::kOk);
-    }
-
     const BlockHeader& header{evm_.block().header};
     const intx::uint256 base_fee_per_gas{header.base_fee_per_gas.value_or(0)};
 
@@ -284,10 +282,15 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
         state_.set_nonce(*sender, state_.get_nonce(*txn.sender()) + 1);
     }
 
-    if (!evm().bailout) {
-        const intx::uint256 required_funds = protocol::compute_call_cost(txn, effective_gas_price, evm_);
-        state_.subtract_from_balance(*txn.sender(), required_funds);
+    intx::uint256 required_funds = protocol::compute_call_cost(txn, effective_gas_price, evm_);
+    if (evm().bailout) {
+        // If the bailout option is on, add the required funds to the sender's balance
+        // so that after the transaction costs are deducted, the sender's balance is unchanged.
+        state_.add_to_balance(*txn.sender(), required_funds);
     }
+
+    SILKWORM_ASSERT(protocol::validate_call_funds(txn, evm_, state_.get_balance(*txn.sender()), evm().bailout) == ValidationResult::kOk);
+    state_.subtract_from_balance(*txn.sender(), required_funds);
     const intx::uint128 g0{protocol::intrinsic_gas(txn, evm_.revision())};
     const auto result = evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
 

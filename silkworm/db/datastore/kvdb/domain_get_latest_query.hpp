@@ -45,16 +45,24 @@ struct DomainGetLatestQuery {
         key_encoder.value.timestamp.value = Step{std::numeric_limits<decltype(Step::value)>::max()};
         Slice key_slice = key_encoder.encode();
 
-        auto result = tx.ro_cursor(entity.values_table)->lower_bound(key_slice, false);
-        if (!result) return std::nullopt;
+        auto db_cursor = tx.ro_cursor(entity.values_table);
+        auto result = entity.has_large_values ? db_cursor->lower_bound(key_slice, false) : db_cursor->find(key_slice, false);
+
+        if (!result) {
+            return std::nullopt;
+        }
 
         DomainKeyDecoder<RawDecoder<ByteView>> key_decoder{entity.has_large_values};
         key_decoder.decode(result.key);
-        if (key_decoder.value.key.value != from_slice(key_slice)) return std::nullopt;
+        if (key_decoder.value.key.value != from_slice(key_slice)) {
+            return std::nullopt;
+        }
 
         DomainValueDecoder<RawDecoder<ByteView>> empty_value_decoder{entity.has_large_values};
         empty_value_decoder.decode(result.value);
-        if (empty_value_decoder.value.value.value.empty()) return std::nullopt;
+        if (empty_value_decoder.value.value.value.empty()) {
+            return std::nullopt;
+        }
 
         DomainValueDecoder<TValueDecoder> value_decoder{entity.has_large_values};
         value_decoder.decode(result.value);

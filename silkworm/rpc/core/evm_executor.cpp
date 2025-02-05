@@ -240,7 +240,7 @@ ExecutionResult EVMExecutor::call(
 
     const auto owned_funds = execution_processor_.intra_block_state().get_balance(*txn.sender());
 
-    if (const auto result = protocol::validate_call_funds(txn, evm, owned_funds);
+    if (const auto result = protocol::validate_call_funds(txn, evm, owned_funds, bailout);
         !bailout && result != ValidationResult::kOk) {
         return convert_validated_funds(block, txn, evm, owned_funds);
     }

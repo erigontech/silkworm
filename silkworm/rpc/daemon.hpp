@@ -68,7 +68,8 @@ class Daemon {
 
     void add_private_services();
     void add_shared_services();
-    std::unique_ptr<db::kv::api::Client> make_kv_client(rpc::ClientContext& context);
+
+    std::unique_ptr<db::kv::api::Client> make_kv_client(rpc::ClientContext& context, bool remote);
 
     //! The RPC daemon configuration settings.
     DaemonSettings settings_;
@@ -87,6 +88,9 @@ class Daemon {
 
     //! The JSON RPC API services.
     std::vector<std::unique_ptr<http::Server>> rpc_services_;
+
+    //! The KV client supporting the state changes stream.
+    std::unique_ptr<db::kv::api::Client> state_changes_client_;
 
     //! The stream handling StateChanges server-streaming RPC.
     std::unique_ptr<db::kv::StateChangesStream> state_changes_stream_;

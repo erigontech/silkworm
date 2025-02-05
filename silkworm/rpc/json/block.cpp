@@ -104,7 +104,6 @@ struct GlazeJsonBlock {
     std::optional<std::string> blob_gas_used;
     std::optional<std::string> excess_blob_gas;
     std::optional<std::string> parent_beacon_block_root;
-    std::optional<std::string> total_difficulty;
     std::optional<std::string> requests_hash;
 
     struct glaze {
@@ -129,7 +128,6 @@ struct GlazeJsonBlock {
             "parentBeaconBlockRoot", &T::parent_beacon_block_root,
             "timestamp", &T::timestamp,
             "difficulty", &T::difficulty,
-            "totalDifficulty", &T::total_difficulty,
             "mixHash", &T::mix_hash,
             "extraData", &T::extra_data,
             "baseFeePerGas", &T::base_fee_per_gas,
@@ -216,9 +214,7 @@ void make_glaze_json_content(const nlohmann::json& request_json, const Block& b,
     to_quantity(std::span(result.gas_limit), header.gas_limit);
     to_quantity(std::span(result.gas_used), header.gas_used);
     to_quantity(std::span(result.difficulty), header.difficulty);
-    if (b.total_difficulty) {
-        result.total_difficulty = std::make_optional(to_quantity(*(b.total_difficulty)));
-    }
+
     to_hex(std::span(result.mix_hash), header.prev_randao.bytes);
     to_hex(std::span(result.extra_data), header.extra_data);
 

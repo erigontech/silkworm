@@ -169,7 +169,7 @@ int Daemon::run(const DaemonSettings& settings) {
         boost::asio::signal_set shutdown_signal{shutdown_signal_ioc, SIGINT, SIGTERM};
         shutdown_signal.async_wait([&](const boost::system::error_code& error, int signal_number) {
             if (signal_number == SIGINT) std::cout << "\n";
-            SILK_INFO << "Signal number: " << signal_number << " caught, error: " << error.message();
+            SILK_INFO << "Signal number: " << signal_number << " caught" << (error ? ", error: " + error.message() : "");
             rpc_daemon.stop();
         });
 
@@ -234,8 +234,9 @@ Daemon::Daemon(
 
     // Create the unique KV state-changes stream feeding the state cache
     auto& context = context_pool_.next_context();
-    auto* kv_client = must_use_private_service<db::kv::api::Client>(*context.ioc());
-    state_changes_stream_ = std::make_unique<db::kv::StateChangesStream>(context, *kv_client);
+    // TODO(canepat) should be /*remote=*/settings.standalone but we must fix state changes in db::kv::api::DirectClient mode
+    state_changes_client_ = make_kv_client(context, /*remote=*/true);
+    state_changes_stream_ = std::make_unique<db::kv::StateChangesStream>(context, *state_changes_client_);
 
     // Set compatibility with Erigon RpcDaemon at JSON RPC level
     compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
@@ -254,7 +255,7 @@ void Daemon::add_private_services() {
         auto& grpc_context{*context.grpc_context()};
 
         add_private_service<ethbackend::BackEnd>(ioc, std::make_unique<ethbackend::RemoteBackEnd>(grpc_channel, grpc_context));
-        add_private_service<db::kv::api::Client>(ioc, make_kv_client(context));
+        add_private_service<db::kv::api::Client>(ioc, make_kv_client(context, /*remote=*/!settings_.datadir));
         add_private_service(ioc, std::make_unique<txpool::TransactionPool>(grpc_channel, grpc_context));
         add_private_service(ioc, std::make_unique<txpool::Miner>(grpc_channel, grpc_context));
     }
@@ -282,12 +283,12 @@ void Daemon::add_shared_services() {
     }
 }
 
-std::unique_ptr<db::kv::api::Client> Daemon::make_kv_client(rpc::ClientContext& context) {
+std::unique_ptr<db::kv::api::Client> Daemon::make_kv_client(rpc::ClientContext& context, bool remote) {
     auto& ioc = *context.ioc();
     auto& grpc_context = *context.grpc_context();
     auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(ioc)};
     auto* backend{must_use_private_service<rpc::ethbackend::BackEnd>(ioc)};
-    if (settings_.standalone) {
+    if (remote) {
         return std::make_unique<db::kv::grpc::client::RemoteClient>(
             create_channel_, grpc_context, state_cache, ethdb::kv::make_backend_providers(backend));
     }

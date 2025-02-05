@@ -108,17 +108,13 @@ KVSegmentFileReader::Iterator KVSegmentFileReader::end() const {
     return KVSegmentFileReader::Iterator{decompressor_.end(), {}, {}, path()};
 }
 
-seg::Decompressor::Iterator KVSegmentFileReader::seek_decompressor(uint64_t offset, std::optional<Hash> hash_prefix) const {
-    return decompressor_.seek(offset, hash_prefix ? ByteView{hash_prefix->bytes, 1} : ByteView{});
-}
-
 KVSegmentFileReader::Iterator KVSegmentFileReader::seek(
     uint64_t offset,
-    std::optional<Hash> hash_prefix,
+    std::optional<ByteView> check_prefix,
     std::shared_ptr<Decoder> key_decoder,
     std::shared_ptr<Decoder> value_decoder) const {
     SILKWORM_ASSERT(key_decoder || value_decoder);
-    auto it = seek_decompressor(offset, hash_prefix);
+    auto it = decompressor_.seek(offset, check_prefix.value_or(ByteView{}));
     if (it == decompressor_.end()) {
         return end();
     }

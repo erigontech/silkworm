@@ -166,7 +166,10 @@ void EVMExecutor::reset() {
     execution_processor_.reset();
 }
 
-ExecutionResult EVMExecutor::convert_validation_result(const ValidationResult& result, const Block& block, const silkworm::Transaction& txn, const EVM& evm) {
+ExecutionResult EVMExecutor::convert_validation_result(const ValidationResult& result, const silkworm::Transaction& txn) {
+    auto& evm = execution_processor_.evm();
+    auto& block = evm.block();
+
     std::string from = address_to_hex(*txn.sender());
     switch (result) {
         case ValidationResult::kMaxPriorityFeeGreaterThanMax: {
@@ -214,7 +217,6 @@ ExecutionResult EVMExecutor::convert_validation_result(const ValidationResult& r
 }
 
 ExecutionResult EVMExecutor::call(
-    const silkworm::Block& block,
     const silkworm::Transaction& txn,
     const Tracers& tracers,
     bool refund,
@@ -224,7 +226,7 @@ ExecutionResult EVMExecutor::call(
     auto& svc = use_service<AnalysisCacheService>(workers_);
 
     evm.analysis_cache = svc.get_analysis_cache();
-    evm.beneficiary = rule_set_->get_beneficiary(block.header);
+    evm.beneficiary = rule_set_->get_beneficiary(evm.block().header);
     evm.transfer = rule_set_->transfer_func();
     evm.bailout = bailout;
 
@@ -234,7 +236,7 @@ ExecutionResult EVMExecutor::call(
 
     const auto result = execution_processor_.call(txn, tracers, refund);
     if (result.validation_result != ValidationResult::kOk) {
-        return convert_validation_result(result.validation_result, block, txn, evm);
+        return convert_validation_result(result.validation_result, txn);
     }
 
     ExecutionResult exec_result{result.status, result.gas_left, result.data};
@@ -245,16 +247,15 @@ ExecutionResult EVMExecutor::call(
 }
 
 ExecutionResult EVMExecutor::call_with_receipt(
-    const silkworm::Block& block,
     const silkworm::Transaction& txn,
     Receipt& receipt,
     const Tracers& tracers,
     bool refund,
     bool gas_bailout) {
-    SILK_DEBUG << "EVMExecutor::call: blockNumber: " << block.header.number << " gas_limit: " << txn.gas_limit << " refund: " << refund
+    SILK_DEBUG << "EVMExecutor::call: blockNumber: " << execution_processor_.evm().block().header.number << " gas_limit: " << txn.gas_limit << " refund: " << refund
                << " gas_bailout: " << gas_bailout << " transaction: " << rpc::Transaction{txn};
 
-    const auto exec_result = call(block, txn, tracers, refund, gas_bailout);
+    const auto exec_result = call(txn, tracers, refund, gas_bailout);
 
     auto& logs = execution_processor_.intra_block_state().logs();
 
@@ -290,7 +291,7 @@ Task<ExecutionResult> EVMExecutor::call(
     const auto execution_result = co_await async_task(workers.executor(), [&]() -> ExecutionResult {
         auto state = state_factory(this_executor, txn_id, chain_storage);
         EVMExecutor executor{block, config, workers, state};
-        return executor.call(block, txn, tracers, refund, gas_bailout);
+        return executor.call(txn, tracers, refund, gas_bailout);
     });
     co_return execution_result;
 }

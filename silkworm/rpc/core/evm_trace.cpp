@@ -1466,7 +1466,7 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 
             tracers.push_back(ibs_tracer);
 
-            auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/false);
+            auto execution_result = executor.call(transaction, tracers, /*refund=*/true, /*gas_bailout=*/false);
             if (execution_result.pre_check_error) {
                 result.pre_check_error = execution_result.pre_check_error.value();
             } else {
@@ -1538,7 +1538,7 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
             }
             tracers.push_back(ibs_tracer);
 
-            auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+            auto execution_result = executor.call(transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
             if (execution_result.pre_check_error) {
                 result.pre_check_error = "first run for txIndex " + std::to_string(index) + " error: " + execution_result.pre_check_error.value();
@@ -1581,7 +1581,7 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
         Tracers tracers{create_tracer};
         for (size_t index = 0; index < transactions.size(); ++index) {
             const silkworm::Transaction& transaction{block.transactions[index]};
-            executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+            executor.call(transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
             executor.reset();
             if (create_tracer->found()) {
                 result.transaction_hash = transaction.hash();
@@ -1645,7 +1645,7 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
         const auto entry_tracer = std::make_shared<trace::EntryTracer>(initial_ibs);
         Tracers tracers{entry_tracer};
         const auto& txn = block.transactions.at(transaction_with_block.transaction.transaction_index);
-        executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
+        executor.call(txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
 
         return entry_tracer->result();
     });
@@ -1674,7 +1674,7 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
         EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         const auto& txn = block.transactions.at(transaction_with_block.transaction.transaction_index);
-        auto execution_result = executor.call(block, txn, {}, /*refund=*/true, /*gas_bailout=*/false);
+        auto execution_result = executor.call(txn, {}, /*refund=*/true, /*gas_bailout=*/false);
 
         std::string result = "0x";
         if (execution_result.error_code != evmc_status_code::EVMC_SUCCESS) {
@@ -1707,7 +1707,7 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
         auto entry_tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
         Tracers tracers{entry_tracer};
         const auto& txn = block.transactions.at(transaction_with_block.transaction.transaction_index);
-        executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
+        executor.call(txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
         return entry_tracer->result();
     });
 
@@ -1738,7 +1738,7 @@ Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& b
             auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
             Tracers tracers{tracer};
             const auto& txn = block.transactions.at(i);
-            executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
+            executor.call(txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
 
             if (tracer->found()) {
                 const BlockDetails block_details{block_size, hash, block.header, block.transactions.size(), block.ommers};
@@ -1850,7 +1850,7 @@ Task<TraceCallResult> TraceCallExecutor::execute(
         if (index != -1) {
             traces.transaction_hash = transaction.hash();  // to have same behaviour as erigon, should be done PR on erigon
         }
-        const auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, gas_bailout);
+        const auto execution_result = executor.call(transaction, tracers, /*refund=*/true, gas_bailout);
 
         if (execution_result.pre_check_error) {
             result.pre_check_error = execution_result.pre_check_error.value();

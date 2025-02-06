@@ -36,7 +36,7 @@ class MockEstimateGasOracle : public EstimateGasOracle {
                                    const silkworm::ChainConfig& config, WorkerPool& workers, db::kv::api::Transaction& tx, const ChainStorage& storage)
         : EstimateGasOracle(block_header_provider, account_reader, config, workers, tx, storage) {}
 
-    MOCK_METHOD((ExecutionResult), try_execution, (EVMExecutor&, const silkworm::Block&, const silkworm::Transaction&), (override));
+    MOCK_METHOD((ExecutionResult), try_execution, (EVMExecutor&, const silkworm::Transaction&), (override));
 };
 
 }  // namespace silkworm::rpc

@@ -192,7 +192,6 @@ ExecutionResult EVMExecutor::convert_validation_result(const ValidationResult& r
             std::string error = "eip-1559 transactions require london";
             return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kIsNotLondon};
         }
-
         case ValidationResult::kInsufficientFunds: {
             auto owned_funds = execution_processor_.intra_block_state().get_balance(*txn.sender());
             const intx::uint256 base_fee_per_gas{block.header.base_fee_per_gas.value_or(0)};
@@ -207,7 +206,6 @@ ExecutionResult EVMExecutor::convert_validation_result(const ValidationResult& r
             std::string error = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(owned_funds) + " want " + intx::to_string(maximum_cost + txn.value);
             return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kInsufficientFunds};
         }
-
         default: {
             std::string error = "internal failure";
             return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kInternalError};

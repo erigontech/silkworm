@@ -26,9 +26,16 @@ namespace silkworm::rpc::commands {
 
 // https://eth.wiki/json-rpc/API#net_listening
 Task<void> NetRpcApi::handle_net_listening(const nlohmann::json& request, nlohmann::json& reply) {
-    reply = make_json_content(request, true);
-    // TODO(canepat): needs integration in Erigon EthBackEnd (accumulate listening from multiple sentries)
-    co_return;
+    try {
+        const auto peer_count = co_await backend_->net_peer_count();
+        reply = make_json_content(request, peer_count > 0);
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_content(request, false);
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_content(request, false);
+    }
 }
 
 // https://eth.wiki/json-rpc/API#net_peercount

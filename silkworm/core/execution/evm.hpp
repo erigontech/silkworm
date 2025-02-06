@@ -31,6 +31,7 @@
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/common/object_pool.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/core/types/block.hpp>
 
@@ -39,6 +40,7 @@
 namespace silkworm {
 
 struct CallResult {
+    ValidationResult validation_result{ValidationResult::kOk};
     evmc_status_code status{EVMC_SUCCESS};
     uint64_t gas_left{0};
     uint64_t gas_refund{0};

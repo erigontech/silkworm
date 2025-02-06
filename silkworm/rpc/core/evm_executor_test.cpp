@@ -111,7 +111,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
 
     SECTION("failed if transaction cost greater user amount") {
         auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
-        EXPECT_CALL(transaction, get_as_of(_)).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
+        EXPECT_CALL(transaction, get_as_of(_)).WillRepeatedly(Invoke([=](Unused) -> Task<db::kv::api::GetAsOfResult> {
             db::kv::api::GetAsOfResult response{
                 .success = true,
                 .value = Bytes{}};

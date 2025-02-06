@@ -264,7 +264,10 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
     const std::optional<evmc::address> sender{txn.sender()};
     SILKWORM_ASSERT(sender);
 
-    SILKWORM_ASSERT(protocol::validate_call_precheck(txn, evm_) == ValidationResult::kOk);
+    ValidationResult validation_result = protocol::validate_call_precheck(txn, evm_);
+    if (validation_result != ValidationResult::kOk) {
+        return {validation_result, EVMC_SUCCESS, 0, {}, {}};
+    }
 
     const BlockHeader& header{evm_.block().header};
     const intx::uint256 base_fee_per_gas{header.base_fee_per_gas.value_or(0)};
@@ -289,7 +292,10 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
         state_.add_to_balance(*txn.sender(), required_funds);
     }
 
-    SILKWORM_ASSERT(protocol::validate_call_funds(txn, evm_, state_.get_balance(*txn.sender()), evm().bailout) == ValidationResult::kOk);
+    validation_result = protocol::validate_call_funds(txn, evm_, state_.get_balance(*txn.sender()), evm().bailout);
+    if (validation_result != ValidationResult::kOk) {
+        return {validation_result, EVMC_SUCCESS, 0, {}, {}};
+    }
     state_.subtract_from_balance(*txn.sender(), required_funds);
     const intx::uint128 g0{protocol::intrinsic_gas(txn, evm_.revision())};
     const auto result = evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
@@ -315,7 +321,7 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
 
     evm_.remove_tracers();
 
-    return {result.status, gas_left, gas_used, result.data, result.error_message};
+    return {ValidationResult::kOk, result.status, gas_left, gas_used, result.data, result.error_message};
 }
 
 void ExecutionProcessor::reset() {

@@ -132,6 +132,8 @@ class EVMExecutor {
     void reset();
 
   private:
+    ExecutionResult convert_validation_result(const ValidationResult& result, const Block& block, const silkworm::Transaction& txn, const EVM& evm);
+
     const silkworm::ChainConfig& config_;
     WorkerPool& workers_;
     std::shared_ptr<State> state_;

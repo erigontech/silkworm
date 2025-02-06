@@ -166,7 +166,7 @@ void EVMExecutor::reset() {
     execution_processor_.reset();
 }
 
-ExecutionResult convert_validated_precheck(const ValidationResult& result, const Block& block, const silkworm::Transaction& txn, const EVM& evm) {
+ExecutionResult EVMExecutor::convert_validation_result(const ValidationResult& result, const Block& block, const silkworm::Transaction& txn, const EVM& evm) {
     std::string from = address_to_hex(*txn.sender());
     switch (result) {
         case ValidationResult::kMaxPriorityFeeGreaterThanMax: {
@@ -192,26 +192,25 @@ ExecutionResult convert_validated_precheck(const ValidationResult& result, const
             std::string error = "eip-1559 transactions require london";
             return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kIsNotLondon};
         }
+        case ValidationResult::kInsufficientFunds: {
+            auto owned_funds = execution_processor_.intra_block_state().get_balance(*txn.sender());
+            const intx::uint256 base_fee_per_gas{block.header.base_fee_per_gas.value_or(0)};
+
+            const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
+                                                                                            : txn.max_priority_fee_per_gas};
+            const auto required_funds = protocol::compute_call_cost(txn, effective_gas_price, evm);
+            intx::uint512 maximum_cost = required_funds;
+            if (txn.type != TransactionType::kLegacy && txn.type != TransactionType::kAccessList) {
+                maximum_cost = txn.maximum_gas_cost();
+            }
+            std::string error = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(owned_funds) + " want " + intx::to_string(maximum_cost + txn.value);
+            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kInsufficientFunds};
+        }
         default: {
             std::string error = "internal failure";
             return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kInternalError};
         }
     }
-}
-
-ExecutionResult convert_validated_funds(const Block& block, const silkworm::Transaction& txn, const EVM& evm, const intx::uint256& owned_funds) {
-    std::string from = address_to_hex(*txn.sender());
-    const intx::uint256 base_fee_per_gas{block.header.base_fee_per_gas.value_or(0)};
-
-    const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
-                                                                                    : txn.max_priority_fee_per_gas};
-    const auto required_funds = protocol::compute_call_cost(txn, effective_gas_price, evm);
-    intx::uint512 maximum_cost = required_funds;
-    if (txn.type != TransactionType::kLegacy && txn.type != TransactionType::kAccessList) {
-        maximum_cost = txn.maximum_gas_cost();
-    }
-    std::string error = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(owned_funds) + " want " + intx::to_string(maximum_cost + txn.value);
-    return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kInsufficientFunds};
 }
 
 ExecutionResult EVMExecutor::call(
@@ -233,19 +232,10 @@ ExecutionResult EVMExecutor::call(
         return {std::nullopt, txn.gas_limit, Bytes{}, "malformed transaction: cannot recover sender"};
     }
 
-    if (const auto result = protocol::validate_call_precheck(txn, evm);
-        result != ValidationResult::kOk) {
-        return convert_validated_precheck(result, block, txn, evm);
-    }
-
-    const auto owned_funds = execution_processor_.intra_block_state().get_balance(*txn.sender());
-
-    if (const auto result = protocol::validate_call_funds(txn, evm, owned_funds, bailout);
-        !bailout && result != ValidationResult::kOk) {
-        return convert_validated_funds(block, txn, evm, owned_funds);
-    }
-
     const auto result = execution_processor_.call(txn, tracers, refund);
+    if (result.validation_result != ValidationResult::kOk) {
+        return convert_validation_result(result.validation_result, block, txn, evm);
+    }
 
     ExecutionResult exec_result{result.status, result.gas_left, result.data};
 

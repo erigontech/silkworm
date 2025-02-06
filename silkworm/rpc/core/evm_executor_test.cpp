@@ -73,7 +73,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         block.header.number = block_num;
 
         EVMExecutor executor{block, *chain_config_ptr, workers, state};
-        const auto result = executor.call(block, txn, {});
+        const auto result = executor.call(txn, {});
         CHECK(result.error_code == std::nullopt);
         CHECK(result.pre_check_error.value() == "intrinsic gas too low: have 0, want 53000");
     }
@@ -88,7 +88,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
 
         EVMExecutor executor{block, *chain_config_ptr, workers, state};
-        const auto result = executor.call(block, txn, {});
+        const auto result = executor.call(txn, {});
         CHECK(result.error_code == std::nullopt);
         CHECK(result.pre_check_error.value() == "fee cap less than block base fee: address 0xa872626373628737383927236382161739290870, gasFeeCap: 2 baseFee: 7");
     }
@@ -104,7 +104,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         txn.max_priority_fee_per_gas = 0x18;
 
         EVMExecutor executor{block, *chain_config_ptr, workers, state};
-        const auto result = executor.call(block, txn, {});
+        const auto result = executor.call(txn, {});
         CHECK(result.error_code == std::nullopt);
         CHECK(result.pre_check_error.value() == "tip higher than fee cap: address 0xa872626373628737383927236382161739290870, tip: 24 gasFeeCap: 2");
     }
@@ -127,7 +127,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
 
         EVMExecutor executor{block, *chain_config_ptr, workers, state};
-        const auto result = executor.call(block, txn, {});
+        const auto result = executor.call(txn, {});
         CHECK(result.error_code == std::nullopt);
         CHECK(result.pre_check_error.value() == "insufficient funds for gas * price + value: address 0xa872626373628737383927236382161739290870 have 0 want 60000");
     }
@@ -150,7 +150,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         txn.set_sender(0xa872626373628737383927236382161739290870_address);
 
         EVMExecutor executor{block, *chain_config_ptr, workers, state};
-        const auto result = executor.call(block, txn, {}, false, /* gasBailout */ true);
+        const auto result = executor.call(txn, {}, false, /* gasBailout */ true);
         executor.reset();
         CHECK(result.error_code == 0);
     }
@@ -181,7 +181,7 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         txn.access_list = access_list;
 
         EVMExecutor executor{block, *chain_config_ptr, workers, state};
-        const auto result = executor.call(block, txn, {}, true, /* gasBailout */ true);
+        const auto result = executor.call(txn, {}, true, /* gasBailout */ true);
         CHECK(result.error_code == 0);
     }
 

@@ -93,7 +93,7 @@ class EstimateGasOracle {
     Task<intx::uint256> estimate_gas(const Call& call, const silkworm::Block& latest_block, std::optional<TxnId> txn_id, std::optional<BlockNum> block_num_for_gas_limit = {});
 
   protected:
-    virtual ExecutionResult try_execution(EVMExecutor& executor, const silkworm::Block& block, const silkworm::Transaction& transaction);
+    virtual ExecutionResult try_execution(EVMExecutor& executor, const silkworm::Transaction& transaction);
 
   private:
     void throw_exception(ExecutionResult& result);

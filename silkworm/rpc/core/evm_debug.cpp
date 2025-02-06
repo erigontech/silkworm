@@ -480,7 +480,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
             stream.open_array();
 
             Tracers tracers{debug_tracer};
-            const auto execution_result = executor.call(block, txn, tracers, refunds);
+            const auto execution_result = executor.call(txn, tracers, refunds);
 
             debug_tracer->flush_logs();
             stream.close_array();
@@ -550,7 +550,7 @@ Task<void> DebugExecutor::execute(
 
         bool refunds = !config_.no_refunds;
         Tracers tracers{debug_tracer};
-        const auto execution_result = executor.call(block, transaction, tracers, refunds);
+        const auto execution_result = executor.call(transaction, tracers, refunds);
 
         debug_tracer->flush_logs();
         stream.close_array();
@@ -642,7 +642,7 @@ Task<void> DebugExecutor::execute(
                 auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
                 Tracers tracers{debug_tracer};
 
-                const auto execution_result = executor.call(block_context.block_with_hash->block, txn, tracers, refunds);
+                const auto execution_result = executor.call(txn, tracers, refunds);
 
                 debug_tracer->flush_logs();
                 stream.close_array();

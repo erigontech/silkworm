@@ -85,7 +85,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
         for (const auto& call : bundle.transactions) {
             silkworm::Transaction txn{call.to_transaction()};
 
-            auto call_execution_result = executor.call(block_context.block_with_hash->block, txn);
+            auto call_execution_result = executor.call(txn);
 
             if (call_execution_result.pre_check_error) {
                 result.error = call_execution_result.pre_check_error;

@@ -106,6 +106,10 @@ class Schema {
       public:
         virtual ~EntityDef() = default;
 
+        const KVSegmentDef& kv_segment(datastore::EntityName name) const {
+            return dynamic_cast<KVSegmentDef&>(*file_defs_.at(name));
+        }
+
         SegmentDef& segment(datastore::EntityName name) {
             file_defs_.try_emplace(name, std::make_shared<SegmentDef>());
             return dynamic_cast<SegmentDef&>(*file_defs_.at(name));
@@ -170,6 +174,14 @@ class Schema {
 
     class RepositoryDef {
       public:
+        const DomainDef& domain(datastore::EntityName name) const {
+            return dynamic_cast<DomainDef&>(*entity_defs_.at(name));
+        }
+
+        const EntityDef& inverted_index(datastore::EntityName name) const {
+            return *entity_defs_.at(name);
+        }
+
         EntityDef& default_entity() {
             entity_defs_.try_emplace(kDefaultEntityName, std::make_shared<EntityDef>());
             return *entity_defs_.at(kDefaultEntityName);

@@ -51,10 +51,12 @@ static SnapshotPath parse_snapshot_path(const char* file_path) {
     throw InvalidSnapshotPathException{file_path ? file_path : "<nullptr>"};
 }
 
-static snapshots::SnapshotBundleEntityData build_inverted_index_entity_data(const SilkwormInvertedIndexSnapshot& snapshot) {
+static snapshots::SnapshotBundleEntityData build_inverted_index_entity_data(const SilkwormInvertedIndexSnapshot& snapshot,
+                                                                            const Schema::EntityDef& entity_def) {
     const auto ii_segment_path = parse_snapshot_path(snapshot.segment.file_path);
 
-    segment::KVSegmentFileReader ii_segment{ii_segment_path, seg::CompressionKind::kNone, make_region(snapshot.segment)};
+    const auto compression_kind = entity_def.kv_segment(Schema::kInvIdxKVSegmentName).compression_kind();
+    segment::KVSegmentFileReader ii_segment{ii_segment_path, compression_kind, make_region(snapshot.segment)};
     const auto ii_accessor_index_path = parse_snapshot_path(snapshot.accessor_index.file_path);
 
     rec_split::AccessorIndex ii_accessor_index{ii_accessor_index_path, make_region(snapshot.accessor_index)};
@@ -65,11 +67,15 @@ static snapshots::SnapshotBundleEntityData build_inverted_index_entity_data(cons
     return data;
 }
 
-static snapshots::SnapshotBundleEntityData build_domain_entity_data(const SilkwormDomainSnapshot& snapshot, uint32_t salt) {
+static snapshots::SnapshotBundleEntityData build_domain_entity_data(const SilkwormDomainSnapshot& snapshot,
+                                                                    const Schema::RepositoryDef& schema,
+                                                                    datastore::EntityName name,
+                                                                    uint32_t salt) {
     // Domain snapshot files
     const auto d_segment_path = parse_snapshot_path(snapshot.segment.file_path);
 
-    segment::KVSegmentFileReader d_segment{d_segment_path, seg::CompressionKind::kAll, make_region(snapshot.segment)};
+    const auto compression_kind = schema.domain(name).kv_segment(Schema::kDomainKVSegmentName).compression_kind();
+    segment::KVSegmentFileReader d_segment{d_segment_path, compression_kind, make_region(snapshot.segment)};
     const auto d_existence_index_path = parse_snapshot_path(snapshot.existence_index.file_path);
 
     bloom_filter::BloomFilter d_existence_index{d_existence_index_path.path(), bloom_filter::BloomFilterKeyHasher{salt}};
@@ -94,7 +100,7 @@ static snapshots::SnapshotBundleEntityData build_domain_entity_data(const Silkwo
         auto h_accessor_index_path = parse_snapshot_path(snapshot.history.accessor_index.file_path);
         h_accessor_index = rec_split::AccessorIndex{std::move(h_accessor_index_path), make_region(snapshot.history.accessor_index)};
 
-        auto ii_bundle_entity_data = build_inverted_index_entity_data(snapshot.history.inverted_index);
+        auto ii_bundle_entity_data = build_inverted_index_entity_data(snapshot.history.inverted_index, schema.inverted_index(name));
         h_inverted_index_bundle_data = std::move(ii_bundle_entity_data);
     }
 
@@ -116,16 +122,16 @@ static snapshots::SnapshotBundleEntityData build_domain_entity_data(const Silkwo
     return data;
 }
 
-static snapshots::SnapshotBundle build_state_snapshot(const SilkwormStateSnapshot* snapshot, uint32_t salt) {
-    auto accounts_bundle_entity_data = build_domain_entity_data(snapshot->accounts, salt);
-    auto storage_bundle_entity_data = build_domain_entity_data(snapshot->storage, salt);
-    auto code_bundle_entity_data = build_domain_entity_data(snapshot->code, salt);
-    auto commitment_bundle_entity_data = build_domain_entity_data(snapshot->commitment, salt);
-    auto receipt_bundle_entity_data = build_domain_entity_data(snapshot->receipts, salt);
-    auto log_address_bundle_entity_data = build_inverted_index_entity_data(snapshot->log_addresses);
-    auto log_topic_bundle_entity_data = build_inverted_index_entity_data(snapshot->log_topics);
-    auto trace_from_bundle_entity_data = build_inverted_index_entity_data(snapshot->traces_from);
-    auto trace_to_bundle_entity_data = build_inverted_index_entity_data(snapshot->traces_to);
+static snapshots::SnapshotBundle build_state_snapshot(const SilkwormStateSnapshot* snapshot, const Schema::RepositoryDef& schema, uint32_t salt) {
+    auto accounts_bundle_entity_data = build_domain_entity_data(snapshot->accounts, schema, db::state::kDomainNameAccounts, salt);
+    auto storage_bundle_entity_data = build_domain_entity_data(snapshot->storage, schema, db::state::kDomainNameStorage, salt);
+    auto code_bundle_entity_data = build_domain_entity_data(snapshot->code, schema, db::state::kDomainNameCode, salt);
+    auto commitment_bundle_entity_data = build_domain_entity_data(snapshot->commitment, schema, db::state::kDomainNameCommitment, salt);
+    auto receipt_bundle_entity_data = build_domain_entity_data(snapshot->receipts, schema, db::state::kDomainNameReceipts, salt);
+    auto log_address_bundle_entity_data = build_inverted_index_entity_data(snapshot->log_addresses, schema.inverted_index(db::state::kInvIdxNameLogAddress));
+    auto log_topic_bundle_entity_data = build_inverted_index_entity_data(snapshot->log_topics, schema.inverted_index(db::state::kInvIdxNameLogTopics));
+    auto trace_from_bundle_entity_data = build_inverted_index_entity_data(snapshot->traces_from, schema.inverted_index(db::state::kInvIdxNameTracesFrom));
+    auto trace_to_bundle_entity_data = build_inverted_index_entity_data(snapshot->traces_to, schema.inverted_index(db::state::kInvIdxNameTracesTo));
 
     // We *must* extract the step range (value type) here before moving accounts_bundle_entity_data
     const auto& segment_file_reader = accounts_bundle_entity_data.kv_segments.at(Schema::kDomainKVSegmentName);
@@ -320,8 +326,9 @@ SILKWORM_EXPORT int silkworm_add_state_snapshot(SilkwormHandle handle, const Sil
         if (!handle->state_repository->index_salt()) {
             return SILKWORM_INTERNAL_ERROR;
         }
-
-        auto snapshot_bundle = build_state_snapshot(snapshot, *handle->state_repository->index_salt());
+        const auto state_repo_index_salt = *handle->state_repository->index_salt();
+        const auto& state_repo_def = handle->state_repository->schema();
+        auto snapshot_bundle = build_state_snapshot(snapshot, state_repo_def, state_repo_index_salt);
         handle->state_repository->add_snapshot_bundle(std::move(snapshot_bundle));
 
         return SILKWORM_OK;

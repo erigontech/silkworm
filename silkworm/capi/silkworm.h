@@ -182,7 +182,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
  * \param[in] snapshot A snapshot to use.
  * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
  */
-SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, struct SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT;
+SILKWORM_EXPORT int silkworm_add_blocks_snapshot(SilkwormHandle handle, struct SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT;
 
 /**
  * \brief Notify Silkworm about a new *state* snapshot to use.

@@ -306,9 +306,9 @@ int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, const 
         }
     });
     for (auto& chain_snapshot : all_chain_snapshots) {
-        const int add_snapshot_status_code{silkworm_add_snapshot(handle, &chain_snapshot)};
+        const int add_snapshot_status_code{silkworm_add_blocks_snapshot(handle, &chain_snapshot)};
         if (add_snapshot_status_code != SILKWORM_OK) {
-            SILK_ERROR << "silkworm_add_snapshot failed [code=" << std::to_string(add_snapshot_status_code) << "]";
+            SILK_ERROR << "silkworm_add_blocks_snapshot failed [code=" << std::to_string(add_snapshot_status_code) << "]";
             return add_snapshot_status_code;
         }
     }

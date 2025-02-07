@@ -352,7 +352,7 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
     return SILKWORM_OK;
 }
 
-SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_add_blocks_snapshot(SilkwormHandle handle, SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT {
     if (!handle || !handle->blocks_repository) {
         return SILKWORM_INVALID_HANDLE;
     }

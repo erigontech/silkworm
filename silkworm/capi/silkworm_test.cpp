@@ -185,8 +185,8 @@ struct SilkwormLibrary {
         return silkworm_execute_txn(handle_, txn, block_num, head_hash_bytes, txn_index, txn_id, nullptr, nullptr);
     }
 
-    int add_snapshot(SilkwormChainSnapshot* snapshot) const {
-        return silkworm_add_snapshot(handle_, snapshot);
+    int add_blocks_snapshot(SilkwormChainSnapshot* snapshot) const {
+        return silkworm_add_blocks_snapshot(handle_, snapshot);
     }
 
     int add_state_snapshot(SilkwormStateSnapshot* snapshot) const {
@@ -820,7 +820,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     CHECK(result0.execute_block_result == SILKWORM_INTERNAL_ERROR);
 }
 
-TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[capi]") {
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_blocks_snapshot", "[capi]") {
     snapshot_test::SampleHeaderSnapshotFile header_segment_file{tmp_dir.path()};
     auto& header_segment_path = header_segment_file.path();
     snapshot_test::SampleBodySnapshotFile body_segment_file{tmp_dir.path()};
@@ -903,7 +903,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[capi]") {
         // We purposely do not call silkworm_init to provide a null handle
         SilkwormHandle handle{nullptr};
         SilkwormChainSnapshot snapshot{valid_shs, valid_sbs, valid_sts};
-        CHECK(silkworm_add_snapshot(handle, &snapshot) == SILKWORM_INVALID_HANDLE);
+        CHECK(silkworm_add_blocks_snapshot(handle, &snapshot) == SILKWORM_INVALID_HANDLE);
     }
 
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
@@ -913,59 +913,59 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_snapshot", "[capi]") {
         SilkwormHeadersSnapshot invalid_shs{valid_shs};
         invalid_shs.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
         SilkwormChainSnapshot snapshot{invalid_shs, valid_sbs, valid_sts};
-        const int result{silkworm_lib.add_snapshot(&snapshot)};
+        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid header index path") {
         SilkwormHeadersSnapshot invalid_shs{valid_shs};
         invalid_shs.header_hash_index.file_path = nullptr;  // as if left unassigned, i.e. empty
         SilkwormChainSnapshot snapshot{invalid_shs, valid_sbs, valid_sts};
-        const int result{silkworm_lib.add_snapshot(&snapshot)};
+        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid body segment path") {
         SilkwormBodiesSnapshot invalid_sbs{valid_sbs};
         invalid_sbs.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
         SilkwormChainSnapshot snapshot{valid_shs, invalid_sbs, valid_sts};
-        const int result{silkworm_lib.add_snapshot(&snapshot)};
+        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid body index path") {
         SilkwormBodiesSnapshot invalid_sbs{valid_sbs};
         invalid_sbs.block_num_index.file_path = nullptr;  // as if left unassigned, i.e. empty
         SilkwormChainSnapshot snapshot{valid_shs, invalid_sbs, valid_sts};
-        const int result{silkworm_lib.add_snapshot(&snapshot)};
+        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid transaction segment path") {
         SilkwormTransactionsSnapshot invalid_sts{valid_sts};
         invalid_sts.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
         SilkwormChainSnapshot snapshot{valid_shs, valid_sbs, invalid_sts};
-        const int result{silkworm_lib.add_snapshot(&snapshot)};
+        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid transaction hash index path") {
         SilkwormTransactionsSnapshot invalid_sts{valid_sts};
         invalid_sts.tx_hash_index.file_path = nullptr;  // as if left unassigned, i.e. empty
         SilkwormChainSnapshot snapshot{valid_shs, valid_sbs, invalid_sts};
-        const int result{silkworm_lib.add_snapshot(&snapshot)};
+        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid transaction hash2block index path") {
         SilkwormTransactionsSnapshot invalid_sts{valid_sts};
         invalid_sts.tx_hash_2_block_index.file_path = nullptr;  // as if left unassigned, i.e. empty
         SilkwormChainSnapshot snapshot{valid_shs, valid_sbs, invalid_sts};
-        const int result{silkworm_lib.add_snapshot(&snapshot)};
+        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid empty chain snapshot") {
         SilkwormChainSnapshot snapshot{};
-        const int result{silkworm_lib.add_snapshot(&snapshot)};
+        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("valid") {
         SilkwormChainSnapshot snapshot{valid_shs, valid_sbs, valid_sts};
-        const int result{silkworm_lib.add_snapshot(&snapshot)};
+        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
         CHECK(result == SILKWORM_OK);
     }
 }

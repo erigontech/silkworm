@@ -1012,21 +1012,26 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_state_snapshot", "[capi]") {
         .has_history = false,
     };
 
-    // const snapshot_test::SampleAccountsDomainEFFile accounts_ef_file{tmp_dir.path()};
-    // const auto& accounts_ef_path = accounts_ef_file.path();
+    const snapshot_test::SampleAccountsDomainEFFile accounts_ef_file{tmp_dir.path()};
+    const auto& accounts_ef_path = accounts_ef_file.path();
+    segment::KVSegmentFileReader accounts_ef_segment{accounts_ef_path, seg::CompressionKind::kNone};
+    const snapshot_test::SampleAccountsDomainEFIFile accounts_efi_file{tmp_dir.path()};
+    const auto& accounts_efi_path = accounts_efi_file.path();
+    snapshots::rec_split::AccessorIndex accounts_ef_idx{accounts_efi_path};
 
-    // const auto accounts_ef_path_string{accounts_ef_path.path().string()};
+    const auto accounts_ef_path_string{accounts_ef_path.path().string()};
+    const auto accounts_efi_path_string{accounts_efi_path.path().string()};
 
     SilkwormInvertedIndexSnapshot sample_index_snapshot{
         .segment = SilkwormMemoryMappedFile{
-            //.file_path = accounts_ef_path_string.c_str(),
-            //.memory_address = accounts_segment.memory_file_region().data(),
-            //.memory_length = accounts_segment.memory_file_region().size(),
+            .file_path = accounts_ef_path_string.c_str(),
+            .memory_address = accounts_ef_segment.memory_file_region().data(),
+            .memory_length = accounts_ef_segment.memory_file_region().size(),
         },
         .accessor_index = SilkwormMemoryMappedFile{
-            //.file_path = accounts_efi_path_string.c_str(),
-            //.memory_address = accounts_segment.memory_file_region().data(),
-            //.memory_length = accounts_segment.memory_file_region().size(),
+            .file_path = accounts_efi_path_string.c_str(),
+            .memory_address = accounts_ef_idx.memory_file_region().data(),
+            .memory_length = accounts_ef_idx.memory_file_region().size(),
         },
     };
 
@@ -1090,10 +1095,10 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_state_snapshot", "[capi]") {
         const int result{silkworm_lib.add_state_snapshot(&invalid_sss)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
-    /*SECTION("valid") {
+    SECTION("valid") {
         const int result = silkworm_lib.add_state_snapshot(&valid_sss);
         CHECK(result == SILKWORM_OK);
-    }*/
+    }
 }
 
 static SilkwormRpcSettings make_rpc_settings_for_test(uint16_t api_listening_port) {

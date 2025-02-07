@@ -376,20 +376,6 @@ class SampleTransactionSnapshotFile : public TemporarySnapshotFile {
               "03") {}
 };
 
-//! Empty Accounts KV segment file
-class EmptyAccountsDomainSegmentFile : public TemporarySnapshotFile {
-  public:
-    //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
-    EmptyAccountsDomainSegmentFile(const std::filesystem::path& tmp_dir, std::string_view hex)
-        : TemporarySnapshotFile{tmp_dir, "v1-accounts.0-1024.kv", *from_hex(hex)} {}
-
-    //! This ctor captures the correct sample snapshot content once for all
-    explicit EmptyAccountsDomainSegmentFile(const std::filesystem::path& tmp_dir)
-        : EmptyAccountsDomainSegmentFile(
-              tmp_dir,
-              "0000000000000000000000000000000000000000000000000000000000000000") {}
-};
-
 //! Sample Accounts KV segment file generated using Erigon aggregator_test.go:generateKV
 //! with parameters: keySize=52, M=30, valueSize=180, keyCount=10
 class SampleAccountsDomainSegmentFile : public TemporarySnapshotFile {
@@ -487,7 +473,7 @@ class SampleAccountsDomainBTFile : public TemporarySnapshotFile {
               "000000000000") {}
 };
 
-//! Sample Accounts EF file generated using Erigon aggregator_test.go:generateKV
+//! Sample empty Accounts EF file
 class SampleAccountsDomainEFFile : public TemporarySnapshotFile {
   public:
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
@@ -498,7 +484,33 @@ class SampleAccountsDomainEFFile : public TemporarySnapshotFile {
     explicit SampleAccountsDomainEFFile(const std::filesystem::path& tmp_dir)
         : SampleAccountsDomainEFFile(
               tmp_dir,
-              "") {}
+              "0000000000000000000000000000000000000000000000000000000000000000") {}
+};
+
+//! Sample empty Accounts EFI file
+class SampleAccountsDomainEFIFile : public TemporarySnapshotFile {
+  public:
+    //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
+    SampleAccountsDomainEFIFile(const std::filesystem::path& tmp_dir, std::string_view hex)
+        : TemporarySnapshotFile{tmp_dir, "v1-accounts.0-1024.efi", *from_hex(hex)} {}
+
+    //! This ctor captures the correct sample snapshot content once for all
+    explicit SampleAccountsDomainEFIFile(const std::filesystem::path& tmp_dir)
+        : SampleAccountsDomainEFIFile(
+              tmp_dir,
+              "0000000000000000000000000000000000000000000000000000000008000000"
+              "0014"
+              "106393C187CAE21A6453CEC3F7376937643E521DDBD2BE983740C6412F6572CB"
+              "717D47562F1CE4704CD6EB4C63BEFB7C9BFD8C5E18C8DA73082F20E10092A9A3"
+              "2ADA2CE68D21DEFCE33CB4F3E7C6466B3980BE458C509C59C466FD9584828E8C"
+              "45F0AABE1A61EDE6F6E7B8B33AD9B98D4EF95E25F4B4983D81175195173B92D3"
+              "4E50927D8DD159781EA2099D1FAFAE7F425C8A06FBAAA815CD4216006C74052A"
+              "00"
+              "00000000"
+              "0000000000000000000000000000000000000000000000000000000000000000"
+              "0000000000000000000000000000000000000000000000000000000000000000"
+              "0000000000000000000000000000000000000000000000000000000000000000"
+              "0000000000000000") {}
 };
 
 }  // namespace silkworm::snapshots::test_util

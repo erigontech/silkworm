@@ -236,11 +236,11 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
     auto blocks_repository = db::blocks::make_blocks_repository(
         snapshots_dir_path,
         /* open = */ false,
-        settings->block_index_salt);
+        settings->blocks_repo_index_salt);
     auto state_repository = db::state::make_state_repository(
         snapshots_dir_path,
         /* open = */ false,
-        settings->state_index_salt);
+        settings->state_repo_index_salt);
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
     *handle = new SilkwormInstance{

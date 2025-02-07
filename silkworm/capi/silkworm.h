@@ -154,9 +154,9 @@ struct SilkwormSettings {
     //! libmdbx version string in git describe format.
     char libmdbx_version[SILKWORM_GIT_VERSION_SIZE];
     //! Index salt for block snapshots
-    uint32_t block_index_salt;
+    uint32_t blocks_repo_index_salt;
     //! Index salt for state snapshots
-    uint32_t state_index_salt;
+    uint32_t state_repo_index_salt;
 };
 
 /**

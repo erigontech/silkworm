@@ -47,6 +47,11 @@ void MemoryMutationCursor::bind(ROTxn& txn, const MapConfig& config) {
     memory_cursor_->bind(txn, config);
 }
 
+std::unique_ptr<ROCursor> MemoryMutationCursor::clone() {
+    SILKWORM_ASSERT(false);  // not implemented
+    return {};
+}
+
 ::mdbx::map_handle MemoryMutationCursor::map() const {
     return memory_cursor_->map();
 }

@@ -86,6 +86,9 @@ class ROCursor {
     //! \brief Reuse current cursor binding it to provided transaction and map configuration
     virtual void bind(ROTxn& txn, const MapConfig& config) = 0;
 
+    //! \brief Clone cursor position and state
+    virtual std::unique_ptr<ROCursor> clone() = 0;
+
     //! \brief Returns the size of the underlying table
     virtual size_t size() const = 0;
 
@@ -441,6 +444,8 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
     void bind(::mdbx::txn& txn, const MapConfig& config);
 
     void bind(ROTxn& txn, const MapConfig& config) override { bind(*txn, config); }
+
+    std::unique_ptr<ROCursor> clone() override;
 
     //! \brief Closes cursor causing de-allocation of MDBX_cursor handle
     //! \remarks After this call the cursor is not reusable and the handle does not return to the cache

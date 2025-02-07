@@ -25,6 +25,45 @@
 
 namespace silkworm::datastore::kvdb {
 
+class CursorMoveIterator {
+  public:
+    using value_type = std::shared_ptr<ROCursor>;
+    using iterator_category [[maybe_unused]] = std::input_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using pointer = value_type*;
+    using reference = value_type&;
+
+    CursorMoveIterator() = default;
+
+    CursorMoveIterator(
+        std::shared_ptr<ROCursor> cursor,
+        MoveOperation move_op)
+        : cursor_{std::move(cursor)},
+          move_op_{move_op} {}
+
+    const value_type& operator*() const { return cursor_; }
+    const value_type* operator->() const { return &cursor_; }
+
+    CursorMoveIterator operator++(int) { return std::exchange(*this, ++CursorMoveIterator{*this}); }
+    CursorMoveIterator& operator++() {
+        if (((move_op_ == MoveOperation::get_current) && cursor_->eof()) || !cursor_->move(move_op_, false)) {
+            cursor_.reset();
+        }
+        return *this;
+    }
+
+    friend bool operator!=(const CursorMoveIterator& it, const std::default_sentinel_t&) {
+        return !!it.cursor_;
+    }
+    friend bool operator==(const CursorMoveIterator& it, const std::default_sentinel_t&) {
+        return !it.cursor_;
+    }
+
+  private:
+    std::shared_ptr<ROCursor> cursor_;
+    MoveOperation move_op_{MoveOperation::next};
+};
+
 class CursorIterator {
   public:
     using value_type = std::pair<std::shared_ptr<Decoder>, std::shared_ptr<Decoder>>;

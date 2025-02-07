@@ -39,6 +39,7 @@ bool operator==(const CursorIterator& lhs, const CursorIterator& rhs) {
            ((!lhs.decoders_.first && !lhs.decoders_.second) || (lhs.cursor_ == rhs.cursor_));
 }
 
+static_assert(std::input_iterator<CursorMoveIterator>);
 static_assert(std::input_iterator<CursorIterator>);
 static_assert(std::input_iterator<CursorKVIterator<RawDecoder<Bytes>, RawDecoder<Bytes>>>);
 static_assert(std::input_iterator<CursorKeysIterator<RawDecoder<Bytes>>>);

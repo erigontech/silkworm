@@ -14,16 +14,29 @@
    limitations under the License.
 */
 
-#include "snapshots.hpp"
+#include <tl/expected.hpp>
 
+#include <silkworm/db/blocks/bodies/body_index.hpp>
+#include <silkworm/db/blocks/headers/header_index.hpp>
+#include <silkworm/db/blocks/schema_config.hpp>
+#include <silkworm/db/blocks/transactions/txn_index.hpp>
+#include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_bundle.hpp>
 #include <silkworm/db/state/schema_config.hpp>
+#include <silkworm/infra/common/memory_mapped_file.hpp>
+#include <silkworm/infra/concurrency/thread_pool.hpp>
+
+#include "instance.hpp"
+#include "silkworm.h"
 
 using namespace silkworm;
 using namespace silkworm::db;
 using namespace silkworm::snapshots;
 
-MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
+using SnapshotBundleResult = tl::expected<silkworm::snapshots::SnapshotBundle, int>;
+using SnapshotBundleEntityDataResult = tl::expected<silkworm::snapshots::SnapshotBundleEntityData, int>;
+
+static MemoryMappedRegion make_region(const SilkwormMemoryMappedFile& mmf) {
     return {mmf.memory_address, mmf.memory_length};
 }
 
@@ -32,7 +45,7 @@ static std::optional<SnapshotPath> parse_snapshot_path(const char* file_path) {
     return SnapshotPath::parse(file_path);
 }
 
-SnapshotBundleEntityDataResult build_inverted_index_entity_data(const SilkwormInvertedIndexSnapshot& snapshot) {
+static SnapshotBundleEntityDataResult build_inverted_index_entity_data(const SilkwormInvertedIndexSnapshot& snapshot) {
     const auto ii_segment_path = parse_snapshot_path(snapshot.segment.file_path);
     if (!ii_segment_path) {
         return tl::make_unexpected(SILKWORM_INVALID_PATH);
@@ -50,7 +63,7 @@ SnapshotBundleEntityDataResult build_inverted_index_entity_data(const SilkwormIn
     return data;
 }
 
-SnapshotBundleEntityDataResult build_domain_entity_data(const SilkwormDomainSnapshot& snapshot, uint32_t salt) {
+static SnapshotBundleEntityDataResult build_domain_entity_data(const SilkwormDomainSnapshot& snapshot, uint32_t salt) {
     // Domain snapshot files
     const auto d_segment_path = parse_snapshot_path(snapshot.segment.file_path);
     if (!d_segment_path) {
@@ -116,7 +129,7 @@ SnapshotBundleEntityDataResult build_domain_entity_data(const SilkwormDomainSnap
     return data;
 }
 
-SnapshotBundleResult build_state_snapshot(const SilkwormStateSnapshot* snapshot, uint32_t salt) {
+static SnapshotBundleResult build_state_snapshot(const SilkwormStateSnapshot* snapshot, uint32_t salt) {
     auto accounts_bundle_entity_data = build_domain_entity_data(snapshot->accounts, salt);
     if (!accounts_bundle_entity_data) {
         return tl::make_unexpected(SILKWORM_INVALID_PATH);
@@ -174,4 +187,181 @@ SnapshotBundleResult build_state_snapshot(const SilkwormStateSnapshot* snapshot,
         std::move(bundle_data),
     };
     return bundle;
+}
+
+SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struct SilkwormMemoryMappedFile* segments[], size_t len) SILKWORM_NOEXCEPT {
+    constexpr int kNeededIndexesToBuildInParallel = 2;
+
+    if (!handle) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+
+    auto schema = db::blocks::make_blocks_repository_schema();
+
+    std::vector<std::shared_ptr<snapshots::IndexBuilder>> needed_indexes;
+    for (size_t i = 0; i < len; ++i) {
+        struct SilkwormMemoryMappedFile* segment = segments[i];
+        if (!segment) {
+            return SILKWORM_INVALID_SNAPSHOT;
+        }
+        auto segment_region = make_region(*segment);
+
+        const auto snapshot_path = snapshots::SnapshotPath::parse(segment->file_path);
+        if (!snapshot_path) {
+            return SILKWORM_INVALID_PATH;
+        }
+
+        auto names = schema.entity_name_by_path(*snapshot_path);
+        if (!names) {
+            return SILKWORM_INVALID_PATH;
+        }
+        datastore::EntityName name = names->second;
+        {
+            if (name == db::blocks::kHeaderSegmentName) {
+                auto index = std::make_shared<snapshots::IndexBuilder>(snapshots::HeaderIndex::make(*snapshot_path, segment_region));
+                needed_indexes.push_back(index);
+            } else if (name == db::blocks::kBodySegmentName) {
+                auto index = std::make_shared<snapshots::IndexBuilder>(snapshots::BodyIndex::make(*snapshot_path, segment_region));
+                needed_indexes.push_back(index);
+            } else if (name == db::blocks::kTxnSegmentName) {
+                auto bodies_segment_path = snapshot_path->related_path(std::string{db::blocks::kBodySegmentTag}, db::blocks::kSegmentExtension);
+                auto bodies_file = std::find_if(segments, segments + len, [&](SilkwormMemoryMappedFile* file) -> bool {
+                    return snapshots::SnapshotPath::parse(file->file_path) == bodies_segment_path;
+                });
+
+                if (bodies_file < segments + len) {
+                    auto bodies_segment_region = make_region(**bodies_file);
+
+                    auto index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionIndex::make(
+                        bodies_segment_path, bodies_segment_region, *snapshot_path, segment_region));
+                    needed_indexes.push_back(index);
+
+                    index = std::make_shared<snapshots::IndexBuilder>(snapshots::TransactionToBlockIndex::make(
+                        bodies_segment_path, bodies_segment_region, *snapshot_path, segment_region));
+                    needed_indexes.push_back(index);
+                }
+            } else {
+                SILKWORM_ASSERT(false);
+            }
+        }
+    }
+
+    if (needed_indexes.size() < kNeededIndexesToBuildInParallel) {
+        // sequential build
+        for (const auto& index : needed_indexes) {
+            index->build();
+        }
+    } else {
+        // parallel build
+        ThreadPool workers;
+
+        // Create worker tasks for missing indexes
+        for (const auto& index : needed_indexes) {
+            workers.push_task([=]() {
+                try {
+                    SILK_INFO << "Build index: " << index->path().filename() << " start";
+                    index->build();
+                    SILK_INFO << "Build index: " << index->path().filename() << " end";
+                } catch (const std::exception& ex) {
+                    SILK_CRIT << "Build index: " << index->path().filename() << " failed [" << ex.what() << "]";
+                }
+            });
+        }
+
+        // Wait for all missing indexes to be built or stop request
+        while (workers.get_tasks_total()) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+        // Wait for any already-started-but-unfinished work in case of stop request
+        workers.pause();
+        workers.wait_for_tasks();
+    }
+
+    return SILKWORM_OK;
+}
+
+SILKWORM_EXPORT int silkworm_add_blocks_snapshot(SilkwormHandle handle, SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT {
+    if (!handle || !handle->blocks_repository) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+    if (!snapshot) {
+        return SILKWORM_INVALID_SNAPSHOT;
+    }
+    const SilkwormHeadersSnapshot& hs = snapshot->headers;
+    if (!hs.segment.file_path || !hs.header_hash_index.file_path) {
+        return SILKWORM_INVALID_PATH;
+    }
+    const auto headers_segment_path = snapshots::SnapshotPath::parse(hs.segment.file_path);
+    if (!headers_segment_path) {
+        return SILKWORM_INVALID_PATH;
+    }
+    snapshots::segment::SegmentFileReader header_segment{*headers_segment_path, make_region(hs.segment)};
+    snapshots::rec_split::AccessorIndex idx_header_hash{headers_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(hs.header_hash_index)};
+
+    const SilkwormBodiesSnapshot& bs = snapshot->bodies;
+    if (!bs.segment.file_path || !bs.block_num_index.file_path) {
+        return SILKWORM_INVALID_PATH;
+    }
+    const auto bodies_segment_path = snapshots::SnapshotPath::parse(bs.segment.file_path);
+    if (!bodies_segment_path) {
+        return SILKWORM_INVALID_PATH;
+    }
+    snapshots::segment::SegmentFileReader body_segment{*bodies_segment_path, make_region(bs.segment)};
+    snapshots::rec_split::AccessorIndex idx_body_number{bodies_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(bs.block_num_index)};
+
+    const SilkwormTransactionsSnapshot& ts = snapshot->transactions;
+    if (!ts.segment.file_path || !ts.tx_hash_index.file_path || !ts.tx_hash_2_block_index.file_path) {
+        return SILKWORM_INVALID_PATH;
+    }
+    const auto transactions_segment_path = snapshots::SnapshotPath::parse(ts.segment.file_path);
+    if (!transactions_segment_path) {
+        return SILKWORM_INVALID_PATH;
+    }
+    snapshots::segment::SegmentFileReader txn_segment{*transactions_segment_path, make_region(ts.segment)};
+    snapshots::rec_split::AccessorIndex idx_txn_hash{transactions_segment_path->related_path_ext(db::blocks::kIdxExtension), make_region(ts.tx_hash_index)};
+    snapshots::rec_split::AccessorIndex idx_txn_hash_2_block{transactions_segment_path->related_path(std::string{db::blocks::kIdxTxnHash2BlockTag}, db::blocks::kIdxExtension), make_region(ts.tx_hash_2_block_index)};
+
+    auto bundle_data_provider = [&]() -> snapshots::SnapshotBundleEntityData {
+        snapshots::SnapshotBundleEntityData data;
+
+        data.segments.emplace(db::blocks::kHeaderSegmentName, std::move(header_segment));
+        data.accessor_indexes.emplace(db::blocks::kIdxHeaderHashName, std::move(idx_header_hash));
+
+        data.segments.emplace(db::blocks::kBodySegmentName, std::move(body_segment));
+        data.accessor_indexes.emplace(db::blocks::kIdxBodyNumberName, std::move(idx_body_number));
+
+        data.segments.emplace(db::blocks::kTxnSegmentName, std::move(txn_segment));
+        data.accessor_indexes.emplace(db::blocks::kIdxTxnHashName, std::move(idx_txn_hash));
+        data.accessor_indexes.emplace(db::blocks::kIdxTxnHash2BlockName, std::move(idx_txn_hash_2_block));
+
+        return data;
+    };
+    snapshots::SnapshotBundleData bundle_data;
+    bundle_data.entities.emplace(snapshots::Schema::kDefaultEntityName, bundle_data_provider());
+
+    snapshots::SnapshotBundle bundle{
+        headers_segment_path->step_range(),
+        std::move(bundle_data),
+    };
+    handle->blocks_repository->add_snapshot_bundle(std::move(bundle));
+    return SILKWORM_OK;
+}
+
+SILKWORM_EXPORT int silkworm_add_state_snapshot(SilkwormHandle handle, const SilkwormStateSnapshot* snapshot) SILKWORM_NOEXCEPT {
+    if (!handle || !handle->state_repository) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+    if (!snapshot) {
+        return SILKWORM_INVALID_SNAPSHOT;
+    }
+    if (!handle->state_repository->index_salt()) {
+        return SILKWORM_INTERNAL_ERROR;
+    }
+    auto snapshot_bundle = build_state_snapshot(snapshot, *handle->state_repository->index_salt());
+    if (!snapshot_bundle) {
+        return snapshot_bundle.error();
+    }
+    handle->state_repository->add_snapshot_bundle(std::move(*snapshot_bundle));
+    return SILKWORM_OK;
 }

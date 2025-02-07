@@ -1041,15 +1041,15 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_state_snapshot", "[capi]") {
     SilkwormInvertedIndexSnapshot valid_trace_to_is{sample_index_snapshot};
 
     SilkwormStateSnapshot valid_sss{
-        .account = valid_accounts_ds,
+        .accounts = valid_accounts_ds,
         .storage = valid_storage_ds,
         .code = valid_code_ds,
         .commitment = valid_commitment_ds,
-        .receipt = valid_receipts_ds,
-        .log_address = valid_log_address_is,
-        .log_topic = valid_log_topic_is,
-        .trace_from = valid_trace_from_is,
-        .trace_to = valid_trace_to_is,
+        .receipts = valid_receipts_ds,
+        .log_addresses = valid_log_address_is,
+        .log_topics = valid_log_topic_is,
+        .traces_from = valid_trace_from_is,
+        .traces_to = valid_trace_to_is,
     };
 
     SECTION("invalid handle") {
@@ -1063,7 +1063,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_state_snapshot", "[capi]") {
 
     SECTION("invalid accounts segment path") {
         SilkwormStateSnapshot invalid_sss{valid_sss};
-        invalid_sss.account.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
+        invalid_sss.accounts.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
         const int result = silkworm_lib.add_state_snapshot(&invalid_sss);
         CHECK(result == SILKWORM_INVALID_PATH);
     }

@@ -117,15 +117,15 @@ struct SilkwormDomainSnapshot {
 };
 
 struct SilkwormStateSnapshot {
-    struct SilkwormDomainSnapshot account;
+    struct SilkwormDomainSnapshot accounts;
     struct SilkwormDomainSnapshot storage;
     struct SilkwormDomainSnapshot code;
     struct SilkwormDomainSnapshot commitment;
-    struct SilkwormDomainSnapshot receipt;
-    struct SilkwormInvertedIndexSnapshot log_address;
-    struct SilkwormInvertedIndexSnapshot log_topic;
-    struct SilkwormInvertedIndexSnapshot trace_from;
-    struct SilkwormInvertedIndexSnapshot trace_to;
+    struct SilkwormDomainSnapshot receipts;
+    struct SilkwormInvertedIndexSnapshot log_addresses;
+    struct SilkwormInvertedIndexSnapshot log_topics;
+    struct SilkwormInvertedIndexSnapshot traces_from;
+    struct SilkwormInvertedIndexSnapshot traces_to;
 };
 
 #define SILKWORM_PATH_SIZE 260

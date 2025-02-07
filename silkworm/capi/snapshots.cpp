@@ -117,7 +117,7 @@ SnapshotBundleEntityDataResult build_domain_entity_data(const SilkwormDomainSnap
 }
 
 SnapshotBundleResult build_state_snapshot(const SilkwormStateSnapshot* snapshot, uint32_t salt) {
-    auto accounts_bundle_entity_data = build_domain_entity_data(snapshot->account, salt);
+    auto accounts_bundle_entity_data = build_domain_entity_data(snapshot->accounts, salt);
     if (!accounts_bundle_entity_data) {
         return tl::make_unexpected(SILKWORM_INVALID_PATH);
     }
@@ -133,23 +133,23 @@ SnapshotBundleResult build_state_snapshot(const SilkwormStateSnapshot* snapshot,
     if (!commitment_bundle_entity_data) {
         return tl::make_unexpected(SILKWORM_INVALID_PATH);
     }
-    auto receipt_bundle_entity_data = build_domain_entity_data(snapshot->receipt, salt);
+    auto receipt_bundle_entity_data = build_domain_entity_data(snapshot->receipts, salt);
     if (!receipt_bundle_entity_data) {
         return tl::make_unexpected(SILKWORM_INVALID_PATH);
     }
-    auto log_address_bundle_entity_data = build_inverted_index_entity_data(snapshot->log_address);
+    auto log_address_bundle_entity_data = build_inverted_index_entity_data(snapshot->log_addresses);
     if (!log_address_bundle_entity_data) {
         return tl::make_unexpected(SILKWORM_INVALID_PATH);
     }
-    auto log_topic_bundle_entity_data = build_inverted_index_entity_data(snapshot->log_topic);
+    auto log_topic_bundle_entity_data = build_inverted_index_entity_data(snapshot->log_topics);
     if (!log_topic_bundle_entity_data) {
         return tl::make_unexpected(SILKWORM_INVALID_PATH);
     }
-    auto trace_from_bundle_entity_data = build_inverted_index_entity_data(snapshot->trace_from);
+    auto trace_from_bundle_entity_data = build_inverted_index_entity_data(snapshot->traces_from);
     if (!trace_from_bundle_entity_data) {
         return tl::make_unexpected(SILKWORM_INVALID_PATH);
     }
-    auto trace_to_bundle_entity_data = build_inverted_index_entity_data(snapshot->trace_to);
+    auto trace_to_bundle_entity_data = build_inverted_index_entity_data(snapshot->traces_to);
     if (!trace_to_bundle_entity_data) {
         return tl::make_unexpected(SILKWORM_INVALID_PATH);
     }

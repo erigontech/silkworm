@@ -22,6 +22,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/core/block_reader.hpp>
+#include <silkworm/rpc/core/override_state.hpp>
 
 namespace silkworm::rpc {
 
@@ -88,7 +89,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
         silkworm::Transaction transaction{call.to_transaction()};
         while (lo + 1 < hi) {
-            EVMExecutor executor{block, config_, workers_, state};
+            EVMExecutor executor{block, config_, workers_, std::make_shared<state::OverrideState>(*state, accounts_overrides_)};
             auto mid = (hi + lo) / 2;
             transaction.gas_limit = mid;
             result = try_execution(executor, transaction);

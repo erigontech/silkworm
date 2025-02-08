@@ -376,4 +376,141 @@ class SampleTransactionSnapshotFile : public TemporarySnapshotFile {
               "03") {}
 };
 
+//! Sample Accounts KV segment file generated using Erigon aggregator_test.go:generateKV
+//! with parameters: keySize=52, M=30, valueSize=180, keyCount=10
+class SampleAccountsDomainSegmentFile : public TemporarySnapshotFile {
+  public:
+    //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
+    SampleAccountsDomainSegmentFile(const std::filesystem::path& tmp_dir, std::string_view hex)
+        : TemporarySnapshotFile{tmp_dir, "v1-accounts.0-1024.kv", *from_hex(hex)} {}
+
+    //! This ctor captures the correct sample snapshot content once for all
+    explicit SampleAccountsDomainSegmentFile(const std::filesystem::path& tmp_dir)
+        : SampleAccountsDomainSegmentFile(
+              tmp_dir,
+              "0000000000000014"  // WC = 20
+              "0000000000000000"  // EWC = 0
+              "0000000000000000"  // PaTS = 0
+              "000000000000001a"  // PoTS = 26
+              "01000235054d05ad0105430553057b05170630060e06a1010651010194fdc2fa"
+              "2ffcc041d3ff12045b73c86e4ff95ff662a5eee82abdf44a2d0b75fb180daf48"
+              "a79ee0b10d3946000000000000000007e285ece1511455780875d64ee2d3d0d0"
+              "de6bf8f9b44ce85ff044c6b1f83b8e883bbf857aab99c5b252c7429c32f3a8ae"
+              "b79ef856f659c18f0dcecc77c75e7a81bfde275f67cfe242cf3cc354f3ede2d6"
+              "becc4ea3ae5e88526a9f4a578bcb9ef2d4a65314768d6d299761ea9e4f5aa6ae"
+              "c3fc78c6aae081ac8120011c0cb96ad322d62282295fbfe11e26a433076db5c1"
+              "444c3a34d32a5c4a7ffbe8d181f7ed3b8cfe904f93f8f0000000000000000217"
+              "2e046410f44bc4b0f3f03a0d06820a30f257f8114130015056b55f92a355db76"
+              "5adc8d3df88eb93d527f7f7ec869a75703ba86d4b36110e9a044593c966815d1"
+              "53665300000000000000093ff3e6b0f04035ef9419883e03c08e2d753b08c909"
+              "0aabf175fdb63e8cf9a5f0783704c741c195157626401d949eaa6dbd04d7ade5"
+              "749eab5470bf5e9c18cc79dda4e12efe564ecb8a4019e1c41f2d82170158c6db"
+              "3262670649f3bc97d9a2316735ede682a5dfe6f1a011fbc98ad0fbe790003c01"
+              "e8e9967703af665e9f00000000000000041374aafe8a0d3e0515dd4650cf5117"
+              "2b81248bcb7f969e400b6c5b127768b1c412fae98cf57631cf37033b4b4aba7d"
+              "7ed319ba147249c908ac70d1c406dade0e828eb6ba0dcaa88285543e10213c64"
+              "3fc8603b5860236670babcad0bd7f4c4190e323623a868d1eae1769f40a26631"
+              "431b3bd5215605d2086fead499ac63a4653d12283d56019c3795a98a126d09cf"
+              "cbe36cdcc93788a5409f8b6e42c2dd83aa46611852ad0b5028775c7716900167"
+              "8ac04586c1e3c9342c8b8055c466d886441d259906d69acd894b968ae9f0eb9d"
+              "965ce6a4693c4ebe88150100000000000000031b7e5cda7b6cba6891d616bd68"
+              "6c37b834613ac8baa22c008ffe688352734ae4e3f1217acd5f83270814301867"
+              "b5d06711b238001c7957b27719ce3f3188dfe57deebf6f82595a10f7bb562ca0"
+              "4d5c3d2794290171a420834383661801bb0bfd8e6c140071db1eb2f7a18194f1"
+              "a045a94c078835c75dff2f3e836180baad9e9500000000000000060f98f8c201"
+              "aec254a0e36476b2eeb124fdc6afc1b7d809c5e08b5e0e845aaf9b6c3957e95a"
+              "b4aa8e107cdb873f2dac52017f16c4d5ac8760768a715e4669cb840c25317f9a"
+              "368774e506341afb46503e28e92e51bd7f7d4b53b9023d560000000000000007"
+              "1fbc45ff64bb2bf14d4051a7604b28bad44d98bfe30e54ebc07fa45f62aabe39"
+              "5cc94fa0a0f246b5d28b2e3f6deb2990187058e4bfd2d1640653fc38a30b0f83"
+              "231a965b413b0f26927e0d032e830b732bdeb3094cb1a5fa6dec9f06375ea25f"
+              "e57c2853ea09320ac8803976eacaa095c02f869fd7dc31072475940c3751d562"
+              "83c49e2fefd41df676bdcb5855a0470efd2dab7a72cc5e5f39ff7eea0f433a9f"
+              "e701b6854e05b377241e73a883dd77aff0302c6da8665c42341dda4adaea595a"
+              "b1895f9652489dd2ceb49c24743000000000000000050b662c9c66b878290519"
+              "0f1e1635b63e34878d3f246fadfce344e74ef813090f8030bcd525ac10653ff1"
+              "82e00120f7e1f796fa0fc16ba7bb90be2a33e87c3d60ab628401b6a675bc2ac5"
+              "0cd218c009e21f910f9ddb09a0d059c4cd7d2ca65a2349df7a867dbedd81e9d4"
+              "891619c83c4200000000000000082fcaed9130ab1dd4cc2d8147a15901c720ef"
+              "cd6cea84b6925e607be063716f96ddcdd01d75045c3f000f8a796bce6c512c38"
+              "01aacaeedfad5b5066000000000000000103b8b7c1965d9181251b7c9c9ca520"
+              "5afc16a236a2efcdd2d12d2a79d074a8280ae9439eb0d6aeca0823ae02d67d86"
+              "6ac2c4fe4a725053da119b9d4f515140a2d7239c40b45ac3950d941fc4fe") {}
+};
+
+//! Sample Accounts KVEI file generated using Erigon aggregator_test.go:generateKV
+class SampleAccountsDomainKVEIFile : public TemporarySnapshotFile {
+  public:
+    //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
+    SampleAccountsDomainKVEIFile(const std::filesystem::path& tmp_dir, std::string_view hex)
+        : TemporarySnapshotFile{tmp_dir, "v1-accounts.0-1024.kvei", *from_hex(hex)} {}
+
+    //! This ctor captures the correct sample snapshot content once for all
+    explicit SampleAccountsDomainKVEIFile(const std::filesystem::path& tmp_dir)
+        : SampleAccountsDomainKVEIFile(
+              tmp_dir,
+              "00000000000000007630320a03000000000000000a0000000000000060000000"
+              "00000000cc6bab7ea3f92b90703c27812255d1e5c7ffdf994578ee3c428838c0"
+              "009022a78b200087000000005fcb40babe887b416444f783dca9c3826bd676ef"
+              "32c645a280eb7ce40acab41e296fc6b9bafcfa2edd3b2dc83b0994ab") {}
+};
+
+//! Sample Accounts BT file generated using Erigon aggregator_test.go:generateKV
+class SampleAccountsDomainBTFile : public TemporarySnapshotFile {
+  public:
+    //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
+    SampleAccountsDomainBTFile(const std::filesystem::path& tmp_dir, std::string_view hex)
+        : TemporarySnapshotFile{tmp_dir, "v1-accounts.0-1024.bt", *from_hex(hex)} {}
+
+    //! This ctor captures the correct sample snapshot content once for all
+    explicit SampleAccountsDomainBTFile(const std::filesystem::path& tmp_dir)
+        : SampleAccountsDomainBTFile(
+              tmp_dir,
+              "000000000000000900000000000004e300cc0b241b9d9f080000000000000000"
+              "2922891400000000000000000000000000000000000000000000000000000000"
+              "0000000000000001000000000000000000340194fdc2fa2ffcc041d3ff12045b"
+              "73c86e4ff95ff662a5eee82abdf44a2d0b75fb180daf48a79ee0b10d39460000"
+              "000000000000") {}
+};
+
+//! Sample empty Accounts EF file
+class SampleAccountsDomainEFFile : public TemporarySnapshotFile {
+  public:
+    //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
+    SampleAccountsDomainEFFile(const std::filesystem::path& tmp_dir, std::string_view hex)
+        : TemporarySnapshotFile{tmp_dir, "v1-accounts.0-1024.ef", *from_hex(hex)} {}
+
+    //! This ctor captures the correct sample snapshot content once for all
+    explicit SampleAccountsDomainEFFile(const std::filesystem::path& tmp_dir)
+        : SampleAccountsDomainEFFile(
+              tmp_dir,
+              "0000000000000000000000000000000000000000000000000000000000000000") {}
+};
+
+//! Sample empty Accounts EFI file
+class SampleAccountsDomainEFIFile : public TemporarySnapshotFile {
+  public:
+    //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
+    SampleAccountsDomainEFIFile(const std::filesystem::path& tmp_dir, std::string_view hex)
+        : TemporarySnapshotFile{tmp_dir, "v1-accounts.0-1024.efi", *from_hex(hex)} {}
+
+    //! This ctor captures the correct sample snapshot content once for all
+    explicit SampleAccountsDomainEFIFile(const std::filesystem::path& tmp_dir)
+        : SampleAccountsDomainEFIFile(
+              tmp_dir,
+              "0000000000000000000000000000000000000000000000000000000008000000"
+              "0014"
+              "106393C187CAE21A6453CEC3F7376937643E521DDBD2BE983740C6412F6572CB"
+              "717D47562F1CE4704CD6EB4C63BEFB7C9BFD8C5E18C8DA73082F20E10092A9A3"
+              "2ADA2CE68D21DEFCE33CB4F3E7C6466B3980BE458C509C59C466FD9584828E8C"
+              "45F0AABE1A61EDE6F6E7B8B33AD9B98D4EF95E25F4B4983D81175195173B92D3"
+              "4E50927D8DD159781EA2099D1FAFAE7F425C8A06FBAAA815CD4216006C74052A"
+              "00"
+              "00000000"
+              "0000000000000000000000000000000000000000000000000000000000000000"
+              "0000000000000000000000000000000000000000000000000000000000000000"
+              "0000000000000000000000000000000000000000000000000000000000000000"
+              "0000000000000000") {}
+};
+
 }  // namespace silkworm::snapshots::test_util

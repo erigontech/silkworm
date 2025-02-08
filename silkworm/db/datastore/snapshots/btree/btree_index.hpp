@@ -83,6 +83,8 @@ class BTreeIndex {
 
     const std::filesystem::path& path() const { return file_path_; }
 
+    MemoryMappedRegion memory_file_region() const;
+
     //! Seek and return a cursor at position where key >= \p seek_key
     //! \param seek_key the given key at/after which the cursor must be positioned
     //! \param kv_segment reader of the key-value data sequence

@@ -159,29 +159,11 @@ class Schema {
             return *this;
         }
 
-        DomainDef& history_compression_enabled(bool value) {
-            segment(kHistorySegmentName).compression_enabled(value);
-            return *this;
-        }
-
-        DomainDef& without_history() {
-            RepositoryDef::undefine_history_schema(*this);
-            return *this;
-        }
-
         DomainDef& with_accessor_index();
     };
 
     class RepositoryDef {
       public:
-        const DomainDef& domain(datastore::EntityName name) const {
-            return dynamic_cast<DomainDef&>(*entity_defs_.at(name));
-        }
-
-        const EntityDef& inverted_index(datastore::EntityName name) const {
-            return *entity_defs_.at(name);
-        }
-
         EntityDef& default_entity() {
             entity_defs_.try_emplace(kDefaultEntityName, std::make_shared<EntityDef>());
             return *entity_defs_.at(kDefaultEntityName);
@@ -192,8 +174,25 @@ class Schema {
             return dynamic_cast<DomainDef&>(*entity_defs_.at(name));
         }
 
+        const DomainDef& domain(datastore::EntityName name) const {
+            return dynamic_cast<DomainDef&>(*entity_defs_.at(name));
+        }
+
+        EntityDef& history(datastore::EntityName name) {
+            entity_defs_.try_emplace(name, std::make_shared<EntityDef>(make_history_schema(name)));
+            return *entity_defs_.at(name);
+        }
+
+        const EntityDef& history(datastore::EntityName name) const {
+            return *entity_defs_.at(name);
+        }
+
         EntityDef& inverted_index(datastore::EntityName name) {
             entity_defs_.try_emplace(name, std::make_shared<EntityDef>(make_inverted_index_schema(name)));
+            return *entity_defs_.at(name);
+        }
+
+        const EntityDef& inverted_index(datastore::EntityName name) const {
             return *entity_defs_.at(name);
         }
 

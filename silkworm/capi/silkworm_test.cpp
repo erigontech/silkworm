@@ -185,12 +185,16 @@ struct SilkwormLibrary {
         return silkworm_execute_txn(handle_, txn, block_num, head_hash_bytes, txn_index, txn_id, nullptr, nullptr);
     }
 
-    int add_blocks_snapshot(SilkwormChainSnapshot* snapshot) const {
-        return silkworm_add_blocks_snapshot(handle_, snapshot);
+    int add_blocks_snapshot_bundle(SilkwormBlocksSnapshotBundle* bundle) const {
+        return silkworm_add_blocks_snapshot_bundle(handle_, bundle);
     }
 
-    int add_state_snapshot(SilkwormStateSnapshot* snapshot) const {
-        return silkworm_add_state_snapshot(handle_, snapshot);
+    int add_state_snapshot_bundle_latest(SilkwormStateSnapshotBundleLatest* bundle) const {
+        return silkworm_add_state_snapshot_bundle_latest(handle_, bundle);
+    }
+
+    int add_state_snapshot_bundle_historical(SilkwormStateSnapshotBundleHistorical* bundle) const {
+        return silkworm_add_state_snapshot_bundle_historical(handle_, bundle);
     }
 
     int start_rpcdaemon(MDBX_env* env, const SilkwormRpcSettings* settings) const {
@@ -820,7 +824,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
     CHECK(result0.execute_block_result == SILKWORM_INTERNAL_ERROR);
 }
 
-TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_blocks_snapshot", "[capi]") {
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_blocks_snapshot_bundle", "[capi]") {
     snapshot_test::SampleHeaderSnapshotFile header_segment_file{tmp_dir.path()};
     auto& header_segment_path = header_segment_file.path();
     snapshot_test::SampleBodySnapshotFile body_segment_file{tmp_dir.path()};
@@ -902,8 +906,8 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_blocks_snapshot", "[capi]") {
     SECTION("invalid handle") {
         // We purposely do not call silkworm_init to provide a null handle
         SilkwormHandle handle{nullptr};
-        SilkwormChainSnapshot snapshot{valid_shs, valid_sbs, valid_sts};
-        CHECK(silkworm_add_blocks_snapshot(handle, &snapshot) == SILKWORM_INVALID_HANDLE);
+        SilkwormBlocksSnapshotBundle bundle{valid_shs, valid_sbs, valid_sts};
+        CHECK(silkworm_add_blocks_snapshot_bundle(handle, &bundle) == SILKWORM_INVALID_HANDLE);
     }
 
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
@@ -912,60 +916,60 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_blocks_snapshot", "[capi]") {
     SECTION("invalid header segment path") {
         SilkwormHeadersSnapshot invalid_shs{valid_shs};
         invalid_shs.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
-        SilkwormChainSnapshot snapshot{invalid_shs, valid_sbs, valid_sts};
-        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
+        SilkwormBlocksSnapshotBundle bundle{invalid_shs, valid_sbs, valid_sts};
+        const int result{silkworm_lib.add_blocks_snapshot_bundle(&bundle)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid header index path") {
         SilkwormHeadersSnapshot invalid_shs{valid_shs};
         invalid_shs.header_hash_index.file_path = nullptr;  // as if left unassigned, i.e. empty
-        SilkwormChainSnapshot snapshot{invalid_shs, valid_sbs, valid_sts};
-        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
+        SilkwormBlocksSnapshotBundle bundle{invalid_shs, valid_sbs, valid_sts};
+        const int result{silkworm_lib.add_blocks_snapshot_bundle(&bundle)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid body segment path") {
         SilkwormBodiesSnapshot invalid_sbs{valid_sbs};
         invalid_sbs.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
-        SilkwormChainSnapshot snapshot{valid_shs, invalid_sbs, valid_sts};
-        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
+        SilkwormBlocksSnapshotBundle bundle{valid_shs, invalid_sbs, valid_sts};
+        const int result{silkworm_lib.add_blocks_snapshot_bundle(&bundle)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid body index path") {
         SilkwormBodiesSnapshot invalid_sbs{valid_sbs};
         invalid_sbs.block_num_index.file_path = nullptr;  // as if left unassigned, i.e. empty
-        SilkwormChainSnapshot snapshot{valid_shs, invalid_sbs, valid_sts};
-        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
+        SilkwormBlocksSnapshotBundle bundle{valid_shs, invalid_sbs, valid_sts};
+        const int result{silkworm_lib.add_blocks_snapshot_bundle(&bundle)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid transaction segment path") {
         SilkwormTransactionsSnapshot invalid_sts{valid_sts};
         invalid_sts.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
-        SilkwormChainSnapshot snapshot{valid_shs, valid_sbs, invalid_sts};
-        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
+        SilkwormBlocksSnapshotBundle bundle{valid_shs, valid_sbs, invalid_sts};
+        const int result{silkworm_lib.add_blocks_snapshot_bundle(&bundle)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid transaction hash index path") {
         SilkwormTransactionsSnapshot invalid_sts{valid_sts};
         invalid_sts.tx_hash_index.file_path = nullptr;  // as if left unassigned, i.e. empty
-        SilkwormChainSnapshot snapshot{valid_shs, valid_sbs, invalid_sts};
-        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
+        SilkwormBlocksSnapshotBundle bundle{valid_shs, valid_sbs, invalid_sts};
+        const int result{silkworm_lib.add_blocks_snapshot_bundle(&bundle)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid transaction hash2block index path") {
         SilkwormTransactionsSnapshot invalid_sts{valid_sts};
         invalid_sts.tx_hash_2_block_index.file_path = nullptr;  // as if left unassigned, i.e. empty
-        SilkwormChainSnapshot snapshot{valid_shs, valid_sbs, invalid_sts};
-        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
+        SilkwormBlocksSnapshotBundle bundle{valid_shs, valid_sbs, invalid_sts};
+        const int result{silkworm_lib.add_blocks_snapshot_bundle(&bundle)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid empty chain snapshot") {
-        SilkwormChainSnapshot snapshot{};
-        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
+        SilkwormBlocksSnapshotBundle bundle{};
+        const int result{silkworm_lib.add_blocks_snapshot_bundle(&bundle)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("valid") {
-        SilkwormChainSnapshot snapshot{valid_shs, valid_sbs, valid_sts};
-        const int result{silkworm_lib.add_blocks_snapshot(&snapshot)};
+        SilkwormBlocksSnapshotBundle bundle{valid_shs, valid_sbs, valid_sts};
+        const int result{silkworm_lib.add_blocks_snapshot_bundle(&bundle)};
         CHECK(result == SILKWORM_OK);
     }
 }
@@ -975,64 +979,42 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_state_snapshot", "[capi]") {
     using namespace snapshots;
     constexpr uint32_t kZeroSalt{0};
 
-    const bloom_filter::BloomFilterKeyHasher bloom_key_hasher{kZeroSalt};
+    const snapshot_test::SampleAccountsDomainSegmentFile kv_segment_file{tmp_dir.path()};
+    segment::KVSegmentFileReader kv_segment{kv_segment_file.path(), seg::CompressionKind::kAll};
+    const auto kv_segment_path_string{kv_segment_file.path().path().string()};
 
-    const snapshot_test::SampleAccountsDomainSegmentFile accounts_kv_file{tmp_dir.path()};
-    const auto& accounts_kv_path = accounts_kv_file.path();
-    segment::KVSegmentFileReader accounts_segment{accounts_kv_path, seg::CompressionKind::kAll};
-    const snapshot_test::SampleAccountsDomainKVEIFile accounts_kvei_file{tmp_dir.path()};
-    const auto& accounts_kvei_path = accounts_kvei_file.path();
-    bloom_filter::BloomFilter account_existence_index{accounts_kvei_path.path(), bloom_key_hasher};
-    const snapshot_test::SampleAccountsDomainBTFile accounts_bt_file{tmp_dir.path()};
-    const auto& accounts_bt_path = accounts_bt_file.path();
-    btree::BTreeIndex accounts_bt_index{accounts_bt_path.path()};
+    const snapshot_test::SampleAccountsDomainExistenceIndexFile existence_index_file{tmp_dir.path()};
+    bloom_filter::BloomFilter existence_index{existence_index_file.path().path(), bloom_filter::BloomFilterKeyHasher{kZeroSalt}};
+    const auto existence_index_path_string{existence_index_file.path().path().string()};
 
-    const auto accounts_kv_path_string{accounts_kv_path.path().string()};
-    const auto accounts_kvei_path_string{accounts_kvei_path.path().string()};
-    const auto accounts_bt_path_string{accounts_bt_path.path().string()};
+    const snapshot_test::SampleAccountsDomainBTreeIndexFile btree_index_file{tmp_dir.path()};
+    btree::BTreeIndex btree_index{btree_index_file.path().path()};
+    const auto btree_index_path_string{btree_index_file.path().path().string()};
+
+    [[maybe_unused]] snapshots::Domain domain{
+        .kv_segment = kv_segment,
+        .existence_index = existence_index,
+        .btree_index = btree_index,
+    };
 
     // Prepare templates for C data structures of valid state (D/H/II) snapshots
     SilkwormDomainSnapshot sample_domain_snapshot{
         .segment = SilkwormMemoryMappedFile{
-            .file_path = accounts_kv_path_string.c_str(),
-            .memory_address = accounts_segment.memory_file_region().data(),
-            .memory_length = accounts_segment.memory_file_region().size(),
+            .file_path = kv_segment_path_string.c_str(),
+            .memory_address = kv_segment.memory_file_region().data(),
+            .memory_length = kv_segment.memory_file_region().size(),
         },
         .existence_index = SilkwormMemoryMappedFile{
-            .file_path = accounts_kvei_path_string.c_str(),
+            .file_path = existence_index_path_string.c_str(),
             .memory_address = nullptr,  // bloom filter is fully kept in memory, no mmap
             .memory_length = 0,
         },
         .btree_index = SilkwormMemoryMappedFile{
-            .file_path = accounts_bt_path_string.c_str(),
-            .memory_address = accounts_bt_index.memory_file_region().data(),
-            .memory_length = accounts_bt_index.memory_file_region().size(),
+            .file_path = btree_index_path_string.c_str(),
+            .memory_address = btree_index.memory_file_region().data(),
+            .memory_length = btree_index.memory_file_region().size(),
         },
         .has_accessor_index = false,
-        .has_history = false,
-    };
-
-    const snapshot_test::SampleAccountsDomainEFFile accounts_ef_file{tmp_dir.path()};
-    const auto& accounts_ef_path = accounts_ef_file.path();
-    segment::KVSegmentFileReader accounts_ef_segment{accounts_ef_path, seg::CompressionKind::kNone};
-    const snapshot_test::SampleAccountsDomainEFIFile accounts_efi_file{tmp_dir.path()};
-    const auto& accounts_efi_path = accounts_efi_file.path();
-    snapshots::rec_split::AccessorIndex accounts_ef_idx{accounts_efi_path};
-
-    const auto accounts_ef_path_string{accounts_ef_path.path().string()};
-    const auto accounts_efi_path_string{accounts_efi_path.path().string()};
-
-    SilkwormInvertedIndexSnapshot sample_index_snapshot{
-        .segment = SilkwormMemoryMappedFile{
-            .file_path = accounts_ef_path_string.c_str(),
-            .memory_address = accounts_ef_segment.memory_file_region().data(),
-            .memory_length = accounts_ef_segment.memory_file_region().size(),
-        },
-        .accessor_index = SilkwormMemoryMappedFile{
-            .file_path = accounts_efi_path_string.c_str(),
-            .memory_address = accounts_ef_idx.memory_file_region().data(),
-            .memory_length = accounts_ef_idx.memory_file_region().size(),
-        },
     };
 
     SilkwormDomainSnapshot valid_accounts_ds{sample_domain_snapshot};
@@ -1040,63 +1022,55 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_state_snapshot", "[capi]") {
     SilkwormDomainSnapshot valid_code_ds{sample_domain_snapshot};
     SilkwormDomainSnapshot valid_commitment_ds{sample_domain_snapshot};
     SilkwormDomainSnapshot valid_receipts_ds{sample_domain_snapshot};
-    SilkwormInvertedIndexSnapshot valid_log_address_is{sample_index_snapshot};
-    SilkwormInvertedIndexSnapshot valid_log_topic_is{sample_index_snapshot};
-    SilkwormInvertedIndexSnapshot valid_trace_from_is{sample_index_snapshot};
-    SilkwormInvertedIndexSnapshot valid_trace_to_is{sample_index_snapshot};
 
-    SilkwormStateSnapshot valid_sss{
+    SilkwormStateSnapshotBundleLatest valid_bundle_latest{
         .accounts = valid_accounts_ds,
         .storage = valid_storage_ds,
         .code = valid_code_ds,
         .commitment = valid_commitment_ds,
         .receipts = valid_receipts_ds,
-        .log_addresses = valid_log_address_is,
-        .log_topics = valid_log_topic_is,
-        .traces_from = valid_trace_from_is,
-        .traces_to = valid_trace_to_is,
     };
 
     SECTION("invalid handle") {
         // We purposely do not call silkworm_init to provide a null handle
         SilkwormHandle handle{nullptr};
-        CHECK(silkworm_add_state_snapshot(handle, &valid_sss) == SILKWORM_INVALID_HANDLE);
+        CHECK(silkworm_add_state_snapshot_bundle_latest(handle, &valid_bundle_latest) == SILKWORM_INVALID_HANDLE);
     }
 
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{env_path()};
 
     SECTION("invalid accounts segment path") {
-        SilkwormStateSnapshot invalid_sss{valid_sss};
-        invalid_sss.accounts.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
-        const int result = silkworm_lib.add_state_snapshot(&invalid_sss);
+        SilkwormStateSnapshotBundleLatest invalid_bundle{valid_bundle_latest};
+        invalid_bundle.accounts.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
+        const int result = silkworm_lib.add_state_snapshot_bundle_latest(&invalid_bundle);
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid storage segment path") {
-        SilkwormStateSnapshot invalid_sss{valid_sss};
-        invalid_sss.storage.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
-        const int result = silkworm_lib.add_state_snapshot(&invalid_sss);
+        SilkwormStateSnapshotBundleLatest invalid_bundle{valid_bundle_latest};
+        invalid_bundle.storage.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
+        const int result = silkworm_lib.add_state_snapshot_bundle_latest(&invalid_bundle);
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid code segment path") {
-        SilkwormStateSnapshot invalid_sss{valid_sss};
-        invalid_sss.code.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
-        const int result = silkworm_lib.add_state_snapshot(&invalid_sss);
+        SilkwormStateSnapshotBundleLatest invalid_bundle{valid_bundle_latest};
+        invalid_bundle.code.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
+        const int result = silkworm_lib.add_state_snapshot_bundle_latest(&invalid_bundle);
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid commitment segment path") {
-        SilkwormStateSnapshot invalid_sss{valid_sss};
-        invalid_sss.commitment.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
-        const int result = silkworm_lib.add_state_snapshot(&invalid_sss);
+        SilkwormStateSnapshotBundleLatest invalid_bundle{valid_bundle_latest};
+        invalid_bundle.commitment.segment.file_path = nullptr;  // as if left unassigned, i.e. empty
+        const int result = silkworm_lib.add_state_snapshot_bundle_latest(&invalid_bundle);
         CHECK(result == SILKWORM_INVALID_PATH);
     }
     SECTION("invalid empty state snapshot") {
-        SilkwormStateSnapshot invalid_sss{};
-        const int result{silkworm_lib.add_state_snapshot(&invalid_sss)};
+        SilkwormStateSnapshotBundleLatest invalid_bundle{};
+        const int result{silkworm_lib.add_state_snapshot_bundle_latest(&invalid_bundle)};
         CHECK(result == SILKWORM_INVALID_PATH);
     }
-    SECTION("valid") {
-        const int result = silkworm_lib.add_state_snapshot(&valid_sss);
+    SECTION("valid latest") {
+        const int result = silkworm_lib.add_state_snapshot_bundle_latest(&valid_bundle_latest);
         CHECK(result == SILKWORM_OK);
     }
 }

@@ -98,8 +98,8 @@ class LocalState : public State {
     }
 
     template <typename DomainQuery>
-    auto make_query() const {
-        return DomainQuery{data_store_.chaindata, tx_, data_store_.state_repository};
+    auto query_as_of() const {
+        return DomainQuery{data_store_.chaindata, tx_, data_store_.state_repository_latest, data_store_.state_repository_historical};
     }
 
     std::optional<TxnId> txn_id_;

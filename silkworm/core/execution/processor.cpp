@@ -71,7 +71,8 @@ namespace {
 
     /// Checks the result of the transaction execution in evmone (APIv2)
     /// against the result produced by Silkworm.
-    void check_evm1_execution_result(const evmone::state::StateDiff& state_diff, const IntraBlockState& state) {
+    [[nodiscard]] bool check_evm1_execution_result(const evmone::state::StateDiff& state_diff, const IntraBlockState& state) {
+        bool res = true;
         for (const auto& entry : state_diff.modified_accounts) {
             if (std::ranges::find(state_diff.deleted_accounts, entry.addr) != state_diff.deleted_accounts.end()) {
                 continue;
@@ -80,7 +81,8 @@ namespace {
             for (const auto& [k, v] : entry.modified_storage) {
                 auto expected = state.get_current_storage(entry.addr, k);
                 if (v != expected) {
-                    std::cerr << "k: " << hex(k) << "e1: " << hex(v) << ", silkworm: " << hex(expected) << "\n";
+                    std::cerr << "a: " << hex(entry.addr) << " k: " << hex(k) << "v: " << hex(v) << ", sw: " << hex(expected) << "\n";
+                    res = false;
                 }
             }
         }
@@ -94,13 +96,14 @@ namespace {
 
             SILKWORM_ASSERT(state.get_nonce(m.addr) == m.nonce);
             if (m.balance != state.get_balance(m.addr)) {
-                std::cerr << "b: " << hex(m.addr) << " " << to_string(m.balance) << ", silkworm: " << to_string(state.get_balance(m.addr)) << "\n";
-                SILKWORM_ASSERT(state.get_balance(m.addr) == m.balance);
+                std::cerr << "a: " << hex(m.addr) << " b: " << to_string(m.balance) << ", sw: " << to_string(state.get_balance(m.addr)) << "\n";
+                res = false;
             }
             if (!m.code.empty()) {
                 SILKWORM_ASSERT(state.get_code(m.addr) == m.code);
             }
         }
+        return res;
     }
 }  // namespace
 
@@ -182,30 +185,30 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         receipt.logs.emplace_back(Log{addr, std::move(topics), std::move(data)});
     receipt.bloom = logs_bloom(receipt.logs);
 
-    if (evm1_v2_) {
-        // Apply the state diff produced by evmone APIv2 to the state and skip the Silkworm execution.
-        const auto& state_diff = evm1_receipt.state_diff;
-        for (const auto& m : state_diff.modified_accounts) {
-            if (!m.code.empty()) {
-                state_.create_contract(m.addr);
-                state_.set_code(m.addr, m.code);
-            }
-
-            auto& acc = state_.get_or_create_object(m.addr);
-            acc.current->nonce = m.nonce;
-            acc.current->balance = m.balance;
-
-            auto& storage = state_.storage_[m.addr];
-            for (const auto& [k, v] : m.modified_storage) {
-                storage.committed[k].original = v;
-            }
-        }
-
-        for (const auto& a : state_diff.deleted_accounts) {
-            state_.destruct(a);
-        }
-        return;
-    }
+    // if (evm1_v2_) {
+    //     // Apply the state diff produced by evmone APIv2 to the state and skip the Silkworm execution.
+    //     const auto& state_diff = evm1_receipt.state_diff;
+    //     for (const auto& m : state_diff.modified_accounts) {
+    //         if (!m.code.empty()) {
+    //             state_.create_contract(m.addr);
+    //             state_.set_code(m.addr, m.code);
+    //         }
+    //
+    //         auto& acc = state_.get_or_create_object(m.addr);
+    //         acc.current->nonce = m.nonce;
+    //         acc.current->balance = m.balance;
+    //
+    //         auto& storage = state_.storage_[m.addr];
+    //         for (const auto& [k, v] : m.modified_storage) {
+    //             storage.committed[k].original = v;
+    //         }
+    //     }
+    //
+    //     for (const auto& a : state_diff.deleted_accounts) {
+    //         state_.destruct(a);
+    //     }
+    //     return;
+    // }
 
     state_.clear_journal_and_substate();
 
@@ -234,7 +237,11 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     state_.subtract_from_balance(*sender, txn.total_blob_gas() * blob_gas_price);
 
     const CallResult vm_res = evm_.execute(txn, execution_gas_limit);
-    SILKWORM_ASSERT((vm_res.status == EVMC_SUCCESS) == receipt.success);
+
+    if ((vm_res.status == EVMC_SUCCESS) != receipt.success) {
+        std::cerr << "STATUS failed! e1: " << evm1_receipt.status << ", sw: " << vm_res.status << "\n";
+        SILKWORM_ASSERT(false);
+    }
     SILKWORM_ASSERT(state_.logs().size() == receipt.logs.size());
 
     refund_gas(txn, effective_gas_price, vm_res.gas_left, vm_res.gas_refund);
@@ -257,7 +264,13 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     state_.finalize_transaction(rev);
 
-    check_evm1_execution_result(evm1_receipt.state_diff, state_);
+    if (!check_evm1_execution_result(evm1_receipt.state_diff, state_)) {
+        std::cerr << "STATE DIFF failed!\n"
+                  << "  block: " << evm_.block().header.number << "\n"
+                  << "  txn: " << hex(txn.hash()) << "\n"
+                  << "\n";
+        SILKWORM_ASSERT(false);
+    }
 }
 
 CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<std::shared_ptr<EvmTracer>>& tracers, bool refund) noexcept {

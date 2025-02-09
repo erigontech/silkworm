@@ -89,7 +89,8 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
         silkworm::Transaction transaction{call.to_transaction()};
         while (lo + 1 < hi) {
-            EVMExecutor executor{block, config_, workers_, std::make_shared<state::OverrideState>(*state, accounts_overrides_)};
+            auto state_overrides =  std::make_shared<state::OverrideState>(*state, accounts_overrides_);
+            EVMExecutor executor{block, config_, workers_, state_overrides};
             auto mid = (hi + lo) / 2;
             transaction.gas_limit = mid;
             result = try_execution(executor, transaction);

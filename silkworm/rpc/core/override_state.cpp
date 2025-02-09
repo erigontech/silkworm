@@ -49,6 +49,13 @@ OverrideState::OverrideState(silkworm::State& inner_state, const AccountsOverrid
         if (value.code) {
             code_.emplace(key, value.code.value());
         }
+#ifdef notdef
+        const auto& stateMap = value.state;
+        for (const auto& entry : stateMap) {
+            auto storage_value = intx::be::store<evmc::uint256be>(entry.second);
+            ibs.set_storage(key, entry.first, storage_value);
+        }
+#endif
     }
 }
 

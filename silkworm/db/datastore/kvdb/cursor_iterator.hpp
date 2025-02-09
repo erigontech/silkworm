@@ -58,6 +58,12 @@ class CursorMoveIterator {
     friend bool operator==(const CursorMoveIterator& it, const std::default_sentinel_t&) {
         return !it.cursor_;
     }
+    friend bool operator!=(const std::default_sentinel_t&, const CursorMoveIterator& it) {
+        return !!it.cursor_;
+    }
+    friend bool operator==(const std::default_sentinel_t&, const CursorMoveIterator& it) {
+        return !it.cursor_;
+    }
 
   private:
     std::shared_ptr<ROCursor> cursor_;

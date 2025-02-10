@@ -106,7 +106,8 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         }
 
         if (hi == cap) {
-            EVMExecutor executor{block, config_, workers_, state};
+            auto state_overrides =  std::make_shared<state::OverrideState>(*state, accounts_overrides_);
+            EVMExecutor executor{block, config_, workers_, state_overrides};
             transaction.gas_limit = hi;
             result = try_execution(executor, transaction);
             SILK_DEBUG << "HI == cap tested again with " << (result.error_code == evmc_status_code::EVMC_SUCCESS ? "succeed" : "failed");

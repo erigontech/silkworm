@@ -122,6 +122,10 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     });
 
     if (!exec_result.success()) {
+        if (exec_result.error_code == evmc_status_code::EVMC_OUT_OF_GAS) {
+            std::string error_msg = "gas required exceeds allowance (" + std::to_string(hi) + ")";
+            throw EstimateGasException{-32000, error_msg};
+        }
         throw_exception(exec_result);
     }
     co_return hi;

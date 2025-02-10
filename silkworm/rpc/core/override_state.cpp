@@ -49,13 +49,6 @@ OverrideState::OverrideState(silkworm::State& inner_state, const AccountsOverrid
         if (value.code) {
             code_.emplace(key, value.code.value());
         }
-#ifdef notdef
-        const auto& stateMap = value.state;
-        for (const auto& entry : stateMap) {
-            auto storage_value = intx::be::store<evmc::uint256be>(entry.second);
-            ibs.set_storage(key, entry.first, storage_value);
-        }
-#endif
     }
 }
 
@@ -85,6 +78,19 @@ silkworm::ByteView OverrideState::read_code(const evmc::address& address, const 
 
 evmc::bytes32 OverrideState::read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept {
     SILK_DEBUG << "OverrideState::read_storage address=" << address << " incarnation=" << incarnation << " location=" << to_hex(location) << " start";
+    for (const auto& [key, value] : accounts_overrides_) {
+        if (key == address) {
+           const auto& stateMap = value.state;
+           for (const auto& entry : stateMap) {
+               if (location == entry.first) {
+                   
+                  auto storage_value = intx::be::store<evmc::uint256be>(entry.second);
+                  SILK_DEBUG << "OverrideState::read_storage reads from cache storage_value=" << to_hex(storage_value);
+                  return storage_value;
+               }
+           }
+        }
+    }
     auto storage_value = inner_state_.read_storage(address, incarnation, location);
     SILK_DEBUG << "OverrideState::read_storage storage_value=" << to_hex(storage_value);
     return storage_value;

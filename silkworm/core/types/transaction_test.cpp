@@ -236,33 +236,7 @@ TEST_CASE("Recover sender 2") {
 
 TEST_CASE("SetCodeTx parsing with authorizations") {
     const auto encoded_rlp = *from_hex(
-        "0x04f9041701880124ec419e9796da8868b499f209983df888bb35ca86e3d9ea478"
-        "82486c24309101b0e94e4ec12c49d6bcf7cc1325aa50afff92a561229fe880c716dca0e3e3d28b90"
-        "2b6779e563691f1ca8a86a02efdd93db261215047dad430a475d0e191f66b580d6e759a7c7a73953"
-        "2455e65160acf92dc1e1cc11970e7851277278e9d5d2549e451de8c8dd98ebdd3c55e73cd0b465875"
-        "b72ea6d54917474f7ddfbd1f66d1a929694becc69bc3064c79c32b2db2a094844b400133724e046d"
-        "9a96f2b6c7888fe008e6a667a970068487ce9a8e6c1260973956b26c1b78235f3452e21c5ed6d475"
-        "07023ec4072b9ebea8ea9bde77ea64352ef7a6a8efb2ca61fbd0cf7c31491a4c38e3081dfc7b5e80"
-        "66fca60d8f57b641032f23119a67a37ad0514529df22ba73b4028dc4a6aef0b26161371d731a81d8"
-        "ac20ea90515b924f2534e32c240d0b75b5d1683e1bc7ecf8b82b73fb4c40d7cfc38e8c32f2c4d342"
-        "4a86ba8c6e867f13328be201dd8d5e8ee47e03c1d9096968b71228b068cc21514f6bab7867a0d0a26"
-        "51f40e927079b008c3ef11d571eb5f71d729ee9cfb3d2a99d258c10371fa1df271f4588e031498b15"
-        "5244295490fd842b3055e240ea89843a188b7f15be53252367761b9a8d21818d2c756822c0383246"
-        "e167dd645722aefe4ecc5e78608bcc851dc5a51255a3f91e908bb5fa53063596458f45c6e25a712de"
-        "4b2a5b36eea57f5b772c84f1d0f2f2ae103445fb7f2d38493041ca452f1e846c34331bea7b5b350d02"
-        "306fa3a15b50e978b4efebccce8a3479479d51c95a08e0cab0732fc4f8095337d7502c6a96219934"
-        "2ed127701a6f5b0e54cbdd88f23556aab406a3a7ef49f848c3efbf4cf62052999bde1940abf494415"
-        "8aefc5472f4ec9e23308cfb63deedc79e9a4f39d8b353c7e6f15d36f4c63987ae6f32701c6579e68f"
-        "05f9ae86b6fbbc8d57bc17e5c2f3e5389ea75d102017767205c10d6bf5cf6e33a94ad9e6cfac5accf"
-        "56d61dcee39f2e954ea89b7241e480e6021fa099a81bc9d28d6ca58a11d36f406b212be70c721bd8a"
-        "4d1d643fa2bf30ebd59a4f838f794fbba2afaae8cabd778b6e151b0431e3fef0a033ce1a07081820b"
-        "2a08cc2ed4355811644547f23597f7ebe516538baac51d97cbccee97f8ccf201941d994a07f0b3e92"
-        "5d332d4eae10c9ba474da3d8a8806320d2ae09c60e880887dbf8422d2f6549088321947f20ebcbfef"
-        "f20194327d773bdc6c27cd28a533e81074372dc33a8afd884ef63dce09c5e56c8088cb702ac89cff7"
-        "65f88d26fe11c3d471949f20194f61ffc773a97207c8124c29526a59e6fa0b34a52880e563a787da9"
-        "52ab808884f2a19b171abfb2882d473907f3ada086f20194c1d608bb39e078a99086e7564e89a7625"
-        "ed86dca88e8a0ab45821912e88088df6c3d43080350518895a828c35680a0278088e2487fd89ca40b"
-        "3488689accdbeb8d4d2e");
+        "b8ba04f8b70101843b9aca00847735940082520894deadbeefdeadbeefdeadbeefdeadbeefdeadbeef880de0b6b3a76400008a64756d6d7920636f6465c0f879db0194000000000000000000000000000000000000000101806f81dede01940000000000000000000000000000000000000002020182014d8201bcde01940000000000000000000000000000000000000003038082022b82029ade019400000000000000000000000000000000000000040401820309820378808080");
 
     Transaction decoded;
     ByteView view{encoded_rlp};
@@ -272,6 +246,22 @@ TEST_CASE("SetCodeTx parsing with authorizations") {
 
     CHECK(decoded.type == TransactionType::kSetCode);
     CHECK(4 == std::size(decoded.authorizations));
+
+    CHECK(decoded.authorizations[0].address == 0x0000000000000000000000000000000000000001_address);
+    CHECK(decoded.authorizations[0].nonce == 1);
+    CHECK(decoded.authorizations[0].y_parity == 0);
+
+    CHECK(decoded.authorizations[1].address == 0x0000000000000000000000000000000000000002_address);
+    CHECK(decoded.authorizations[1].nonce == 2);
+    CHECK(decoded.authorizations[1].y_parity == 1);
+
+    CHECK(decoded.authorizations[2].address == 0x0000000000000000000000000000000000000003_address);
+    CHECK(decoded.authorizations[2].nonce == 3);
+    CHECK(decoded.authorizations[2].y_parity == 0);
+
+    CHECK(decoded.authorizations[3].address == 0x0000000000000000000000000000000000000004_address);
+    CHECK(decoded.authorizations[3].nonce == 4);
+    CHECK(decoded.authorizations[3].y_parity == 1);
 }
 
 TEST_CASE("SetCodeTx encoding and decoding") {
@@ -293,7 +283,7 @@ TEST_CASE("SetCodeTx encoding and decoding") {
         .chain_id = 4,
         .address = 0x811a752c8cd697e3cb27279c330ed1ada745a8e7_address,
         .nonce = 10,
-        .v = intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),
+        .y_parity = 26,
         .r = intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),
         .s = intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4055"),
     });
@@ -302,7 +292,7 @@ TEST_CASE("SetCodeTx encoding and decoding") {
         .chain_id = 24,
         .address = 0x9999752c8cd697e3cb27279c330ed1ada745a8e7_address,
         .nonce = 1999,
-        .v = intx::from_string<intx::uint256>("0x333241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),
+        .y_parity = 22,
         .r = intx::from_string<intx::uint256>("0x444241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),
         .s = intx::from_string<intx::uint256>("0x555cc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4055"),
     });

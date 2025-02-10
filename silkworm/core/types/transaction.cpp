@@ -78,7 +78,7 @@ namespace rlp {
         header.payload_length = length(authorization.chain_id);
         header.payload_length += kAddressLength + 1;  // address is kAddressLength and one byte for size prefix
         header.payload_length += length(authorization.nonce);
-        header.payload_length += length(authorization.v);
+        header.payload_length += length(authorization.y_parity);
         header.payload_length += length(authorization.r);
         header.payload_length += length(authorization.s);
 
@@ -95,7 +95,7 @@ namespace rlp {
         encode(to, authorization.chain_id);
         encode(to, authorization.address);
         encode(to, authorization.nonce);
-        encode(to, authorization.v);
+        encode(to, authorization.y_parity);
         encode(to, authorization.r);
         encode(to, authorization.s);
     }
@@ -105,7 +105,7 @@ namespace rlp {
     }
 
     DecodingResult decode(ByteView& from, Authorization& to, Leftover mode) noexcept {
-        return decode(from, mode, to.chain_id, to.address.bytes, to.nonce, to.v, to.r, to.s);
+        return decode(from, mode, to.chain_id, to.address.bytes, to.nonce, to.y_parity, to.r, to.s);
     }
 
     static Header header_base(const UnsignedTransaction& txn) {

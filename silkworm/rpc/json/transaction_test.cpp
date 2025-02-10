@@ -290,7 +290,7 @@ TEST_CASE("serialize EIP-7702 transaction (type=4)", "[rpc][to_json]") {
     txn1.authorizations.emplace_back(Authorization{
         .chain_id = 100,
         .address = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
-        .v = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),
+        .y_parity = 27,
         .r = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),
         .s = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0")});
     nlohmann::json j1 = txn1;
@@ -315,7 +315,7 @@ TEST_CASE("serialize EIP-7702 transaction (type=4)", "[rpc][to_json]") {
             {
                 "chainId":"0x64",
                 "address":"0x5df9b87991262f6ba471f09758cde1c0fc1de734",
-                "v":"0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0",
+                "yParity":"27",
                 "r":"0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a",
                 "s":"0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"
 

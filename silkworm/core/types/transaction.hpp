@@ -43,7 +43,7 @@ struct Authorization {
     intx::uint256 chain_id;
     evmc::address address;
     uint64_t nonce{};
-    intx::uint256 v;
+    uint8_t y_parity;
     intx::uint256 r;
     intx::uint256 s;
 

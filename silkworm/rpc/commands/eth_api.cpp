@@ -934,7 +934,8 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
     } catch (const rpc::EstimateGasException& e) {
         SILK_ERROR << "EstimateGasException: code: " << e.error_code() << " message: " << e.message() << " processing request: " << request.dump();
         if (e.data().empty()) {
-            reply = make_json_error(request, static_cast<int>(e.error_code()), e.message());
+            std::string error_msg = "gas required exceeds allowance";
+            reply = make_json_error(request, kServerError, error_msg);
         } else {
             reply = make_json_error(request, RevertError{{3, e.message()}, e.data()});
         }

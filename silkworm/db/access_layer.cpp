@@ -1283,6 +1283,10 @@ std::optional<BlockBodyForStorage> DataModel::read_body_for_storage_from_snapsho
     return BodyFindByBlockNumQuery{repository_}.exec(block_num);
 }
 
+std::optional<Bytes> DataModel::read_raw_body_for_storage_from_snapshot(BlockNum block_num) const {
+    return RawBodyFindByBlockNumQuery{repository_}.exec(block_num);
+}
+
 bool DataModel::read_body_from_snapshot(BlockNum block_num, BlockBody& body) const {
     auto stored_body = read_body_for_storage_from_snapshot(block_num);
     if (!stored_body) return false;

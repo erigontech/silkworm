@@ -79,11 +79,13 @@ datastore::kvdb::Schema::DatabaseDef make_state_database_schema() {
 }
 
 static snapshots::SnapshotRepository make_state_repository(
+    snapshots::SnapshotRepository::RepositoryKind kind,
     std::filesystem::path dir_path,
     bool open,
-    snapshots::Schema::RepositoryDef schema,
+    const snapshots::Schema::RepositoryDef& schema,
     std::optional<uint32_t> index_salt) {
     return snapshots::SnapshotRepository{
+        kind,
         std::move(dir_path),
         open,
         schema,
@@ -97,14 +99,16 @@ snapshots::SnapshotRepository make_state_repository_latest(
     std::filesystem::path dir_path,
     bool open,
     std::optional<uint32_t> index_salt) {
-    return make_state_repository(std::move(dir_path), open, make_state_repository_schema_latest(), index_salt);
+    return make_state_repository(snapshots::SnapshotRepository::RepositoryKind::latest_state,
+                                 std::move(dir_path), open, make_state_repository_schema_latest(), index_salt);
 }
 
 snapshots::SnapshotRepository make_state_repository_historical(
     std::filesystem::path dir_path,
     bool open,
     std::optional<uint32_t> index_salt) {
-    return make_state_repository(std::move(dir_path), open, make_state_repository_schema_historical(), index_salt);
+    return make_state_repository(snapshots::SnapshotRepository::RepositoryKind::historical_state,
+                                 std::move(dir_path), open, make_state_repository_schema_historical(), index_salt);
 }
 
 }  // namespace silkworm::db::state

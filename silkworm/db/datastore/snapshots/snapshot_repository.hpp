@@ -49,7 +49,14 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
     using Step = datastore::Step;
     using StepRange = datastore::StepRange;
 
+    enum RepositoryKind {  // clang-format off
+        blocks,
+        historical_state,
+        latest_state,
+    };  // clang-format on
+
     SnapshotRepository(
+        RepositoryKind kind,
         std::filesystem::path dir_path,
         bool open,
         Schema::RepositoryDef schema,
@@ -113,6 +120,9 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
     bool is_stale_index_path(const SnapshotPath& index_path) const;
     SnapshotPathList stale_index_paths() const;
     std::optional<uint32_t> load_index_salt() const;
+
+    //! The repository category
+    RepositoryKind kind_;
 
     //! Path to the snapshots directory
     std::filesystem::path dir_path_;

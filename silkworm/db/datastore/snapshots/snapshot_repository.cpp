@@ -20,6 +20,8 @@
 #include <iterator>
 #include <utility>
 
+#include <magic_enum.hpp>
+
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
@@ -32,13 +34,15 @@ namespace fs = std::filesystem;
 using namespace datastore;
 
 SnapshotRepository::SnapshotRepository(
+    RepositoryKind kind,
     std::filesystem::path dir_path,
     bool open,
     Schema::RepositoryDef schema,
     std::unique_ptr<StepToTimestampConverter> step_converter,
     std::optional<uint32_t> index_salt,
     std::unique_ptr<IndexBuildersFactory> index_builders_factory)
-    : dir_path_(std::move(dir_path)),
+    : kind_(kind),
+      dir_path_(std::move(dir_path)),
       schema_(std::move(schema)),
       step_converter_(std::move(step_converter)),
       index_salt_(index_salt),
@@ -119,7 +123,7 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes()
 }
 
 void SnapshotRepository::reopen_folder() {
-    SILK_INFO << "Reopen snapshot repository folder: " << dir_path_.string();
+    SILK_INFO << "Reopen " << magic_enum::enum_name(kind_) << " snapshot repository folder: " << dir_path_.string();
 
     index_salt_ = load_index_salt();
 
@@ -157,8 +161,9 @@ void SnapshotRepository::reopen_folder() {
     bundles_ = bundles;
     lock.unlock();
 
-    SILK_INFO << "Total reopened bundles: " << bundles_count()
-              << " max block available: " << max_block_available();
+    SILK_INFO << "Total reopened " << magic_enum::enum_name(kind_) << " bundles: " << bundles_count()
+              << (kind_ == RepositoryKind::blocks ? " max block available: " : " max timestamp available: ")
+              << (kind_ == RepositoryKind::blocks ? max_block_available() : max_timestamp_available());
 }
 
 SnapshotBundle SnapshotRepository::open_bundle(StepRange range) const {

@@ -61,6 +61,7 @@ snapshots::SnapshotRepository make_blocks_repository(
     bool open,
     std::optional<uint32_t> index_salt) {
     return snapshots::SnapshotRepository{
+        snapshots::SnapshotRepository::RepositoryKind::blocks,
         std::move(dir_path),
         open,
         make_blocks_repository_schema(),

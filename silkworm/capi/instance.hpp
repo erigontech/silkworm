@@ -49,7 +49,8 @@ struct SilkwormInstance {
     silkworm::NodeSettings node_settings;
     std::unique_ptr<silkworm::datastore::kvdb::DatabaseUnmanaged> chaindata;
     std::unique_ptr<silkworm::snapshots::SnapshotRepository> blocks_repository;
-    std::unique_ptr<silkworm::snapshots::SnapshotRepository> state_repository;
+    std::unique_ptr<silkworm::snapshots::SnapshotRepository> state_repository_latest;
+    std::unique_ptr<silkworm::snapshots::SnapshotRepository> state_repository_historical;
     std::unique_ptr<silkworm::rpc::Daemon> rpcdaemon;
     std::unique_ptr<silkworm::stagedsync::ExecutionEngine> execution_engine;
 

@@ -157,19 +157,20 @@ Domain SnapshotBundle::domain(datastore::EntityName name) const {
         nullptr,
         data.existence_indexes.at(Schema::kDomainExistenceIndexName),
         data.btree_indexes.at(Schema::kDomainBTreeIndexName),
-        std::nullopt,
     };
     if (data.accessor_indexes.contains(Schema::kDomainAccessorIndexName)) {
         domain.accessor_index = &data.accessor_indexes.at(Schema::kDomainAccessorIndexName);
     }
-    if (data.segments.contains(Schema::kHistorySegmentName)) {
-        domain.history.emplace(History{
-            data.segments.at(Schema::kHistorySegmentName),
-            data.accessor_indexes.at(Schema::kHistoryAccessorIndexName),
-            inverted_index(name),
-        });
-    }
     return domain;
+}
+
+History SnapshotBundle::history(datastore::EntityName name) const {
+    auto& data = data_.entities.at(name);
+    return History{
+        data.segments.at(Schema::kHistorySegmentName),
+        data.accessor_indexes.at(Schema::kHistoryAccessorIndexName),
+        inverted_index(name),
+    };
 }
 
 InvertedIndex SnapshotBundle::inverted_index(datastore::EntityName name) const {

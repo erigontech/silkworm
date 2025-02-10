@@ -33,7 +33,7 @@ struct HistoryGetQuery {
     explicit HistoryGetQuery(const SnapshotRepositoryROAccess& repository)
         : timestamp_query_{
               repository,
-              [](const SnapshotBundle& bundle) { return bundle.domain(segment_names.front()).history->inverted_index; },
+              [](const SnapshotBundle& bundle) { return bundle.history(segment_names.front()).inverted_index; },
           },
           value_query_{repository} {}
 

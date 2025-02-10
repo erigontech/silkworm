@@ -109,7 +109,8 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* en
     db::DataStoreRef data_store{
         handle->chaindata->ref(),
         *handle->blocks_repository,
-        *handle->state_repository,
+        *handle->state_repository_latest,
+        *handle->state_repository_historical,
     };
 
     // Create the one-and-only Silkrpc daemon

@@ -25,6 +25,7 @@
 #include "common/snapshot_path.hpp"
 #include "common/util/iterator/map_values_view.hpp"
 #include "domain.hpp"
+#include "history.hpp"
 #include "inverted_index.hpp"
 #include "rec_split/accessor_index.hpp"
 #include "schema.hpp"
@@ -114,6 +115,7 @@ struct SnapshotBundle : public SegmentAndAccessorIndexProvider {
     }
 
     Domain domain(datastore::EntityName name) const;
+    History history(datastore::EntityName name) const;
     InvertedIndex inverted_index(datastore::EntityName name) const;
 
     StepRange step_range() const { return step_range_; }

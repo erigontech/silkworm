@@ -229,7 +229,11 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
         snapshots_dir_path,
         /* open = */ false,
         settings->blocks_repo_index_salt);
-    auto state_repository = db::state::make_state_repository(
+    auto state_repository_latest = db::state::make_state_repository_latest(
+        snapshots_dir_path,
+        /* open = */ false,
+        settings->state_repo_index_salt);
+    auto state_repository_historical = db::state::make_state_repository_historical(
         snapshots_dir_path,
         /* open = */ false,
         settings->state_repo_index_salt);
@@ -243,7 +247,8 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
         .data_dir_path = std::move(data_dir_path),
         .node_settings = {},
         .blocks_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(blocks_repository)),
-        .state_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository)),
+        .state_repository_latest = std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository_latest)),
+        .state_repository_historical = std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository_historical)),
         .rpcdaemon = {},
         .execution_engine = {},
         .sentry_thread = {},
@@ -479,7 +484,8 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
         db::DataStoreRef data_store{
             chaindata.ref(),
             *handle->blocks_repository,
-            *handle->state_repository,
+            *handle->state_repository_latest,
+            *handle->state_repository_historical,
         };
         db::DataModelFactory data_model_factory{std::move(data_store)};
 
@@ -606,7 +612,13 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
     auto unmanaged_env = silkworm::datastore::kvdb::EnvUnmanaged{::mdbx_txn_env(mdbx_tx)};
     auto chain_db = db::DataStore::make_chaindata_database(std::move(unmanaged_env));
     auto db_ref = chain_db.ref();
-    auto state = silkworm::execution::DomainState{txn_id_, unmanaged_tx, db_ref, *handle->blocks_repository, *handle->state_repository};
+    silkworm::execution::DomainState state{
+        txn_id_,
+        unmanaged_tx,
+        db_ref,
+        *handle->blocks_repository,
+        *handle->state_repository_latest,
+    };
     if (!handle->chain_config) {
         handle->chain_config = db::read_chain_config(unmanaged_tx);
     }

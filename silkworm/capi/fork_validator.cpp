@@ -132,7 +132,8 @@ SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_en
     silkworm::db::DataStoreRef data_store{
         chaindata.ref(),
         *handle->blocks_repository,
-        *handle->state_repository,
+        *handle->state_repository_latest,
+        *handle->state_repository_historical,
     };
     silkworm::db::DataModelFactory data_model_factory{std::move(data_store)};
 

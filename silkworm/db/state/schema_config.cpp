@@ -20,7 +20,7 @@
 
 namespace silkworm::db::state {
 
-snapshots::Schema::RepositoryDef make_state_repository_schema() {
+snapshots::Schema::RepositoryDef make_state_repository_schema_latest() {
     snapshots::Schema::RepositoryDef schema;
     schema.index_salt_file_name("salt-state.txt");
 
@@ -29,12 +29,25 @@ snapshots::Schema::RepositoryDef make_state_repository_schema() {
     schema.domain(kDomainNameStorage)
         .kv_segment_compression_kind(snapshots::seg::CompressionKind::kKeys);
     schema.domain(kDomainNameCode)
-        .history_compression_enabled(true)
         .kv_segment_compression_kind(snapshots::seg::CompressionKind::kValues);
     schema.domain(kDomainNameCommitment)
-        .without_history()
         .kv_segment_compression_kind(snapshots::seg::CompressionKind::kKeys);
     schema.domain(kDomainNameReceipts);
+
+    return schema;
+}
+
+snapshots::Schema::RepositoryDef make_state_repository_schema_historical() {
+    snapshots::Schema::RepositoryDef schema;
+    schema.index_salt_file_name("salt-state.txt");
+
+    schema.history(kDomainNameAccounts)
+        .tag_override(kDomainAccountsTag);
+    schema.history(kDomainNameStorage);
+    schema.history(kDomainNameCode)
+        .segment(snapshots::Schema::kHistorySegmentName)
+        .compression_enabled(true);
+    schema.history(kDomainNameReceipts);
 
     schema.inverted_index(kInvIdxNameLogAddress)
         .tag_override(kInvIdxLogAddressTag);
@@ -65,22 +78,33 @@ datastore::kvdb::Schema::DatabaseDef make_state_database_schema() {
     return schema;
 }
 
-std::unique_ptr<snapshots::IndexBuildersFactory> make_state_index_builders_factory() {
-    return std::make_unique<StateIndexBuildersFactory>(make_state_repository_schema());
-}
-
-snapshots::SnapshotRepository make_state_repository(
+static snapshots::SnapshotRepository make_state_repository(
     std::filesystem::path dir_path,
     bool open,
+    snapshots::Schema::RepositoryDef schema,
     std::optional<uint32_t> index_salt) {
     return snapshots::SnapshotRepository{
         std::move(dir_path),
         open,
-        make_state_repository_schema(),
+        schema,
         std::make_unique<datastore::StepToTxnIdConverter>(),
         index_salt,
-        make_state_index_builders_factory(),
+        std::make_unique<StateIndexBuildersFactory>(schema),
     };
+}
+
+snapshots::SnapshotRepository make_state_repository_latest(
+    std::filesystem::path dir_path,
+    bool open,
+    std::optional<uint32_t> index_salt) {
+    return make_state_repository(std::move(dir_path), open, make_state_repository_schema_latest(), index_salt);
+}
+
+snapshots::SnapshotRepository make_state_repository_historical(
+    std::filesystem::path dir_path,
+    bool open,
+    std::optional<uint32_t> index_salt) {
+    return make_state_repository(std::move(dir_path), open, make_state_repository_schema_historical(), index_salt);
 }
 
 }  // namespace silkworm::db::state

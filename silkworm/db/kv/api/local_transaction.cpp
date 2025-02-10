@@ -95,7 +95,7 @@ Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery query) {
         inverted_index_name,
         data_store_.chaindata,
         txn_,
-        data_store_.state_repository,
+        data_store_.state_repository_historical,
     };
 
     // TODO: convert query from/to to ts_range

@@ -29,24 +29,28 @@ struct DomainGetAsOfQuery {
     DomainGetAsOfQuery(
         kvdb::Domain kvdb_entity,
         kvdb::ROTxn& tx,
-        const snapshots::SnapshotRepositoryROAccess& repository)
-        : query1_{*kvdb_entity.history, tx, repository},
-          query2_{history_segment_names.front(), kvdb_entity, tx, repository} {}
+        const snapshots::SnapshotRepositoryROAccess& repository_latest,
+        const snapshots::SnapshotRepositoryROAccess& repository_historical)
+        : query1_{*kvdb_entity.history, tx, repository_historical},
+          query2_{history_segment_names.front(), kvdb_entity, tx, repository_latest} {}
 
     DomainGetAsOfQuery(
         const kvdb::DatabaseRef& database,
         kvdb::ROTxn& tx,
-        const snapshots::SnapshotRepositoryROAccess& repository)
-        : query1_{database, tx, repository},
-          query2_{history_segment_names.front(), database, tx, repository} {}
+        const snapshots::SnapshotRepositoryROAccess& repository_latest,
+        const snapshots::SnapshotRepositoryROAccess& repository_historical)
+        : query1_{database, tx, repository_historical},
+          query2_{history_segment_names.front(), database, tx, repository_latest} {}
 
     using Key = decltype(TKeyEncoder1::value);
     using Value = decltype(TValueDecoder1::value);
 
-    std::optional<Value> exec(const Key& key, Timestamp timestamp) {
-        auto result1 = query1_.exec(key, timestamp);
-        if (result1) {
-            return result1;
+    std::optional<Value> exec(const Key& key, std::optional<Timestamp> timestamp) {
+        if (timestamp) {
+            auto result1 = query1_.exec(key, *timestamp);
+            if (result1) {
+                return result1;
+            }
         }
         auto result2 = query2_.exec(key);
         if (result2) {

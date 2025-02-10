@@ -1156,7 +1156,13 @@ bool DataModel::read_body(const Hash& hash, BlockBody& body) const {
 }
 
 std::optional<Hash> DataModel::read_canonical_header_hash(BlockNum block_num) const {
-    return db::read_canonical_header_hash(txn_, block_num);
+    const auto block_hash = db::read_canonical_header_hash(txn_, block_num);
+    if (block_hash) return block_hash;
+
+    const auto block_header = read_header_from_snapshot(block_num);
+    if (!block_header) return {};
+
+    return block_header->hash();
 }
 
 std::optional<BlockHeader> DataModel::read_canonical_header(BlockNum block_num) const {

@@ -149,9 +149,9 @@ TEST_CASE("segments") {
 
     auto header_list = HeaderList::make(headers);
 
-    auto [segments, penality] = header_list->split_into_segments();
+    auto [segments, penalty] = header_list->split_into_segments();
     REQUIRE(segments.size() == 1);
-    REQUIRE(penality == kNoPenalty);
+    REQUIRE(penalty == kNoPenalty);
 
     Segment segment = segments[0];
     REQUIRE(segment.lowest_header()->number == headers[0].number);

@@ -22,58 +22,158 @@
 
 namespace silkworm::db::state {
 
-TEST_CASE("Bytes32NoLeadingZerosCodec.full_word") {
-    using evmc::literals::operator""_address;
-    using evmc::literals::operator""_bytes32;
+using evmc::literals::operator""_address;
+using evmc::literals::operator""_bytes32;
+const evmc::bytes32 full_word{0x010000000000000000000000000000000000000000005666856076ebaf477f07_bytes32};
+const evmc::bytes32 partial_word{0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32};
+const evmc::bytes32 empty_word{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
 
-    auto value = 0x010000000000000000000000000000000000000000005666856076ebaf477f07_bytes32;
-
-    Bytes32NoLeadingZerosCodec codec;
-    codec.value = value;
+TEST_CASE("Bytes32KVDBCodec.full_word") {
+    Bytes32KVDBCodec codec;
+    codec.value = full_word;
     auto slice = codec.encode();
     CHECK(slice.size() == 32);
 
-    Bytes32NoLeadingZerosCodec codec2;
+    Bytes32KVDBCodec codec2;
     codec2.decode(slice);
-    CHECK(codec2.value == value);
+    CHECK(codec2.value == full_word);
 }
 
-TEST_CASE("Bytes32NoLeadingZerosCodec.partial_word") {
-    using evmc::literals::operator""_address;
-    using evmc::literals::operator""_bytes32;
+TEST_CASE("Bytes32KVDBCodec.partial_word") {
+    Bytes32KVDBCodec codec;
+    codec.value = partial_word;
+    auto slice = codec.encode();
+    CHECK(slice.size() == 32);
 
-    auto value = 0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32;
+    Bytes32KVDBCodec codec2;
+    codec2.decode(slice);
+    CHECK(codec2.value == partial_word);
+}
 
-    Bytes32NoLeadingZerosCodec codec;
-    codec.value = value;
+TEST_CASE("Bytes32KVDBCodec.empty_word") {
+    Bytes32KVDBCodec codec;
+    codec.value = empty_word;
+    auto slice = codec.encode();
+    CHECK(slice.size() == 32);
+
+    Bytes32KVDBCodec codec2;
+    codec2.decode(slice);
+    CHECK(codec2.value == empty_word);
+}
+
+TEST_CASE("PackedBytes32KVDBCodec.full_word") {
+    PackedBytes32KVDBCodec codec;
+    codec.value = full_word;
+    auto slice = codec.encode();
+    CHECK(slice.size() == 32);
+
+    PackedBytes32KVDBCodec codec2;
+    codec2.decode(slice);
+    CHECK(codec2.value == full_word);
+}
+
+TEST_CASE("PackedBytes32KVDBCodec.partial_word") {
+    PackedBytes32KVDBCodec codec;
+    codec.value = partial_word;
     auto slice = codec.encode();
     CHECK(slice.size() == 10);
 
-    Bytes32NoLeadingZerosCodec codec2;
+    PackedBytes32KVDBCodec codec2;
     codec2.decode(slice);
-    CHECK(codec2.value == value);
+    CHECK(codec2.value == partial_word);
 }
 
-TEST_CASE("Bytes32NoLeadingZerosCodec.empty_word") {
-    using evmc::literals::operator""_address;
-    using evmc::literals::operator""_bytes32;
-
-    auto value = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
-
-    Bytes32NoLeadingZerosCodec codec;
-    codec.value = value;
+TEST_CASE("PackedBytes32KVDBCodec.empty_word") {
+    PackedBytes32KVDBCodec codec;
+    codec.value = empty_word;
     auto slice = codec.encode();
     CHECK(slice.size() == 0);
 
-    Bytes32NoLeadingZerosCodec codec2;
+    PackedBytes32KVDBCodec codec2;
     codec2.decode(slice);
-    CHECK(codec2.value == value);
+    CHECK(codec2.value == empty_word);
 }
 
+TEST_CASE("StorageAddressAndLocationKVDBEncoder.encode") {
+    StorageAddressAndLocationKVDBEncoder encoder;
+
+    encoder.value.address = 0x000000000000000000636f6e736f6c652e6c6f67_address;
+    encoder.value.location_hash = 0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32;
+    auto encoded_view = silkworm::datastore::kvdb::from_slice(encoder.encode());
+    CHECK(
+        encoded_view ==
+        *from_hex(
+            "000000000000000000636f6e736f6c652e6c6f67"
+            "000000000000000000000000000000000000000000005666856076ebaf477f07"));
+}
+
+TEST_CASE("Bytes32SnapshotsCodec.full_word") {
+    Bytes32SnapshotsCodec codec;
+    codec.value = full_word;
+    auto encoded = codec.encode_word();
+    CHECK(encoded.size() == 32);
+
+    Bytes32SnapshotsCodec codec2;
+    codec2.decode_word(encoded);
+    CHECK(codec2.value == full_word);
+}
+
+TEST_CASE("Bytes32SnapshotsCodec.partial_word") {
+    Bytes32SnapshotsCodec codec;
+    codec.value = partial_word;
+    auto encoded = codec.encode_word();
+    CHECK(encoded.size() == 32);
+
+    Bytes32SnapshotsCodec codec2;
+    codec2.decode_word(encoded);
+    CHECK(codec2.value == partial_word);
+}
+
+TEST_CASE("Bytes32SnapshotsCodec.empty_word") {
+    Bytes32SnapshotsCodec codec;
+    codec.value = empty_word;
+    auto encoded = codec.encode_word();
+    CHECK(encoded.size() == 32);
+
+    Bytes32SnapshotsCodec codec2;
+    codec2.decode_word(encoded);
+    CHECK(codec2.value == empty_word);
+}
+
+TEST_CASE("PackedBytes32SnapshotsCodec.full_word") {
+    PackedBytes32SnapshotsCodec codec;
+    codec.value = full_word;
+    auto encoded = codec.encode_word();
+    CHECK(encoded.size() == 32);
+
+    PackedBytes32SnapshotsCodec codec2;
+    codec2.decode_word(encoded);
+    CHECK(codec2.value == full_word);
+}
+
+TEST_CASE("PackedBytes32SnapshotsCodec.partial_word") {
+    PackedBytes32SnapshotsCodec codec;
+    codec.value = partial_word;
+    auto encoded = codec.encode_word();
+    CHECK(encoded.size() == 10);
+
+    PackedBytes32SnapshotsCodec codec2;
+    codec2.decode_word(encoded);
+    CHECK(codec2.value == partial_word);
+}
+
+TEST_CASE("PackedBytes32SnapshotsCodec.empty_word") {
+    PackedBytes32SnapshotsCodec codec;
+    codec.value = empty_word;
+    auto encoded = codec.encode_word();
+    CHECK(encoded.size() == 0);
+
+    PackedBytes32SnapshotsCodec codec2;
+    codec2.decode_word(encoded);
+    CHECK(codec2.value == empty_word);
+}
 
 TEST_CASE("StorageAddressAndLocationSnapshotsCodec.decode_word") {
-    using evmc::literals::operator""_address;
-    using evmc::literals::operator""_bytes32;
     StorageAddressAndLocationSnapshotsCodec decoder;
 
     decoder.decode_word(
@@ -87,8 +187,6 @@ TEST_CASE("StorageAddressAndLocationSnapshotsCodec.decode_word") {
 }
 
 TEST_CASE("StorageAddressAndLocationSnapshotsCodec.encode_word") {
-    using evmc::literals::operator""_address;
-    using evmc::literals::operator""_bytes32;
     StorageAddressAndLocationSnapshotsCodec encoder;
 
     encoder.value.address = 0x000000000000000000636f6e736f6c652e6c6f67_address;

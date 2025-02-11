@@ -23,9 +23,23 @@
 
 namespace silkworm::db::state {
 
-struct Bytes32NoLeadingZerosCodec : public datastore::kvdb::Codec {
+struct Bytes32KVDBCodec : public datastore::kvdb::Codec {
     evmc::bytes32 value;
-    ~Bytes32NoLeadingZerosCodec() override = default;
+    ~Bytes32KVDBCodec() override = default;
+    datastore::kvdb::Slice encode() override {
+        return {&value.bytes, sizeof(value.bytes)};
+    }
+    void decode(datastore::kvdb::Slice slice) override {
+        SILKWORM_ASSERT(slice.size() >= sizeof(value.bytes));
+        std::memcpy(value.bytes, slice.data(), sizeof(value.bytes));
+    }
+};
+static_assert(datastore::kvdb::EncoderConcept<Bytes32KVDBCodec>);
+static_assert(datastore::kvdb::DecoderConcept<Bytes32KVDBCodec>);
+
+struct PackedBytes32KVDBCodec : public datastore::kvdb::Codec {
+    evmc::bytes32 value;
+    ~PackedBytes32KVDBCodec() override = default;
 
     datastore::kvdb::Slice encode() override {
         // find first non-zero byte
@@ -43,27 +57,14 @@ struct Bytes32NoLeadingZerosCodec : public datastore::kvdb::Codec {
         std::memcpy(value.bytes + offset, slice.data(), slice.size());
     }
 };
-
-struct Bytes32KVDBCodec : public datastore::kvdb::Codec {
-    evmc::bytes32 value;
-    ~Bytes32KVDBCodec() override = default;
-    datastore::kvdb::Slice encode() override {
-        return {&value.bytes, sizeof(value.bytes)};
-    }
-    void decode(datastore::kvdb::Slice slice) override {
-        SILKWORM_ASSERT(slice.size() >= sizeof(value.bytes));
-        std::memcpy(value.bytes, slice.data(), sizeof(value.bytes));
-    }
-};
-
-static_assert(datastore::kvdb::EncoderConcept<Bytes32KVDBCodec>);
-static_assert(datastore::kvdb::DecoderConcept<Bytes32KVDBCodec>);
+static_assert(datastore::kvdb::EncoderConcept<PackedBytes32KVDBCodec>);
+static_assert(datastore::kvdb::DecoderConcept<PackedBytes32KVDBCodec>);
 
 struct Bytes32SnapshotsCodec : public snapshots::Codec {
     evmc::bytes32 value;
     ~Bytes32SnapshotsCodec() override = default;
     ByteView encode_word() override {
-        return ByteView{reinterpret_cast<uint8_t*>(&value.bytes), sizeof(value.bytes)};
+        return ByteView{value.bytes};
     }
     void decode_word(ByteView word) override {
         if (word.size() < sizeof(value.bytes))
@@ -71,9 +72,30 @@ struct Bytes32SnapshotsCodec : public snapshots::Codec {
         std::memcpy(value.bytes, word.data(), sizeof(value.bytes));
     }
 };
-
 static_assert(snapshots::EncoderConcept<Bytes32SnapshotsCodec>);
 static_assert(snapshots::DecoderConcept<Bytes32SnapshotsCodec>);
+
+struct PackedBytes32SnapshotsCodec : public snapshots::Codec {
+    evmc::bytes32 value;
+    ~PackedBytes32SnapshotsCodec() override = default;
+    ByteView encode_word() override {
+        // find first non-zero byte
+        u_int64_t offset = 0;
+        while (value.bytes[offset] == 0 && offset < sizeof(value.bytes)) {
+            offset++;
+        }
+        return ByteView{value.bytes + offset, sizeof(value.bytes) - offset};
+    }
+    void decode_word(ByteView word) override {
+        if (word.size() > sizeof(value.bytes))
+            throw std::runtime_error{"Bytes32ReducedSnapshotsCodec failed to decode"};
+        u_int64_t offset = sizeof(value.bytes) - word.size();
+        std::memset(value.bytes, 0, offset);
+        std::memcpy(value.bytes+ offset, word.data(), word.size());
+    }
+};
+static_assert(snapshots::EncoderConcept<PackedBytes32SnapshotsCodec>);
+static_assert(snapshots::DecoderConcept<PackedBytes32SnapshotsCodec>);
 
 struct StorageAddressAndLocation {
     evmc::address address;
@@ -94,7 +116,6 @@ struct StorageAddressAndLocationKVDBEncoder : public datastore::kvdb::Encoder {
 
     datastore::kvdb::Slice encode() override;
 };
-
 static_assert(datastore::kvdb::EncoderConcept<StorageAddressAndLocationKVDBEncoder>);
 
 struct StorageAddressAndLocationSnapshotsCodec : public snapshots::Codec {
@@ -112,7 +133,6 @@ struct StorageAddressAndLocationSnapshotsCodec : public snapshots::Codec {
     ByteView encode_word() override;
     void decode_word(ByteView input_word) override;
 };
-
 static_assert(snapshots::EncoderConcept<StorageAddressAndLocationSnapshotsCodec>);
 static_assert(snapshots::DecoderConcept<StorageAddressAndLocationSnapshotsCodec>);
 

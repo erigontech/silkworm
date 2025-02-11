@@ -19,6 +19,8 @@
 #include <cstring>
 #include <stdexcept>
 
+#include <silkworm/core/types/evmc_bytes32.hpp>
+
 #include "address_codecs.hpp"
 
 namespace silkworm::db::state {
@@ -34,15 +36,28 @@ struct Bytes32KVDBCodec : public datastore::kvdb::Codec {
         std::memcpy(value.bytes, slice.data(), sizeof(value.bytes));
     }
 };
-
 static_assert(datastore::kvdb::EncoderConcept<Bytes32KVDBCodec>);
 static_assert(datastore::kvdb::DecoderConcept<Bytes32KVDBCodec>);
+
+struct PackedBytes32KVDBCodec : public datastore::kvdb::Codec {
+    evmc::bytes32 value;
+    ~PackedBytes32KVDBCodec() override = default;
+    datastore::kvdb::Slice encode() override {
+        return {silkworm::zeroless_view(value.bytes)};
+    }
+    void decode(datastore::kvdb::Slice slice) override {
+        SILKWORM_ASSERT(slice.size() <= sizeof(value.bytes));
+        value = to_bytes32(silkworm::datastore::kvdb::from_slice(slice));
+    }
+};
+static_assert(datastore::kvdb::EncoderConcept<PackedBytes32KVDBCodec>);
+static_assert(datastore::kvdb::DecoderConcept<PackedBytes32KVDBCodec>);
 
 struct Bytes32SnapshotsCodec : public snapshots::Codec {
     evmc::bytes32 value;
     ~Bytes32SnapshotsCodec() override = default;
     ByteView encode_word() override {
-        return ByteView{reinterpret_cast<uint8_t*>(&value.bytes), sizeof(value.bytes)};
+        return ByteView{value.bytes};
     }
     void decode_word(ByteView word) override {
         if (word.size() < sizeof(value.bytes))
@@ -50,9 +65,23 @@ struct Bytes32SnapshotsCodec : public snapshots::Codec {
         std::memcpy(value.bytes, word.data(), sizeof(value.bytes));
     }
 };
-
 static_assert(snapshots::EncoderConcept<Bytes32SnapshotsCodec>);
 static_assert(snapshots::DecoderConcept<Bytes32SnapshotsCodec>);
+
+struct PackedBytes32SnapshotsCodec : public snapshots::Codec {
+    evmc::bytes32 value;
+    ~PackedBytes32SnapshotsCodec() override = default;
+    ByteView encode_word() override {
+        return silkworm::zeroless_view(ByteView{value});
+    }
+    void decode_word(ByteView word) override {
+        if (word.size() > sizeof(value.bytes))
+            throw std::runtime_error{"Bytes32ReducedSnapshotsCodec failed to decode"};
+        value = silkworm::to_bytes32(word);
+    }
+};
+static_assert(snapshots::EncoderConcept<PackedBytes32SnapshotsCodec>);
+static_assert(snapshots::DecoderConcept<PackedBytes32SnapshotsCodec>);
 
 struct StorageAddressAndLocation {
     evmc::address address;
@@ -73,7 +102,6 @@ struct StorageAddressAndLocationKVDBEncoder : public datastore::kvdb::Encoder {
 
     datastore::kvdb::Slice encode() override;
 };
-
 static_assert(datastore::kvdb::EncoderConcept<StorageAddressAndLocationKVDBEncoder>);
 
 struct StorageAddressAndLocationSnapshotsCodec : public snapshots::Codec {
@@ -91,7 +119,6 @@ struct StorageAddressAndLocationSnapshotsCodec : public snapshots::Codec {
     ByteView encode_word() override;
     void decode_word(ByteView input_word) override;
 };
-
 static_assert(snapshots::EncoderConcept<StorageAddressAndLocationSnapshotsCodec>);
 static_assert(snapshots::DecoderConcept<StorageAddressAndLocationSnapshotsCodec>);
 

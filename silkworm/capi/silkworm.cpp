@@ -648,14 +648,11 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
     auto& transaction = block.transactions[txn_index];
 
     auto protocol_rule_set_{protocol::rule_set_factory(*handle->chain_config)};
-
     ExecutionProcessor processor{block, *protocol_rule_set_, state, *handle->chain_config, false};
     // TODO: add analysis cache, check block exec for more
 
     silkworm::Receipt receipt{};
-
     const ValidationResult err{protocol::validate_transaction(transaction, processor.intra_block_state(), processor.available_gas())};
-
     if (err != ValidationResult::kOk) {
         return SILKWORM_INVALID_BLOCK;
     }

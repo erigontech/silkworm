@@ -28,13 +28,11 @@
 #include <absl/strings/str_split.h>
 #include <boost/thread/scoped_thread.hpp>
 #include <gsl/util>
-#include <nlohmann/json.hpp>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/execution/execution.hpp>
-#include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/blocks/schema_config.hpp>
 #include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
@@ -588,7 +586,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 }
 
 SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_tx, uint64_t block_num, struct SilkwormBytes32 block_hash, uint64_t txn_index, uint64_t txn_num, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT {
-    // log::Info{"silkworm_execute_txn", {"block_num", std::to_string(block_num), "txn_index", std::to_string(txn_index)}};
+    log::Info{"silkworm_execute_txn", {"block_num", std::to_string(block_num), "txn_index", std::to_string(txn_index)}};
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -603,16 +601,6 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
 
     if (blob_gas_used) {
         *blob_gas_used = 0;
-    }
-
-    if (!handle->blocks_repository) {
-        SILK_ERROR << "Blocks repository not found";
-        return SILKWORM_INVALID_HANDLE;
-    }
-
-    if (!handle->state_repository) {
-        SILK_ERROR << "State repository not found";
-        return SILKWORM_INVALID_HANDLE;
     }
 
     silkworm::Hash block_header_hash{};
@@ -633,22 +621,7 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
     };
     if (!handle->chain_config) {
         handle->chain_config = db::read_chain_config(unmanaged_tx);
-        if (!handle->chain_config) {
-            SILK_ERROR << "Chain config not found";
-            return SILKWORM_INVALID_SETTINGS;
-        }
-
-        // TODO: make it compatible with other rulesets
-        // Dirty hack to force ethash config
-        auto chain_config_edit = handle->chain_config->to_json();
-        if (!chain_config_edit.contains("ethash")) {
-            chain_config_edit.emplace("ethash", silkworm::protocol::EthashConfig{}.to_json());
-            handle->chain_config = ChainConfig::from_json(chain_config_edit);
-        }
     }
-
-    // log handle->chain_config values
-    // SILK_INFO << "Chain id: " << handle->chain_config->chain_id;
 
     // TODO: cache block, also consider preloading
     silkworm::Block block{};
@@ -668,41 +641,25 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
 
     if (txn_index >= block.transactions.size()) {
         SILK_ERROR << "Transaction not found"
-                   << " txn_num: " << std::to_string(txn_num) << " txn_index: " << std::to_string(txn_index) << " transactions in block: " << std::to_string(block.transactions.size());
+                   << " txn_index: " << txn_index;
         return SILKWORM_INVALID_BLOCK;
     }
 
-    // SILK_INFO << "Transaction found" << " txn_num: " << std::to_string(txn_num) << " txn_index: " << std::to_string(txn_index) << " transactions in block: " << std::to_string(block.transactions.size());
-
     auto& transaction = block.transactions[txn_index];
-
-    // SILK_INFO << "Setting protocol rule set";
 
     auto protocol_rule_set_{protocol::rule_set_factory(*handle->chain_config)};
 
-    if (protocol_rule_set_) {
-        // SILK_INFO << "Protocol rule set created";
-    } else {
-        SILK_ERROR << "Protocol rule set not created";
-        return SILKWORM_INTERNAL_ERROR;
-    }
-
-    // SILK_INFO << "Creating ExecutionProcessor";
     ExecutionProcessor processor{block, *protocol_rule_set_, state, *handle->chain_config, false};
     // TODO: add analysis cache, check block exec for more
 
     silkworm::Receipt receipt{};
 
-    // SILK_INFO << "Validating transaction";
     const ValidationResult err{protocol::validate_transaction(transaction, processor.intra_block_state(), processor.available_gas())};
 
-    // SILK_INFO << "Transaction validation result: " << static_cast<int>(err);
     if (err != ValidationResult::kOk) {
-        SILK_ERROR << "Transaction validation failed" << " err: " << static_cast<int>(err);
         return SILKWORM_INVALID_BLOCK;
     }
     processor.execute_transaction(transaction, receipt);
-    processor.flush_state();
     state.insert_receipts(block_number, std::vector<silkworm::Receipt>{receipt});
 
     if (gas_used) {
@@ -711,8 +668,6 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
     if (blob_gas_used) {
         *blob_gas_used = transaction.total_blob_gas();
     }
-
-    // log::Info{"silkworm_execute_txn complete successfuly"};
 
     return SILKWORM_OK;
 }

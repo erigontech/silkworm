@@ -25,6 +25,27 @@
 
 namespace silkworm::db::state {
 
+struct Bytes32NoLeadingZerosCodec : public datastore::kvdb::Codec {
+    evmc::bytes32 value;
+    ~Bytes32NoLeadingZerosCodec() override = default;
+
+    datastore::kvdb::Slice encode() override {
+        // find first non-zero byte
+        u_int64_t offset = 0;
+        while (value.bytes[offset] == 0 && offset < sizeof(value.bytes)) {
+            offset++;
+        }
+        return {value.bytes + offset, sizeof(value.bytes) - offset};
+    }
+
+    void decode(datastore::kvdb::Slice slice) override {
+        SILKWORM_ASSERT(slice.size() <= sizeof(value.bytes));
+        u_int64_t offset = sizeof(value.bytes) - slice.size();
+        std::memset(value.bytes, 0, offset);
+        std::memcpy(value.bytes + offset, slice.data(), slice.size());
+    }
+};
+
 struct Bytes32KVDBCodec : public datastore::kvdb::Codec {
     evmc::bytes32 value;
     ~Bytes32KVDBCodec() override = default;

@@ -91,7 +91,7 @@ struct PackedBytes32SnapshotsCodec : public snapshots::Codec {
             throw std::runtime_error{"Bytes32ReducedSnapshotsCodec failed to decode"};
         u_int64_t offset = sizeof(value.bytes) - word.size();
         std::memset(value.bytes, 0, offset);
-        std::memcpy(value.bytes+ offset, word.data(), word.size());
+        std::memcpy(value.bytes + offset, word.data(), word.size());
     }
 };
 static_assert(snapshots::EncoderConcept<PackedBytes32SnapshotsCodec>);

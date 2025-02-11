@@ -24,7 +24,8 @@ datastore::Schema DataStore::make_schema() {
 
     snapshots::Schema snapshots;
     snapshots.repository(blocks::kBlocksRepositoryName) = blocks::make_blocks_repository_schema();
-    snapshots.repository(state::kStateRepositoryName) = state::make_state_repository_schema();
+    snapshots.repository(state::kStateRepositoryNameLatest) = state::make_state_repository_schema_latest();
+    snapshots.repository(state::kStateRepositoryNameHistorical) = state::make_state_repository_schema_historical();
 
     return {
         std::move(kvdb),
@@ -59,10 +60,12 @@ std::map<datastore::EntityName, std::unique_ptr<datastore::kvdb::Database>> Data
 
 std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> DataStore::make_repositories_map(
     snapshots::SnapshotRepository blocks_repository,
-    snapshots::SnapshotRepository state_repository) {
+    snapshots::SnapshotRepository state_repository_latest,
+    snapshots::SnapshotRepository state_repository_historical) {
     std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> repositories;
     repositories.emplace(blocks::kBlocksRepositoryName, std::make_unique<snapshots::SnapshotRepository>(std::move(blocks_repository)));
-    repositories.emplace(state::kStateRepositoryName, std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository)));
+    repositories.emplace(state::kStateRepositoryNameLatest, std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository_latest)));
+    repositories.emplace(state::kStateRepositoryNameHistorical, std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository_historical)));
     return repositories;
 }
 

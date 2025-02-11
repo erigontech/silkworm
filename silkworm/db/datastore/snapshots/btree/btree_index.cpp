@@ -70,6 +70,10 @@ void BTreeIndex::warmup_if_empty_or_check(const KVSegmentReader& kv_segment) {
     }
 }
 
+MemoryMappedRegion BTreeIndex::memory_file_region() const {
+    return memory_file_->region();
+}
+
 std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, const KVSegmentReader& kv_segment) const {
     KeyValueIndex index{kv_segment, data_offsets_, file_path_};
     auto [found, key, value, data_index] = btree_->seek(seek_key, index);

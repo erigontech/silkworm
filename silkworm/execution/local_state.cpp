@@ -27,16 +27,7 @@ using namespace db::state;
 using namespace datastore;
 
 std::optional<Account> LocalState::read_account(const evmc::address& address) const noexcept {
-    if (txn_id_) {
-        // Query historical state at required timestamp
-        return make_query<AccountsDomainGetAsOfQuery>().exec(address, *txn_id_);
-    }
-    // Query latest i.e. current state
-    auto result = make_query<AccountsDomainGetLatestQuery>().exec(address);
-    if (result) {
-        return std::move(result->value);
-    }
-    return std::nullopt;
+    return query_as_of<AccountsDomainGetAsOfQuery>().exec(address, txn_id_);
 }
 
 ByteView LocalState::read_code(const evmc::address& address, const evmc::bytes32& /*code_hash*/) const noexcept {
@@ -44,36 +35,17 @@ ByteView LocalState::read_code(const evmc::address& address, const evmc::bytes32
         return code_[address];  // NOLINT(runtime/arrays)
     }
 
-    if (txn_id_) {
-        // Query historical state at required timestamp
-        auto result = make_query<CodeDomainGetAsOfQuery>().exec(address, *txn_id_);
-        if (result) {
-            auto [it, _] = code_.emplace(address, std::move(*result));
-            return it->second;
-        }
-        return ByteView{};
-    }
-    // Query latest i.e. current state
-    auto result = make_query<CodeDomainGetLatestQuery>().exec(address);
+    auto result = query_as_of<CodeDomainGetAsOfQuery>().exec(address, txn_id_);
     if (result) {
-        auto [it, _] = code_.emplace(address, std::move(result->value));
+        auto [it, _] = code_.emplace(address, std::move(*result));
         return it->second;
     }
     return ByteView{};
 }
 
 evmc::bytes32 LocalState::read_storage(const evmc::address& address, uint64_t /*incarnation*/, const evmc::bytes32& location) const noexcept {
-    if (txn_id_) {
-        // Query historical state at required timestamp
-        auto result = make_query<StorageDomainGetAsOfQuery>().exec({address, location}, *txn_id_);
-        return result.value_or(evmc::bytes32{});
-    }
-    // Query latest i.e. current state
-    auto result = make_query<StorageDomainGetLatestQuery>().exec({address, location});
-    if (result) {
-        return result->value;
-    }
-    return {};
+    auto result = query_as_of<StorageDomainGetAsOfQuery>().exec({address, location}, txn_id_);
+    return result.value_or(evmc::bytes32{});
 }
 
 uint64_t LocalState::previous_incarnation(const evmc::address& /*address*/) const noexcept {

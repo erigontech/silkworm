@@ -20,6 +20,7 @@
 #include <iterator>
 #include <optional>
 #include <ranges>
+#include <utility>
 
 namespace silkworm::views {
 

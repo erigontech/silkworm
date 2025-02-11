@@ -20,7 +20,6 @@
 
 #include "bloom_filter/bloom_filter.hpp"
 #include "btree/btree_index.hpp"
-#include "history.hpp"
 #include "rec_split/accessor_index.hpp"
 #include "segment/kv_segment_reader.hpp"
 
@@ -31,7 +30,6 @@ struct Domain {
     const rec_split::AccessorIndex* accessor_index{nullptr};
     const bloom_filter::BloomFilter& existence_index;
     const btree::BTreeIndex& btree_index;
-    std::optional<History> history;
 };
 
 }  // namespace silkworm::snapshots

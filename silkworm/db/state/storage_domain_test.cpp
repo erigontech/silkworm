@@ -22,6 +22,55 @@
 
 namespace silkworm::db::state {
 
+TEST_CASE("Bytes32NoLeadingZerosCodec.full_word") {
+    using evmc::literals::operator""_address;
+    using evmc::literals::operator""_bytes32;
+
+    auto value = 0x010000000000000000000000000000000000000000005666856076ebaf477f07_bytes32;
+
+    Bytes32NoLeadingZerosCodec codec;
+    codec.value = value;
+    auto slice = codec.encode();
+    CHECK(slice.size() == 32);
+
+    Bytes32NoLeadingZerosCodec codec2;
+    codec2.decode(slice);
+    CHECK(codec2.value == value);
+}
+
+TEST_CASE("Bytes32NoLeadingZerosCodec.partial_word") {
+    using evmc::literals::operator""_address;
+    using evmc::literals::operator""_bytes32;
+
+    auto value = 0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32;
+
+    Bytes32NoLeadingZerosCodec codec;
+    codec.value = value;
+    auto slice = codec.encode();
+    CHECK(slice.size() == 10);
+
+    Bytes32NoLeadingZerosCodec codec2;
+    codec2.decode(slice);
+    CHECK(codec2.value == value);
+}
+
+TEST_CASE("Bytes32NoLeadingZerosCodec.empty_word") {
+    using evmc::literals::operator""_address;
+    using evmc::literals::operator""_bytes32;
+
+    auto value = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
+
+    Bytes32NoLeadingZerosCodec codec;
+    codec.value = value;
+    auto slice = codec.encode();
+    CHECK(slice.size() == 0);
+
+    Bytes32NoLeadingZerosCodec codec2;
+    codec2.decode(slice);
+    CHECK(codec2.value == value);
+}
+
+
 TEST_CASE("StorageAddressAndLocationSnapshotsCodec.decode_word") {
     using evmc::literals::operator""_address;
     using evmc::literals::operator""_bytes32;

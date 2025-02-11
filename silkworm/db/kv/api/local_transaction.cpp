@@ -16,10 +16,12 @@
 
 #include "local_transaction.hpp"
 
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/chain/local_chain_storage.hpp>
 #include <silkworm/db/datastore/inverted_index_range_by_key_query.hpp>
 #include <silkworm/db/datastore/kvdb/raw_codec.hpp>
 #include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
+#include <silkworm/db/kv/txn_num.hpp>
 
 namespace silkworm::db::kv::api {
 
@@ -54,7 +56,7 @@ Task<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::str
             co_return cursor_it->second;
         }
     }
-    auto cursor = std::make_shared<LocalCursor>(txn_, ++last_cursor_id_);
+    auto cursor = std::make_shared<LocalCursor>(tx_, ++last_cursor_id_);
     co_await cursor->open_cursor(table, is_cursor_dup_sort);
     if (is_cursor_dup_sort) {
         dup_cursors_[table] = cursor;
@@ -66,11 +68,16 @@ Task<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::str
 
 std::shared_ptr<chain::ChainStorage> LocalTransaction::create_storage() {
     // The calling thread *must* be the *same* which created this LocalTransaction instance
-    return std::make_shared<chain::LocalChainStorage>(DataModel{txn_, data_store_.blocks_repository});
+    return std::make_shared<chain::LocalChainStorage>(DataModel{tx_, data_store_.blocks_repository});
 }
 
-Task<TxnId> LocalTransaction::first_txn_num_in_block(BlockNum /*block_num*/) {
-    throw std::logic_error{"LocalTransaction::first_txn_num_in_block: not yet implemented"};
+Task<TxnId> LocalTransaction::first_txn_num_in_block(BlockNum block_num) {
+    auto canonical_body_for_storage = [this](BlockNum bn) -> Task<std::optional<Bytes>> {
+        DataModel access_layer{tx_, data_store_.blocks_repository};
+        co_return access_layer.read_raw_body_for_storage_from_snapshot(bn);
+    };
+    const auto min_txn_num = co_await txn::min_tx_num(*this, block_num, canonical_body_for_storage);
+    co_return min_txn_num + /*txn_index=*/0;
 }
 
 Task<GetLatestResult> LocalTransaction::get_latest(GetLatestQuery /*query*/) {
@@ -94,7 +101,7 @@ Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery query) {
     InvertedIndexRangeByKeyQuery<kvdb::RawEncoder<Bytes>, snapshots::RawEncoder<Bytes>> store_query{
         inverted_index_name,
         data_store_.chaindata,
-        txn_,
+        tx_,
         data_store_.state_repository_historical,
     };
 

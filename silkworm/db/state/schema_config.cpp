@@ -79,13 +79,13 @@ datastore::kvdb::Schema::DatabaseDef make_state_database_schema() {
 }
 
 static snapshots::SnapshotRepository make_state_repository(
-    snapshots::SnapshotRepository::RepositoryKind kind,
+    datastore::EntityName name,
     std::filesystem::path dir_path,
     bool open,
     const snapshots::Schema::RepositoryDef& schema,
     std::optional<uint32_t> index_salt) {
     return snapshots::SnapshotRepository{
-        kind,
+        std::move(name),
         std::move(dir_path),
         open,
         schema,
@@ -99,7 +99,7 @@ snapshots::SnapshotRepository make_state_repository_latest(
     std::filesystem::path dir_path,
     bool open,
     std::optional<uint32_t> index_salt) {
-    return make_state_repository(snapshots::SnapshotRepository::RepositoryKind::latest_state,
+    return make_state_repository(kStateRepositoryNameLatest,
                                  std::move(dir_path), open, make_state_repository_schema_latest(), index_salt);
 }
 
@@ -107,7 +107,7 @@ snapshots::SnapshotRepository make_state_repository_historical(
     std::filesystem::path dir_path,
     bool open,
     std::optional<uint32_t> index_salt) {
-    return make_state_repository(snapshots::SnapshotRepository::RepositoryKind::historical_state,
+    return make_state_repository(kStateRepositoryNameHistorical,
                                  std::move(dir_path), open, make_state_repository_schema_historical(), index_salt);
 }
 

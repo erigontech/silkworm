@@ -19,6 +19,8 @@
 #include <cstring>
 #include <stdexcept>
 
+#include <silkworm/core/types/evmc_bytes32.hpp>
+
 #include "address_codecs.hpp"
 
 namespace silkworm::db::state {
@@ -40,21 +42,12 @@ static_assert(datastore::kvdb::DecoderConcept<Bytes32KVDBCodec>);
 struct PackedBytes32KVDBCodec : public datastore::kvdb::Codec {
     evmc::bytes32 value;
     ~PackedBytes32KVDBCodec() override = default;
-
     datastore::kvdb::Slice encode() override {
-        // find first non-zero byte
-        u_int64_t offset = 0;
-        while (value.bytes[offset] == 0 && offset < sizeof(value.bytes)) {
-            offset++;
-        }
-        return {value.bytes + offset, sizeof(value.bytes) - offset};
+        return {silkworm::zeroless_view(value.bytes)};
     }
-
     void decode(datastore::kvdb::Slice slice) override {
         SILKWORM_ASSERT(slice.size() <= sizeof(value.bytes));
-        u_int64_t offset = sizeof(value.bytes) - slice.size();
-        std::memset(value.bytes, 0, offset);
-        std::memcpy(value.bytes + offset, slice.data(), slice.size());
+        value = to_bytes32(silkworm::datastore::kvdb::from_slice(slice));
     }
 };
 static_assert(datastore::kvdb::EncoderConcept<PackedBytes32KVDBCodec>);
@@ -79,19 +72,12 @@ struct PackedBytes32SnapshotsCodec : public snapshots::Codec {
     evmc::bytes32 value;
     ~PackedBytes32SnapshotsCodec() override = default;
     ByteView encode_word() override {
-        // find first non-zero byte
-        u_int64_t offset = 0;
-        while (value.bytes[offset] == 0 && offset < sizeof(value.bytes)) {
-            offset++;
-        }
-        return ByteView{value.bytes + offset, sizeof(value.bytes) - offset};
+        return silkworm::zeroless_view(ByteView{value});
     }
     void decode_word(ByteView word) override {
         if (word.size() > sizeof(value.bytes))
             throw std::runtime_error{"Bytes32ReducedSnapshotsCodec failed to decode"};
-        u_int64_t offset = sizeof(value.bytes) - word.size();
-        std::memset(value.bytes, 0, offset);
-        std::memcpy(value.bytes + offset, word.data(), word.size());
+        value = silkworm::to_bytes32(word);
     }
 };
 static_assert(snapshots::EncoderConcept<PackedBytes32SnapshotsCodec>);

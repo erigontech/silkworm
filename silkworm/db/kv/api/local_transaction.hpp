@@ -40,12 +40,12 @@ class LocalTransaction : public BaseTransaction {
         StateCache* state_cache)
         : BaseTransaction(state_cache),
           data_store_{std::move(data_store)},
-          txn_{data_store_.chaindata.access_ro().start_ro_tx()} {}
+          tx_{data_store_.chaindata.access_ro().start_ro_tx()} {}
 
     ~LocalTransaction() override = default;
 
     uint64_t tx_id() const override { return tx_id_; }
-    uint64_t view_id() const override { return txn_.id(); }
+    uint64_t view_id() const override { return tx_.id(); }
 
     Task<void> open() override;
 
@@ -90,7 +90,7 @@ class LocalTransaction : public BaseTransaction {
 
     DataStoreRef data_store_;
     uint32_t last_cursor_id_{0};
-    datastore::kvdb::ROTxnManaged txn_;
+    datastore::kvdb::ROTxnManaged tx_;
     uint64_t tx_id_{++next_tx_id_};
 };
 

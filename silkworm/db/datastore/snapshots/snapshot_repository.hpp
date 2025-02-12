@@ -50,6 +50,7 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
     using StepRange = datastore::StepRange;
 
     SnapshotRepository(
+        datastore::EntityName name,
         std::filesystem::path dir_path,
         bool open,
         Schema::RepositoryDef schema,
@@ -58,7 +59,7 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
         std::unique_ptr<IndexBuildersFactory> index_builders_factory);
 
     SnapshotRepository(SnapshotRepository&&) = default;
-    SnapshotRepository& operator=(SnapshotRepository&&) noexcept = default;
+    SnapshotRepository& operator=(SnapshotRepository&&) noexcept = delete;
 
     ~SnapshotRepository() override = default;
 
@@ -113,6 +114,9 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
     bool is_stale_index_path(const SnapshotPath& index_path) const;
     SnapshotPathList stale_index_paths() const;
     std::optional<uint32_t> load_index_salt() const;
+
+    //! The repository entity name
+    datastore::EntityName name_;
 
     //! Path to the snapshots directory
     std::filesystem::path dir_path_;

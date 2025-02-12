@@ -334,6 +334,7 @@ class DataModel {
 
     //! Read block body for storage from the snapshot repository
     std::optional<BlockBodyForStorage> read_body_for_storage_from_snapshot(BlockNum block_num) const;
+    std::optional<Bytes> read_raw_body_for_storage_from_snapshot(BlockNum block_num) const;
 
     //! Read the canonical block header at specified block_num
     std::optional<Hash> read_canonical_header_hash(BlockNum block_num) const;

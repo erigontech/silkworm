@@ -25,10 +25,18 @@
 namespace silkworm::snapshots {
 
 using BodyFindByBlockNumSegmentQuery = FindByIdSegmentQuery<BodySegmentWordDecoder, db::blocks::kBodySegmentAndIdxNames>;
+using RawBodyFindByBlockNumSegmentQuery = FindByIdSegmentQuery<RawDecoder<Bytes>, db::blocks::kBodySegmentAndIdxNames>;
 
 struct BodyFindByBlockNumQuery : public FindByTimestampMapQuery<BodyFindByBlockNumSegmentQuery> {
     using FindByTimestampMapQuery::FindByTimestampMapQuery;
     std::optional<BlockBodyForStorage> exec(BlockNum block_num) {
+        return FindByTimestampMapQuery::exec(block_num, block_num);
+    }
+};
+
+struct RawBodyFindByBlockNumQuery : public FindByTimestampMapQuery<RawBodyFindByBlockNumSegmentQuery> {
+    using FindByTimestampMapQuery::FindByTimestampMapQuery;
+    std::optional<Bytes> exec(BlockNum block_num) {
         return FindByTimestampMapQuery::exec(block_num, block_num);
     }
 };

@@ -30,8 +30,9 @@ snapshots::Schema::RepositoryDef make_state_repository_schema_latest() {
         .kv_segment_compression_kind(snapshots::seg::CompressionKind::kKeys);
     schema.domain(kDomainNameCode)
         .kv_segment_compression_kind(snapshots::seg::CompressionKind::kValues);
-    schema.domain(kDomainNameCommitment)
-        .kv_segment_compression_kind(snapshots::seg::CompressionKind::kKeys);
+    // TODO(canepat): enable after fixing .kvi configuration with IndexList-like implementation
+    // schema.domain(kDomainNameCommitment)
+    //    .kv_segment_compression_kind(snapshots::seg::CompressionKind::kKeys);
     schema.domain(kDomainNameReceipts);
 
     return schema;

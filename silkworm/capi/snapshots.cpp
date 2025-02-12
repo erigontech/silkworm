@@ -148,9 +148,10 @@ static snapshots::SnapshotBundle build_state_snapshot_bundle_latest(
     bundle_data.entities.emplace(
         db::state::kDomainNameCode,
         build_domain_bundle_data(bundle->code, schema.domain(db::state::kDomainNameCode), salt));
-    bundle_data.entities.emplace(
-        db::state::kDomainNameCommitment,
-        build_domain_bundle_data(bundle->commitment, schema.domain(db::state::kDomainNameCommitment), salt));
+    // TODO(canepat): enable after fixing .kvi configuration with IndexList-like implementation
+    // bundle_data.entities.emplace(
+    //     db::state::kDomainNameCommitment,
+    //     build_domain_bundle_data(bundle->commitment, schema.domain(db::state::kDomainNameCommitment), salt));
     bundle_data.entities.emplace(
         db::state::kDomainNameReceipts,
         build_domain_bundle_data(bundle->receipts, schema.domain(db::state::kDomainNameReceipts), salt));

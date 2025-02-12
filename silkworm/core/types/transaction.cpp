@@ -32,6 +32,28 @@
 
 namespace silkworm {
 
+void Authorization::recover_authority() {
+    Bytes rlp{};
+    rlp::encode_for_signing(rlp, *this);
+
+    ethash::hash256 hash{keccak256(rlp)};
+
+    uint8_t signature[kHashLength * 2 + 1];
+    intx::be::unsafe::store(signature, r);
+    intx::be::unsafe::store(signature + kHashLength, s);
+    intx::be::unsafe::store(signature + 2 * kHashLength, y_parity);
+
+    recovered_authority = evmc::address{};
+    static secp256k1_context* context{secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS)};
+    if (!silkworm_recover_address(recovered_authority->bytes, hash.bytes, signature, y_parity, context)) {
+        recovered_authority = std::nullopt;
+    }
+}
+
+intx::uint256 Authorization::v() {
+    return y_parity_and_chain_id_to_v(y_parity, chain_id);
+}
+
 // https://eips.ethereum.org/EIPS/eip-155
 intx::uint256 Transaction::v() const { return y_parity_and_chain_id_to_v(odd_y_parity, chain_id); }
 
@@ -98,6 +120,22 @@ namespace rlp {
         encode(to, authorization.y_parity);
         encode(to, authorization.r);
         encode(to, authorization.s);
+    }
+
+    void encode_for_signing(Bytes& to, const Authorization& authorization) {
+        Header header{.list = true};
+        header.payload_length = length(authorization.chain_id);
+        header.payload_length += kAddressLength + 1;  // address is kAddressLength and one byte for size prefix
+        header.payload_length += length(authorization.nonce);
+
+        // See: Eip-7720 Set EOA account code
+        constexpr unsigned char kMagic{0x05};
+
+        to.push_back(kMagic);
+        encode_header(to, header);
+        encode(to, authorization.chain_id);
+        encode(to, authorization.address);
+        encode(to, authorization.nonce);
     }
 
     DecodingResult decode(ByteView& from, AccessListEntry& to, Leftover mode) noexcept {

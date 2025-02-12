@@ -43,11 +43,15 @@ struct Authorization {
     intx::uint256 chain_id;
     evmc::address address;
     uint64_t nonce{};
-    uint8_t y_parity;
+    uint8_t y_parity{};
     intx::uint256 r;
     intx::uint256 s;
 
+    std::optional<evmc::address> recovered_authority;
+
     friend bool operator==(const Authorization&, const Authorization&) = default;
+    void recover_authority();
+    intx::uint256 v();
 };
 
 // EIP-2718 transaction type
@@ -138,6 +142,7 @@ namespace rlp {
 
     void encode(Bytes& to, const Authorization&);
     size_t length(const Authorization&);
+    void encode_for_signing(Bytes& to, const Authorization&);
 
     // According to EIP-2718, serialized transactions are prepended with 1 byte containing the type
     // (0x02 for EIP-1559 transactions); the same goes for receipts. This is true for signing and

@@ -308,4 +308,17 @@ TEST_CASE("SetCodeTx encoding and decoding") {
     CHECK(decoded == txn);
 }
 
+TEST_CASE("SetCodeTx authorization recover signer") {
+    Authorization authorization{
+        .chain_id = 7088110746,
+        .address = 0xb47d9c634d50f1600d4df767e9474c25a0303428_address,
+        .nonce = 1,
+        .y_parity = 1,
+        .r = intx::uint256(uint64_t{11238962557009670571U}, uint64_t{14017651393191758745U}, uint64_t{18358999445216475025U}, uint64_t{5549385460848219779U}),
+        .s = intx::uint256(uint64_t{6390522493159340108U}, uint64_t{17630603794136184458U}, uint64_t{14442462445950880280U}, uint64_t{846710983706847255U})};
+
+    authorization.recover_authority();
+    CHECK(authorization.recovered_authority.value() == 0x8ED5ABe9DE62dB2F266b06b86203f71e4C1e357f_address);
+}
+
 }  // namespace silkworm

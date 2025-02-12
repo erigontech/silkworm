@@ -1122,8 +1122,8 @@ Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& reque
         StateReader state_reader{*tx, txn_id};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
         if (account) {
-            auto storage{co_await state_reader.read_storage(address, account->incarnation, location)};
-            reply = make_json_content(request, "0x" + silkworm::to_hex(storage));
+            const auto storage_value = co_await state_reader.read_storage(address, account->incarnation, location);
+            reply = make_json_content(request, "0x" + silkworm::to_hex(storage_value));
         } else {
             reply = make_json_content(request, "0x0000000000000000000000000000000000000000000000000000000000000000");
         }

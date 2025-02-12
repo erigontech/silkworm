@@ -128,9 +128,12 @@ void SnapshotRepository::reopen_folder() {
     auto file_ranges = list_dir_file_ranges();
     if (file_ranges.empty()) return;
 
-    // sort file_ranges by range.start
+    // sort file_ranges by range.start first, then by range size
     std::ranges::sort(file_ranges, [](const StepRange& r1, const StepRange& r2) -> bool {
-        return r1.start < r2.start;
+        if (r1.start != r2.start) {
+            return r1.start < r2.start;
+        }
+        return r1.size() > r2.size();
     });
 
     std::unique_lock lock(*bundles_mutex_);
@@ -149,11 +152,10 @@ void SnapshotRepository::reopen_folder() {
             if (std::ranges::all_of(bundle_paths.files(), [](const fs::path& p) { return fs::exists(p); })) {
                 SnapshotBundle bundle = open_bundle(range);
                 bundles->insert_or_assign(num, std::make_shared<SnapshotBundle>(std::move(bundle)));
+                // avoid gaps/overlaps
+                num = range.end;
             }
         }
-
-        // avoid gaps/overlaps
-        num = range.end;
     }
 
     bundles_ = bundles;

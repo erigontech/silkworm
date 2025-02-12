@@ -145,12 +145,18 @@ void from_json(const nlohmann::json& json, AccountOverrides& ao) {
     if (json.contains("balance")) {
         ao.balance = json["balance"].get<intx::uint256>();
     }
-    if (json.contains("nonce")) {
-        ao.nonce = json["nonce"].get<std::uint64_t>();
+    if (json.count("nonce") != 0) {
+        const auto& json_nonce = json.at("nonce");
+        if (json_nonce.is_string()) {
+            ao.nonce = std::stol(json_nonce.get<std::string>(), nullptr, 16);
+        } else {
+            ao.nonce = json_nonce.get<uint64_t>();
+        }
     }
     if (json.contains("code")) {
         const auto json_data = json.at("code").get<std::string>();
         ao.code = silkworm::from_hex(json_data);
+        ao.code_hash = std::bit_cast<evmc_bytes32>(keccak256(ao.code.value()));
     }
     if (json.contains("state")) {
         const auto& state = json["state"];

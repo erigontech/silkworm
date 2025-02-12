@@ -99,7 +99,8 @@ TEST_CASE("estimate gas") {
                                                                         &remote_db_test.state_cache,
                                                                         providers);
     const db::chain::RemoteChainStorage storage{*tx, std::move(providers)};
-    MockEstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, config, workers, *tx, storage};
+    AccountsOverrides accounts_overrides;
+    MockEstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, config, workers, *tx, storage, accounts_overrides};
 
     SECTION("Call empty, always fails but success in last step") {
         ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};

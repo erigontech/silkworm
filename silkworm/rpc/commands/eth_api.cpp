@@ -872,7 +872,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
 // https://eth.wiki/json-rpc/API#eth_estimategas
 Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
-    if (params.size() > 2 || params.empty()) {
+    if (params.size() > 3 || params.empty()) {
         auto error_msg = "invalid eth_estimateGas params: " + params.dump();
         SILK_ERROR << error_msg;
         reply = make_json_error(request, kInvalidParams, error_msg);
@@ -887,10 +887,16 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
     rpc::BlockReader block_reader{*chain_storage, *tx};
 
     std::optional<BlockNum> block_num_for_gas_limit;
-    if (params.size() == 2) {
+    if (params.size() >= 2) {
         const auto block_id = params[1].get<std::string>();
         SILK_DEBUG << "block_id: " << block_id;
         block_num_for_gas_limit = co_await block_reader.get_block_num(block_id);
+    }
+
+    AccountsOverrides accounts_overrides;
+    if (params.size() == 3) {
+        from_json(params[2], accounts_overrides);
+        SILK_TRACE << " accounts_overrides #" << accounts_overrides.size();
     }
 
     try {
@@ -919,7 +925,7 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
             co_return co_await state_reader.read_account(address);
         };
 
-        rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, chain_config, workers_, *tx, *chain_storage};
+        rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, chain_config, workers_, *tx, *chain_storage, accounts_overrides};
         const auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block, std::nullopt /*latest block */, block_num_for_gas_limit);
 
         reply = make_json_content(request, to_quantity(estimated_gas));

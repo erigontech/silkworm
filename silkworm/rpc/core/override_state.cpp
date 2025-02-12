@@ -36,6 +36,9 @@ silkworm::Account get_account(const AccountOverrides& overrides, const std::opti
     if (overrides.balance) {
         overridden_account.balance = overrides.balance.value();
     }
+    if (overrides.code_hash) {
+        overridden_account.code_hash = overrides.code_hash.value();
+    }
 
     return overridden_account;
 }
@@ -44,8 +47,7 @@ OverrideState::OverrideState(silkworm::State& inner_state, const AccountsOverrid
     : inner_state_{inner_state}, accounts_overrides_{accounts_overrides} {
     for (const auto& [key, value] : accounts_overrides_) {
         if (value.code) {
-            evmc::bytes32 code_hash{std::bit_cast<evmc_bytes32>(keccak256(value.code.value()))};
-            code_hash_.emplace(code_hash, value.code.value());
+            code_.emplace(key, value.code.value());
         }
     }
 }
@@ -54,20 +56,20 @@ std::optional<silkworm::Account> OverrideState::read_account(const evmc::address
     SILK_DEBUG << "OverrideState::read_account address=" << address << " start";
 
     auto optional_account = inner_state_.read_account(address);
-
     auto it = accounts_overrides_.find(address);
     if (it != accounts_overrides_.end()) {
         auto overridden_account = get_account(it->second, optional_account);
         SILK_DEBUG << "OverrideState::read_account address=" << address << " account=" << overridden_account;
         optional_account = overridden_account;
     }
+
     return optional_account;
 }
 
 silkworm::ByteView OverrideState::read_code(const evmc::address& address, const evmc::bytes32& code_hash) const noexcept {
     SILK_DEBUG << "OverrideState::read_code code_hash=" << to_hex(code_hash) << " start";
-    auto it = code_hash_.find(code_hash);
-    if (it != code_hash_.end()) {
+    auto it = code_.find(address);
+    if (it != code_.end()) {
         SILK_DEBUG << "OverrideState::read_code code_hash=" << to_hex(code_hash) << " code: " << it->second;
         return it->second;
     }
@@ -76,6 +78,18 @@ silkworm::ByteView OverrideState::read_code(const evmc::address& address, const 
 
 evmc::bytes32 OverrideState::read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept {
     SILK_DEBUG << "OverrideState::read_storage address=" << address << " incarnation=" << incarnation << " location=" << to_hex(location) << " start";
+    for (const auto& [key, value] : accounts_overrides_) {
+        if (key == address) {
+            const auto& stateMap = value.state;
+            for (const auto& entry : stateMap) {
+                if (location == entry.first) {
+                    auto storage_value = intx::be::store<evmc::uint256be>(entry.second);
+                    SILK_DEBUG << "OverrideState::read_storage reads from cache storage_value=" << to_hex(storage_value);
+                    return storage_value;
+                }
+            }
+        }
+    }
     auto storage_value = inner_state_.read_storage(address, incarnation, location);
     SILK_DEBUG << "OverrideState::read_storage storage_value=" << to_hex(storage_value);
     return storage_value;

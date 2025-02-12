@@ -22,6 +22,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/core/block_reader.hpp>
+#include <silkworm/rpc/core/override_state.hpp>
 
 namespace silkworm::rpc {
 
@@ -88,7 +89,8 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
         silkworm::Transaction transaction{call.to_transaction()};
         while (lo + 1 < hi) {
-            EVMExecutor executor{block, config_, workers_, state};
+            auto state_overrides = std::make_shared<state::OverrideState>(*state, accounts_overrides_);
+            EVMExecutor executor{block, config_, workers_, state_overrides};
             auto mid = (hi + lo) / 2;
             transaction.gas_limit = mid;
             result = try_execution(executor, transaction);
@@ -104,7 +106,8 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         }
 
         if (hi == cap) {
-            EVMExecutor executor{block, config_, workers_, state};
+            auto state_overrides = std::make_shared<state::OverrideState>(*state, accounts_overrides_);
+            EVMExecutor executor{block, config_, workers_, state_overrides};
             transaction.gas_limit = hi;
             result = try_execution(executor, transaction);
             SILK_DEBUG << "HI == cap tested again with " << (result.error_code == evmc_status_code::EVMC_SUCCESS ? "succeed" : "failed");
@@ -119,6 +122,10 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     });
 
     if (!exec_result.success()) {
+        if (exec_result.error_code == evmc_status_code::EVMC_OUT_OF_GAS) {
+            std::string error_msg = "gas required exceeds allowance (" + std::to_string(hi) + ")";
+            throw EstimateGasException{-32000, error_msg};
+        }
         throw_exception(exec_result);
     }
     co_return hi;

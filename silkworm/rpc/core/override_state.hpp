@@ -109,7 +109,7 @@ class OverrideState : public silkworm::State {
   private:
     silkworm::State& inner_state_;
     const AccountsOverrides& accounts_overrides_;
-    std::map<evmc::bytes32, silkworm::ByteView> code_hash_;
+    std::map<evmc::address, silkworm::ByteView> code_;
 };
 
 }  // namespace silkworm::rpc::state

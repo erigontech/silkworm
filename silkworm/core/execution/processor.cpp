@@ -97,7 +97,7 @@ namespace {
                 std::cerr << "b: " << hex(m.addr) << " " << to_string(m.balance) << ", silkworm: " << to_string(state.get_balance(m.addr)) << "\n";
                 SILKWORM_ASSERT(state.get_balance(m.addr) == m.balance);
             }
-            if (!m.code.empty()) {
+            if (m.code) {
                 SILKWORM_ASSERT(state.get_code(m.addr) == m.code);
             }
         }
@@ -186,9 +186,9 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         // Apply the state diff produced by evmone APIv2 to the state and skip the Silkworm execution.
         const auto& state_diff = evm1_receipt.state_diff;
         for (const auto& m : state_diff.modified_accounts) {
-            if (!m.code.empty()) {
+            if (m.code) {
                 state_.create_contract(m.addr);
-                state_.set_code(m.addr, m.code);
+                state_.set_code(m.addr, *m.code);
             }
 
             auto& acc = state_.get_or_create_object(m.addr);

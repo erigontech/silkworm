@@ -1147,7 +1147,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
         co_return;
     }
     const auto& params = request["params"];
-    if (params.size() != 2) {
+    if (params.size() > 3) {
         auto error_msg = "invalid eth_call params: " + params.dump();
         SILK_ERROR << error_msg;
         make_glaze_json_error(request, kInvalidParams, error_msg, reply);
@@ -1155,6 +1155,13 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
     }
     const auto call = params[0].get<Call>();
     const auto block_id = params[1].get<std::string>();
+
+    std::optional<AccountsOverrides> accounts_overrides;
+    if (params.size() == 3) {
+        from_json(params[2], *accounts_overrides);
+        SILK_TRACE << " accounts_overrides #" << (*accounts_overrides).size();
+    }
+
     SILK_DEBUG << "call: " << call << " block_id: " << block_id;
 
     auto tx = co_await database_->begin_transaction();
@@ -1184,7 +1191,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
         const auto execution_result = co_await EVMExecutor::call(
             chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&state_factory](auto& io_executor, std::optional<TxnId> curr_txn_id, auto& storage) {
                 return state_factory.create_state(io_executor, storage, curr_txn_id);
-            });
+            }, {}, true, false, accounts_overrides);
 
         if (execution_result.success()) {
             make_glaze_json_content(request, execution_result.data, reply);

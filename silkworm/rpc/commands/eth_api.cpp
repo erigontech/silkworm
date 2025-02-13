@@ -1159,7 +1159,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
     std::optional<AccountsOverrides> accounts_overrides;
     if (params.size() == 3) {
         AccountsOverrides local_accounts_overrides;
-        accounts_overrides =  std::make_optional(local_accounts_overrides);
+        accounts_overrides = std::make_optional(local_accounts_overrides);
         from_json(params[2], *accounts_overrides);
         SILK_TRACE << " accounts_overrides #" << (*accounts_overrides).size();
     }

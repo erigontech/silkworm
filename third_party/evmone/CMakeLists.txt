@@ -32,6 +32,8 @@ add_library(
   evmone/lib/evmone/baseline_instruction_table.hpp
   evmone/lib/evmone/baseline.hpp
   evmone/lib/evmone/constants.hpp
+  evmone/lib/evmone/delegation.cpp
+  evmone/lib/evmone/delegation.hpp
   evmone/lib/evmone/eof.cpp
   evmone/lib/evmone/eof.hpp
   evmone/lib/evmone/execution_state.hpp

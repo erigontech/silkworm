@@ -16,36 +16,24 @@
 
 #include "domain_state.hpp"
 
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/use_future.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
-#include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/db/test_util/mock_chain_storage.hpp>
-#include <silkworm/db/test_util/mock_cursor.hpp>
-#include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/db/test_util/mock_txn.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test_util/context_test_base.hpp>
 
 namespace silkworm::execution {
 
-using testing::_;
-using testing::Invoke;
-using testing::InvokeWithoutArgs;
 using testing::Unused;
 
 TEST_CASE("DomainState data access", "[execution][domain][state]") {
     TemporaryDirectory tmp_dir;
     silkworm::db::test_util::TestDataStore ds_context{tmp_dir};
-    log::init(log::Settings{.log_verbosity = log::Level::kDebug});
 
     auto rw_tx = ds_context.chaindata_rw().start_rw_tx();
 
@@ -198,7 +186,7 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
             code_66);
 
         auto code_66_read = sut.read_code(0x668bdf435d810c91414ec09147daa6db62406379_address, code_hash_66);
-        CHECK(code_66_read.size() > 0);
+        CHECK(!code_66_read.empty());
         CHECK(code_66_read == code_66);
     }
 
@@ -212,7 +200,7 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
             code_66);
 
         auto code_66_read = sut.read_code(0x668bdf435d810c91414ec09147daa6db62406379_address, code_hash_66);
-        CHECK(code_66_read.size() > 0);
+        CHECK(!code_66_read.empty());
         CHECK(code_66_read == code_66);
 
         code_66 = *from_hex("0x6043");
@@ -224,7 +212,7 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
             code_66);
 
         code_66_read = sut.read_code(0x668bdf435d810c91414ec09147daa6db62406379_address, code_hash_66);
-        CHECK(code_66_read.size() > 0);
+        CHECK(!code_66_read.empty());
         CHECK(code_66_read == code_66);
 
         auto next_step_txn_id = silkworm::datastore::kStepSizeForTemporalSnapshots + 1;
@@ -238,7 +226,7 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
             code_66);
 
         code_66_read = sut2.read_code(0x668bdf435d810c91414ec09147daa6db62406379_address, code_hash_66);
-        CHECK(code_66_read.size() > 0);
+        CHECK(!code_66_read.empty());
         CHECK(code_66_read == code_66);
     }
 
@@ -319,4 +307,5 @@ TEST_CASE("DomainState empty overriden methods do nothing", "[execution][domain]
     auto state_root_hash = sut.state_root_hash();
     CHECK(state_root_hash == evmc::bytes32{});
 }
+
 }  // namespace silkworm::execution

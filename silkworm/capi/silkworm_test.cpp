@@ -47,7 +47,7 @@ struct CApiTest {
     TemporaryDirectory tmp_dir;
     db::test_util::TestDatabaseContext database{tmp_dir};
 
-    SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_DEBUG};
+    SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_NONE};
     mdbx::env env{*database.chaindata_rw()};
     const std::filesystem::path& env_path() const { return database.chaindata_dir_path(); }
 };
@@ -129,7 +129,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fini: OK", "[capi]") {
 //! \note This is useful for tests that do *not* specifically play with silkworm_init/silkworm_fini or invalid handles
 struct SilkwormLibrary {
     explicit SilkwormLibrary(const std::filesystem::path& env_path) {
-        SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_DEBUG};
+        SilkwormSettings settings{.log_verbosity = SilkwormLogLevel::SILKWORM_LOG_NONE};
         copy_path(settings.data_dir_path, env_path.string().c_str());
         copy_git_version(settings.libmdbx_version, silkworm_libmdbx_version());
         silkworm_init(&handle_, &settings);

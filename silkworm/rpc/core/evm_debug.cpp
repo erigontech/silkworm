@@ -494,6 +494,8 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
             stream.close_object();
             stream.write_field("txHash", txn.hash());
             stream.close_object();
+
+            executor.reset();
         }
     });
 

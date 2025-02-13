@@ -10,7 +10,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | web3_clientVersion                         |     Yes      |                                           |     Yes     |             |
 | web3_sha3                                  |     Yes      |                                           |     Yes     |             |
 |                                            |              |                                           |             |             |
-| net_listening                              |     Yes      | hard-coded (needs ethbackend integration) |     Yes     |             |
+| net_listening                              |     Yes      |                                           |     Yes     |             |
 | net_peerCount                              |     Yes      |                                           |     Yes     |             |
 | net_version                                |     Yes      |                                           |     Yes     |             |
 |                                            |              |                                           |             |             |

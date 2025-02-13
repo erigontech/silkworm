@@ -97,7 +97,7 @@ namespace {
                 std::cerr << "b: " << hex(m.addr) << " " << to_string(m.balance) << ", silkworm: " << to_string(state.get_balance(m.addr)) << "\n";
                 SILKWORM_ASSERT(state.get_balance(m.addr) == m.balance);
             }
-            if (!m.code.empty()) {
+            if (m.code) {
                 SILKWORM_ASSERT(state.get_code(m.addr) == m.code);
             }
         }
@@ -148,7 +148,9 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         .value = txn.value,
         // access_list
         // blob_hashes
-        .chain_id = static_cast<uint64_t>(txn.chain_id.value_or(0)),
+        // TODO: This should be corrected in the evmone APIv2,
+        //   because it uses transaction's chain id for CHAINID instruction.
+        .chain_id = evm().config().chain_id,
         .nonce = txn.nonce};
     for (const auto& [account, storage_keys] : txn.access_list)
         evm1_txn.access_list.emplace_back(account, storage_keys);
@@ -187,9 +189,9 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         // Apply the state diff produced by evmone APIv2 to the state and skip the Silkworm execution.
         const auto& state_diff = evm1_receipt.state_diff;
         for (const auto& m : state_diff.modified_accounts) {
-            if (!m.code.empty()) {
+            if (m.code) {
                 state_.create_contract(m.addr);
-                state_.set_code(m.addr, m.code);
+                state_.set_code(m.addr, *m.code);
             }
 
             auto& acc = state_.get_or_create_object(m.addr);
@@ -276,10 +278,9 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
     const std::optional<evmc::address> sender{txn.sender()};
     SILKWORM_ASSERT(sender);
 
-    SILKWORM_ASSERT(protocol::validate_call_precheck(txn, evm_) == ValidationResult::kOk);
-
-    if (!evm().bailout) {
-        SILKWORM_ASSERT(protocol::validate_call_funds(txn, evm_, state_.get_balance(*txn.sender())) == ValidationResult::kOk);
+    ValidationResult validation_result = protocol::validate_call_precheck(txn, evm_);
+    if (validation_result != ValidationResult::kOk) {
+        return {validation_result, EVMC_SUCCESS, 0, {}, {}};
     }
 
     const BlockHeader& header{evm_.block().header};
@@ -298,10 +299,18 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
         state_.set_nonce(*sender, state_.get_nonce(*txn.sender()) + 1);
     }
 
-    if (!evm().bailout) {
-        const intx::uint256 required_funds = protocol::compute_call_cost(txn, effective_gas_price, evm_);
-        state_.subtract_from_balance(*txn.sender(), required_funds);
+    intx::uint256 required_funds = protocol::compute_call_cost(txn, effective_gas_price, evm_);
+    if (evm().bailout) {
+        // If the bailout option is on, add the required funds to the sender's balance
+        // so that after the transaction costs are deducted, the sender's balance is unchanged.
+        state_.add_to_balance(*txn.sender(), required_funds);
     }
+
+    validation_result = protocol::validate_call_funds(txn, evm_, state_.get_balance(*txn.sender()), evm().bailout);
+    if (validation_result != ValidationResult::kOk) {
+        return {validation_result, EVMC_SUCCESS, 0, {}, {}};
+    }
+    state_.subtract_from_balance(*txn.sender(), required_funds);
     const intx::uint128 g0{protocol::intrinsic_gas(txn, evm_.revision())};
     const auto result = evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
 
@@ -332,7 +341,7 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
 
     evm_.remove_tracers();
 
-    return {result.status, gas_left, gas_used, result.data, result.error_message};
+    return {ValidationResult::kOk, result.status, gas_left, gas_used, result.data, result.error_message};
 }
 
 void ExecutionProcessor::reset() {

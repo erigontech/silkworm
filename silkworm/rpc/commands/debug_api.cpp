@@ -829,10 +829,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::json& r
         const auto chain_storage{tx->create_storage()};
 
         Bytes rlp{};
-        auto success = co_await chain_storage->read_rlp_transaction(transaction_hash, rlp);
-        if (!success) {
-            throw std::invalid_argument("transaction not found");
-        }
+        co_await chain_storage->read_rlp_transaction(transaction_hash, rlp);
         reply = make_json_content(request, silkworm::to_hex(rlp, true));
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();

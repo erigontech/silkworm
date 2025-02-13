@@ -144,7 +144,7 @@ const char* make_path(const snapshots::SnapshotPath& p) {
     return path;
 }
 
-std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepository& repository) {
+std::vector<SilkwormBlocksSnapshotBundle> collect_all_snapshot_bundles(const SnapshotRepository& repository) {
     std::vector<SilkwormHeadersSnapshot> headers_snapshot_sequence;
     std::vector<SilkwormBodiesSnapshot> bodies_snapshot_sequence;
     std::vector<SilkwormTransactionsSnapshot> transactions_snapshot_sequence;
@@ -209,15 +209,15 @@ std::vector<SilkwormChainSnapshot> collect_all_snapshots(const SnapshotRepositor
     ensure(bodies_snapshot_sequence.size() == repository.bundles_count(), "invalid body snapshot count");
     ensure(transactions_snapshot_sequence.size() == repository.bundles_count(), "invalid tx snapshot count");
 
-    std::vector<SilkwormChainSnapshot> snapshot_sequence;
+    std::vector<SilkwormBlocksSnapshotBundle> snapshot_sequence;
     snapshot_sequence.reserve(headers_snapshot_sequence.size());
     for (size_t i{0}; i < headers_snapshot_sequence.size(); ++i) {
-        SilkwormChainSnapshot chain_snapshot{
+        SilkwormBlocksSnapshotBundle bundle{
             headers_snapshot_sequence[i],
             bodies_snapshot_sequence[i],
             transactions_snapshot_sequence[i],
         };
-        snapshot_sequence.push_back(chain_snapshot);
+        snapshot_sequence.push_back(bundle);
     }
     return snapshot_sequence;
 }
@@ -293,22 +293,22 @@ int execute_blocks(SilkwormHandle handle, ExecuteBlocksSettings settings, const 
     };
 
     // Collect all snapshots
-    auto all_chain_snapshots{collect_all_snapshots(data_store.ref().blocks_repository)};
+    auto snapshot_bundles = collect_all_snapshot_bundles(data_store.ref().blocks_repository);
     [[maybe_unused]] auto _ = gsl::finally([&]() {
-        for (auto& chain_snapshot : all_chain_snapshots) {
-            delete[] chain_snapshot.headers.segment.file_path;
-            delete[] chain_snapshot.headers.header_hash_index.file_path;
-            delete[] chain_snapshot.bodies.segment.file_path;
-            delete[] chain_snapshot.bodies.block_num_index.file_path;
-            delete[] chain_snapshot.transactions.segment.file_path;
-            delete[] chain_snapshot.transactions.tx_hash_index.file_path;
-            delete[] chain_snapshot.transactions.tx_hash_2_block_index.file_path;
+        for (auto& bundle : snapshot_bundles) {
+            delete[] bundle.headers.segment.file_path;
+            delete[] bundle.headers.header_hash_index.file_path;
+            delete[] bundle.bodies.segment.file_path;
+            delete[] bundle.bodies.block_num_index.file_path;
+            delete[] bundle.transactions.segment.file_path;
+            delete[] bundle.transactions.tx_hash_index.file_path;
+            delete[] bundle.transactions.tx_hash_2_block_index.file_path;
         }
     });
-    for (auto& chain_snapshot : all_chain_snapshots) {
-        const int add_snapshot_status_code{silkworm_add_snapshot(handle, &chain_snapshot)};
+    for (auto& bundle : snapshot_bundles) {
+        const int add_snapshot_status_code{silkworm_add_blocks_snapshot_bundle(handle, &bundle)};
         if (add_snapshot_status_code != SILKWORM_OK) {
-            SILK_ERROR << "silkworm_add_snapshot failed [code=" << std::to_string(add_snapshot_status_code) << "]";
+            SILK_ERROR << "silkworm_add_blocks_snapshot_bundle failed [code=" << std::to_string(add_snapshot_status_code) << "]";
             return add_snapshot_status_code;
         }
     }

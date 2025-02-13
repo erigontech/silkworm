@@ -20,6 +20,7 @@
 
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/crypto/secp256k1n.hpp>
+#include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
 
@@ -227,25 +228,20 @@ ValidationResult pre_validate_common_forks(const Transaction& txn, const evmc_re
     return ValidationResult::kOk;
 }
 
-ValidationResult validate_call_funds(const Transaction& txn, const EVM& evm, const intx::uint256& owned_funds) noexcept {
+ValidationResult validate_call_funds(const Transaction& txn, const EVM& evm, const intx::uint256& owned_funds, bool bailout) noexcept {
     const intx::uint256 base_fee{evm.block().header.base_fee_per_gas.value_or(0)};
     const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= evm.block().header.base_fee_per_gas ? txn.effective_gas_price(base_fee)
                                                                                                        : txn.max_priority_fee_per_gas};
 
-    const auto required_funds = compute_call_cost(txn, effective_gas_price, evm);
-    intx::uint512 maximum_cost = required_funds;
-    if (txn.type != TransactionType::kLegacy && txn.type != TransactionType::kAccessList) {
-        maximum_cost = txn.maximum_gas_cost();
-    }
-
+    auto required_funds = compute_call_cost(txn, effective_gas_price, evm);
     // EIP-7623 Increase calldata cost
     if (evm.revision() >= EVMC_PRAGUE) {
         const auto floor_cost = protocol::floor_cost(txn);
         const intx::uint512 gas_limit = std::max(txn.gas_limit, floor_cost);
-        maximum_cost = std::max(maximum_cost, gas_limit * effective_gas_price);
+        required_funds = std::max(required_funds, gas_limit * effective_gas_price);
     }
-
-    if (owned_funds < maximum_cost + txn.value) {
+    const intx::uint256 value = bailout ? 0 : txn.value;
+    if (owned_funds < required_funds + value) {
         return ValidationResult::kInsufficientFunds;
     }
     return ValidationResult::kOk;

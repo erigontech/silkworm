@@ -91,7 +91,6 @@ Schema::DomainDef Schema::RepositoryDef::make_domain_schema(datastore::EntityNam
         .sub_dir_name(kDomainBTreeIndexSubDirName)
         .tag(name2tag(name))
         .file_ext(kDomainBTreeIndexFileExt);
-    define_history_schema(name, schema);
     return schema;
 }
 

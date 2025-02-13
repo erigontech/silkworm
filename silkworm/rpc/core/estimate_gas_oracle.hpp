@@ -78,13 +78,15 @@ class EstimateGasOracle {
                                const silkworm::ChainConfig& config,
                                WorkerPool& workers,
                                db::kv::api::Transaction& tx,
-                               const ChainStorage& chain_storage)
+                               const ChainStorage& chain_storage,
+                               AccountsOverrides& accounts_overrides)
         : block_header_provider_(block_header_provider),
           account_reader_{account_reader},
           config_{config},
           workers_{workers},
           transaction_{tx},
-          storage_{chain_storage} {}
+          storage_{chain_storage},
+          accounts_overrides_{accounts_overrides} {}
     virtual ~EstimateGasOracle() = default;
 
     EstimateGasOracle(const EstimateGasOracle&) = delete;
@@ -93,7 +95,7 @@ class EstimateGasOracle {
     Task<intx::uint256> estimate_gas(const Call& call, const silkworm::Block& latest_block, std::optional<TxnId> txn_id, std::optional<BlockNum> block_num_for_gas_limit = {});
 
   protected:
-    virtual ExecutionResult try_execution(EVMExecutor& executor, const silkworm::Block& block, const silkworm::Transaction& transaction);
+    virtual ExecutionResult try_execution(EVMExecutor& executor, const silkworm::Transaction& transaction);
 
   private:
     void throw_exception(ExecutionResult& result);
@@ -104,6 +106,7 @@ class EstimateGasOracle {
     WorkerPool& workers_;
     db::kv::api::Transaction& transaction_;
     const ChainStorage& storage_;
+    AccountsOverrides& accounts_overrides_;
 };
 
 }  // namespace silkworm::rpc

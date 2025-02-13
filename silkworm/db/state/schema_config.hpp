@@ -29,14 +29,19 @@
 
 namespace silkworm::db::state {
 
-inline constexpr datastore::EntityName kStateRepositoryName{"State"};
+inline constexpr datastore::EntityName kStateRepositoryNameLatest{"StateLatest"};
+inline constexpr datastore::EntityName kStateRepositoryNameHistorical{"StateHistorical"};
 
-snapshots::Schema::RepositoryDef make_state_repository_schema();
+snapshots::Schema::RepositoryDef make_state_repository_schema_latest();
+snapshots::Schema::RepositoryDef make_state_repository_schema_historical();
 datastore::kvdb::Schema::DatabaseDef make_state_database_schema();
 
-std::unique_ptr<snapshots::IndexBuildersFactory> make_state_index_builders_factory();
+snapshots::SnapshotRepository make_state_repository_latest(
+    std::filesystem::path dir_path,
+    bool open = true,
+    std::optional<uint32_t> index_salt = std::nullopt);
 
-snapshots::SnapshotRepository make_state_repository(
+snapshots::SnapshotRepository make_state_repository_historical(
     std::filesystem::path dir_path,
     bool open = true,
     std::optional<uint32_t> index_salt = std::nullopt);

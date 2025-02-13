@@ -427,7 +427,7 @@ std::optional<MapConfig> get_map_config(const std::string& map_name);
 inline constexpr const char* kAccountDomain{"accounts"};
 inline constexpr const char* kStorageDomain{"storage"};
 inline constexpr const char* kCodeDomain{"code"};
-inline constexpr const char* kCommitment{"commitment"};
+inline constexpr const char* kCommitmentDomain{"commitment"};
 inline constexpr const char* kReceiptDomain{"receipt"};
 
 //! \details Inverted Index storing the account common information

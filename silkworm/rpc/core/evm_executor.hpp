@@ -115,14 +115,12 @@ class EVMExecutor {
     EVMExecutor& operator=(const EVMExecutor&) = delete;
 
     ExecutionResult call(
-        const silkworm::Block& block,
         const silkworm::Transaction& txn,
         const Tracers& tracers = {},
         bool refund = true,
         bool gas_bailout = false);
 
     ExecutionResult call_with_receipt(
-        const silkworm::Block& block,
         const silkworm::Transaction& txn,
         Receipt& receipt,
         const Tracers& tracers = {},
@@ -132,6 +130,8 @@ class EVMExecutor {
     void reset();
 
   private:
+    ExecutionResult convert_validation_result(const ValidationResult& result, const silkworm::Transaction& txn);
+
     const silkworm::ChainConfig& config_;
     WorkerPool& workers_;
     std::shared_ptr<State> state_;

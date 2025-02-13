@@ -58,7 +58,7 @@ Bad:
 
 	BlockNum expected_blocknum{previous_progress + 1};
 	ChainConfig& config{kMainnetConfig};
-	ExecutionProcessor processor(block, *rule_set, buffer, *chain_config);
+	ExecutionProcessor processor{block, *rule_set, buffer, *chain_config};
 
 Copy initialization can use either style:
 

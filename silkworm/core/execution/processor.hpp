@@ -88,7 +88,6 @@ class ExecutionProcessor {
     evmone::state::BlockInfo evm1_block_;
 
     //! Execute transactions using evmone APIv2 only and apply the result state diff to the state.
-    //! TODO: This flag currently has no effect.
     bool evm1_v2_ = false;
 };
 

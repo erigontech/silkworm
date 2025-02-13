@@ -89,10 +89,49 @@ struct SilkwormTransactionsSnapshot {
     struct SilkwormMemoryMappedFile tx_hash_2_block_index;
 };
 
-struct SilkwormChainSnapshot {
+struct SilkwormBlocksSnapshotBundle {
     struct SilkwormHeadersSnapshot headers;
     struct SilkwormBodiesSnapshot bodies;
     struct SilkwormTransactionsSnapshot transactions;
+};
+
+struct SilkwormInvertedIndexSnapshot {
+    struct SilkwormMemoryMappedFile segment;         // .ef
+    struct SilkwormMemoryMappedFile accessor_index;  // .efi
+};
+
+struct SilkwormHistorySnapshot {
+    struct SilkwormMemoryMappedFile segment;         // .v
+    struct SilkwormMemoryMappedFile accessor_index;  // .vi
+    struct SilkwormInvertedIndexSnapshot inverted_index;
+};
+
+struct SilkwormDomainSnapshot {
+    struct SilkwormMemoryMappedFile segment;          // .kv
+    struct SilkwormMemoryMappedFile existence_index;  // .kvei
+    struct SilkwormMemoryMappedFile btree_index;      // .bt
+    bool has_accessor_index;
+    struct SilkwormMemoryMappedFile accessor_index;  // .kvi
+};
+
+struct SilkwormStateSnapshotBundleLatest {
+    struct SilkwormDomainSnapshot accounts;
+    struct SilkwormDomainSnapshot storage;
+    struct SilkwormDomainSnapshot code;
+    struct SilkwormDomainSnapshot commitment;
+    struct SilkwormDomainSnapshot receipts;
+};
+
+struct SilkwormStateSnapshotBundleHistorical {
+    struct SilkwormHistorySnapshot accounts;
+    struct SilkwormHistorySnapshot storage;
+    struct SilkwormHistorySnapshot code;
+    struct SilkwormHistorySnapshot receipts;
+
+    struct SilkwormInvertedIndexSnapshot log_addresses;
+    struct SilkwormInvertedIndexSnapshot log_topics;
+    struct SilkwormInvertedIndexSnapshot traces_from;
+    struct SilkwormInvertedIndexSnapshot traces_to;
 };
 
 #define SILKWORM_PATH_SIZE 260
@@ -120,6 +159,10 @@ struct SilkwormSettings {
     char data_dir_path[SILKWORM_PATH_SIZE];
     //! libmdbx version string in git describe format.
     char libmdbx_version[SILKWORM_GIT_VERSION_SIZE];
+    //! Index salt for block snapshots
+    uint32_t blocks_repo_index_salt;
+    //! Index salt for state snapshots
+    uint32_t state_repo_index_salt;
 };
 
 /**
@@ -140,12 +183,28 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
 SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struct SilkwormMemoryMappedFile* segments[], size_t len) SILKWORM_NOEXCEPT;
 
 /**
- * \brief Notify Silkworm about a new snapshot to use.
+ * \brief Notify Silkworm about a new *block* snapshot bundle to use.
  * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
- * \param[in] snapshot A snapshot to use.
+ * \param[in] bundle A *block* snapshot bundle to use.
  * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
  */
-SILKWORM_EXPORT int silkworm_add_snapshot(SilkwormHandle handle, struct SilkwormChainSnapshot* snapshot) SILKWORM_NOEXCEPT;
+SILKWORM_EXPORT int silkworm_add_blocks_snapshot_bundle(SilkwormHandle handle, const struct SilkwormBlocksSnapshotBundle* bundle) SILKWORM_NOEXCEPT;
+
+/**
+ * \brief Notify Silkworm about a new *latest state* snapshot bundle to use.
+ * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
+ * \param[in] bundle A *latest state* snapshot bundle to use.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
+ */
+SILKWORM_EXPORT int silkworm_add_state_snapshot_bundle_latest(SilkwormHandle handle, const struct SilkwormStateSnapshotBundleLatest* bundle) SILKWORM_NOEXCEPT;
+
+/**
+ * \brief Notify Silkworm about a new *historical state* snapshot bundle to use.
+ * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
+ * \param[in] bundle A *historical state* snapshot bundle to use.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
+ */
+SILKWORM_EXPORT int silkworm_add_state_snapshot_bundle_historical(SilkwormHandle handle, const struct SilkwormStateSnapshotBundleHistorical* bundle) SILKWORM_NOEXCEPT;
 
 /**
  * \brief Get libmdbx version for compatibility checks.

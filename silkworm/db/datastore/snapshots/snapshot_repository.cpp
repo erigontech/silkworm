@@ -32,13 +32,15 @@ namespace fs = std::filesystem;
 using namespace datastore;
 
 SnapshotRepository::SnapshotRepository(
+    datastore::EntityName name,
     std::filesystem::path dir_path,
     bool open,
     Schema::RepositoryDef schema,
     std::unique_ptr<StepToTimestampConverter> step_converter,
     std::optional<uint32_t> index_salt,
     std::unique_ptr<IndexBuildersFactory> index_builders_factory)
-    : dir_path_(std::move(dir_path)),
+    : name_(std::move(name)),
+      dir_path_(std::move(dir_path)),
       schema_(std::move(schema)),
       step_converter_(std::move(step_converter)),
       index_salt_(index_salt),
@@ -119,16 +121,19 @@ std::vector<std::shared_ptr<IndexBuilder>> SnapshotRepository::missing_indexes()
 }
 
 void SnapshotRepository::reopen_folder() {
-    SILK_INFO << "Reopen snapshot repository folder: " << dir_path_.string();
+    SILK_INFO << "Reopen " << name_.to_string() << " snapshot repository folder: " << dir_path_.string();
 
     index_salt_ = load_index_salt();
 
     auto file_ranges = list_dir_file_ranges();
     if (file_ranges.empty()) return;
 
-    // sort file_ranges by range.start
+    // sort file_ranges by range.start first, then by range size
     std::ranges::sort(file_ranges, [](const StepRange& r1, const StepRange& r2) -> bool {
-        return r1.start < r2.start;
+        if (r1.start != r2.start) {
+            return r1.start < r2.start;
+        }
+        return r1.size() > r2.size();
     });
 
     std::unique_lock lock(*bundles_mutex_);
@@ -147,18 +152,17 @@ void SnapshotRepository::reopen_folder() {
             if (std::ranges::all_of(bundle_paths.files(), [](const fs::path& p) { return fs::exists(p); })) {
                 SnapshotBundle bundle = open_bundle(range);
                 bundles->insert_or_assign(num, std::make_shared<SnapshotBundle>(std::move(bundle)));
+                // avoid gaps/overlaps
+                num = range.end;
             }
         }
-
-        // avoid gaps/overlaps
-        num = range.end;
     }
 
     bundles_ = bundles;
     lock.unlock();
 
-    SILK_INFO << "Total reopened bundles: " << bundles_count()
-              << " max block available: " << max_block_available();
+    SILK_INFO << "Total reopened " << name_.to_string() << " snapshot repository bundles: " << bundles_count()
+              << " max available: " + std::to_string(max_timestamp_available());
 }
 
 SnapshotBundle SnapshotRepository::open_bundle(StepRange range) const {

@@ -185,7 +185,7 @@ Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx,
             Receipt receipt;
 
             const silkworm::Transaction& transaction{block.transactions[index]};
-            auto result = executor.call_with_receipt(block, transaction, receipt, {}, /*refund=*/true, /*gas_bailout=*/false);
+            auto result = executor.call_with_receipt(transaction, receipt, {}, /*refund=*/true, /*gas_bailout=*/false);
 
             cumulative_gas_used += receipt.gas_used;
             receipt.cumulative_gas_used = cumulative_gas_used;
@@ -218,7 +218,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
 
         Receipt receipt;
 
-        auto result = executor.call_with_receipt(block, transaction, receipt, {}, /*refund=*/true, /*gas_bailout=*/false);
+        auto result = executor.call_with_receipt(transaction, receipt, {}, /*refund=*/true, /*gas_bailout=*/false);
 
         return receipt;
     });

@@ -166,7 +166,10 @@ void EVMExecutor::reset() {
     execution_processor_.reset();
 }
 
-ExecutionResult convert_validated_precheck(const ValidationResult& result, const Block& block, const silkworm::Transaction& txn, const EVM& evm) {
+ExecutionResult EVMExecutor::convert_validation_result(const ValidationResult& result, const silkworm::Transaction& txn) {
+    auto& evm = execution_processor_.evm();
+    auto& block = evm.block();
+
     std::string from = address_to_hex(*txn.sender());
     switch (result) {
         case ValidationResult::kMaxPriorityFeeGreaterThanMax: {
@@ -192,6 +195,20 @@ ExecutionResult convert_validated_precheck(const ValidationResult& result, const
             std::string error = "eip-1559 transactions require london";
             return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kIsNotLondon};
         }
+        case ValidationResult::kInsufficientFunds: {
+            auto owned_funds = execution_processor_.intra_block_state().get_balance(*txn.sender());
+            const intx::uint256 base_fee_per_gas{block.header.base_fee_per_gas.value_or(0)};
+
+            const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
+                                                                                            : txn.max_priority_fee_per_gas};
+            const auto required_funds = protocol::compute_call_cost(txn, effective_gas_price, evm);
+            intx::uint512 maximum_cost = required_funds;
+            if (txn.type != TransactionType::kLegacy && txn.type != TransactionType::kAccessList) {
+                maximum_cost = txn.maximum_gas_cost();
+            }
+            std::string error = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(owned_funds) + " want " + intx::to_string(maximum_cost + txn.value);
+            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kInsufficientFunds};
+        }
         default: {
             std::string error = "internal failure";
             return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kInternalError};
@@ -199,23 +216,7 @@ ExecutionResult convert_validated_precheck(const ValidationResult& result, const
     }
 }
 
-ExecutionResult convert_validated_funds(const Block& block, const silkworm::Transaction& txn, const EVM& evm, const intx::uint256& owned_funds) {
-    std::string from = address_to_hex(*txn.sender());
-    const intx::uint256 base_fee_per_gas{block.header.base_fee_per_gas.value_or(0)};
-
-    const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
-                                                                                    : txn.max_priority_fee_per_gas};
-    const auto required_funds = protocol::compute_call_cost(txn, effective_gas_price, evm);
-    intx::uint512 maximum_cost = required_funds;
-    if (txn.type != TransactionType::kLegacy && txn.type != TransactionType::kAccessList) {
-        maximum_cost = txn.maximum_gas_cost();
-    }
-    std::string error = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(owned_funds) + " want " + intx::to_string(maximum_cost + txn.value);
-    return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kInsufficientFunds};
-}
-
 ExecutionResult EVMExecutor::call(
-    const silkworm::Block& block,
     const silkworm::Transaction& txn,
     const Tracers& tracers,
     bool refund,
@@ -225,7 +226,7 @@ ExecutionResult EVMExecutor::call(
     auto& svc = use_service<AnalysisCacheService>(workers_);
 
     evm.analysis_cache = svc.get_analysis_cache();
-    evm.beneficiary = rule_set_->get_beneficiary(block.header);
+    evm.beneficiary = rule_set_->get_beneficiary(evm.block().header);
     evm.transfer = rule_set_->transfer_func();
     evm.bailout = bailout;
 
@@ -233,19 +234,10 @@ ExecutionResult EVMExecutor::call(
         return {std::nullopt, txn.gas_limit, Bytes{}, "malformed transaction: cannot recover sender"};
     }
 
-    if (const auto result = protocol::validate_call_precheck(txn, evm);
-        result != ValidationResult::kOk) {
-        return convert_validated_precheck(result, block, txn, evm);
-    }
-
-    const auto owned_funds = execution_processor_.intra_block_state().get_balance(*txn.sender());
-
-    if (const auto result = protocol::validate_call_funds(txn, evm, owned_funds);
-        !bailout && result != ValidationResult::kOk) {
-        return convert_validated_funds(block, txn, evm, owned_funds);
-    }
-
     const auto result = execution_processor_.call(txn, tracers, refund);
+    if (result.validation_result != ValidationResult::kOk) {
+        return convert_validation_result(result.validation_result, txn);
+    }
 
     ExecutionResult exec_result{result.status, result.gas_left, result.data};
 
@@ -255,16 +247,15 @@ ExecutionResult EVMExecutor::call(
 }
 
 ExecutionResult EVMExecutor::call_with_receipt(
-    const silkworm::Block& block,
     const silkworm::Transaction& txn,
     Receipt& receipt,
     const Tracers& tracers,
     bool refund,
     bool gas_bailout) {
-    SILK_DEBUG << "EVMExecutor::call: blockNumber: " << block.header.number << " gas_limit: " << txn.gas_limit << " refund: " << refund
+    SILK_DEBUG << "EVMExecutor::call: blockNumber: " << execution_processor_.evm().block().header.number << " gas_limit: " << txn.gas_limit << " refund: " << refund
                << " gas_bailout: " << gas_bailout << " transaction: " << rpc::Transaction{txn};
 
-    const auto exec_result = call(block, txn, tracers, refund, gas_bailout);
+    const auto exec_result = call(txn, tracers, refund, gas_bailout);
 
     auto& logs = execution_processor_.intra_block_state().logs();
 
@@ -300,7 +291,7 @@ Task<ExecutionResult> EVMExecutor::call(
     const auto execution_result = co_await async_task(workers.executor(), [&]() -> ExecutionResult {
         auto state = state_factory(this_executor, txn_id, chain_storage);
         EVMExecutor executor{block, config, workers, state};
-        return executor.call(block, txn, tracers, refund, gas_bailout);
+        return executor.call(txn, tracers, refund, gas_bailout);
     });
     co_return execution_result;
 }

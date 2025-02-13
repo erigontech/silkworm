@@ -40,12 +40,12 @@ class LocalTransaction : public BaseTransaction {
         StateCache* state_cache)
         : BaseTransaction(state_cache),
           data_store_{std::move(data_store)},
-          txn_{data_store_.chaindata.access_ro().start_ro_tx()} {}
+          tx_{data_store_.chaindata.access_ro().start_ro_tx()} {}
 
     ~LocalTransaction() override = default;
 
     uint64_t tx_id() const override { return tx_id_; }
-    uint64_t view_id() const override { return txn_.id(); }
+    uint64_t view_id() const override { return tx_.id(); }
 
     Task<void> open() override;
 
@@ -81,6 +81,26 @@ class LocalTransaction : public BaseTransaction {
     Task<PaginatedKeysValues> range_as_of(DomainRangeQuery query) override;
 
   private:
+    template <typename DomainGetLatest>
+    auto query_domain_latest(const datastore::EntityName domain_name, ByteView key) {
+        DomainGetLatest query(
+            data_store_.chaindata.domain(domain_name),
+            tx_,
+            data_store_.state_repository_latest,
+            data_store_.state_repository_historical);
+        return query.exec(key);
+    }
+
+    template <typename DomainGetAsOfQuery>
+    auto query_domain_as_of(const datastore::EntityName domain_name, ByteView key, Timestamp ts) {
+        DomainGetAsOfQuery query(
+            data_store_.chaindata.domain(domain_name),
+            tx_,
+            data_store_.state_repository_latest,
+            data_store_.state_repository_historical);
+        return query.exec(key, ts);
+    }
+
     Task<std::shared_ptr<CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
 
     static inline uint64_t next_tx_id_{0};
@@ -90,7 +110,7 @@ class LocalTransaction : public BaseTransaction {
 
     DataStoreRef data_store_;
     uint32_t last_cursor_id_{0};
-    datastore::kvdb::ROTxnManaged txn_;
+    datastore::kvdb::ROTxnManaged tx_;
     uint64_t tx_id_{++next_tx_id_};
 };
 

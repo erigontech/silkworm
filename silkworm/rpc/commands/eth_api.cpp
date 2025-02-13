@@ -198,9 +198,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::json& re
         const auto chain_storage = tx->create_storage();
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (block_with_hash) {
-            BlockNum block_num = block_with_hash->block.header.number;
-            const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_num)};
-            const Block extended_block{block_with_hash, full_tx, total_difficulty};
+            const Block extended_block{block_with_hash, full_tx};
             make_glaze_json_content(request, extended_block, reply);
         } else {
             make_glaze_json_null_content(request, reply);
@@ -240,8 +238,7 @@ Task<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& 
         const auto block_num = co_await block_reader.get_block_num(block_id);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
         if (block_with_hash) {
-            const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_num)};
-            const Block extended_block{block_with_hash, full_tx, total_difficulty};
+            const Block extended_block{block_with_hash, full_tx};
 
             make_glaze_json_content(request, extended_block, reply);
         } else {
@@ -875,7 +872,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
 // https://eth.wiki/json-rpc/API#eth_estimategas
 Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
-    if (params.size() > 2 || params.empty()) {
+    if (params.size() > 3 || params.empty()) {
         auto error_msg = "invalid eth_estimateGas params: " + params.dump();
         SILK_ERROR << error_msg;
         reply = make_json_error(request, kInvalidParams, error_msg);
@@ -890,10 +887,16 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
     rpc::BlockReader block_reader{*chain_storage, *tx};
 
     std::optional<BlockNum> block_num_for_gas_limit;
-    if (params.size() == 2) {
+    if (params.size() >= 2) {
         const auto block_id = params[1].get<std::string>();
         SILK_DEBUG << "block_id: " << block_id;
         block_num_for_gas_limit = co_await block_reader.get_block_num(block_id);
+    }
+
+    AccountsOverrides accounts_overrides;
+    if (params.size() == 3) {
+        from_json(params[2], accounts_overrides);
+        SILK_TRACE << " accounts_overrides #" << accounts_overrides.size();
     }
 
     try {
@@ -922,7 +925,7 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
             co_return co_await state_reader.read_account(address);
         };
 
-        rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, chain_config, workers_, *tx, *chain_storage};
+        rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, chain_config, workers_, *tx, *chain_storage, accounts_overrides};
         const auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block, std::nullopt /*latest block */, block_num_for_gas_limit);
 
         reply = make_json_content(request, to_quantity(estimated_gas));
@@ -1119,8 +1122,8 @@ Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& reque
         StateReader state_reader{*tx, txn_id};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
         if (account) {
-            auto storage{co_await state_reader.read_storage(address, account->incarnation, location)};
-            reply = make_json_content(request, "0x" + silkworm::to_hex(storage));
+            const auto storage_value = co_await state_reader.read_storage(address, account->incarnation, location);
+            reply = make_json_content(request, "0x" + silkworm::to_hex(storage_value));
         } else {
             reply = make_json_content(request, "0x0000000000000000000000000000000000000000000000000000000000000000");
         }
@@ -1315,7 +1318,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
     }
     const auto call = params[0].get<Call>();
     const auto block_num_or_hash = params[1].get<BlockNumOrHash>();
-    bool optimize_gas = true;
+    bool optimize_gas = false;
     if (params.size() == 3) {
         optimize_gas = params[2];
     }

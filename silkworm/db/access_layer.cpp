@@ -1156,7 +1156,13 @@ bool DataModel::read_body(const Hash& hash, BlockBody& body) const {
 }
 
 std::optional<Hash> DataModel::read_canonical_header_hash(BlockNum block_num) const {
-    return db::read_canonical_header_hash(txn_, block_num);
+    const auto block_hash = db::read_canonical_header_hash(txn_, block_num);
+    if (block_hash) return block_hash;
+
+    const auto block_header = read_header_from_snapshot(block_num);
+    if (!block_header) return {};
+
+    return block_header->hash();
 }
 
 std::optional<BlockHeader> DataModel::read_canonical_header(BlockNum block_num) const {
@@ -1275,6 +1281,10 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash
 
 std::optional<BlockBodyForStorage> DataModel::read_body_for_storage_from_snapshot(BlockNum block_num) const {
     return BodyFindByBlockNumQuery{repository_}.exec(block_num);
+}
+
+std::optional<Bytes> DataModel::read_raw_body_for_storage_from_snapshot(BlockNum block_num) const {
+    return RawBodyFindByBlockNumQuery{repository_}.exec(block_num);
 }
 
 bool DataModel::read_body_from_snapshot(BlockNum block_num, BlockBody& body) const {

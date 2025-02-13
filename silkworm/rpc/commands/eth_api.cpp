@@ -1191,7 +1191,8 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
         const auto execution_result = co_await EVMExecutor::call(
             chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&state_factory](auto& io_executor, std::optional<TxnId> curr_txn_id, auto& storage) {
                 return state_factory.create_state(io_executor, storage, curr_txn_id);
-            }, {}, true, false, accounts_overrides);
+            },
+            {}, true, false, accounts_overrides);
 
         if (execution_result.success()) {
             make_glaze_json_content(request, execution_result.data, reply);

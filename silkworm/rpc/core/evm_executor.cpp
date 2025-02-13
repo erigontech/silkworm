@@ -30,8 +30,8 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/types/transaction.hpp>
 #include <silkworm/rpc/core/override_state.hpp>
+#include <silkworm/rpc/types/transaction.hpp>
 
 #include "silkworm/core/execution/processor.hpp"
 
@@ -288,7 +288,7 @@ Task<ExecutionResult> EVMExecutor::call(
     const Tracers& tracers,
     bool refund,
     bool gas_bailout,
-    std::optional<AccountsOverrides> accounts_overrides ) {
+    std::optional<AccountsOverrides> accounts_overrides) {
     auto this_executor = co_await boost::asio::this_coro::executor;
     const auto execution_result = co_await async_task(workers.executor(), [&]() -> ExecutionResult {
         auto state = state_factory(this_executor, txn_id, chain_storage);

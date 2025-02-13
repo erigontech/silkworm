@@ -684,11 +684,12 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
     const ValidationResult err{protocol::validate_transaction(transaction, processor.intra_block_state(), processor.available_gas())};
 
     if (err != ValidationResult::kOk) {
-        SILK_ERROR << "Transaction validation failed" << " err: " << static_cast<int>(err);
+        SILK_ERROR << "Transaction validation failed"
+                   << " err: " << static_cast<int>(err);
         return SILKWORM_INVALID_BLOCK;
     }
     processor.execute_transaction(transaction, receipt);
-    
+
     try {
         processor.flush_state();
         state.insert_receipts(block_number, std::vector<silkworm::Receipt>{receipt});

@@ -172,7 +172,7 @@ void SnapshotRepository::reopen_folder() {
 #ifndef NDEBUG
     // Sanity check: no gap must exist in bundles
     if (!bundles_->empty()) {
-        Step max_end = Step{0};
+        Step max_end = bundles_->cbegin()->second->step_range().start;
         for (const auto& b : *bundles_) {
             SILKWORM_ASSERT(b.second->step_range().start == max_end);
             max_end = b.second->step_range().end;

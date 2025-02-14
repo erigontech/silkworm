@@ -1147,7 +1147,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
         co_return;
     }
     const auto& params = request["params"];
-    if (params.size() == 1 || params.size() > 3) {
+    if (params.size() < 2 || params.size() > 3) {
         auto error_msg = "invalid eth_call params: " + params.dump();
         SILK_ERROR << error_msg;
         make_glaze_json_error(request, kInvalidParams, error_msg, reply);

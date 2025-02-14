@@ -1280,7 +1280,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[capi]") {
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_tx: single", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{env_path()};
-    silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings);
 
     // Prepare and insert block 10 (just 1 tx w/ value transfer)
     evmc::address from{0x658bdf435d810c91414ec09147daa6db62406379_address};  // funded in genesis

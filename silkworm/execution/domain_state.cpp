@@ -115,8 +115,10 @@ void DomainState::update_account(
     }
 
     if (current) {
-        AccountsDomainPutQuery query{database_, tx_};
-        query.exec(address, *current, txn_id_, original, Step::from_txn_id(txn_id_));
+        if (!original || current->rlp({}) != original->rlp({})) {
+            AccountsDomainPutQuery query{database_, tx_};
+            query.exec(address, *current, txn_id_, original, Step::from_txn_id(txn_id_));
+        }
     } else {
         AccountsDomainDeleteQuery query{database_, tx_};
         query.exec(address, txn_id_, original, Step::from_txn_id(txn_id_));
@@ -157,8 +159,6 @@ void DomainState::update_storage(
     } else {
         original_value = initial;
     }
-
-    Step prev_step{0};
 
     StorageDomainPutQuery query{database_, tx_};
     query.exec({address, location}, current, txn_id_, original_value, Step::from_txn_id(txn_id_));

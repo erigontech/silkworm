@@ -147,7 +147,6 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   # most Windows packages on ConanCenter are built for cppstd=14, but some packages require at least cppstd=17
   # (otherwise report "Invalid" status)
   list(APPEND CONAN_SETTINGS "asio-grpc/*:compiler.cppstd=17")
-  list(APPEND CONAN_SETTINGS "grpc/*:compiler.cppstd=17")
   list(APPEND CONAN_SETTINGS "magic_enum/*:compiler.cppstd=17")
   list(APPEND CONAN_SETTINGS "tomlplusplus/*:compiler.cppstd=17")
 endif()

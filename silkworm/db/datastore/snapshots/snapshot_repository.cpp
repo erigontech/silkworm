@@ -134,7 +134,7 @@ void SnapshotRepository::reopen_folder() {
 
     std::unique_lock lock(*bundles_mutex_);
 
-    std::vector<std::future<std::shared_ptr<SnapshotBundle>>> completed_future_bundles;
+    std::vector<std::future<std::shared_ptr<SnapshotBundle>>> future_complete_bundles;
     for (const auto& range : file_ranges) {
         if (range.size() == 0) continue;
 
@@ -142,21 +142,15 @@ void SnapshotRepository::reopen_folder() {
         // Open iff all bundle paths exist
         if (std::ranges::all_of(bundle_paths.files(), [](const fs::path& p) { return fs::exists(p); })) {
             // Schedule each bundle opening on worker pool collecting its future result for completion handling
-            completed_future_bundles.emplace_back(worker_pool.submit([&, range]() -> std::shared_ptr<SnapshotBundle> {
+            future_complete_bundles.emplace_back(worker_pool.submit([&, range]() -> std::shared_ptr<SnapshotBundle> {
                 return std::make_shared<SnapshotBundle>(schema_, dir_path_, range, index_salt_);
             }));
         }
     }
-    while (!completed_future_bundles.empty()) {  // all bundles will be eventually opened
-        std::erase_if(completed_future_bundles, [&](auto& future_bundle_ptr) {
-            if (future_bundle_ptr.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-                std::shared_ptr<SnapshotBundle> bundle_ptr = future_bundle_ptr.get();
-                const auto step_range = bundle_ptr->step_range();
-                bundles_->insert_or_assign(step_range.start, std::move(bundle_ptr));
-                return true;
-            }
-            return false;
-        });
+    for (auto& future_bundle_ptr : future_complete_bundles) {
+        std::shared_ptr<SnapshotBundle> bundle_ptr = future_bundle_ptr.get();
+        const auto step_range = bundle_ptr->step_range();
+        bundles_->insert_or_assign(step_range.start, std::move(bundle_ptr));
     }
 
 #ifndef NDEBUG

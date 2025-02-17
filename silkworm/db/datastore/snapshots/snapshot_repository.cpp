@@ -17,11 +17,13 @@
 #include "snapshot_repository.hpp"
 
 #include <algorithm>
+#include <future>
 #include <iterator>
 #include <utility>
 
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/thread_pool.hpp>
 
 #include "index_builders_factory.hpp"
 #include "index_salt_file.hpp"
@@ -128,37 +130,40 @@ void SnapshotRepository::reopen_folder() {
     auto file_ranges = list_dir_file_ranges();
     if (file_ranges.empty()) return;
 
-    // sort file_ranges by range.start first, then by range size
-    std::ranges::sort(file_ranges, [](const StepRange& r1, const StepRange& r2) -> bool {
-        if (r1.start != r2.start) {
-            return r1.start < r2.start;
-        }
-        return r1.size() > r2.size();
-    });
+    ThreadPool worker_pool;
 
     std::unique_lock lock(*bundles_mutex_);
-    // copy bundles prior to modification
-    auto bundles = std::make_shared<Bundles>(*bundles_);
 
-    Step num = file_ranges[0].start;
+    std::vector<std::future<std::shared_ptr<SnapshotBundle>>> future_complete_bundles;
     for (const auto& range : file_ranges) {
-        // avoid gaps/overlaps
-        if (range.start != num) continue;
         if (range.size() == 0) continue;
 
-        if (!bundles->contains(num)) {
-            SnapshotBundlePaths bundle_paths{schema_, dir_path_, range};
-            // if all bundle paths exist
-            if (std::ranges::all_of(bundle_paths.files(), [](const fs::path& p) { return fs::exists(p); })) {
-                SnapshotBundle bundle = open_bundle(range);
-                bundles->insert_or_assign(num, std::make_shared<SnapshotBundle>(std::move(bundle)));
-                // avoid gaps/overlaps
-                num = range.end;
-            }
+        SnapshotBundlePaths bundle_paths{schema_, dir_path_, range};
+        // Open iff all bundle paths exist
+        if (std::ranges::all_of(bundle_paths.files(), [](const fs::path& p) { return fs::exists(p); })) {
+            // Schedule each bundle opening on worker pool collecting its future result for completion handling
+            future_complete_bundles.emplace_back(worker_pool.submit([&, range]() -> std::shared_ptr<SnapshotBundle> {
+                return std::make_shared<SnapshotBundle>(schema_, dir_path_, range, index_salt_);
+            }));
         }
     }
+    for (auto& future_bundle_ptr : future_complete_bundles) {
+        std::shared_ptr<SnapshotBundle> bundle_ptr = future_bundle_ptr.get();
+        const auto step_range = bundle_ptr->step_range();
+        bundles_->insert_or_assign(step_range.start, std::move(bundle_ptr));
+    }
 
-    bundles_ = bundles;
+#ifndef NDEBUG
+    // Sanity check: no gap must exist in bundles
+    if (!bundles_->empty()) {
+        Step max_end = bundles_->cbegin()->second->step_range().start;
+        for (const auto& b : *bundles_) {
+            SILKWORM_ASSERT(b.second->step_range().start == max_end);
+            max_end = b.second->step_range().end;
+        }
+    }
+#endif  // NDEBUG
+
     lock.unlock();
 
     SILK_INFO << "Total reopened " << name_.to_string() << " snapshot repository bundles: " << bundles_count()
@@ -246,7 +251,15 @@ SnapshotPathList SnapshotRepository::get_files(std::string_view ext) const {
     return snapshot_files;
 }
 
-std::vector<StepRange> SnapshotRepository::list_dir_file_ranges() const {
+// Define the datastore::StepRange ordering semantics necessary for SnapshotRepository::list_dir_file_ranges
+bool SnapshotRepository::StepRangeCompare::operator()(const StepRange& lhs, const StepRange& rhs) const {
+    if (lhs.start != rhs.start) {
+        return lhs.start < rhs.start;
+    }
+    return lhs.size() < rhs.size();
+}
+
+SnapshotRepository::StepRangeSet SnapshotRepository::list_dir_file_ranges() const {
     ensure(fs::exists(dir_path_),
            [&]() { return "SnapshotRepository: " + dir_path_.string() + " does not exist"; });
     ensure(fs::is_directory(dir_path_),
@@ -255,7 +268,7 @@ std::vector<StepRange> SnapshotRepository::list_dir_file_ranges() const {
     auto supported_file_extensions = schema_.file_extensions();
     if (supported_file_extensions.empty()) return {};
 
-    std::vector<StepRange> results;
+    StepRangeSet results;
     for (const auto& file : fs::recursive_directory_iterator{dir_path_}) {
         if (!fs::is_regular_file(file.path())) {
             continue;
@@ -265,7 +278,7 @@ std::vector<StepRange> SnapshotRepository::list_dir_file_ranges() const {
         }
         const auto path = SnapshotPath::parse(file.path(), dir_path_);
         if (path) {
-            results.push_back(path->step_range());
+            results.insert(path->step_range());
         }
     }
 

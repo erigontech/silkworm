@@ -20,6 +20,7 @@
 #include "inverted_index.hpp"
 #include "rec_split/accessor_index.hpp"
 #include "segment/segment_reader.hpp"
+#include "segment_and_accessor_index.hpp"
 
 namespace silkworm::snapshots {
 
@@ -31,6 +32,10 @@ struct History {
     template <EncoderConcept TIIKeyEncoder>
     static HistoryAccessorIndexKeyEncoder<TIIKeyEncoder> make_accessor_index_key_encoder() {
         return HistoryAccessorIndexKeyEncoder<TIIKeyEncoder>{};
+    }
+
+    SegmentAndAccessorIndex segment_and_index() const {
+        return {segment, accessor_index};
     }
 };
 

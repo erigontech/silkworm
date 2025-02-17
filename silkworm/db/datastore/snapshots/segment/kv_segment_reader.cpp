@@ -50,7 +50,9 @@ KVSegmentFileReader::Iterator& KVSegmentFileReader::Iterator::operator++() {
         if (has_next) {
             if (decoder) {
                 decoder->decode_word(*it_);
-                decoder->check_sanity_with_metadata(path_);
+                if (path_) {
+                    decoder->check_sanity_with_metadata(*path_);
+                }
             }
         } else {
             decoders_.first.reset();

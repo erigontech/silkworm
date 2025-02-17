@@ -32,13 +32,14 @@
 
 namespace silkworm::datastore::kvdb {
 
-template <EncoderConcept TKeyDecoder, EncoderConcept TValueDecoder>
+template <DecoderConcept TKeyDecoder, DecoderConcept TValueDecoder>
 struct HistoryRangeQuery {
     ROTxn& tx;
     History entity;
 
     using Key = decltype(TKeyDecoder::value);
     using Value = decltype(TValueDecoder::value);
+    using ResultItem = std::pair<Key, Value>;
 
     template <typename T>
     static constexpr bool as_bool_predicate(const T& v) {

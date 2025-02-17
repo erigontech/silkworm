@@ -45,7 +45,9 @@ SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator++() {
 
     if (has_next) {
         decoder_->decode_word(*it_);
-        decoder_->check_sanity_with_metadata(path_);
+        if (path_) {
+            decoder_->check_sanity_with_metadata(*path_);
+        }
     } else {
         decoder_.reset();
     }

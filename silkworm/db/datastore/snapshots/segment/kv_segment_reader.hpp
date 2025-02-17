@@ -57,6 +57,11 @@ class KVSegmentFileReader {
               decoders_(std::move(key_decoder), std::move(value_decoder)),
               path_(std::move(path)) {}
 
+        Iterator()
+            : it_{seg::Decompressor::Iterator::make_end()},
+              decoders_{{}, {}},
+              path_{std::nullopt} {}
+
         value_type operator*() const { return decoders_; }
         const value_type* operator->() const { return &decoders_; }
 
@@ -71,10 +76,11 @@ class KVSegmentFileReader {
       private:
         seg::Decompressor::Iterator it_;
         value_type decoders_;
-        SnapshotPath path_;
+        std::optional<SnapshotPath> path_;
     };
 
     static_assert(std::input_iterator<Iterator>);
+    static_assert(std::sentinel_for<Iterator, Iterator>);
 
     static inline const size_t kPageSize{os::page_size()};
 
@@ -125,6 +131,8 @@ class KVSegmentReader {
         explicit Iterator(KVSegmentFileReader::Iterator it)
             : it_(std::move(it)) {}
 
+        Iterator() = default;
+
         value_type operator*() const { return value(); }
 
         value_type_owned move_value() const {
@@ -161,6 +169,7 @@ class KVSegmentReader {
     };
 
     static_assert(std::input_iterator<Iterator>);
+    static_assert(std::sentinel_for<Iterator, Iterator>);
 
     using KeyDecoderType = TKeyDecoder;
     using ValueDecoderType = TValueDecoder;
@@ -204,6 +213,8 @@ class KVSegmentKeysReader {
         explicit Iterator(KVSegmentFileReader::Iterator it)
             : it_(std::move(it)) {}
 
+        Iterator() = default;
+
         reference operator*() const { return value(); }
         pointer operator->() const { return &value(); }
 
@@ -233,6 +244,7 @@ class KVSegmentKeysReader {
     };
 
     static_assert(std::input_iterator<Iterator>);
+    static_assert(std::sentinel_for<Iterator, Iterator>);
 
     using KeyDecoderType = TKeyDecoder;
 
@@ -275,6 +287,8 @@ class KVSegmentValuesReader {
         explicit Iterator(KVSegmentFileReader::Iterator it)
             : it_(std::move(it)) {}
 
+        Iterator() = default;
+
         reference operator*() const { return value(); }
         pointer operator->() const { return &value(); }
 
@@ -304,6 +318,7 @@ class KVSegmentValuesReader {
     };
 
     static_assert(std::input_iterator<Iterator>);
+    static_assert(std::sentinel_for<Iterator, Iterator>);
 
     using ValueDecoderType = TValueDecoder;
 

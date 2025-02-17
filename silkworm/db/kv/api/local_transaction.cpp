@@ -23,6 +23,7 @@
 #include <silkworm/db/chain/local_chain_storage.hpp>
 #include <silkworm/db/datastore/domain_get_as_of_query.hpp>
 #include <silkworm/db/datastore/domain_get_latest_query.hpp>
+#include <silkworm/db/datastore/history_range_query.hpp>
 #include <silkworm/db/datastore/inverted_index_range_by_key_query.hpp>
 #include <silkworm/db/datastore/kvdb/raw_codec.hpp>
 #include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
@@ -192,7 +193,28 @@ Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery query) {
     co_return api::PaginatedTimestamps{std::move(paginator)};
 }
 
-Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeQuery /*query*/) {
+Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeQuery query) {
+    // convert table to entity name
+    if (!kTable2EntityNames.contains(query.table)) {
+        // TODO: return an empty result
+    }
+    datastore::EntityName entity_name = kTable2EntityNames.at(query.table);
+    datastore::HistoryRangeQuery<kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>, kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>> store_query{
+        entity_name,
+        data_store_.chaindata,
+        tx_,
+        data_store_.state_repository_historical,
+    };
+
+    // TODO: convert query from/to to ts_range
+    auto ts_range = datastore::TimestampRange{0, 10};
+    size_t limit = (query.limit == kUnlimited) ? std::numeric_limits<size_t>::max() : static_cast<size_t>(query.limit);
+
+    // TODO: this is just a test example, instead of direct iteration, apply page_size using std::views::chunk,
+    // TODO: save the range for future requests using page_token and return the first chunk
+    for ([[maybe_unused]] decltype(store_query)::ResultItem&& kv_pair : store_query.exec(ts_range, query.ascending_order) | std::views::take(limit)) {
+    }
+
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     auto paginator = [](api::PaginatedKeysValues::PageToken) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         co_return api::PaginatedKeysValues::PageResult{};

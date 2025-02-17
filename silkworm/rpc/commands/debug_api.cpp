@@ -734,7 +734,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_receipts(const nlohmann::json& requ
             co_return;
         }
 
-        auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_, false);
+        auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_, /*extended_receipt_info=*/false);
         SILK_TRACE << "#receipts: " << receipts.size();
 
         std::vector<std::string> raw_receipts;
@@ -830,7 +830,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::json& r
 
         Bytes rlp{};
         co_await chain_storage->read_rlp_transaction(transaction_hash, rlp);
-        reply = make_json_content(request, silkworm::to_hex(rlp, true));
+        reply = make_json_content(request, silkworm::to_hex(rlp, /*with_prefix=*/true));
     } catch (const std::invalid_argument& iv) {
         SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kServerError, iv.what());

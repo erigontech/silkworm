@@ -73,6 +73,9 @@ class ChainStorage {
     //! Read the canonical block body at specified block_num
     virtual Task<bool> read_canonical_body(BlockNum block_num, BlockBody& body) const = 0;
 
+    //! Read the raw storage serialization for the canonical block body at specified block_num
+    virtual Task<std::optional<Bytes>> read_raw_canonical_body_for_storage(BlockNum block_num) const = 0;
+
     //! Read the canonical block at specified block_num
     virtual Task<bool> read_canonical_block(BlockNum block_num, Block& block) const = 0;
 

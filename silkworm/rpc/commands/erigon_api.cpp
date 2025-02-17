@@ -355,7 +355,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
 
     try {
         auto storage = tx->create_storage();
-        LogsWalker logs_walker(*block_cache_, *tx, *storage, *backend_, workers_);
+        LogsWalker logs_walker(*block_cache_, *tx, *storage, workers_);
 
         const auto [start, end] = co_await logs_walker.get_block_nums(filter);
         if (start == end && start == std::numeric_limits<std::uint64_t>::max()) {
@@ -375,7 +375,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
         SILK_DEBUG << "start: " << start << " end: " << end;
 
         std::vector<Log> logs;
-        co_await logs_walker.get_logs(start, end, filter.addresses, filter.topics, options, true, logs);
+        co_await logs_walker.get_logs(start, end, filter.addresses, filter.topics, options, /*ascending_order=*/true, logs);
 
         reply = make_json_content(request, logs);
     } catch (const std::exception& e) {

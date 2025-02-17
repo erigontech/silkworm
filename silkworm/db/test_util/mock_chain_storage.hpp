@@ -58,6 +58,7 @@ class MockChainStorage : public chain::ChainStorage {
     MOCK_METHOD((Task<std::optional<BlockHeader>>), read_canonical_header, (BlockNum), (const, override));
 
     MOCK_METHOD((Task<bool>), read_canonical_body, (BlockNum, BlockBody&), (const, override));
+    MOCK_METHOD((Task<std::optional<Bytes>>), read_raw_canonical_body_for_storage, (BlockNum), (const, override));
 
     MOCK_METHOD((Task<bool>), read_canonical_block, (BlockNum, silkworm::Block&), (const, override));
 

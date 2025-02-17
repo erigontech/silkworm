@@ -29,7 +29,6 @@
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/ethdb/cbor.hpp>
-#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 
 namespace silkworm::rpc {
 
@@ -72,15 +71,13 @@ Task<void> LogsWalker::get_logs(BlockNum start,
                                 const FilterAddresses& addresses,
                                 const FilterTopics& topics,
                                 const LogFilterOptions& options,
-                                bool asc_order,
+                                bool ascending_order,
                                 std::vector<Log>& logs) {
-    auto provider = ethdb::kv::canonical_body_for_storage_provider(&backend_);
-
     db::txn::TxNum min_tx_num{0};
     if (start > 0) {
-        min_tx_num = co_await db::txn::min_tx_num(tx_, start, provider);
+        min_tx_num = co_await db::txn::min_tx_num(tx_, start, canonical_body_for_storage_provider_);
     }
-    auto max_tx_num = co_await db::txn::max_tx_num(tx_, end, provider) + 1;
+    auto max_tx_num = co_await db::txn::max_tx_num(tx_, end, canonical_body_for_storage_provider_) + 1;
 
     SILK_DEBUG << "start: " << start << ", end: " << end << ", min_tx_num: " << min_tx_num << ", max_tx_num: " << max_tx_num;
 
@@ -106,7 +103,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
                     .key = db::topic_domain_key(*it),
                     .from_timestamp = from_timestamp,
                     .to_timestamp = to_timestamp,
-                    .ascending_order = asc_order};
+                    .ascending_order = ascending_order};
                 auto paginated_result = co_await tx_.index_range(std::move(query));
                 union_stream = db::kv::api::set_union(std::move(union_stream), co_await paginated_result.begin());
             }
@@ -127,7 +124,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
                 .key = db::account_domain_key(*it),
                 .from_timestamp = from_timestamp,
                 .to_timestamp = to_timestamp,
-                .ascending_order = asc_order};
+                .ascending_order = ascending_order};
             auto paginated_result = co_await tx_.index_range(std::move(query));
             union_stream = db::kv::api::set_union(std::move(union_stream), co_await paginated_result.begin());
         }
@@ -150,7 +147,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
 
     uint64_t block_timestamp{0};
     std::shared_ptr<BlockWithHash> block_with_hash;
-    auto itr = db::txn::make_txn_nums_stream(std::move(paginated_stream), asc_order, tx_, provider);
+    auto itr = db::txn::make_txn_nums_stream(std::move(paginated_stream), ascending_order, tx_, canonical_body_for_storage_provider_);
     while (const auto tnx_nums = co_await itr->next()) {
         SILK_DEBUG << " blockNum: " << tnx_nums->block_num << " txn_id: " << tnx_nums->txn_id << " txn_index: " << (tnx_nums->txn_index ? std::to_string(*(tnx_nums->txn_index)) : "nullopt");
 

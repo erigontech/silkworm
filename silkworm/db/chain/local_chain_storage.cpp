@@ -99,6 +99,10 @@ Task<bool> LocalChainStorage::read_canonical_body(BlockNum block_num, BlockBody&
     co_return data_model_.read_canonical_body(block_num, body);
 }
 
+Task<std::optional<Bytes>> LocalChainStorage::read_raw_canonical_body_for_storage(BlockNum block_num) const {
+    co_return data_model_.read_raw_canonical_body_for_storage(block_num);
+}
+
 Task<bool> LocalChainStorage::read_canonical_block(BlockNum block_num, Block& block) const {
     co_return data_model_.read_canonical_block(block_num, block);
 }

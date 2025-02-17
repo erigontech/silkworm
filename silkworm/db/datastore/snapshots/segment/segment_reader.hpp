@@ -64,6 +64,11 @@ class SegmentFileReader {
             SnapshotPath path)
             : it_(std::move(it)), decoder_(std::move(decoder)), path_(std::move(path)) {}
 
+        Iterator()
+            : it_{seg::Decompressor::Iterator::make_end()},
+              decoder_{},
+              path_{std::nullopt} {}
+
         value_type operator*() const { return decoder_; }
 
         Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
@@ -77,10 +82,11 @@ class SegmentFileReader {
       private:
         seg::Decompressor::Iterator it_;
         std::shared_ptr<Decoder> decoder_;
-        SnapshotPath path_;
+        std::optional<SnapshotPath> path_;
     };
 
     static_assert(std::input_iterator<Iterator>);
+    static_assert(std::sentinel_for<Iterator, Iterator>);
 
     static inline const size_t kPageSize{os::page_size()};
 
@@ -126,6 +132,8 @@ class SegmentReader {
         explicit Iterator(SegmentFileReader::Iterator it)
             : it_(std::move(it)) {}
 
+        Iterator() = default;
+
         reference operator*() const { return value(); }
         pointer operator->() const { return &value(); }
 
@@ -155,6 +163,7 @@ class SegmentReader {
     };
 
     static_assert(std::input_iterator<Iterator>);
+    static_assert(std::sentinel_for<Iterator, Iterator>);
 
     using DecoderType = TDecoder;
 

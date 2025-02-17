@@ -28,16 +28,6 @@
 #include "index_builders_factory.hpp"
 #include "index_salt_file.hpp"
 
-// Define the datastore::StepRange ordering semantics necessary for SnapshotRepository::list_dir_file_ranges
-namespace silkworm::datastore {
-bool operator<(const StepRange& lhs, const StepRange& rhs) {
-    if (lhs.start != rhs.start) {
-        return lhs.start < rhs.start;
-    }
-    return lhs.size() < rhs.size();
-}
-}  // namespace silkworm::datastore
-
 namespace silkworm::snapshots {
 
 namespace fs = std::filesystem;
@@ -267,7 +257,15 @@ SnapshotPathList SnapshotRepository::get_files(std::string_view ext) const {
     return snapshot_files;
 }
 
-std::set<StepRange> SnapshotRepository::list_dir_file_ranges() const {
+// Define the datastore::StepRange ordering semantics necessary for SnapshotRepository::list_dir_file_ranges
+bool SnapshotRepository::StepRangeCompare::operator()(const StepRange& lhs, const StepRange& rhs) const {
+    if (lhs.start != rhs.start) {
+        return lhs.start < rhs.start;
+    }
+    return lhs.size() < rhs.size();
+}
+
+SnapshotRepository::StepRangeSet SnapshotRepository::list_dir_file_ranges() const {
     ensure(fs::exists(dir_path_),
            [&]() { return "SnapshotRepository: " + dir_path_.string() + " does not exist"; });
     ensure(fs::is_directory(dir_path_),
@@ -276,7 +274,7 @@ std::set<StepRange> SnapshotRepository::list_dir_file_ranges() const {
     auto supported_file_extensions = schema_.file_extensions();
     if (supported_file_extensions.empty()) return {};
 
-    std::set<StepRange> results;
+    StepRangeSet results;
     for (const auto& file : fs::recursive_directory_iterator{dir_path_}) {
         if (!fs::is_regular_file(file.path())) {
             continue;

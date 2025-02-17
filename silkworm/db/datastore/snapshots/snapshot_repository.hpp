@@ -110,7 +110,12 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
     Step max_end_step() const;
 
     SnapshotPathList get_files(std::string_view ext) const;
-    std::set<StepRange> list_dir_file_ranges() const;
+
+    struct StepRangeCompare {
+        inline bool operator()(const StepRange& lhs, const StepRange& rhs) const;
+    };
+    using StepRangeSet = std::set<StepRange, StepRangeCompare>;
+    StepRangeSet list_dir_file_ranges() const;
 
     bool is_stale_index_path(const SnapshotPath& index_path) const;
     SnapshotPathList stale_index_paths() const;

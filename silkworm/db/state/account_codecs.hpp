@@ -19,6 +19,7 @@
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/db/datastore/kvdb/codec.hpp>
 #include <silkworm/db/datastore/snapshots/common/codec.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 
 #include "account_codec.hpp"
 #include "silkworm/db/util.hpp"
@@ -32,16 +33,21 @@ struct AccountKVDBCodec : public datastore::kvdb::Codec {
     ~AccountKVDBCodec() override = default;
 
     datastore::kvdb::Slice encode() override {
-        if (!value) {
-            return {};
+        if (value) {
+            data = AccountCodec::encode_for_storage_v3(*value);
+        } else {
+            data.clear();
         }
-        data = AccountCodec::encode_for_storage_v3(*value);
         return datastore::kvdb::to_slice(data);
     }
 
     void decode(datastore::kvdb::Slice slice) override {
-        auto account = AccountCodec::from_encoded_storage_v3(datastore::kvdb::from_slice(slice));
-        if (account) value = std::move(*account);
+        if (!slice.empty()) {
+            value = unwrap_or_throw(AccountCodec::from_encoded_storage_v3(datastore::kvdb::from_slice(slice)),
+                                    "AccountKVDBCodec failed to decode Account");
+        } else {
+            value.reset();
+        }
     }
 };
 
@@ -55,16 +61,21 @@ struct AccountSnapshotsCodec : public snapshots::Codec {
     ~AccountSnapshotsCodec() override = default;
 
     ByteView encode_word() override {
-        if (!value) {
-            return {};
+        if (value) {
+            word = AccountCodec::encode_for_storage_v3(*value);
+        } else {
+            word.clear();
         }
-        word = AccountCodec::encode_for_storage_v3(*value);
         return word;
     }
 
     void decode_word(ByteView input_word) override {
-        auto account = AccountCodec::from_encoded_storage_v3(input_word);
-        if (account) value = std::move(*account);
+        if (!input_word.empty()) {
+            value = unwrap_or_throw(AccountCodec::from_encoded_storage_v3(input_word),
+                                    "AccountSnapshotsCodec failed to decode Account");
+        } else {
+            value.reset();
+        }
     }
 };
 

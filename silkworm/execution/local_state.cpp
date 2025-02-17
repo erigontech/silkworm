@@ -27,7 +27,7 @@ using namespace db::state;
 using namespace datastore;
 
 std::optional<Account> LocalState::read_account(const evmc::address& address) const noexcept {
-    return query_as_of<AccountsDomainGetAsOfQuery>().exec(address, txn_id_);
+    return query_as_of<AccountsDomainGetAsOfQuery>().exec(address, txn_id_).value_or(std::nullopt);
 }
 
 ByteView LocalState::read_code(const evmc::address& address, const evmc::bytes32& /*code_hash*/) const noexcept {

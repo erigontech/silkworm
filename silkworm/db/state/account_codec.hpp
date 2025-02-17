@@ -33,6 +33,7 @@ struct AccountCodec {
     //! \brief Decode an Account from its binary representation for data storage
     static tl::expected<Account, DecodingError> from_encoded_storage(ByteView encoded_payload) noexcept;
 
+    //! \brief Encode the account into its binary representation for data storage in E3 data format
     static Bytes encode_for_storage_v3(const Account& account);
 
     //! \brief Decode an Account from its binary representation for data storage in E3 data format

@@ -261,6 +261,12 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
                 }
                 break;
 
+            case evmc_status_code::EVMC_REVERT:
+                if (log.op_code == OP_REVERT) {
+                    log.gas_cost = result.gas_cost;
+                }
+                break;
+
             default:
                 if (log.op_code == OP_CALL || log.op_code == OP_CALLCODE || log.op_code == OP_STATICCALL || log.op_code == OP_DELEGATECALL || log.op_code == OP_CREATE || log.op_code == OP_CREATE2) {
                     log.gas_cost += result.gas_cost;

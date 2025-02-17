@@ -35,7 +35,8 @@ class SilkwormRecipe(ConanFile):
         self.requires('boost/1.83.0', override=True)
         self.requires('cli11/2.2.0')
         self.requires('gmp/6.2.1')
-        self.requires('grpc/1.67.1', override=True)
+        # Hard-coded recipe revision to prevent issue in Windows build after publication of new revision
+        self.requires('grpc/1.67.1#eae57ed8067bb53c6b0441a563b56d59', override=True)
         self.requires('gtest/1.12.1')
         self.requires('jwt-cpp/0.6.0')
         self.requires('libtorrent/2.0.10')

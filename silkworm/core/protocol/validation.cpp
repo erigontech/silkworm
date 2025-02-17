@@ -79,12 +79,23 @@ ValidationResult validate_transaction(const Transaction& txn, const IntraBlockSt
     }
 
     if (state.get_code_hash(*sender) != kEmptyHash) {
-        return ValidationResult::kSenderNoEOA;  // EIP-3607
+        const auto code = state.get_code(*sender);
+        constexpr uint8_t DELEGATION_MAGIC_BYTES[] = {0xef, 0x01, 0x00};
+        const evmc::bytes_view DELEGATION_MAGIC{DELEGATION_MAGIC_BYTES, std::size(DELEGATION_MAGIC_BYTES)};
+        if (!code.starts_with(DELEGATION_MAGIC)) {
+            return ValidationResult::kSenderNoEOA;  // EIP-3607
+        }
     }
 
+    if (txn.nonce == 6) {
+        int a = 10;
+        a++;
+    }
     const uint64_t nonce{state.get_nonce(*sender)};
+    std::cerr << "Nonce for sender: " << hex(*sender) << ", it is: " << nonce << " but should be: " << txn.nonce << std::endl;
     if (nonce != txn.nonce) {
-        return ValidationResult::kWrongNonce;
+        std::cerr << "Wrong nonce for sender: " << hex(*sender) << ", it is: " << nonce << " but should be: " << txn.nonce << std::endl;
+        //return ValidationResult::kWrongNonce;
     }
 
     // See YP, Eq (61) in Section 6.2 "Execution"
@@ -218,8 +229,16 @@ ValidationResult pre_validate_common_forks(const Transaction& txn, const evmc_re
             if (std::empty(txn.authorizations)) {
                 return ValidationResult::kEmptyAuthorizations;
             }
+            for (const auto& authorization : txn.authorizations) {
+                if (authorization.chain_id >= kSecp256k1n ) {
+                    //return ValidationResult::kIncorrectAuthorization;
+                }
+                if (authorization.r >= kSecp256k1n || authorization.s >= kSecp256k1n ) {
+                    //return ValidationResult::kIncorrectAuthorization;
+                }
+            }
         }
-
+        // EIP-7623
         const auto floor_cost = protocol::floor_cost(txn);
         if (txn.gas_limit < floor_cost) {
             return ValidationResult::kFloorCost;
@@ -233,7 +252,7 @@ ValidationResult validate_call_funds(const Transaction& txn, const EVM& evm, con
     const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= evm.block().header.base_fee_per_gas ? txn.effective_gas_price(base_fee)
                                                                                                        : txn.max_priority_fee_per_gas};
 
-    auto required_funds = compute_call_cost(txn, effective_gas_price, evm);
+    intx::uint512 required_funds = compute_call_cost(txn, effective_gas_price, evm);
     // EIP-7623 Increase calldata cost
     if (evm.revision() >= EVMC_PRAGUE) {
         const auto floor_cost = protocol::floor_cost(txn);

@@ -38,6 +38,8 @@ struct AccessListEntry {
     friend bool operator==(const AccessListEntry&, const AccessListEntry&) = default;
 };
 
+class Transaction;
+
 // EIP-7702 Authorization
 struct Authorization {
     intx::uint256 chain_id;
@@ -47,11 +49,9 @@ struct Authorization {
     intx::uint256 r;
     intx::uint256 s;
 
-    std::optional<evmc::address> recovered_authority;
-
     friend bool operator==(const Authorization&, const Authorization&) = default;
-    void recover_authority();
-    intx::uint256 v();
+    std::optional<evmc::address> recover_authority(const Transaction& txn) const;
+    intx::uint256 v() const;
 };
 
 // EIP-2718 transaction type

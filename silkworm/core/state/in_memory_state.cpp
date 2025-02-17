@@ -188,6 +188,17 @@ void InMemoryState::update_storage(const evmc::address& address, uint64_t incarn
     }
 }
 
+void InMemoryState::zero_nonce([[maybe_unused]] const evmc::address& address) {
+    // if (const auto it = account_changes_[block_num_].find(address); it != account_changes_[block_num_].end()) {
+    //     if (it->second) {
+    //         it->second->nonce = 0;
+    //     }
+    // }
+    // if (const auto it = accounts_.find(address); it != accounts_.end()) {
+    //     it->second.nonce  = 0;
+    // }
+}
+
 void InMemoryState::unwind_state_changes(BlockNum block_num) {
     for (const auto& [address, account] : account_changes_[block_num]) {
         if (account) {
@@ -269,6 +280,26 @@ evmc::bytes32 InMemoryState::state_root_hash() const {
     }
 
     return hb.root_hash();
+}
+
+void InMemoryState::inspect_storage([[maybe_unused]] const evmc::address& address) const {
+    // std::cerr << "INMEMORY STORAGE" << std::endl;
+    // for (const auto& acc : accounts_) {
+    //     std::cerr << "Acc: " << hex(acc.first) << ", nonce: " << acc.second.nonce << std::endl;
+    // }
+
+    // std::cerr << "INSPECTING IN MEMORY STATE FOR ADDR: " << hex(address) << std::endl;
+    // if (const auto it = storage().find(address); it != storage().end()) {
+    //
+    //     for (const auto& incarnation : it->second) {
+    //         std::cerr << "Under incarnation: " << incarnation.first << std::endl;
+    //         for (const auto& [key, value] : incarnation.second) {
+    //             std::cerr << "Key: " << hex(key) << ", value: " << hex(value) << std::endl;
+    //         }
+    //
+    //     }
+    //
+    // }
 }
 
 }  // namespace silkworm

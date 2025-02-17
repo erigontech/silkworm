@@ -61,7 +61,7 @@ class IntraBlockState {
     // See EIP-161: State trie clearing (invariant-preserving alternative)
     bool is_dead(const evmc::address& address) const noexcept;
 
-    void create_contract(const evmc::address& address) noexcept;
+    void create_contract(const evmc::address& address, bool is_code_delegation) noexcept;
 
     void destruct(const evmc::address& address);
 
@@ -119,6 +119,8 @@ class IntraBlockState {
     evmc::bytes32 get_transient_storage(const evmc::address& address, const evmc::bytes32& key);
 
     void set_transient_storage(const evmc::address& addr, const evmc::bytes32& key, const evmc::bytes32& value);
+
+    void inspect_storage(const evmc::address& addr) const;
 
   private:
     friend class state::CreateDelta;

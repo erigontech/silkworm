@@ -38,6 +38,9 @@ intx::uint128 intrinsic_gas(const UnsignedTransaction& txn, const evmc_revision 
     }
     gas += total_num_of_storage_keys * fee::kAccessListStorageKeyCost;
 
+    // EIP-7702 Set EOA account code
+    gas += txn.authorizations.size() * fee::kPerEmptyAccountCost;
+
     const uint64_t data_len{txn.data.length()};
     if (data_len == 0) {
         return gas;

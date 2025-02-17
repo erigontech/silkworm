@@ -41,6 +41,7 @@ namespace fee {
     inline constexpr uint64_t kInitCodeWordCost{2};  // EIP-3860
 
     inline constexpr uint64_t kTotalCostFloorPerToken{10};  // EIP-7623: Increase calldata cost
+    inline constexpr uint64_t kPerEmptyAccountCost{25000};  // EIP-7702 Set EOA account code
 
 }  // namespace fee
 
@@ -85,13 +86,13 @@ inline constexpr evmc::address kBeaconRootsAddress{0x000F3df6D732807Ef1319fB7B8b
 inline constexpr auto kDepositContractAddress{0x00000000219ab540356cbb839cbe05303d7705fa_address};
 
 // EIP-7002: Execution layer triggerable withdrawals
-inline constexpr auto kWithdrawalRequestAddress{0x0c15F14308530b7CDB8460094BbB9cC28b9AaaAA_address};
+inline constexpr auto kWithdrawalRequestAddress{0x00000961EF480EB55E80D19AD83579A64C007002_address};
 
 // EIP-7251: Increase the MAX_EFFECTIVE_BALANCE
-inline constexpr auto kConsolidationRequestAddress{0x00431F263cE400f4455c2dCf564e53007Ca4bbBb_address};
+inline constexpr auto kConsolidationRequestAddress{0x0000BBDDC7CE488642FB579F8B00F3A590007251_address};
 
 // EIP-2935: Serve historical block hashes from state
-inline constexpr evmc::address kHistoryStorageAddress{0x0F792be4B0c0cb4DAE440Ef133E90C0eCD48CCCC_address};
+inline constexpr evmc::address kHistoryStorageAddress{0x0000F90827F1C53A10CB7A02335B175320002935_address};
 
 // Used in Bor
 inline constexpr size_t kExtraSealSize{65};

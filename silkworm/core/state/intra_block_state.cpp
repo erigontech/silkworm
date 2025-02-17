@@ -74,7 +74,7 @@ bool IntraBlockState::is_dead(const evmc::address& address) const noexcept {
     return obj->current->code_hash == kEmptyHash && obj->current->nonce == 0 && obj->current->balance == 0;
 }
 
-void IntraBlockState::create_contract(const evmc::address& address) noexcept {
+void IntraBlockState::create_contract(const evmc::address& address, [[maybe_unused ]] bool is_code_delegation) noexcept {
     created_.insert(address);
     state::Object created{};
     created.current = Account{};
@@ -105,8 +105,10 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
         prev_incarnation = prev->current->previous_incarnation;
     }
 
-    created.current->incarnation = *prev_incarnation + 1;
-    created.current->previous_incarnation = *prev_incarnation;
+    if (!is_code_delegation) {
+        created.current->incarnation = *prev_incarnation + 1;
+        created.current->previous_incarnation = *prev_incarnation;
+    }
 
     objects_[address] = created;
 
@@ -115,7 +117,9 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
         journal_.emplace_back(std::make_unique<state::StorageCreateDelta>(address));
     } else {
         journal_.emplace_back(std::make_unique<state::StorageWipeDelta>(address, it->second));
-        storage_.erase(address);
+        if (!is_code_delegation) {
+            storage_.erase(address);
+        }
     }
 }
 
@@ -271,6 +275,18 @@ evmc::bytes32 IntraBlockState::get_original_storage(const evmc::address& address
     return get_storage(address, key, /*original=*/true);
 }
 
+void IntraBlockState::inspect_storage([[maybe_unused]] const evmc::address& addr) const {
+    // for (const auto& acc : objects_) {
+    //     if (acc.second.current.has_value()) {
+    //         std::cerr << "There is acc: " << hex(acc.first) << ", with nonce: " << acc.second.current.value().nonce << std::endl;
+    //     }
+    // }
+    // std::cerr << "Inspecting storagefor addr: " << hex(addr) << std::endl;
+    // if (const auto it = storage_.find(addr); it != storage_.end()) {
+    //     std::cerr << "Keys orig: " << it->second.current.size() << ", committed: " << it->second.committed.size() << std::endl;
+    // }
+}
+
 evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address, const evmc::bytes32& key,
                                            bool original) const noexcept {
     auto* obj{get_object(address)};
@@ -352,12 +368,25 @@ void IntraBlockState::write_to_db(uint64_t block_num) {
             continue;
         }
         const auto& code_hash{obj.current->code_hash};
+
+        ByteView code_view;
+        if (auto it{new_code_.find(code_hash)}; it != new_code_.end()) {
+            code_view = {it->second.data(), it->second.size()};
+        }
+
+        constexpr uint8_t DELEGATION_MAGIC_BYTES[] = {0xef, 0x01, 0x00};
+        const evmc::bytes_view DELEGATION_MAGIC{DELEGATION_MAGIC_BYTES, std::size(DELEGATION_MAGIC_BYTES)};
+        const auto is_code_delegated = code_view.starts_with(DELEGATION_MAGIC);
+
         if (code_hash != kEmptyHash &&
-            (!obj.initial || obj.initial->incarnation != obj.current->incarnation)) {
+            (!obj.initial || obj.initial->incarnation != obj.current->incarnation || is_code_delegated)) {
+
             if (auto it{new_code_.find(code_hash)}; it != new_code_.end()) {
-                ByteView code_view{it->second.data(), it->second.size()};
                 db_.update_account_code(address, obj.current->incarnation, code_hash, code_view);
             }
+        }
+        if (is_code_delegated) {
+            db_.zero_nonce(address);
         }
     }
 }

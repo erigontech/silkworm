@@ -28,11 +28,26 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
+#include "silkworm/core/crypto/secp256k1n.hpp"
 #include "y_parity_and_chain_id.hpp"
 
 namespace silkworm {
 
-void Authorization::recover_authority() {
+std::optional<evmc::address> Authorization::recover_authority(const Transaction& txn) const {
+    if (chain_id != 0 && chain_id != txn.chain_id ) {
+        return {};
+    }
+    if (r >= kSecp256k1n || s >= kSecp256k1n ) {
+        return {};
+    }
+    if (s > kSecp256k1Halfn) {
+        return {};
+    }
+
+    if (y_parity > 1) {
+        return {};
+    }
+
     Bytes rlp{};
     rlp::encode_for_signing(rlp, *this);
 
@@ -43,14 +58,15 @@ void Authorization::recover_authority() {
     intx::be::unsafe::store(signature + kHashLength, s);
     intx::be::unsafe::store(signature + 2 * kHashLength, y_parity);
 
-    recovered_authority = evmc::address{};
+    std::optional recovered_authority = evmc::address{};
     static secp256k1_context* context{secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS)};
     if (!silkworm_recover_address(recovered_authority->bytes, hash.bytes, signature, y_parity, context)) {
         recovered_authority = std::nullopt;
     }
+    return recovered_authority;
 }
 
-intx::uint256 Authorization::v() {
+intx::uint256 Authorization::v() const {
     return y_parity_and_chain_id_to_v(y_parity, chain_id);
 }
 

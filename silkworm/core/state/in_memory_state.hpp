@@ -89,6 +89,10 @@ class InMemoryState : public State {
     size_t storage_size(const evmc::address& address, uint64_t incarnation) const;
     const Storage& storage() const { return storage_; }
 
+    void inspect_storage(const evmc::address& address) const;
+
+    void zero_nonce(const evmc::address& address) override;
+
   private:
     evmc::bytes32 account_storage_root(const evmc::address& address, uint64_t incarnation) const;
 

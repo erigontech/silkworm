@@ -16,9 +16,11 @@
 
 #pragma once
 
+#include <cstdlib>
 #include <functional>
-#include <optional>
+#include <iterator>
 #include <ranges>
+#include <type_traits>
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
@@ -29,7 +31,7 @@ template <
     std::ranges::input_range Range1, std::ranges::input_range Range2,
     class Comp = std::ranges::less,
     class Proj1 = std::identity, class Proj2 = std::identity>
-class MergeView : public std::ranges::view_interface<MergeView<Range1, Range2>> {
+class MergeView : public std::ranges::view_interface<MergeView<Range1, Range2, Comp, Proj1, Proj2>> {
   public:
     class Iterator {
       public:
@@ -77,12 +79,13 @@ class MergeView : public std::ranges::view_interface<MergeView<Range1, Range2>> 
         Iterator& operator++() {
             switch (selector_) {
                 case 1:
-                    it1_++;
+                    ++it1_;
                     break;
                 case 2:
-                    it2_++;
+                    ++it2_;
                     break;
                 default:
+                    SILKWORM_ASSERT(false);
                     return *this;
             }
 

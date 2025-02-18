@@ -163,6 +163,10 @@ Task<bool> RemoteChainStorage::read_canonical_body(BlockNum block_num, BlockBody
     co_return true;
 }
 
+Task<std::optional<Bytes>> RemoteChainStorage::read_raw_canonical_body_for_storage(BlockNum block_num) const {
+    co_return co_await providers_.canonical_body_for_storage(block_num);
+}
+
 Task<bool> RemoteChainStorage::read_canonical_block(BlockNum block_num, Block& block) const {
     const auto hash = co_await providers_.canonical_block_hash_from_number(block_num);
     if (!hash) {

@@ -1558,7 +1558,7 @@ Task<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& request, 
 
     try {
         auto storage = tx->create_storage();
-        LogsWalker logs_walker(*block_cache_, *tx, *storage, *backend_, workers_);
+        LogsWalker logs_walker(*block_cache_, *tx, *storage, workers_);
 
         const auto [start, end] = co_await logs_walker.get_block_nums(filter);
         filter.start = start;
@@ -1643,7 +1643,7 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json& requ
 
     try {
         auto storage = tx->create_storage();
-        LogsWalker logs_walker(*block_cache_, *tx, *storage, *backend_, workers_);
+        LogsWalker logs_walker(*block_cache_, *tx, *storage, workers_);
 
         const auto [start, end] = co_await logs_walker.get_block_nums(filter);
 
@@ -1694,7 +1694,7 @@ Task<void> EthereumRpcApi::handle_eth_get_filter_changes(const nlohmann::json& r
 
     try {
         auto storage = tx->create_storage();
-        LogsWalker logs_walker(*block_cache_, *tx, *storage, *backend_, workers_);
+        LogsWalker logs_walker(*block_cache_, *tx, *storage, workers_);
 
         const auto [start, end] = co_await logs_walker.get_block_nums(filter);
 
@@ -1764,7 +1764,7 @@ Task<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& request, st
 
     try {
         auto storage = tx->create_storage();
-        LogsWalker logs_walker(*block_cache_, *tx, *storage, *backend_, workers_);
+        LogsWalker logs_walker(*block_cache_, *tx, *storage, workers_);
 
         const auto [start, end] = co_await logs_walker.get_block_nums(filter);
         if (start == end && start == std::numeric_limits<std::uint64_t>::max()) {

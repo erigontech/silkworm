@@ -57,6 +57,7 @@ class RemoteChainStorage : public ChainStorage {
     Task<std::optional<BlockHeader>> read_canonical_header(BlockNum block_num) const override;
 
     Task<bool> read_canonical_body(BlockNum block_num, BlockBody& body) const override;
+    Task<std::optional<Bytes>> read_raw_canonical_body_for_storage(BlockNum block_num) const override;
 
     Task<bool> read_canonical_block(BlockNum block_num, Block& block) const override;
 

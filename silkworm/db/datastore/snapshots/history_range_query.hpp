@@ -18,9 +18,9 @@
 
 #include <ranges>
 
-#include "../common/caching_view.hpp"
 #include "../common/entity_name.hpp"
-#include "../common/owning_view.hpp"
+#include "../common/ranges/caching_view.hpp"
+#include "../common/ranges/owning_view.hpp"
 #include "../common/timestamp.hpp"
 #include "common/raw_codec.hpp"
 #include "history.hpp"

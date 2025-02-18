@@ -468,7 +468,7 @@ Stage::Result HashState::hash_from_account_changeset(RWTxn& txn, BlockNum previo
             changeset_data = source_changeset->to_next(/*throw_notfound=*/false);
         }
 
-        write_changes_from_changed_addresses(txn, changed_addresses);
+        write_changes_from_changed_addresses(txn, changed_addresses, /*unwind=*/false);
     } catch (const mdbx::exception& ex) {
         SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
@@ -646,7 +646,7 @@ Stage::Result HashState::unwind_from_account_changeset(RWTxn& txn, BlockNum prev
             changeset_data = changeset_cursor->to_next(/*throw_notfound=*/false);
         }
 
-        write_changes_from_changed_addresses(txn, changed_addresses);
+        write_changes_from_changed_addresses(txn, changed_addresses, /*unwind=*/true);
     } catch (const mdbx::exception& ex) {
         SILK_ERROR_M(log_prefix_, {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});
         ret = Stage::Result::kDbError;
@@ -766,7 +766,7 @@ Stage::Result HashState::unwind_from_storage_changeset(RWTxn& txn, BlockNum prev
     return ret;
 }
 
-void HashState::write_changes_from_changed_addresses(RWTxn& txn, const ChangedAddresses& changed_addresses) {
+void HashState::write_changes_from_changed_addresses(RWTxn& txn, const ChangedAddresses& changed_addresses, bool unwind) {
     throw_if_stopping();
 
     std::unique_lock log_lck(log_mtx_);
@@ -808,7 +808,7 @@ void HashState::write_changes_from_changed_addresses(RWTxn& txn, const ChangedAd
                 endian::store_big_u64(&plain_code_key[kAddressLength], account->incarnation);
                 const auto code_data = source_plaincode->find(to_slice(plain_code_key), /*throw_notfound=*/false);
                 if (code_data.done && !code_data.value.empty()) {
-                    if (account->code_hash == kEmptyHash) {
+                    if (account->code_hash == kEmptyHash && unwind) {
                         SILK_TRACE_M(log_prefix_, {"function", std::string(__FUNCTION__),
                                                    "address", address_to_hex(address),
                                                    "address_hash", to_hex(address_hash),

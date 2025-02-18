@@ -67,7 +67,7 @@ class HashState final : public Stage {
     Stage::Result unwind_from_storage_changeset(db::RWTxn& txn, BlockNum previous_progress, BlockNum to);
 
     //! \brief Writes to db the changes collected from account changeset scan either in forward or unwind mode
-    void write_changes_from_changed_addresses(db::RWTxn& txn, const ChangedAddresses& changed_addresses);
+    void write_changes_from_changed_addresses(db::RWTxn& txn, const ChangedAddresses& changed_addresses, bool unwind);
 
     //! \brief Writes to db the changes collected from storage changeset scan either in forward or unwind mode
     void write_changes_from_changed_storage(db::RWTxn& txn, silkworm::db::StorageChanges& storage_changes,

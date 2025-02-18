@@ -41,21 +41,22 @@ void Validator::load_specification() {
     if (spec.contains("openrpc")) {
         openrpc_version_ = spec["openrpc"];
     }
-    std::function<void(const nlohmann::json&)> find_patterns = [&](const nlohmann::json& json) mutable {
+    std::function<void(const nlohmann::json&)> fill_patterns = [&](const nlohmann::json& json) mutable {
         if (json.is_object()) {
             for (auto& [key, value] : json.items()) {
-                if (key == "pattern") {
-                    patterns_[key] = boost::regex(key, boost::regex::optimize | boost::regex::icase);
+                if (key == "pattern" && value.is_string()) {
+                    const auto value_string = value.get<std::string>();
+                    patterns_[value_string] = boost::regex(value_string, boost::regex::optimize | boost::regex::icase);
                 }
-                find_patterns(value);
+                fill_patterns(value);
             }
         } else if (json.is_array()) {
             for (const auto& element : json) {
-                find_patterns(element);
+                fill_patterns(element);
             }
         }
     };
-    find_patterns(spec);
+    fill_patterns(spec);
 }
 
 ValidationResult Validator::validate(const nlohmann::json& request) {

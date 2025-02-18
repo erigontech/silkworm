@@ -16,8 +16,11 @@
 
 #pragma once
 
+#include <cstdlib>
+#include <iterator>
 #include <optional>
 #include <ranges>
+#include <type_traits>
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
@@ -164,7 +167,7 @@ using silkworm::views::concat_view::fallback::ConcatView;
 #endif
 
 template <class Range1, class Range2>
-auto concat(Range1&& v1, Range2&& v2) {
+ConcatView<Range1, Range2> concat(Range1&& v1, Range2&& v2) {
     return ConcatView<Range1, Range2>{std::forward<Range1>(v1), std::forward<Range2>(v2)};
 }
 

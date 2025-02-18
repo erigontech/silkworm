@@ -22,11 +22,12 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "common/owning_view.hpp"
+#include "owning_view.hpp"
 
-namespace silkworm::views::concat_view {
+namespace silkworm::views {
 
 static_assert(std::ranges::input_range<ConcatView<std::vector<int>, std::vector<int>>>);
+static_assert(std::ranges::view<ConcatView<std::vector<int>, std::vector<int>>>);
 
 template <std::ranges::input_range Range, typename Value = std::iter_value_t<std::ranges::iterator_t<Range>>>
 std::vector<Value> vector_from_range(Range range) {
@@ -58,4 +59,4 @@ TEST_CASE("ConcatView") {
               silkworm::ranges::owning_view(std::vector<int>{4, 4, 4}))) == std::vector<int>{1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4});
 }
 
-}  // namespace silkworm::views::concat_view
+}  // namespace silkworm::views

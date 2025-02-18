@@ -92,7 +92,7 @@ class ChainStorage {
     virtual Task<std::optional<intx::uint256>> read_total_difficulty(const Hash& block_hash, BlockNum block_num) const = 0;
 
     virtual Task<std::optional<BlockNum>> read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const = 0;
-    virtual Task<std::optional<Transaction>> read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_id) const = 0;
+    virtual Task<std::optional<Transaction>> read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_idx) const = 0;
 
     virtual Task<std::pair<std::optional<BlockHeader>, std::optional<Hash>>> read_head_header_and_hash() const = 0;
 };

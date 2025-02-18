@@ -19,7 +19,7 @@
 #include <optional>
 #include <ranges>
 
-#include "../common/owning_view.hpp"
+#include "../common/ranges/owning_view.hpp"
 #include "../common/timestamp.hpp"
 #include "common/raw_codec.hpp"
 #include "elias_fano/elias_fano_list.hpp"

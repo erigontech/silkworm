@@ -20,9 +20,9 @@
 #include <functional>
 #include <utility>
 
+#include "common/ranges/merge_view.hpp"
 #include "kvdb/database.hpp"
 #include "kvdb/history_range_query.hpp"
-#include "merge_view.hpp"
 #include "snapshots/history_range_query.hpp"
 
 namespace silkworm::datastore {

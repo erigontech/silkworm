@@ -16,8 +16,11 @@
 
 #pragma once
 
+#include <cstdlib>
+#include <iterator>
 #include <optional>
 #include <ranges>
+#include <type_traits>
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>

@@ -55,7 +55,9 @@ inline evmc::bytes32 bytes32_from_hex(const std::string& s) {
 std::ostream& operator<<(std::ostream& out, const Account& account);
 
 std::string get_opcode_hex(uint8_t opcode);
-std::optional<std::string> get_opcode_name(const char* const* names, std::uint8_t opcode);
+
+/// Returns the opcode name or std::nullopt if the opcode is undefined.
+std::optional<std::string_view> get_opcode_name(std::uint8_t opcode) noexcept;
 }  // namespace silkworm
 
 inline auto hash_of(const silkworm::ByteView& bytes) {

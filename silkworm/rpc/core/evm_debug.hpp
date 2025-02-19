@@ -98,8 +98,6 @@ class DebugTracer : public EvmTracer {
     const DebugConfig& config_;
     std::vector<DebugLog> logs_;
     std::map<evmc::address, Storage> storage_;
-    const char* const* opcode_names_ = nullptr;
-    const char* const* latest_opcode_names_ = nullptr;
     const evmc_instruction_metrics* metrics_ = nullptr;
     std::optional<uint8_t> last_opcode_;
 };

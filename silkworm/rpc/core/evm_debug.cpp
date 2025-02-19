@@ -35,6 +35,9 @@
 
 namespace silkworm::rpc::debug {
 
+static constexpr int64_t SUCCESS_CODE{0};
+static constexpr int64_t REVERT_CODE{2};
+
 void from_json(const nlohmann::json& json, DebugConfig& tc) {
     json.at("disableStorage").get_to(tc.disable_storage);
     json.at("disableMemory").get_to(tc.disable_memory);
@@ -563,12 +566,17 @@ Task<void> DebugExecutor::execute(
         debug_tracer->flush_logs();
         stream.close_array();
 
-        SILK_DEBUG << "debug return: " << execution_result.error_message();
+        SILK_DEBUG << "result error_code: " << execution_result.error_code.value_or(0) << ", message: " << execution_result.error_message();
 
         if (!execution_result.pre_check_error) {
             stream.write_json_field("failed", !execution_result.success());
             stream.write_field("gas", transaction.gas_limit - execution_result.gas_left);
-            stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
+            auto error_code = execution_result.error_code.value_or(SUCCESS_CODE);
+            if (error_code == SUCCESS_CODE || error_code == REVERT_CODE) {
+                stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
+            } else {
+                stream.write_field("returnValue", "");
+            }
         }
         stream.close_object();
 

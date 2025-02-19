@@ -20,6 +20,7 @@
 #include <functional>
 #include <utility>
 
+#include "common/pair_get.hpp"
 #include "common/ranges/merge_view.hpp"
 #include "kvdb/database.hpp"
 #include "kvdb/history_range_query.hpp"
@@ -54,13 +55,6 @@ struct HistoryRangeQuery {
     using Key = decltype(TKeyDecoder1::value);
     using Value = decltype(TValueDecoder1::value);
     using ResultItem = std::pair<Key, Value>;
-
-    template <typename T1, typename T2>
-    struct PairGetFirst {
-        constexpr const T1& operator()(const std::pair<T1, T2>& p) const noexcept {
-            return p.first;
-        }
-    };
 
     auto exec(TimestampRange ts_range, bool ascending) {
         SILKWORM_ASSERT(ascending);  // descending is not implemented

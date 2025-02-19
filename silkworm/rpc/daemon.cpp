@@ -128,7 +128,7 @@ int Daemon::run(const DaemonSettings& settings) {
 
             silkworm::datastore::kvdb::EnvConfig db_config{
                 .path = data_dir.chaindata().path().string(),
-                .in_memory = true,
+                .readonly = true,
                 .shared = true,
                 .max_readers = kDatabaseMaxReaders};
 

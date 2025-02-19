@@ -156,7 +156,6 @@ class VmTraceTracer : public silkworm::EvmTracer {
     std::int32_t transaction_index_;
     std::stack<std::string> index_prefix_;
     std::stack<std::reference_wrapper<VmTrace>> traces_stack_;
-    const char* const* opcode_names_ = nullptr;
     const evmc_instruction_metrics* metrics_ = nullptr;
     std::stack<int64_t> start_gas_;
     std::stack<TraceMemory> trace_memory_stack_;
@@ -249,7 +248,6 @@ class TraceTracer : public silkworm::EvmTracer {
     std::vector<Trace>& traces_;
     silkworm::IntraBlockState& initial_ibs_;
     std::optional<uint8_t> last_opcode_;
-    const char* const* opcode_names_ = nullptr;
     int64_t initial_gas_{0};
     int32_t current_depth_{-1};
     std::set<evmc::address> created_address_;
@@ -323,7 +321,6 @@ class StateDiffTracer : public silkworm::EvmTracer {
     StateAddresses& state_addresses_;
     std::map<evmc::address, std::set<std::string>> diff_storage_;
     std::map<evmc::address, silkworm::ByteView> code_;
-    const char* const* opcode_names_ = nullptr;
 };
 
 struct TraceCallTraces {

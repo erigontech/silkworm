@@ -44,6 +44,8 @@ concept UnsignedIntegral = std::unsigned_integral<T> || std::same_as<T, intx::ui
 
 using TxnId = uint64_t;
 
+inline constexpr TxnId kMaxTxnId = std::numeric_limits<TxnId>::max();
+
 struct TxnIdRange {
     TxnId start;
     TxnId end;
@@ -56,6 +58,8 @@ struct TxnIdRange {
 };
 
 using BlockNum = uint64_t;
+
+inline constexpr BlockNum kMaxBlockNum = std::numeric_limits<BlockNum>::max();
 
 struct BlockNumRange {
     BlockNum start;

@@ -42,7 +42,7 @@ struct DomainGetLatestQuery {
     std::optional<Result> exec(const Key& key) {
         DomainKeyEncoder<TKeyEncoder> key_encoder{/* has_large_values = */ false};
         key_encoder.value.key.value = key;
-        key_encoder.value.timestamp.value = Step{std::numeric_limits<decltype(Step::value)>::max()};
+        key_encoder.value.timestamp.value = Step{kMaxStepValue};
         Slice key_slice = key_encoder.encode();
 
         auto db_cursor = tx.ro_cursor(entity.values_table);

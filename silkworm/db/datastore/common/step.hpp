@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <algorithm>
+
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 
@@ -29,10 +31,16 @@ inline constexpr size_t kStepSizeForBlockSnapshots = 1'000;
 //! Scale factor to convert from-to txn id values in temporal snapshot file names
 inline constexpr size_t kStepSizeForTemporalSnapshots = 1'562'500;  // = 100M / 64
 
+//! The maximum step value guaranteeing from-to conversion for block number and txn id
+inline constexpr size_t kMaxStepValue =
+    std::max(kMaxTxnId / kStepSizeForTemporalSnapshots, kMaxBlockNum / kStepSizeForBlockSnapshots);
+
 struct Step {
     size_t value;
 
-    explicit Step(size_t value1) : value(value1) {}
+    explicit Step(size_t value1) : value(value1) {
+        ensure(value1 <= kMaxStepValue, "Step: value greater than kMaxStepValue");
+    }
     friend bool operator==(const Step&, const Step&) = default;
     bool operator<(const Step& other) const { return this->value < other.value; }
     bool operator<=(const Step& other) const { return this->value <= other.value; }
@@ -64,12 +72,16 @@ struct StepRange {
 
     BlockNumRange to_block_num_range() const { return {start.to_block_num(), end.to_block_num()}; }
     static StepRange from_block_num_range(BlockNumRange range) {
-        return {Step::from_block_num(range.start), Step::from_block_num(range.end + kStepSizeForBlockSnapshots - 1)};
+        return {Step::from_block_num(range.start),
+                Step::from_block_num(range.end >= kMaxBlockNum - kStepSizeForBlockSnapshots + 1 ? kMaxBlockNum
+                                                                                                : range.end + kStepSizeForBlockSnapshots - 1)};
     }
 
     TxnIdRange to_txn_id_range() const { return {start.to_txn_id(), end.to_txn_id()}; }
     static StepRange from_txn_id_range(TxnIdRange range) {
-        return {Step::from_txn_id(range.start), Step::from_txn_id(range.end + kStepSizeForTemporalSnapshots - 1)};
+        return {Step::from_txn_id(range.start),
+                Step::from_txn_id(range.end >= kMaxTxnId - kStepSizeForTemporalSnapshots + 1 ? kMaxTxnId
+                                                                                             : range.end + kStepSizeForTemporalSnapshots - 1)};
     }
 };
 

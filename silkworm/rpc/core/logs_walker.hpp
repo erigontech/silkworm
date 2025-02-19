@@ -40,8 +40,7 @@ class LogsWalker {
                WorkerPool& workers)
         : block_cache_(block_cache),
           tx_(tx),
-          canonical_body_for_storage_provider_(
-              [&chain_storage](BlockNum block_num) -> Task<std::optional<Bytes>> { co_return co_await chain_storage.read_raw_canonical_body_for_storage(block_num); }),
+          canonical_body_for_storage_provider_(db::chain::canonical_body_provider_from_chain_storage(chain_storage)),
           block_reader_(chain_storage, tx),
           workers_(workers) {}
 

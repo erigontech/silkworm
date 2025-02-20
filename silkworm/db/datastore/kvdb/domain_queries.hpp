@@ -20,3 +20,4 @@
 #include "domain_get_latest_query.hpp"
 #include "domain_put_latest_query.hpp"
 #include "domain_put_query.hpp"
+#include "domain_range_latest_query.hpp"

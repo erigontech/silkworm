@@ -18,10 +18,12 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <utility>
 
+#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 #include "../elias_fano/elias_fano_list.hpp"
@@ -40,11 +42,43 @@ class BTreeIndex {
 
     class Cursor {
       public:
+        using value_type = std::pair<ByteView, ByteView>;
+        using iterator_category [[maybe_unused]] = std::input_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using pointer = value_type*;
+        using reference = value_type;
+
+        Cursor() = default;
+
         ByteView key() const noexcept { return key_; }
         ByteView value() const noexcept { return value_; }
         DataIndex data_index() const noexcept { return data_index_; }
 
         bool next();
+
+        reference operator*() const { return {key(), value()}; }
+
+        Cursor operator++(int) { return std::exchange(*this, ++Cursor{*this}); }
+        Cursor& operator++() {
+            if (!next()) {
+                // reset to the end state
+                *this = {};
+            }
+            return *this;
+        }
+
+        friend bool operator!=(const Cursor& it, const std::default_sentinel_t&) {
+            return it.index_ != nullptr;
+        }
+        friend bool operator==(const Cursor& it, const std::default_sentinel_t&) {
+            return it.index_ == nullptr;
+        }
+        friend bool operator!=(const std::default_sentinel_t& s, const Cursor& it) {
+            return it != s;
+        }
+        friend bool operator==(const std::default_sentinel_t& s, const Cursor& it) {
+            return it == s;
+        }
 
       private:
         friend class BTreeIndex;
@@ -61,11 +95,11 @@ class BTreeIndex {
               data_index_{data_index},
               kv_segment_{kv_segment} {}
 
-        const BTreeIndex* index_;
+        const BTreeIndex* index_{nullptr};
         Bytes key_;
         Bytes value_;
-        DataIndex data_index_;
-        const KVSegmentReader* kv_segment_;
+        DataIndex data_index_{0};
+        const KVSegmentReader* kv_segment_{nullptr};
     };
 
     explicit BTreeIndex(

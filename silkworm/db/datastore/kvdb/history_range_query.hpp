@@ -22,7 +22,7 @@
 
 #include <silkworm/core/common/assert.hpp>
 
-#include "../common/caching_view.hpp"
+#include "../common/ranges/caching_view.hpp"
 #include "../common/timestamp.hpp"
 #include "cursor_iterator.hpp"
 #include "history.hpp"

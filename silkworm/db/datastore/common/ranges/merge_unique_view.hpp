@@ -16,20 +16,25 @@
 
 #pragma once
 
+#include <compare>
+#include <cstdlib>
 #include <functional>
-#include <optional>
+#include <iterator>
 #include <ranges>
+#include <type_traits>
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
+
+#include "merge_unique_compare_func.hpp"
 
 namespace silkworm::views {
 
 template <
     std::ranges::input_range Range1, std::ranges::input_range Range2,
-    class Comp = std::ranges::less,
+    class Comp = MergeUniqueCompareFunc,
     class Proj1 = std::identity, class Proj2 = std::identity>
-class MergeView : public std::ranges::view_interface<MergeView<Range1, Range2>> {
+class MergeUniqueView : public std::ranges::view_interface<MergeUniqueView<Range1, Range2, Comp, Proj1, Proj2>> {
   public:
     class Iterator {
       public:
@@ -50,12 +55,12 @@ class MergeView : public std::ranges::view_interface<MergeView<Range1, Range2>> 
         Iterator() = default;
         Iterator(
             Range1& range1, Range2& range2,
-            Comp comp, Proj1 proj1, Proj2 proj2)
+            const Comp* comp, Proj1 proj1, Proj2 proj2)
             : it1_{std::ranges::begin(range1)},
               sentinel1_{std::ranges::end(range1)},
               it2_{std::ranges::begin(range2)},
               sentinel2_{std::ranges::end(range2)},
-              comp_{std::move(comp)},
+              comp_{comp},
               proj1_{std::move(proj1)},
               proj2_{std::move(proj2)} {
             selector_ = select(it1_ended(), it2_ended());
@@ -75,15 +80,27 @@ class MergeView : public std::ranges::view_interface<MergeView<Range1, Range2>> 
 
         Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
         Iterator& operator++() {
-            switch (selector_) {
-                case 1:
-                    it1_++;
-                    break;
-                case 2:
-                    it2_++;
-                    break;
-                default:
-                    return *this;
+            if (selector_ == 0) {
+                SILKWORM_ASSERT(false);
+                return *this;
+            }
+
+            // backup the current key for duplicate detection
+            auto current_key = (selector_ == 1) ? std::invoke(proj1_, *it1_) : std::invoke(proj2_, *it2_);
+
+            // increment the current iterator once
+            if (selector_ == 1) {
+                ++it1_;
+            } else {
+                ++it2_;
+            }
+
+            // skip duplicate keys
+            while (!it1_ended() && std::is_eq(std::invoke(*comp_, std::invoke(proj1_, *it1_), current_key))) {
+                ++it1_;
+            }
+            while (!it2_ended() && std::is_eq(std::invoke(*comp_, std::invoke(proj2_, *it2_), current_key))) {
+                ++it2_;
             }
 
             selector_ = select(it1_ended(), it2_ended());
@@ -114,15 +131,18 @@ class MergeView : public std::ranges::view_interface<MergeView<Range1, Range2>> 
             if (it1_ended && it2_ended) return 0;
             if (it1_ended) return 2;
             if (it2_ended) return 1;
-            bool is_gte = std::invoke(comp_, std::invoke(proj2_, *it2_), std::invoke(proj1_, *it1_));
-            return is_gte ? 2 : 1;
+            std::partial_ordering comp_result = std::invoke(*comp_, std::invoke(proj1_, *it1_), std::invoke(proj2_, *it2_));
+            if (std::is_lt(comp_result)) return 1;
+            if (std::is_gt(comp_result)) return 2;
+            // if equal prefer the first range
+            return 1;
         }
 
         Range1Iterator it1_;
         Range1Sentinel sentinel1_;
         Range2Iterator it2_;
         Range2Sentinel sentinel2_;
-        Comp comp_;
+        const Comp* comp_{nullptr};
         Proj1 proj1_;
         Proj2 proj2_;
         char selector_{0};
@@ -130,7 +150,7 @@ class MergeView : public std::ranges::view_interface<MergeView<Range1, Range2>> 
 
     static_assert(std::input_iterator<Iterator>);
 
-    MergeView(
+    MergeUniqueView(
         Range1 range1, Range2 range2,
         Comp comp, Proj1 proj1, Proj2 proj2)
         : range1_{std::move(range1)},
@@ -138,12 +158,12 @@ class MergeView : public std::ranges::view_interface<MergeView<Range1, Range2>> 
           comp_{std::move(comp)},
           proj1_{std::move(proj1)},
           proj2_{std::move(proj2)} {}
-    MergeView() = default;
+    MergeUniqueView() = default;
 
-    MergeView(MergeView&&) = default;
-    MergeView& operator=(MergeView&&) noexcept = default;
+    MergeUniqueView(MergeUniqueView&&) = default;
+    MergeUniqueView& operator=(MergeUniqueView&&) noexcept = default;
 
-    Iterator begin() { return Iterator{range1_, range2_, comp_, proj1_, proj2_}; }
+    Iterator begin() { return Iterator{range1_, range2_, &comp_, proj1_, proj2_}; }
     std::default_sentinel_t end() const { return std::default_sentinel; }
 
   private:
@@ -156,12 +176,12 @@ class MergeView : public std::ranges::view_interface<MergeView<Range1, Range2>> 
 
 template <
     class Range1, class Range2,
-    class Comp = std::ranges::less,
+    class Comp = MergeUniqueCompareFunc,
     class Proj1 = std::identity, class Proj2 = std::identity>
-auto merge(
+MergeUniqueView<Range1, Range2, Comp, Proj1, Proj2> merge_unique(
     Range1&& v1, Range2&& v2,
     Comp comp = {}, Proj1 proj1 = {}, Proj2 proj2 = {}) {
-    return MergeView<Range1, Range2, Comp, Proj1, Proj2>{
+    return MergeUniqueView<Range1, Range2, Comp, Proj1, Proj2>{
         std::forward<Range1>(v1),
         std::forward<Range2>(v2),
         std::move(comp),

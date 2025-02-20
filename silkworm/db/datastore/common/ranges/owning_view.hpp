@@ -105,7 +105,7 @@ using silkworm::ranges::fallback::OwningView;
 #endif
 
 template <class TRange>
-auto owning_view(TRange&& range) {
+OwningView<TRange> owning_view(TRange&& range) {
     return OwningView<TRange>{std::forward<TRange>(range)};
 }
 

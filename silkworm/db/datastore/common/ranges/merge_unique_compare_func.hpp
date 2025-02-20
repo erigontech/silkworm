@@ -1,5 +1,5 @@
 /*
-   Copyright 2025 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,5 +16,15 @@
 
 #pragma once
 
-#include "domain_get_latest_query.hpp"
-#include "domain_range_latest_query.hpp"
+#include <compare>
+
+namespace silkworm::views {
+
+struct MergeUniqueCompareFunc {
+    template <typename T>
+    constexpr std::strong_ordering operator()(const T& lhs, const T& rhs) const noexcept {
+        return std::compare_strong_order_fallback(lhs, rhs);
+    }
+};
+
+}  // namespace silkworm::views

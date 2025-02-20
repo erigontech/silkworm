@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <utility>
@@ -129,6 +130,14 @@ class CursorKVIterator {
         return CursorKVIterator{CursorIterator{std::move(cursor), move_op, std::make_shared<TKeyDecoder>(), std::make_shared<TValueDecoder>()}};
     }
 
+    static CursorKVIterator make(
+        std::unique_ptr<ROCursor> cursor,
+        MoveOperation move_op,
+        std::function<TKeyDecoder()> key_decoder_factory,
+        std::function<TValueDecoder()> value_decoder_factory) {
+        return CursorKVIterator{CursorIterator{std::move(cursor), move_op, std::make_shared<TKeyDecoder>(key_decoder_factory()), std::make_shared<TValueDecoder>(value_decoder_factory())}};
+    }
+
     value_type operator*() const { return value(); }
 
     value_type_owned move_value() const {
@@ -177,6 +186,13 @@ class CursorKeysIterator {
         return CursorKeysIterator{CursorIterator{std::move(cursor), move_op, std::make_shared<TKeyDecoder>(), {}}};
     }
 
+    static CursorKeysIterator make(
+        std::unique_ptr<ROCursor> cursor,
+        MoveOperation move_op,
+        std::function<TKeyDecoder()> key_decoder_factory) {
+        return CursorKeysIterator{CursorIterator{std::move(cursor), move_op, std::make_shared<TKeyDecoder>(key_decoder_factory()), {}}};
+    }
+
     reference operator*() const { return value(); }
     pointer operator->() const { return &value(); }
 
@@ -216,6 +232,13 @@ class CursorValuesIterator {
 
     static CursorValuesIterator make(std::unique_ptr<ROCursor> cursor, MoveOperation move_op) {
         return CursorValuesIterator{CursorIterator{std::move(cursor), move_op, {}, std::make_shared<TValueDecoder>()}};
+    }
+
+    static CursorValuesIterator make(
+        std::unique_ptr<ROCursor> cursor,
+        MoveOperation move_op,
+        std::function<TValueDecoder()> value_decoder_factory) {
+        return CursorValuesIterator{CursorIterator{std::move(cursor), move_op, {}, std::make_shared<TValueDecoder>(value_decoder_factory())}};
     }
 
     reference operator*() const { return value(); }

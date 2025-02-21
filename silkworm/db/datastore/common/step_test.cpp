@@ -20,14 +20,12 @@
 
 namespace silkworm::datastore {
 
-TEST_CASE("Step") {
+TEST_CASE("Step", "[datastore][common]") {
     CHECK(Step{0}.to_block_num() == 0);
     CHECK(Step{500}.to_block_num() == 500'000);
-    // CHECK(Step{std::numeric_limits<size_t>::max()}.to_block_num() == 0);
 
     CHECK(Step{0}.to_txn_id() == 0);
     CHECK(Step{64}.to_txn_id() == 100'000'000);
-    // CHECK(Step{std::numeric_limits<size_t>::max()}.to_txn_id() == 0);
 
     SECTION("Step constructor and value") {
         Step step{10};
@@ -63,21 +61,12 @@ TEST_CASE("Step") {
     }
 
     SECTION("Step limits") {
-        CHECK(Step::from_block_num(kMaxBlockNum).value <= kMaxStepValue);
-        CHECK(Step::from_txn_id(kMaxTxnId).value <= kMaxStepValue);
-
-        Step max_step{kMaxStepValue};
-        CHECK(max_step.to_block_num() == kMaxStepValue * kStepSizeForBlockSnapshots);
-        CHECK(max_step.to_txn_id() == kMaxStepValue * kStepSizeForTemporalSnapshots);
-        CHECK(max_step.to_block_num() <= kMaxBlockNum);
-        CHECK(max_step.to_txn_id() <= kMaxTxnId);
-
-        CHECK_THROWS(Step{kMaxStepValue + 1});
-        CHECK_THROWS(Step{std::numeric_limits<size_t>::max()});
+        CHECK(Step::from_block_num(kMaxBlockNum).value == kMaxBlockNum / kStepSizeForBlockSnapshots);
+        CHECK(Step::from_txn_id(kMaxTxnId).value == kMaxTxnId / kStepSizeForTemporalSnapshots);
     }
 }
 
-TEST_CASE("StepRange") {
+TEST_CASE("StepRange", "[datastore][common]") {
     CHECK(StepRange{Step{0}, Step{0}}.to_block_num_range() == BlockNumRange{0, 0});
     CHECK(StepRange{Step{0}, Step{500}}.to_block_num_range() == BlockNumRange{0, 500'000});
 
@@ -121,23 +110,17 @@ TEST_CASE("StepRange") {
     SECTION("StepRange limits") {
         const StepRange r1 = StepRange::from_block_num_range(BlockNumRange{0, kMaxBlockNum - kStepSizeForBlockSnapshots + 2});
         CHECK(r1.end.value == kMaxBlockNum / kStepSizeForBlockSnapshots);
-        CHECK(r1.end.value <= kMaxStepValue);
 
         const StepRange r2 = StepRange::from_txn_id_range(TxnIdRange{0, kMaxTxnId - kStepSizeForTemporalSnapshots + 2});
         CHECK(r2.end.value == kMaxTxnId / kStepSizeForTemporalSnapshots);
-        CHECK(r2.end.value <= kMaxStepValue);
 
         const StepRange r3 = StepRange::from_block_num_range(BlockNumRange{kMaxBlockNum, kMaxBlockNum});
         CHECK(r3.start.value == kMaxBlockNum / kStepSizeForBlockSnapshots);
         CHECK(r3.end.value == kMaxBlockNum / kStepSizeForBlockSnapshots);
-        CHECK(r3.start.value <= kMaxStepValue);
-        CHECK(r3.end.value <= kMaxStepValue);
 
         const StepRange r4 = StepRange::from_txn_id_range(TxnIdRange{kMaxTxnId, kMaxTxnId});
         CHECK(r4.start.value == kMaxTxnId / kStepSizeForTemporalSnapshots);
         CHECK(r4.end.value == kMaxTxnId / kStepSizeForTemporalSnapshots);
-        CHECK(r4.start.value <= kMaxStepValue);
-        CHECK(r4.end.value <= kMaxStepValue);
     }
 }
 

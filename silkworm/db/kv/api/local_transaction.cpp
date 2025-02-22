@@ -18,6 +18,7 @@
 
 #include <map>
 #include <string_view>
+#include <vector>
 
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/chain/local_chain_storage.hpp>
@@ -68,7 +69,10 @@ using CommitmentDomainGetAsOfQuery = RawDomainGetAsOfQuery<state::kHistorySegmen
 using ReceiptsDomainGetAsOfQuery = RawDomainGetAsOfQuery<state::kHistorySegmentAndIdxNamesReceipts>;
 
 using RawInvertedIndexRangeByKeyQuery = InvertedIndexRangeByKeyQuery<
-    kvdb::RawEncoder<Bytes>, snapshots::RawEncoder<Bytes>>;
+    kvdb::RawEncoder<Bytes>, snapshots::RawEncoder<Bytes>>;  // TODO(canepat) try ByteView
+
+using RawHistoryRangeQuery = datastore::HistoryRangeQuery<
+    kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>, kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
 
 template <typename PageResult>
 static auto make_empty_paginator() {
@@ -214,30 +218,36 @@ Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery query) {
 }
 
 Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeQuery query) {
-    // convert table to entity name
     if (!kTable2EntityNames.contains(query.table)) {
-        // TODO: return an empty result
-    }
-    datastore::EntityName entity_name = kTable2EntityNames.at(query.table);
-    datastore::HistoryRangeQuery<kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>, kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>> store_query{
-        entity_name,
-        data_store_.chaindata,
-        tx_,
-        data_store_.state_repository_historical,
-    };
-
-    // TODO: convert query from/to to ts_range
-    auto ts_range = datastore::TimestampRange{0, 10};
-    size_t limit = (query.limit == kUnlimited) ? std::numeric_limits<size_t>::max() : static_cast<size_t>(query.limit);
-
-    // TODO: this is just a test example, instead of direct iteration, apply page_size using std::views::chunk,
-    // TODO: save the range for future requests using page_token and return the first chunk
-    for ([[maybe_unused]] decltype(store_query)::ResultItem&& kv_pair : store_query.exec(ts_range, query.ascending_order) | std::views::take(limit)) {
+        co_return api::PaginatedKeysValues{make_empty_paginator<api::PaginatedKeysValues::PageResult>()};
     }
 
-    // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
-    auto paginator = [](api::PaginatedKeysValues::PageToken) mutable -> Task<api::PaginatedKeysValues::PageResult> {
-        co_return api::PaginatedKeysValues::PageResult{};
+    auto paginator = [this, query = std::move(query)](api::PaginatedKeysValues::PageToken) mutable -> Task<api::PaginatedKeysValues::PageResult> {
+        datastore::TimestampRange ts_range{static_cast<datastore::Timestamp>(query.from_timestamp),
+                                           static_cast<datastore::Timestamp>(query.to_timestamp)};
+        const auto entity_name = kTable2EntityNames.at(query.table);
+        RawHistoryRangeQuery store_query{
+            entity_name,
+            data_store_.chaindata,
+            tx_,
+            data_store_.state_repository_historical,
+        };
+        const size_t limit = (query.limit == kUnlimited) ? std::numeric_limits<size_t>::max() : static_cast<size_t>(query.limit);
+        std::vector<RawHistoryRangeQuery::ResultItem> kv_pair_sequence;
+        // TODO: support pagination: apply page_size using std::views::chunk, save the range for future requests using page_token and return the first chunk
+        auto kv_view = store_query.exec(ts_range, query.ascending_order) | std::views::take(limit);
+        // TODO: avoid range copy using std::views::as_rvalue (C++23)
+        std::ranges::copy(kv_view /*| std::views::as_rvalue*/, std::back_inserter(kv_pair_sequence));
+        api::PaginatedKeysValues::PageResult result;
+        if (!kv_pair_sequence.empty()) {
+            result.keys.reserve(kv_pair_sequence.size());
+            result.values.reserve(kv_pair_sequence.size());
+            for (auto&& kv_pair : kv_pair_sequence) {
+                result.keys.emplace_back(std::move(kv_pair.first));
+                result.values.emplace_back(std::move(kv_pair.second));
+            }
+        }
+        co_return result;
     };
     co_return api::PaginatedKeysValues{std::move(paginator)};
 }

@@ -294,11 +294,12 @@ void Buffer::write_state_to_db() {
     size_t written_size{0};
     size_t total_written_size{0};
 
-    bool should_trace{log::test_verbosity(log::Level::kTrace)};
+    const bool should_trace{log::test_verbosity(log::Level::kInfo)};
     StopWatch sw;
     sw.start();
 
     if (!incarnations_.empty()) {
+        const auto count = incarnations_.size();
         auto incarnation_table{open_cursor(txn_, table::kIncarnationMap)};
         Bytes data(kIncarnationLength, '\0');
         for (const auto& [address, incarnation] : incarnations_) {
@@ -310,12 +311,13 @@ void Buffer::write_state_to_db() {
         total_written_size += written_size;
         if (should_trace) [[unlikely]] {
             auto [_, duration]{sw.lap()};
-            log::Trace("Incarnations updated", {"size", human_size(written_size), "in", StopWatch::format(duration)});
+            SILK_INFO << "Incarnations updated" << log::Args{"count", std::to_string(count), "size", human_size(written_size), "in", StopWatch::format(duration)};
         }
         written_size = 0;
     }
 
     if (!hash_to_code_.empty()) {
+        const auto count = hash_to_code_.size();
         auto code_table{open_cursor(txn_, table::kCode)};
         for (const auto& entry : hash_to_code_) {
             code_table.upsert(to_slice(entry.first), to_slice(entry.second));
@@ -325,12 +327,13 @@ void Buffer::write_state_to_db() {
         total_written_size += written_size;
         if (should_trace) [[unlikely]] {
             auto [_, duration]{sw.lap()};
-            log::Trace("Code updated", {"size", human_size(written_size), "in", StopWatch::format(duration)});
+            SILK_INFO << "Code updated" << log::Args{"count", std::to_string(count), "size", human_size(written_size), "in", StopWatch::format(duration)};
         }
         written_size = 0;
     }
 
     if (!storage_prefix_to_code_hash_.empty()) {
+        const auto count = storage_prefix_to_code_hash_.size();
         auto code_hash_table{open_cursor(txn_, table::kPlainCodeHash)};
         for (const auto& entry : storage_prefix_to_code_hash_) {
             code_hash_table.upsert(to_slice(entry.first), to_slice(entry.second));
@@ -340,7 +343,7 @@ void Buffer::write_state_to_db() {
         total_written_size += written_size;
         if (should_trace) [[unlikely]] {
             auto [_, duration]{sw.lap()};
-            log::Trace("Code Hashes updated", {"size", human_size(written_size), "in", StopWatch::format(duration)});
+            SILK_INFO << "Code Hashes updated" << log::Args{"count", std::to_string(count), "size", human_size(written_size), "in", StopWatch::format(duration)};
         }
         written_size = 0;
     }
@@ -356,9 +359,10 @@ void Buffer::write_state_to_db() {
 
     if (should_trace) [[unlikely]] {
         auto [_, duration]{sw.lap()};
-        log::Trace("Sorted addresses", {"in", StopWatch::format(duration)});
+        SILK_INFO << "Sorted addresses" << log::Args{"in", StopWatch::format(duration)};
     }
 
+    const auto count = addresses.size();
     auto state_table = txn_.rw_cursor_dup_sort(table::kPlainState);
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
@@ -394,14 +398,12 @@ void Buffer::write_state_to_db() {
     total_written_size += written_size;
     if (should_trace) [[unlikely]] {
         auto [_, duration]{sw.lap()};
-        log::Trace("Updated accounts and storage",
-                   {"size", human_size(written_size), "in", StopWatch::format(duration)});
+        SILK_INFO << "Updated accounts and storage" << log::Args{"count", std::to_string(count), "size", human_size(written_size), "in", StopWatch::format(duration)};
     }
     batch_state_size_ = 0;
 
     auto [time_point, _]{sw.stop()};
-    log::Info("Flushed state",
-              {"size", human_size(total_written_size), "in", StopWatch::format(sw.since_start(time_point))});
+    SILK_INFO << "Flushed state" << log::Args{"size", human_size(total_written_size), "in", StopWatch::format(sw.since_start(time_point))};
 }
 
 void Buffer::write_to_db(bool write_change_sets) {

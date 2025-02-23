@@ -165,7 +165,7 @@ TEST_CASE("Execute block with tracing") {
     std::vector<Receipt> receipts;
     const auto rule_set{protocol::rule_set_factory(chain_config)};
     REQUIRE(rule_set);
-    ExecutionProcessor processor{block, *rule_set, state, chain_config, true};
+    ExecutionProcessor processor{block, *rule_set, state, chain_config, /*evm1_v2=*/true};
 
     BlockTracer block_tracer{};
     processor.evm().add_tracer(block_tracer);

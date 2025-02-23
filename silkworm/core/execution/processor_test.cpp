@@ -45,7 +45,7 @@ TEST_CASE("Zero gas price") {
 
     InMemoryState state;
     auto rule_set{protocol::rule_set_factory(kMainnetConfig)};
-    ExecutionProcessor processor{block, *rule_set, state, kMainnetConfig, true};
+    ExecutionProcessor processor{block, *rule_set, state, kMainnetConfig, /*evm1_v2=*/true};
 
     Receipt receipt;
     processor.execute_transaction(txn, receipt);
@@ -85,7 +85,7 @@ TEST_CASE("No refund on error") {
 
     InMemoryState state;
     auto rule_set{protocol::rule_set_factory(kMainnetConfig)};
-    ExecutionProcessor processor{block, *rule_set, state, kMainnetConfig, true};
+    ExecutionProcessor processor{block, *rule_set, state, kMainnetConfig, /*evm1_v2=*/true};
 
     Transaction txn{};
     txn.nonce = nonce;
@@ -179,7 +179,7 @@ TEST_CASE("Self-destruct") {
 
     InMemoryState state;
     auto rule_set{protocol::rule_set_factory(kMainnetConfig)};
-    ExecutionProcessor processor{block, *rule_set, state, kMainnetConfig, true};
+    ExecutionProcessor processor{block, *rule_set, state, kMainnetConfig, /*evm1_v2=*/true};
 
     processor.evm().state().add_to_balance(originator, kEther);
     processor.evm().state().set_code(caller_address, caller_code);
@@ -327,7 +327,7 @@ TEST_CASE("Out of Gas during account re-creation") {
     txn.set_sender(caller);
 
     auto rule_set{protocol::rule_set_factory(kMainnetConfig)};
-    ExecutionProcessor processor{block, *rule_set, state, kMainnetConfig, true};
+    ExecutionProcessor processor{block, *rule_set, state, kMainnetConfig, /*evm1_v2=*/true};
     processor.evm().state().add_to_balance(caller, kEther);
 
     Receipt receipt;
@@ -370,7 +370,7 @@ TEST_CASE("Empty suicide beneficiary") {
     InMemoryState state;
 
     auto rule_set{protocol::rule_set_factory(kMainnetConfig)};
-    ExecutionProcessor processor{block, *rule_set, state, kMainnetConfig, true};
+    ExecutionProcessor processor{block, *rule_set, state, kMainnetConfig, /*evm1_v2=*/true};
     processor.evm().state().add_to_balance(caller, kEther);
 
     Receipt receipt;

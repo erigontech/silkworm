@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
             db::Buffer buffer{txn, std::make_unique<db::BufferROTxDataModel>(txn)};
             buffer.set_historical_block(block_num);
 
-            ExecutionProcessor processor{block, *rule_set, buffer, *chain_config, true};
+            ExecutionProcessor processor{block, *rule_set, buffer, *chain_config, /*evm1_v2=*/true};
             processor.evm().analysis_cache = &analysis_cache;
 
             // Execute the block and retrieve the receipts

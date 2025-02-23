@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
             db::Buffer buffer{txn, std::make_unique<db::BufferFullDataModel>(access_layer)};
             buffer.set_historical_block(block_num);
 
-            ExecutionProcessor processor{block, *rule_set, buffer, *chain_config, true};
+            ExecutionProcessor processor{block, *rule_set, buffer, *chain_config, /*evm1_v2=*/true};
             processor.evm().analysis_cache = &analysis_cache;
 
             if (const ValidationResult res = processor.execute_block(receipts); res != ValidationResult::kOk) {

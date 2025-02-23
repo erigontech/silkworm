@@ -24,6 +24,7 @@
 #include <silkworm/db/chain/local_chain_storage.hpp>
 #include <silkworm/db/datastore/domain_get_as_of_query.hpp>
 #include <silkworm/db/datastore/domain_get_latest_query.hpp>
+#include <silkworm/db/datastore/history_get_query.hpp>
 #include <silkworm/db/datastore/history_range_query.hpp>
 #include <silkworm/db/datastore/inverted_index_range_by_key_query.hpp>
 #include <silkworm/db/datastore/kvdb/raw_codec.hpp>
@@ -67,6 +68,17 @@ using StorageDomainGetAsOfQuery = RawDomainGetAsOfQuery<state::kHistorySegmentAn
 using CodeDomainGetAsOfQuery = RawDomainGetAsOfQuery<state::kHistorySegmentAndIdxNamesCode>;
 using CommitmentDomainGetAsOfQuery = RawDomainGetAsOfQuery<state::kHistorySegmentAndIdxNamesCommitment>;
 using ReceiptsDomainGetAsOfQuery = RawDomainGetAsOfQuery<state::kHistorySegmentAndIdxNamesReceipts>;
+
+template <const snapshots::SegmentAndAccessorIndexNames& history_segment_names>
+using RawHistoryGetQuery = HistoryGetQuery<
+    kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
+    kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
+    history_segment_names>;
+using AccountsHistoryGetQuery = RawHistoryGetQuery<state::kHistorySegmentAndIdxNamesAccounts>;
+using StorageHistoryGetQuery = RawHistoryGetQuery<state::kHistorySegmentAndIdxNamesStorage>;
+using CodeHistoryGetQuery = RawHistoryGetQuery<state::kHistorySegmentAndIdxNamesCode>;
+using CommitmentHistoryGetQuery = RawHistoryGetQuery<state::kHistorySegmentAndIdxNamesCommitment>;
+using ReceiptsHistoryGetQuery = RawHistoryGetQuery<state::kHistorySegmentAndIdxNamesReceipts>;
 
 using RawInvertedIndexRangeByKeyQuery = InvertedIndexRangeByKeyQuery<
     kvdb::RawEncoder<Bytes>, snapshots::RawEncoder<Bytes>>;  // TODO(canepat) try ByteView
@@ -180,9 +192,35 @@ Task<GetAsOfResult> LocalTransaction::get_as_of(GetAsOfQuery query) {
     co_return GetAsOfResult{.success = true, .value = std::move(*value)};
 }
 
-Task<HistoryPointResult> LocalTransaction::history_seek(HistoryPointQuery /*query*/) {
-    // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
-    co_return HistoryPointResult{};
+Task<HistoryPointResult> LocalTransaction::history_seek(HistoryPointQuery query) {
+    if (!kTable2EntityNames.contains(query.table)) {
+        co_return HistoryPointResult{};
+    }
+
+    const auto domain_name = kTable2EntityNames.at(query.table);
+    const auto domain = data_store_.chaindata.domain(domain_name);
+    if (!domain.history) {
+        co_return HistoryPointResult{};
+    }
+
+    const auto timestamp = static_cast<datastore::Timestamp>(query.timestamp);
+
+    std::optional<Bytes> value;
+    if (domain_name == state::kDomainNameAccounts) {
+        value = query_history_get<AccountsHistoryGetQuery>(*domain.history, query.key, timestamp);
+    } else if (domain_name == state::kDomainNameStorage) {
+        value = query_history_get<StorageHistoryGetQuery>(*domain.history, query.key, timestamp);
+    } else if (domain_name == state::kDomainNameCode) {
+        value = query_history_get<CodeHistoryGetQuery>(*domain.history, query.key, timestamp);
+    } else if (domain_name == state::kDomainNameCommitment) {
+        value = query_history_get<CommitmentHistoryGetQuery>(*domain.history, query.key, timestamp);
+    } else if (domain_name == state::kDomainNameReceipts) {
+        value = query_history_get<ReceiptsHistoryGetQuery>(*domain.history, query.key, timestamp);
+    }
+    if (!value) {
+        co_return HistoryPointResult{};
+    }
+    co_return HistoryPointResult{.success = true, .value = std::move(*value)};
 }
 
 Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery query) {

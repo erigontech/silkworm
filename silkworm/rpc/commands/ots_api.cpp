@@ -741,7 +741,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
 
     if (page_size > kMaxPageSize) {
         auto error_msg = "max allowed page size: " + std::to_string(kMaxPageSize);
-        SILK_ERROR << error_msg;
+        SILK_DEBUG << error_msg;
         reply = make_json_error(request, kServerError, error_msg);
         co_return;
     }
@@ -796,7 +796,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
 
     if (page_size > kMaxPageSize) {
         auto error_msg = "max allowed page size: " + std::to_string(kMaxPageSize);
-        SILK_ERROR << error_msg;
+        SILK_DEBUG << error_msg;
         reply = make_json_error(request, kServerError, error_msg);
         co_return;
     }

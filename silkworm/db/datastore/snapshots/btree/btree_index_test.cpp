@@ -16,20 +16,17 @@
 
 #include "btree_index.hpp"
 
-#include <algorithm>
 #include <filesystem>
-#include <iterator>
-#include <ranges>
 #include <sstream>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
 
+#include "../../common/ranges/vector_from_range.hpp"
 #include "../common/raw_codec.hpp"
 #include "../segment/seg/compressor.hpp"
 
@@ -39,13 +36,6 @@ using namespace silkworm::test_util;
 using elias_fano::EliasFanoList32;
 
 using KeyAndValue = std::pair<Bytes, Bytes>;
-
-template <std::ranges::input_range Range, typename Value = std::iter_value_t<std::ranges::iterator_t<Range>>>
-std::vector<Value> vector_from_range(Range range) {
-    std::vector<Value> results;
-    std::ranges::copy(range, std::back_inserter(results));
-    return results;
-}
 
 static SnapshotPath sample_kv_file(const TemporaryDirectory& tmp_dir, const std::vector<KeyAndValue>& kv_pairs) {
     const auto kv_file_path = *SnapshotPath::parse(tmp_dir.path() / "v1-accounts.0-1024.kv");

@@ -24,18 +24,12 @@
 
 #include <silkworm/infra/common/directories.hpp>
 
+#include "../common/ranges/vector_from_range.hpp"
 #include "big_endian_codec.hpp"
 #include "database.hpp"
 #include "domain_put_latest_query.hpp"
 
 namespace silkworm::datastore::kvdb {
-
-template <std::ranges::input_range Range, typename Value = std::iter_value_t<std::ranges::iterator_t<Range>>>
-std::vector<Value> vector_from_range(Range range) {
-    std::vector<Value> results;
-    std::ranges::copy(range, std::back_inserter(results));
-    return results;
-}
 
 struct DomainPutEntry {
     uint64_t key{0};

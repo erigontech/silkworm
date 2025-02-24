@@ -16,25 +16,15 @@
 
 #include "merge_unique_many_view.hpp"
 
-#include <algorithm>
-#include <iterator>
-#include <vector>
-
 #include <catch2/catch_test_macros.hpp>
 
 #include "owning_view.hpp"
+#include "vector_from_range.hpp"
 
 namespace silkworm::views {
 
 static_assert(std::ranges::input_range<MergeUniqueManyView<std::vector<int>>>);
 static_assert(std::ranges::view<MergeUniqueManyView<std::vector<int>>>);
-
-template <std::ranges::input_range Range, typename Value = std::iter_value_t<std::ranges::iterator_t<Range>>>
-std::vector<Value> vector_from_range(Range range) {
-    std::vector<Value> results;
-    std::ranges::copy(range, std::back_inserter(results));
-    return results;
-}
 
 template <std::ranges::input_range TRange>
 std::vector<TRange> ranges(TRange r1, TRange r2) {

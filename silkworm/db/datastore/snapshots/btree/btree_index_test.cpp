@@ -19,13 +19,14 @@
 #include <filesystem>
 #include <sstream>
 #include <string_view>
-#include <vector>
+#include <utility>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/test_util/temporary_file.hpp>
 
+#include "../../common/ranges/vector_from_range.hpp"
 #include "../common/raw_codec.hpp"
 #include "../segment/seg/compressor.hpp"
 
@@ -34,14 +35,14 @@ namespace silkworm::snapshots::btree {
 using namespace silkworm::test_util;
 using elias_fano::EliasFanoList32;
 
-using KeyAndValue = std::pair<std::string_view, std::string_view>;
+using KeyAndValue = std::pair<Bytes, Bytes>;
 
-static SnapshotPath sample_kv_file(const TemporaryDirectory& tmp_dir, std::span<const KeyAndValue> kv_pairs) {
+static SnapshotPath sample_kv_file(const TemporaryDirectory& tmp_dir, const std::vector<KeyAndValue>& kv_pairs) {
     const auto kv_file_path = *SnapshotPath::parse(tmp_dir.path() / "v1-accounts.0-1024.kv");
     seg::Compressor kv_compressor{kv_file_path.path(), tmp_dir.path()};
-    for (const auto& kv_pair : kv_pairs) {
-        kv_compressor.add_word(*from_hex(kv_pair.first), /*is_compressed=*/false);
-        kv_compressor.add_word(*from_hex(kv_pair.second), /*is_compressed=*/false);
+    for (const KeyAndValue& kv_pair : kv_pairs) {
+        kv_compressor.add_word(kv_pair.first, /*is_compressed=*/false);
+        kv_compressor.add_word(kv_pair.second, /*is_compressed=*/false);
     }
     seg::Compressor::compress(std::move(kv_compressor));
     return kv_file_path;
@@ -59,15 +60,20 @@ static std::filesystem::path sample_bt_index_file(const EliasFanoList32& key_off
 
 using KvAndBtPaths = std::tuple<SnapshotPath, std::filesystem::path>;
 
+static const std::vector<KeyAndValue>& sample_kv_pairs() {
+    static const std::vector<KeyAndValue> kKVPairs{
+        {*from_hex("0000000000000000000000000000000000000000"sv), *from_hex("000a0269024e3c8decd159600000"sv)},
+        {*from_hex("0000000000000000000000000000000000000004"sv), *from_hex("0008cf2fa48840ba8add0000"sv)},
+        {*from_hex("0000000000000000000000000000000000000008"sv), *from_hex("0008146c4643c28ed8200000"sv)},
+    };
+    return kKVPairs;
+}
+
 static KvAndBtPaths sample_3_keys_kv_and_bt_files(const TemporaryDirectory& tmp_dir) {
     // Prepare sample uncompressed KV file containing some key-value pairs
     const auto kv_file_path = sample_kv_file(
         tmp_dir,
-        std::vector<KeyAndValue>{
-            KeyAndValue{"0000000000000000000000000000000000000000"sv, "000a0269024e3c8decd159600000"sv},
-            KeyAndValue{"0000000000000000000000000000000000000004"sv, "0008cf2fa48840ba8add0000"sv},
-            KeyAndValue{"0000000000000000000000000000000000000008"sv, "0008146c4643c28ed8200000"sv},
-        });
+        sample_kv_pairs());
 
     // Prepare the BT index for such KV file
     // Note: key offsets can be computed from KV file layout
@@ -157,6 +163,20 @@ TEST_CASE("BTreeIndex", "[db]") {
         // Seek beyond the last key
         CHECK(!bt_index.seek(*from_hex("0000000000000000000000000000000000000009"), kv_segment));
         CHECK(!bt_index.seek(*from_hex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"), kv_segment));
+    }
+
+    SECTION("BTreeIndex::seek cursor iteration") {
+        static_assert(std::input_iterator<BTreeIndex::Cursor>);
+
+        auto kv_from_refs = [](std::pair<ByteView, ByteView> kv_refs) -> KeyAndValue {
+            return KeyAndValue{Bytes{kv_refs.first}, Bytes{kv_refs.second}};
+        };
+
+        auto it = bt_index.seek(ByteView{}, kv_segment);
+        REQUIRE(it.has_value());
+        CHECK(vector_from_range(
+                  std::ranges::subrange{std::move(*it), std::default_sentinel} |
+                  std::views::transform(kv_from_refs)) == sample_kv_pairs());
     }
 }
 

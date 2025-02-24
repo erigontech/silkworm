@@ -140,8 +140,10 @@ bool BTreeIndex::Cursor::next() {
     if (!kv) {
         return false;
     }
-    key_ = std::move(kv->first);
-    value_ = std::move(kv->second);
+    value_ = value_type{
+        std::move(kv->first),
+        std::move(kv->second),
+    };
     return true;
 }
 

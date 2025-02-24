@@ -29,6 +29,9 @@ namespace silkworm::db::kv::api {
 //! Unlimited range size in range queries
 inline constexpr int64_t kUnlimited{-1};
 
+//! Infinite timestamp value in range queries
+inline constexpr Timestamp kInfinite{-1};
+
 struct IndexRangeQuery {
     TxId tx_id{0};
     std::string table;

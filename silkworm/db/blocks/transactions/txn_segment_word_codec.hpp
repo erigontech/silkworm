@@ -67,7 +67,7 @@ struct TransactionSegmentWordDecoder : public Decoder {
 
     ~TransactionSegmentWordDecoder() override = default;
 
-    void decode_word(ByteView word) override {
+    void decode_word(Bytes& word) override {
         decode_word_into_tx(word, value);
     }
 };
@@ -80,7 +80,7 @@ struct TransactionSegmentWordPayloadRlpDecoder : public Decoder {
 
     ~TransactionSegmentWordPayloadRlpDecoder() override = default;
 
-    void decode_word(ByteView word) override {
+    void decode_word(Bytes& word) override {
         if (word.empty()) {
             value = TBytes{};
             return;

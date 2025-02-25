@@ -227,9 +227,6 @@ class Decompressor {
         //! The current word position
         uint64_t current_word_offset() const { return current_word_offset_; }
 
-        //! Move current word out of this iterator
-        Bytes&& move_current_word() { return std::move(current_word_); }
-
         //! input_iterator concept boilerplate
 
         using iterator_category [[maybe_unused]] = std::input_iterator_tag;

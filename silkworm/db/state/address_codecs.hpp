@@ -45,7 +45,7 @@ struct AddressSnapshotsCodec : public snapshots::Codec {
         return ByteView{reinterpret_cast<uint8_t*>(&value.bytes), kAddressLength};
     }
 
-    void decode_word(ByteView word) override {
+    void decode_word(Bytes& word) override {
         if (word.size() < kAddressLength)
             throw std::runtime_error{"AddressSnapshotsDecoder failed to decode"};
         std::memcpy(value.bytes, word.data(), kAddressLength);

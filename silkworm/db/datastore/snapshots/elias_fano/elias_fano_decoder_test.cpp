@@ -35,7 +35,8 @@ TEST_CASE("EliasFanoDecoder") {
     const auto expected_list_str = expected_list_stream.str();
 
     EliasFanoDecoder decoder;
-    decoder.decode_word(string_view_to_byte_view(expected_list_str));
+    auto expected_list_bytes = string_to_bytes(expected_list_str);
+    decoder.decode_word(expected_list_bytes);
     CHECK(decoder.value == expected_list.as_view());
 }
 

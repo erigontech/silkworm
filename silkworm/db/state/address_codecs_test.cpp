@@ -25,10 +25,12 @@ namespace silkworm::db::state {
 TEST_CASE("AddressSnapshotsDecoder") {
     using evmc::literals::operator""_address;
     AddressSnapshotsDecoder decoder;
-    decoder.decode_word(*from_hex("0x000000000000000000636f6e736f6c652e6c6f67"));
+    auto word = *from_hex("0x000000000000000000636f6e736f6c652e6c6f67");
+    decoder.decode_word(word);
     CHECK(decoder.value == 0x000000000000000000636f6e736f6c652e6c6f67_address);
 
-    CHECK_THROWS_AS(decoder.decode_word({}), std::runtime_error);
+    Bytes empty;
+    CHECK_THROWS_AS(decoder.decode_word(empty), std::runtime_error);
 }
 
 TEST_CASE("AddressSnapshotsEncoder") {

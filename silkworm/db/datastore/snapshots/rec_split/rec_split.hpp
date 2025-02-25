@@ -507,8 +507,8 @@ class RecSplit {
 
         // Write out Elias-Fano code for offsets (if any)
         if (double_enum_index_) {
-            index_output_stream << *ef_offsets_;
-            SILK_TRACE << "[index] written EF code for offsets [size: " << ef_offsets_->size() << "]";
+            index_output_stream << *ef_offsets_builder_;
+            SILK_TRACE << "[index] written EF code for offsets [size: " << ef_offsets_builder_->size() << "]";
 
             // Write out existence filter (if any)
             if (less_false_positives_) {

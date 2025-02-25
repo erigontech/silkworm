@@ -168,6 +168,8 @@ class EliasFanoList32Builder {
                                {reinterpret_cast<const uint8_t*>(data_.data()), EliasFanoList32::total_words(count_, max_value) * sizeof(uint64_t)}};
     };
 
+    size_t size() const { return count_; }
+
     void add_offset(uint64_t offset);
     void push_back(uint64_t offset) { add_offset(offset); }
 

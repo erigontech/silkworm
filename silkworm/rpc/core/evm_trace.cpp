@@ -1048,7 +1048,16 @@ void TraceTracer::on_creation_completed(const evmc_result& result, const silkwor
     start_gas_.pop();
 
     Trace& trace = traces_[index];
-    trace.trace_result->gas_used = start_gas - result.gas_left;
+
+    switch (result.status_code) {
+        case evmc_status_code::EVMC_OUT_OF_GAS:
+            trace.error = "out of gas";
+            trace.trace_result.reset();
+            break;
+        default:
+            trace.trace_result->gas_used = start_gas - result.gas_left;
+            break;
+    }
 }
 
 void TraceTracer::on_reward_granted(const silkworm::CallResult& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {

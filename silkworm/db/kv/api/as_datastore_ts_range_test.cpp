@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "local_timestamp.hpp"
+#include "as_datastore_ts_range.hpp"
 
 #include <optional>
 #include <tuple>
@@ -52,7 +52,7 @@ TEST_CASE("ts_range_from_kv", "[db][kv][api][local_timestamp]") {
     for (const auto& [kv_ts_range_and_reverse, expected_db_ts_range] : test_fixtures) {
         const auto& [kv_ts_range, reverse] = kv_ts_range_and_reverse;
         const auto convert_ts_range_from_kv = [&]() {
-            return ts_range_from_kv(kv_ts_range.first, kv_ts_range.second, reverse);
+            return as_datastore_ts_range({kv_ts_range.first, kv_ts_range.second}, reverse);
         };
         if (expected_db_ts_range) {
             const auto db_ts_range = convert_ts_range_from_kv();

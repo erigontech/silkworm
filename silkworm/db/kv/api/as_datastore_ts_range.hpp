@@ -23,6 +23,6 @@
 
 namespace silkworm::db::kv::api {
 
-datastore::TimestampRange ts_range_from_kv(Timestamp from_timestamp, Timestamp to_timestamp, bool reverse);
+datastore::TimestampRange as_datastore_ts_range(TimestampRange ts_range, bool reverse);
 
 }  // namespace silkworm::db::kv::api

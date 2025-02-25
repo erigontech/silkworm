@@ -33,7 +33,7 @@
 #include <silkworm/db/kv/txn_num.hpp>
 #include <silkworm/db/tables.hpp>
 
-#include "local_timestamp.hpp"
+#include "as_datastore_ts_range.hpp"
 
 namespace silkworm::db::kv::api {
 
@@ -232,7 +232,7 @@ Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery query) {
     }
 
     auto paginator = [this, query = std::move(query)](api::PaginatedTimestamps::PageToken) mutable -> Task<api::PaginatedTimestamps::PageResult> {
-        datastore::TimestampRange ts_range = ts_range_from_kv(query.from_timestamp, query.to_timestamp, !query.ascending_order);
+        datastore::TimestampRange ts_range = as_datastore_ts_range({query.from_timestamp, query.to_timestamp}, !query.ascending_order);
         const auto inverted_index_name = kTable2EntityNames.at(query.table);
         RawInvertedIndexRangeByKeyQuery store_query{
             inverted_index_name,
@@ -263,7 +263,7 @@ Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeQuery quer
     }
 
     auto paginator = [this, query = std::move(query)](api::PaginatedKeysValues::PageToken) mutable -> Task<api::PaginatedKeysValues::PageResult> {
-        datastore::TimestampRange ts_range = ts_range_from_kv(query.from_timestamp, query.to_timestamp, !query.ascending_order);
+        datastore::TimestampRange ts_range = as_datastore_ts_range({query.from_timestamp, query.to_timestamp}, !query.ascending_order);
         const auto entity_name = kTable2EntityNames.at(query.table);
         RawHistoryRangeQuery store_query{
             entity_name,

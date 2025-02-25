@@ -14,24 +14,26 @@
    limitations under the License.
 */
 
-#include "local_timestamp.hpp"
+#include "as_datastore_ts_range.hpp"
 
 #include <silkworm/infra/common/ensure.hpp>
 
 namespace silkworm::db::kv::api {
 
-datastore::TimestampRange ts_range_from_kv(Timestamp from_ts, Timestamp to_ts, bool reverse) {
+datastore::TimestampRange as_datastore_ts_range(TimestampRange ts_range, bool reverse) {
+    const auto [from_ts, to_ts] = ts_range;
+
     // static_cast automatically handles conversion for all values included -1 => INF...
-    datastore::TimestampRange range{static_cast<datastore::Timestamp>(reverse ? to_ts : from_ts),
-                                    static_cast<datastore::Timestamp>(reverse ? from_ts : to_ts)};
+    datastore::TimestampRange db_range{static_cast<datastore::Timestamp>(reverse ? to_ts : from_ts),
+                                       static_cast<datastore::Timestamp>(reverse ? from_ts : to_ts)};
     // ...but we still need to adjust some corner cases:
     // [-1, -1) means [StartOfTable, EndOfTable) i.e. [0, INF)
     // [from, -1) in reverse order means [StartOfTable, from) i.e. [0, from)
     if (to_ts == kInfinite && (from_ts == kInfinite || reverse)) {
-        range.start = 0;
+        db_range.start = 0;
     }
-    ensure(range.start <= range.end, [&]() { return "invalid forward range " + range.to_string(); });
-    return range;
+    ensure(db_range.start <= db_range.end, [&]() { return "invalid forward range " + db_range.to_string(); });
+    return db_range;
 }
 
 }  // namespace silkworm::db::kv::api

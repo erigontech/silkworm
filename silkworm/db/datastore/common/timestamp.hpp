@@ -24,7 +24,7 @@ namespace silkworm::datastore {
 
 using Timestamp = uint64_t;
 
-constexpr auto kMaxTimestamp = std::numeric_limits<datastore::Timestamp>::max();
+constexpr auto kMaxTimestamp = std::numeric_limits<Timestamp>::max();
 
 struct TimestampRange {
     Timestamp start;

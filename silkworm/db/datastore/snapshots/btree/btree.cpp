@@ -204,19 +204,16 @@ BTree::BinarySearchResult BTree::binary_search_in_cache(ByteView key) {
     while (left_pos < right_pos) {
         uint64_t median_pos = (left_pos + right_pos) >> 1;
         node = &cache_[median_pos];
-        switch (node->key.compare(key)) {
-            case 0:
-                return {node, node->key_index, node->key_index};
-            case 1:
-                right_pos = median_pos;
-                right_index = node->key_index;
-                break;
-            case -1:
-                left_pos = median_pos + 1;
-                left_index = node->key_index;
-                break;
-            default:
-                SILKWORM_ASSERT(false);
+        const int result = node->key.compare(key);
+        if (result == 0) {
+            return {node, node->key_index, node->key_index};
+        }
+        if (result > 0) {
+            right_pos = median_pos;
+            right_index = node->key_index;
+        } else {  // result < 0
+            left_pos = median_pos + 1;
+            left_index = node->key_index;
         }
     }
     return {node, left_index, right_index};

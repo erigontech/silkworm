@@ -62,6 +62,8 @@ class KVSegmentFileReader {
               decoders_{{}, {}},
               path_{std::nullopt} {}
 
+        Bytes&& move_current_word() { return it_.move_current_word(); }
+
         value_type operator*() const { return decoders_; }
         const value_type* operator->() const { return &decoders_; }
 
@@ -137,6 +139,8 @@ class KVSegmentReader {
 
         value_type_owned move_value() const {
             value_type value = this->value();
+            // TODO(canepat) make this generic as opposed to value-specific (EliasFanoList32)
+            value.second.data_holder = std::move(it_.move_current_word());
             return {std::move(value.first), std::move(value.second)};
         }
 
@@ -159,13 +163,13 @@ class KVSegmentReader {
             Decoder& base_key_decoder = *(it_->first);
             Decoder& base_value_decoder = *(it_->second);
             // dynamic_cast is safe because TKeyDecoder was used when creating the Iterator
-            auto& key_decoder = dynamic_cast<TKeyDecoder&>(base_key_decoder);
+            DecoderConcept auto& key_decoder = dynamic_cast<TKeyDecoder&>(base_key_decoder);
             // dynamic_cast is safe because TValueDecoder was used when creating the Iterator
-            auto& key_value_decoder = dynamic_cast<TValueDecoder&>(base_value_decoder);
+            DecoderConcept auto& key_value_decoder = dynamic_cast<TValueDecoder&>(base_value_decoder);
             return {key_decoder.value, key_value_decoder.value};
         }
 
-        KVSegmentFileReader::Iterator it_;
+        mutable KVSegmentFileReader::Iterator it_;
     };
 
     static_assert(std::input_iterator<Iterator>);

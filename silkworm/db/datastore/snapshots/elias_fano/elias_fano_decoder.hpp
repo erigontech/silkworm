@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <optional>
-
 #include "../common/codec.hpp"
 #include "elias_fano_list.hpp"
 
@@ -29,7 +27,7 @@ struct EliasFanoDecoder : public snapshots::Decoder {
     ~EliasFanoDecoder() override = default;
 
     void decode_word(ByteView word) override {
-        value = EliasFanoList32::from_encoded_data(std::span<const uint8_t>{word.data(), word.size()});
+        value = EliasFanoList32::from_encoded_data(word);
     }
 };
 

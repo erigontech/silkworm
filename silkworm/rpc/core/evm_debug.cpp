@@ -122,9 +122,7 @@ void insert_error(DebugLog& log, evmc_status_code status_code) {
 
 void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
     last_opcode_ = std::nullopt;
-    if (opcode_names_ == nullptr) {
-        latest_opcode_names_ = evmc_get_instruction_names_table(EVMC_LATEST_STABLE_REVISION);
-        opcode_names_ = evmc_get_instruction_names_table(rev);
+    if (metrics_ == nullptr) {
         metrics_ = evmc_get_instruction_metrics_table(rev);
     }
 
@@ -152,10 +150,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     const evmc::address sender(execution_state.msg->sender);
 
     const auto opcode = execution_state.original_code[pc];
-    auto opcode_name = get_opcode_name(opcode_names_, opcode);
-    if (!opcode_name) {
-        opcode_name = get_opcode_name(latest_opcode_names_, opcode);
-    }
+    const auto opcode_name = get_opcode_name(opcode);
     last_opcode_ = opcode;
 
     SILK_DEBUG << "on_instruction_start:"
@@ -280,7 +275,7 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
         if (result.status_code == EVMC_SUCCESS && last_opcode_ && last_opcode_ != OP_SELFDESTRUCT && last_opcode_ != OP_RETURN && last_opcode_ != OP_STOP) {
             DebugLog newlog;
             newlog.pc = log.pc + 1;
-            newlog.op_name = get_opcode_name(opcode_names_, OP_STOP);
+            newlog.op_name = get_opcode_name(OP_STOP);
             newlog.op_code = OP_STOP;
             newlog.gas = log.gas - log.gas_cost;
             newlog.gas_cost = 0;

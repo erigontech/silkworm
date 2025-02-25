@@ -584,8 +584,7 @@ std::string to_string(intx::uint256 value) {
 
 void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
     last_opcode_ = std::nullopt;
-    if (opcode_names_ == nullptr) {
-        opcode_names_ = evmc_get_instruction_names_table(rev);
+    if (metrics_ == nullptr) {
         metrics_ = evmc_get_instruction_metrics_table(rev);
     }
 
@@ -633,7 +632,7 @@ void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& ms
 void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int /*stack_height*/, const int64_t gas,
                                          const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     const auto op_code = execution_state.original_code[pc];
-    auto op_name = get_opcode_name(opcode_names_, op_code);
+    const auto op_name = get_opcode_name(op_code);
     last_opcode_ = op_code;
 
     int64_t used = 0;
@@ -774,7 +773,7 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
         trace_op.idx = index_prefix;
         trace_op.depth = op.depth;
         trace_op.op_code = OP_STOP;
-        trace_op.op_name = get_opcode_name(opcode_names_, OP_STOP);
+        trace_op.op_name = get_opcode_name(OP_STOP);
         trace_op.pc = op.pc + 1;
         trace_op.trace_ex = std::make_optional<struct TraceEx>();
         trace_op.trace_ex->used = result.gas_left;
@@ -789,10 +788,6 @@ void VmTraceTracer::on_pre_check_failed(const evmc_result& /*result*/, const evm
 }
 
 void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
-    if (opcode_names_ == nullptr) {
-        opcode_names_ = evmc_get_instruction_names_table(rev);
-    }
-
     if (precompile::is_precompile(msg.code_address, rev)) {
         is_precompile_ = true;
         return;
@@ -919,7 +914,7 @@ void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
         nlohmann::json calling_trace_json = calling_trace;
     }
 
-    auto opcode_name = get_opcode_name(opcode_names_, opcode);
+    auto opcode_name = get_opcode_name(opcode);
     SILK_DEBUG << "TraceTracer::on_instruction_start:"
                << " pc: " << std::dec << pc
                << ", opcode: 0x" << std::hex << evmc::hex(opcode)
@@ -1119,9 +1114,6 @@ bool StateAddresses::exists(const evmc::address& address) const noexcept {
 }
 
 void StateDiffTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
-    if (opcode_names_ == nullptr) {
-        opcode_names_ = evmc_get_instruction_names_table(rev);
-    }
     if (precompile::is_precompile(msg.code_address, rev)) {
         is_precompile_ = true;
         return;
@@ -1142,7 +1134,7 @@ void StateDiffTracer::on_execution_start(evmc_revision rev, const evmc_message& 
 void StateDiffTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int /*stack_height*/, const int64_t gas,
                                            const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     const auto opcode = execution_state.original_code[pc];
-    auto opcode_name = get_opcode_name(opcode_names_, opcode);
+    const auto opcode_name = get_opcode_name(opcode);
 
     if (opcode == evmc_opcode::OP_SSTORE) {
         auto key = to_string(stack_top[0]);

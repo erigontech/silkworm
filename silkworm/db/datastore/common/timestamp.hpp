@@ -17,11 +17,14 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 #include <string>
 
 namespace silkworm::datastore {
 
 using Timestamp = uint64_t;
+
+constexpr auto kMaxTimestamp = std::numeric_limits<Timestamp>::max();
 
 struct TimestampRange {
     Timestamp start;

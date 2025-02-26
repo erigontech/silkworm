@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "concat_view.hpp"
+#include "common/ranges/concat_view.hpp"
 #include "kvdb/database.hpp"
 #include "kvdb/inverted_index_range_by_key_query.hpp"
 #include "snapshots/inverted_index_range_by_key_query.hpp"

@@ -1,5 +1,5 @@
 /*
-   Copyright 2025 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,5 +16,22 @@
 
 #pragma once
 
-#include "domain_get_latest_query.hpp"
-#include "domain_range_latest_query.hpp"
+#include <utility>
+
+namespace silkworm {
+
+template <typename T1, typename T2>
+struct PairGetFirst {
+    constexpr const T1& operator()(const std::pair<T1, T2>& p) const noexcept {
+        return p.first;
+    }
+};
+
+template <typename T1, typename T2>
+struct PairGetSecond {
+    constexpr const T2& operator()(const std::pair<T1, T2>& p) const noexcept {
+        return p.second;
+    }
+};
+
+};  // namespace silkworm

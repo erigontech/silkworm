@@ -1,5 +1,5 @@
 /*
-   Copyright 2025 The Silkworm Authors
+   Copyright 2024 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,5 +16,13 @@
 
 #pragma once
 
-#include "domain_get_latest_query.hpp"
-#include "domain_range_latest_query.hpp"
+#include <silkworm/db/datastore/common/timestamp.hpp>
+
+#include "../api/endpoint/common.hpp"
+#include "../api/endpoint/temporal_range.hpp"
+
+namespace silkworm::db::kv::api {
+
+datastore::TimestampRange as_datastore_ts_range(TimestampRange ts_range, bool reverse);
+
+}  // namespace silkworm::db::kv::api

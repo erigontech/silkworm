@@ -81,22 +81,21 @@ class LocalTransaction : public BaseTransaction {
     Task<PaginatedKeysValues> range_as_of(DomainRangeQuery query) override;
 
   private:
-    template <typename DomainGetLatest>
-    auto query_domain_latest(const datastore::EntityName domain_name, ByteView key) {
-        DomainGetLatest query(
-            data_store_.chaindata.domain(domain_name),
-            tx_,
-            data_store_.state_repository_latest,
-            data_store_.state_repository_historical);
-        return query.exec(key);
-    }
-
     template <typename DomainGetAsOfQuery>
     auto query_domain_as_of(const datastore::EntityName domain_name, ByteView key, Timestamp ts) {
         DomainGetAsOfQuery query(
             data_store_.chaindata.domain(domain_name),
             tx_,
             data_store_.state_repository_latest,
+            data_store_.state_repository_historical);
+        return query.exec(key, ts);
+    }
+
+    template <typename HistoryGetQuery>
+    auto query_history_get(datastore::kvdb::History kvdb_entity, ByteView key, datastore::Timestamp ts) {
+        HistoryGetQuery query(
+            kvdb_entity,
+            tx_,
             data_store_.state_repository_historical);
         return query.exec(key, ts);
     }

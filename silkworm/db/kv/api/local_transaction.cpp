@@ -18,17 +18,22 @@
 
 #include <map>
 #include <string_view>
+#include <vector>
 
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/chain/local_chain_storage.hpp>
 #include <silkworm/db/datastore/domain_get_as_of_query.hpp>
 #include <silkworm/db/datastore/domain_get_latest_query.hpp>
+#include <silkworm/db/datastore/domain_range_as_of_query.hpp>
+#include <silkworm/db/datastore/history_get_query.hpp>
 #include <silkworm/db/datastore/history_range_query.hpp>
 #include <silkworm/db/datastore/inverted_index_range_by_key_query.hpp>
 #include <silkworm/db/datastore/kvdb/raw_codec.hpp>
 #include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
 #include <silkworm/db/tables.hpp>
+
+#include "as_datastore_ts_range.hpp"
 
 namespace silkworm::db::kv::api {
 
@@ -67,8 +72,22 @@ using CodeDomainGetAsOfQuery = RawDomainGetAsOfQuery<state::kHistorySegmentAndId
 using CommitmentDomainGetAsOfQuery = RawDomainGetAsOfQuery<state::kHistorySegmentAndIdxNamesCommitment>;
 using ReceiptsDomainGetAsOfQuery = RawDomainGetAsOfQuery<state::kHistorySegmentAndIdxNamesReceipts>;
 
+template <const snapshots::SegmentAndAccessorIndexNames& history_segment_names>
+using RawHistoryGetQuery = HistoryGetQuery<
+    kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
+    kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
+    history_segment_names>;
+using AccountsHistoryGetQuery = RawHistoryGetQuery<state::kHistorySegmentAndIdxNamesAccounts>;
+using StorageHistoryGetQuery = RawHistoryGetQuery<state::kHistorySegmentAndIdxNamesStorage>;
+using CodeHistoryGetQuery = RawHistoryGetQuery<state::kHistorySegmentAndIdxNamesCode>;
+using CommitmentHistoryGetQuery = RawHistoryGetQuery<state::kHistorySegmentAndIdxNamesCommitment>;
+using ReceiptsHistoryGetQuery = RawHistoryGetQuery<state::kHistorySegmentAndIdxNamesReceipts>;
+
 using RawInvertedIndexRangeByKeyQuery = InvertedIndexRangeByKeyQuery<
-    kvdb::RawEncoder<Bytes>, snapshots::RawEncoder<Bytes>>;
+    kvdb::RawEncoder<Bytes>, snapshots::RawEncoder<Bytes>>;  // TODO(canepat) try ByteView
+
+using RawHistoryRangeQuery = datastore::HistoryRangeQuery<
+    kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>, kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
 
 template <typename PageResult>
 static auto make_empty_paginator() {
@@ -176,9 +195,35 @@ Task<GetAsOfResult> LocalTransaction::get_as_of(GetAsOfQuery query) {
     co_return GetAsOfResult{.success = true, .value = std::move(*value)};
 }
 
-Task<HistoryPointResult> LocalTransaction::history_seek(HistoryPointQuery /*query*/) {
-    // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
-    co_return HistoryPointResult{};
+Task<HistoryPointResult> LocalTransaction::history_seek(HistoryPointQuery query) {
+    if (!kTable2EntityNames.contains(query.table)) {
+        co_return HistoryPointResult{};
+    }
+
+    const auto domain_name = kTable2EntityNames.at(query.table);
+    const auto domain = data_store_.chaindata.domain(domain_name);
+    if (!domain.history) {
+        co_return HistoryPointResult{};
+    }
+
+    const auto timestamp = static_cast<datastore::Timestamp>(query.timestamp);
+
+    std::optional<Bytes> value;
+    if (domain_name == state::kDomainNameAccounts) {
+        value = query_history_get<AccountsHistoryGetQuery>(*domain.history, query.key, timestamp);
+    } else if (domain_name == state::kDomainNameStorage) {
+        value = query_history_get<StorageHistoryGetQuery>(*domain.history, query.key, timestamp);
+    } else if (domain_name == state::kDomainNameCode) {
+        value = query_history_get<CodeHistoryGetQuery>(*domain.history, query.key, timestamp);
+    } else if (domain_name == state::kDomainNameCommitment) {
+        value = query_history_get<CommitmentHistoryGetQuery>(*domain.history, query.key, timestamp);
+    } else if (domain_name == state::kDomainNameReceipts) {
+        value = query_history_get<ReceiptsHistoryGetQuery>(*domain.history, query.key, timestamp);
+    }
+    if (!value) {
+        co_return HistoryPointResult{};
+    }
+    co_return HistoryPointResult{.success = true, .value = std::move(*value)};
 }
 
 Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery query) {
@@ -187,8 +232,7 @@ Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery query) {
     }
 
     auto paginator = [this, query = std::move(query)](api::PaginatedTimestamps::PageToken) mutable -> Task<api::PaginatedTimestamps::PageResult> {
-        datastore::TimestampRange ts_range{static_cast<datastore::Timestamp>(query.from_timestamp),
-                                           static_cast<datastore::Timestamp>(query.to_timestamp)};
+        datastore::TimestampRange ts_range = as_datastore_ts_range({query.from_timestamp, query.to_timestamp}, !query.ascending_order);
         const auto inverted_index_name = kTable2EntityNames.at(query.table);
         RawInvertedIndexRangeByKeyQuery store_query{
             inverted_index_name,
@@ -214,35 +258,65 @@ Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeQuery query) {
 }
 
 Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeQuery query) {
+    if (!kTable2EntityNames.contains(query.table)) {
+        co_return api::PaginatedKeysValues{make_empty_paginator<api::PaginatedKeysValues::PageResult>()};
+    }
+
+    auto paginator = [this, query = std::move(query)](api::PaginatedKeysValues::PageToken) mutable -> Task<api::PaginatedKeysValues::PageResult> {
+        datastore::TimestampRange ts_range = as_datastore_ts_range({query.from_timestamp, query.to_timestamp}, !query.ascending_order);
+        const auto entity_name = kTable2EntityNames.at(query.table);
+        RawHistoryRangeQuery store_query{
+            entity_name,
+            data_store_.chaindata,
+            tx_,
+            data_store_.state_repository_historical,
+        };
+        const size_t limit = (query.limit == kUnlimited) ? std::numeric_limits<size_t>::max() : static_cast<size_t>(query.limit);
+        std::vector<RawHistoryRangeQuery::ResultItem> kv_pair_sequence;
+        // TODO: support pagination: apply page_size using std::views::chunk, save the range for future requests using page_token and return the first chunk
+        auto kv_view = store_query.exec(ts_range, query.ascending_order) | std::views::take(limit);
+        // TODO: avoid range copy using std::views::as_rvalue (C++23)
+        std::ranges::copy(kv_view /*| std::views::as_rvalue*/, std::back_inserter(kv_pair_sequence));
+        api::PaginatedKeysValues::PageResult result;
+        if (!kv_pair_sequence.empty()) {
+            result.keys.reserve(kv_pair_sequence.size());
+            result.values.reserve(kv_pair_sequence.size());
+            for (auto&& kv_pair : kv_pair_sequence) {
+                result.keys.emplace_back(std::move(kv_pair.first));
+                result.values.emplace_back(std::move(kv_pair.second));
+            }
+        }
+        co_return result;
+    };
+    co_return api::PaginatedKeysValues{std::move(paginator)};
+}
+
+Task<PaginatedKeysValues> LocalTransaction::range_as_of(DomainRangeQuery query) {
     // convert table to entity name
     if (!kTable2EntityNames.contains(query.table)) {
         // TODO: return an empty result
     }
     datastore::EntityName entity_name = kTable2EntityNames.at(query.table);
-    datastore::HistoryRangeQuery<kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>, kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>> store_query{
+
+    using DomainRangeAsOfQuery = datastore::DomainRangeAsOfQuery<
+        kvdb::RawEncoder<Bytes>, snapshots::RawEncoder<Bytes>,
+        kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
+        kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
+    DomainRangeAsOfQuery store_query{
         entity_name,
         data_store_.chaindata,
         tx_,
+        data_store_.state_repository_latest,
         data_store_.state_repository_historical,
     };
 
-    // TODO: convert query from/to to ts_range
-    auto ts_range = datastore::TimestampRange{0, 10};
     size_t limit = (query.limit == kUnlimited) ? std::numeric_limits<size_t>::max() : static_cast<size_t>(query.limit);
 
     // TODO: this is just a test example, instead of direct iteration, apply page_size using std::views::chunk,
     // TODO: save the range for future requests using page_token and return the first chunk
-    for ([[maybe_unused]] decltype(store_query)::ResultItem&& kv_pair : store_query.exec(ts_range, query.ascending_order) | std::views::take(limit)) {
+    for ([[maybe_unused]] decltype(store_query)::ResultItem&& kv_pair : store_query.exec(query.from_key, query.to_key, query.timestamp, query.ascending_order) | std::views::take(limit)) {
     }
 
-    // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
-    auto paginator = [](api::PaginatedKeysValues::PageToken) mutable -> Task<api::PaginatedKeysValues::PageResult> {
-        co_return api::PaginatedKeysValues::PageResult{};
-    };
-    co_return api::PaginatedKeysValues{std::move(paginator)};
-}
-
-Task<PaginatedKeysValues> LocalTransaction::range_as_of(DomainRangeQuery /*query*/) {
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]
     auto paginator = [](api::PaginatedKeysValues::PageToken) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         co_return api::PaginatedKeysValues::PageResult{};

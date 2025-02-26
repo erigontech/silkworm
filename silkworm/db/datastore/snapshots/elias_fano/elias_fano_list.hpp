@@ -53,17 +53,7 @@
 #include "../common/encoding/sequence.hpp"
 #include "list_iterator.hpp"
 
-inline bool operator==(const std::span<const uint64_t> lhs, const std::span<const uint64_t> rhs) {
-    if (lhs.size() != rhs.size()) {
-        return false;  // Different sizes, not equal
-    }
-    for (size_t i = 0; i < lhs.size(); ++i) {
-        if (lhs[i] != rhs[i]) {
-            return false;  // Different elements, not equal
-        }
-    }
-    return true;  // All elements are equal
-}
+bool operator==(std::span<const uint64_t> lhs, std::span<const uint64_t> rhs);
 
 namespace silkworm::snapshots::elias_fano {
 

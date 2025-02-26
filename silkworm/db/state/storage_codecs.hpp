@@ -77,7 +77,7 @@ struct PackedBytes32SnapshotsCodec : public snapshots::Codec {
     void decode_word(Bytes& word) override {
         if (word.size() > sizeof(value.bytes))
             throw std::runtime_error{"PackedBytes32SnapshotsCodec failed to decode"};
-        value = silkworm::to_bytes32(word);  // TODO(canepat) can we save a copy here?
+        value = silkworm::to_bytes32(word);
     }
 };
 static_assert(snapshots::EncoderConcept<PackedBytes32SnapshotsCodec>);

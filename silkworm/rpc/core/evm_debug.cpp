@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include <evmc/evmc.h>
 #include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
 #include <evmone/instructions_traits.hpp>
@@ -34,9 +35,6 @@
 #include <silkworm/rpc/json/types.hpp>
 
 namespace silkworm::rpc::debug {
-
-static constexpr int64_t SUCCESS_CODE{0};
-static constexpr int64_t REVERT_CODE{2};
 
 void from_json(const nlohmann::json& json, DebugConfig& tc) {
     json.at("disableStorage").get_to(tc.disable_storage);
@@ -571,8 +569,8 @@ Task<void> DebugExecutor::execute(
         if (!execution_result.pre_check_error) {
             stream.write_json_field("failed", !execution_result.success());
             stream.write_field("gas", transaction.gas_limit - execution_result.gas_left);
-            auto error_code = execution_result.error_code.value_or(SUCCESS_CODE);
-            if (error_code == SUCCESS_CODE || error_code == REVERT_CODE) {
+            const auto error_code = execution_result.error_code.value_or(evmc_status_code::EVMC_SUCCESS);
+            if (error_code == evmc_status_code::EVMC_SUCCESS || error_code == evmc_status_code::EVMC_REVERT) {
                 stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
             } else {
                 stream.write_field("returnValue", "");

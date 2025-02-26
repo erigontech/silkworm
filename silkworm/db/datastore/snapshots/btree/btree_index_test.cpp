@@ -33,7 +33,7 @@
 namespace silkworm::snapshots::btree {
 
 using namespace silkworm::test_util;
-using elias_fano::EliasFanoList32;
+using elias_fano::EliasFanoList32Builder;
 
 using KeyAndValue = std::pair<Bytes, Bytes>;
 
@@ -48,7 +48,7 @@ static SnapshotPath sample_kv_file(const TemporaryDirectory& tmp_dir, const std:
     return kv_file_path;
 }
 
-static std::filesystem::path sample_bt_index_file(const EliasFanoList32& key_offsets) {
+static std::filesystem::path sample_bt_index_file(const EliasFanoList32Builder& key_offsets) {
     TemporaryFile index_file;
     std::stringstream str_stream;
     str_stream << key_offsets;
@@ -90,7 +90,7 @@ static KvAndBtPaths sample_3_keys_kv_and_bt_files(const TemporaryDirectory& tmp_
     // 0000000000000000000000000000000000000008 <- 3rd key, offset 0 + 20 + 1 + 14 + 1 + 20 + 1 + 12 + 1
     // 07
     // 0008146C4643C28ED8200000
-    EliasFanoList32 encoded_key_offsets{3, 70};
+    EliasFanoList32Builder encoded_key_offsets{3, 70};
     encoded_key_offsets.add_offset(0);
     encoded_key_offsets.add_offset(0 + 20 + 1 + 14 + 1);
     encoded_key_offsets.add_offset(0 + 20 + 1 + 14 + 1 + 20 + 1 + 12 + 1);
@@ -100,7 +100,7 @@ static KvAndBtPaths sample_3_keys_kv_and_bt_files(const TemporaryDirectory& tmp_
     return {kv_file_path, bt_file_path};
 }
 
-TEST_CASE("BTreeIndex", "[db]") {
+TEST_CASE("BTreeIndex", "[snapshots][btree]") {
     TemporaryDirectory tmp_dir;
 
     SECTION("empty") {

@@ -25,18 +25,19 @@
 namespace silkworm::snapshots::elias_fano {
 
 TEST_CASE("EliasFanoDecoder") {
-    EliasFanoList32 expected_list{3, 3};
+    EliasFanoList32Builder expected_list{3, 3};
     expected_list.add_offset(1);
     expected_list.add_offset(2);
     expected_list.add_offset(3);
     expected_list.build();
     std::stringstream expected_list_stream;
     expected_list_stream << expected_list;
-    auto expected_list_str = expected_list_stream.str();
+    const auto expected_list_str = expected_list_stream.str();
 
     EliasFanoDecoder decoder;
-    decoder.decode_word(string_view_to_byte_view(expected_list_str));
-    CHECK(decoder.value == expected_list);
+    auto expected_list_bytes = string_to_bytes(expected_list_str);
+    decoder.decode_word(expected_list_bytes);
+    CHECK(decoder.value == expected_list.as_view());
 }
 
 }  // namespace silkworm::snapshots::elias_fano

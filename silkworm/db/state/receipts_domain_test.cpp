@@ -22,10 +22,12 @@ namespace silkworm::db::state {
 
 TEST_CASE("ReceiptsDomainKeySnapshotsDecoder") {
     ReceiptsDomainKeySnapshotsDecoder decoder;
-    decoder.decode_word(Bytes{1});
+    Bytes one{1};
+    decoder.decode_word(one);
     CHECK(decoder.value == ReceiptsDomainKey::kCumulativeBlobGasUsedInBlockKey);
 
-    CHECK_THROWS_AS(decoder.decode_word({}), std::runtime_error);
+    Bytes empty;
+    CHECK_THROWS_AS(decoder.decode_word(empty), std::runtime_error);
 }
 
 }  // namespace silkworm::db::state

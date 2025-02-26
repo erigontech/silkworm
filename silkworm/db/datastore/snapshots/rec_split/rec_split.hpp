@@ -215,6 +215,7 @@ class RecSplit {
     using SplitStrategy = SplittingStrategy<LEAF_SIZE>;
     using GolombRiceBuilder = GolombRiceVector::Builder;
     using EliasFano = elias_fano::EliasFanoList32;
+    using EliasFanoBuilder = elias_fano::EliasFanoList32Builder;
     using DoubleEliasFano = elias_fano::DoubleEliasFanoList16;
     using Murmur3 = encoding::Murmur3;
 
@@ -231,7 +232,7 @@ class RecSplit {
             uint16_t& golomb_param_max_index,
             DoubleEliasFano& double_ef_index,
             uint8_t bytes_per_record) = 0;
-        virtual void build_enum_index(std::unique_ptr<EliasFano>& ef_offsets) = 0;
+        virtual void build_enum_index(std::unique_ptr<EliasFanoBuilder>& ef_offsets) = 0;
         virtual void clear() = 0;
 
         virtual uint64_t keys_added() = 0;
@@ -459,7 +460,7 @@ class RecSplit {
 
         // Compute optional additional table: ordinal -> offset
         if (double_enum_index_) {
-            building_strategy_->build_enum_index(ef_offsets_);
+            building_strategy_->build_enum_index(ef_offsets_builder_);
         }
 
         built_ = true;
@@ -506,8 +507,8 @@ class RecSplit {
 
         // Write out Elias-Fano code for offsets (if any)
         if (double_enum_index_) {
-            index_output_stream << *ef_offsets_;
-            SILK_TRACE << "[index] written EF code for offsets [size: " << ef_offsets_->size() << "]";
+            index_output_stream << *ef_offsets_builder_;
+            SILK_TRACE << "[index] written EF code for offsets [size: " << ef_offsets_builder_->size() << "]";
 
             // Write out existence filter (if any)
             if (less_false_positives_) {
@@ -1001,6 +1002,7 @@ class RecSplit {
 
     //! Helper to encode the sequences of key offsets in the single EF code
     std::unique_ptr<EliasFano> ef_offsets_;
+    std::unique_ptr<EliasFanoBuilder> ef_offsets_builder_;
 
     //! Minimal app-specific ID of entries in this index - helps understanding what data stored in given shard - persistent field
     uint64_t base_data_id_;

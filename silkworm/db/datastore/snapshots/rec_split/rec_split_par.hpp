@@ -230,10 +230,10 @@ struct RecSplit<LEAF_SIZE>::ParallelBuildingStrategy : public BuildingStrategy {
         return false;  // no collision
     }
 
-    void build_enum_index(std::unique_ptr<EliasFano>& ef_offsets) override {
+    void build_enum_index(std::unique_ptr<EliasFanoBuilder>& ef_offsets) override {
         // Build Elias-Fano index for offsets (if any)
         std::sort(offsets_.begin(), offsets_.end());
-        ef_offsets = std::make_unique<EliasFano>(keys_added_, max_offset_);
+        ef_offsets = std::make_unique<EliasFanoBuilder>(keys_added_, max_offset_);
         for (auto offset : offsets_) {
             ef_offsets->add_offset(offset);
         }

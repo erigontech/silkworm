@@ -36,7 +36,7 @@ struct CharCodec : public Codec {
         word.push_back(*byte_ptr_cast(&value));
         return word;
     }
-    void decode_word(ByteView input_word) override {
+    void decode_word(Bytes& input_word) override {
         value = *byte_ptr_cast(input_word.data());
     }
 };

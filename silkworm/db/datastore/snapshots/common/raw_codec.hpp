@@ -27,8 +27,8 @@ template <BytesOrByteView TBytes>
 struct RawDecoder : public Decoder {
     TBytes value;
     ~RawDecoder() override = default;
-    void decode_word(ByteView word) override {
-        value = std::move(TBytes{word});
+    void decode_word(Bytes& word) override {
+        value = std::move(word);
     }
 };
 

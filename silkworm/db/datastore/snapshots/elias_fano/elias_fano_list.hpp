@@ -58,7 +58,6 @@ namespace silkworm::snapshots::elias_fano {
 //! 32-bit Elias-Fano (EF) list reader that can be used to decode one monotone non-decreasing sequence
 class EliasFanoList32 {
   public:
-    using Uint64Sequence = silkworm::snapshots::encoding::Uint64Sequence;
     using value_type = uint64_t;
 
     //! Create a new 32-bit EF list from the given encoded data (i.e. data plus data header)
@@ -114,9 +113,6 @@ class EliasFanoList32 {
     static constexpr size_t kCountLength{sizeof(uint64_t)};
     static constexpr size_t kULength{sizeof(uint64_t)};
 
-    // std::span<uint64_t> lower_bits_{};
-    // std::span<uint64_t> upper_bits_{};
-    // std::span<uint64_t> jump_{};
     std::span<const uint64_t> lower_bits_{};
     std::span<const uint64_t> upper_bits_{};
     std::span<const uint64_t> jump_{};
@@ -126,7 +122,6 @@ class EliasFanoList32 {
     uint64_t u_{0};
     uint64_t l_{0};
     uint64_t i_{0};
-    // Uint64Sequence data_;
     std::span<const uint64_t> data_;
 };
 

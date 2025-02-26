@@ -98,7 +98,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
                 hi = mid;
             } else {
                 if (result.pre_check_error_code && result.pre_check_error_code != PreCheckErrorCode::kIntrinsicGasTooLow) {
-                    result.error_code = evmc_status_code::EVMC_SUCCESS;
+                    result.status_code = evmc_status_code::EVMC_SUCCESS;
                     return result;
                 }
                 lo = mid;
@@ -110,10 +110,10 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
             EVMExecutor executor{block, config_, workers_, state_overrides};
             transaction.gas_limit = hi;
             result = try_execution(executor, transaction);
-            SILK_DEBUG << "HI == cap tested again with " << (result.error_code == evmc_status_code::EVMC_SUCCESS ? "succeed" : "failed");
+            SILK_DEBUG << "HI == cap tested again with " << (result.status_code == evmc_status_code::EVMC_SUCCESS ? "succeed" : "failed");
         } else if (!result.pre_check_error_code || result.pre_check_error_code == PreCheckErrorCode::kIntrinsicGasTooLow) {
             result.pre_check_error = std::nullopt;
-            result.error_code = evmc_status_code::EVMC_SUCCESS;
+            result.status_code = evmc_status_code::EVMC_SUCCESS;
         }
 
         SILK_DEBUG << "EstimateGasOracle::estimate_gas returns " << hi;
@@ -122,7 +122,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     });
 
     if (!exec_result.success()) {
-        if (exec_result.error_code == evmc_status_code::EVMC_OUT_OF_GAS) {
+        if (exec_result.status_code == evmc_status_code::EVMC_OUT_OF_GAS) {
             std::string error_msg = "gas required exceeds allowance (" + std::to_string(hi) + ")";
             throw EstimateGasException{-32000, error_msg};
         }
@@ -141,7 +141,7 @@ void EstimateGasOracle::throw_exception(ExecutionResult& result) {
         throw EstimateGasException{-32000, *result.pre_check_error};
     }
     auto error_message = result.error_message();
-    SILK_DEBUG << "result message: " << error_message << ", code " << *result.error_code;
+    SILK_DEBUG << "result message: " << error_message << ", code " << *result.status_code;
     if (result.data.empty()) {
         throw EstimateGasException{-32000, error_message};
     }

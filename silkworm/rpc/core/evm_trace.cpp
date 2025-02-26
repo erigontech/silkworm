@@ -1678,7 +1678,7 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
         auto execution_result = executor.call(txn, {}, /*refund=*/true, /*gas_bailout=*/false);
 
         std::string result = "0x";
-        if (execution_result.error_code != evmc_status_code::EVMC_SUCCESS) {
+        if (execution_result.status_code != evmc_status_code::EVMC_SUCCESS) {
             result = "0x" + silkworm::to_hex(execution_result.data);
         }
         return result;

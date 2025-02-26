@@ -559,13 +559,13 @@ Task<void> DebugExecutor::execute(
         debug_tracer->flush_logs();
         stream.close_array();
 
-        SILK_DEBUG << "result error_code: " << execution_result.error_code.value_or(0) << ", message: " << execution_result.error_message();
+        SILK_DEBUG << "result error_code: " << execution_result.status_code.value_or(evmc_status_code::EVMC_SUCCESS) << ", message: " << execution_result.error_message();
 
         if (!execution_result.pre_check_error) {
             stream.write_json_field("failed", !execution_result.success());
             stream.write_field("gas", transaction.gas_limit - execution_result.gas_left);
-            const auto error_code = execution_result.error_code.value_or(evmc_status_code::EVMC_SUCCESS);
-            if (error_code == evmc_status_code::EVMC_SUCCESS || error_code == evmc_status_code::EVMC_REVERT) {
+            const auto status_code = execution_result.status_code.value_or(evmc_status_code::EVMC_SUCCESS);
+            if (status_code == evmc_status_code::EVMC_SUCCESS || status_code == evmc_status_code::EVMC_REVERT) {
                 stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
             } else {
                 stream.write_field("returnValue", "");

@@ -103,8 +103,8 @@ TEST_CASE("estimate gas") {
     MockEstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, config, workers, *tx, storage, accounts_overrides};
 
     SECTION("Call empty, always fails but success in last step") {
-        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};
-        ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS};
+        ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
+        ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_OUT_OF_GAS};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _))
             .Times(16)
             .WillOnce(Return(expect_result_fail))
@@ -130,7 +130,7 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call empty, always succeeds") {
-        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};
+        ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _)).Times(14).WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block, 244087591818874), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
@@ -138,8 +138,8 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call empty, alternatively fails and succeeds") {
-        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};
-        ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS};
+        ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
+        ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_OUT_OF_GAS};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _))
             .Times(14)
             .WillOnce(Return(expect_result_fail))
@@ -163,8 +163,8 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call empty, alternatively succeeds and fails") {
-        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};
-        ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS};
+        ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
+        ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_OUT_OF_GAS};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _))
             .Times(14)
             .WillOnce(Return(expect_result_ok))
@@ -188,11 +188,11 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call empty, alternatively succeeds and fails with intrinsic") {
-        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};
+        ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
         ExecutionResult expect_result_fail_pre_check{
             .pre_check_error = "intrinsic ",
             .pre_check_error_code = PreCheckErrorCode::kIntrinsicGasTooLow};
-        ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS};
+        ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_OUT_OF_GAS};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _))
             .Times(14)
             .WillOnce(Return(expect_result_ok))
@@ -217,8 +217,8 @@ TEST_CASE("estimate gas") {
 
     SECTION("Call with gas, always fails but succes last step") {
         call.gas = kTxGas * 4;
-        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};
-        ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS};
+        ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
+        ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_OUT_OF_GAS};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _))
             .Times(17)
             .WillOnce(Return(expect_result_fail))
@@ -246,7 +246,7 @@ TEST_CASE("estimate gas") {
 
     SECTION("Call with gas, always succeeds") {
         call.gas = kTxGas * 4;
-        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};
+        ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _))
             .Times(15)
             .WillRepeatedly(Return(expect_result_ok));
@@ -257,8 +257,8 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call with gas_price, gas not capped") {
-        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};
-        ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS};
+        ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
+        ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_OUT_OF_GAS};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{10'000};
 
@@ -287,8 +287,8 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call with gas_price, gas capped") {
-        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};
-        ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS};
+        ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
+        ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_OUT_OF_GAS};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{40'000};
 
@@ -314,8 +314,8 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call with gas_price and value, gas not capped") {
-        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};
-        ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS};
+        ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
+        ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_OUT_OF_GAS};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{10'000};
         call.value = intx::uint256{500'000'000};
@@ -345,8 +345,8 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call with gas_price and value, gas capped") {
-        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};
-        ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS};
+        ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
+        ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_OUT_OF_GAS};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{20'000};
         call.value = intx::uint256{500'000'000};
@@ -373,7 +373,7 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call gas above allowance, always succeeds, gas capped") {
-        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};
+        ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
         call.gas = kGasCap * 2;
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _)).Times(25).WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block, 244087591818874), boost::asio::use_future);
@@ -383,7 +383,7 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call gas below minimum, always succeeds") {
-        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS};
+        ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
         call.gas = kTxGas / 2;
 
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _)).Times(14).WillRepeatedly(Return(expect_result_ok));
@@ -394,7 +394,7 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call with too high value, exception") {
-        ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS};
+        ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_OUT_OF_GAS};
         call.value = intx::uint256{2'000'000'000};
 
         try {
@@ -415,7 +415,7 @@ TEST_CASE("estimate gas") {
         ExecutionResult expect_result_fail_pre_check{
             .pre_check_error = "insufficient funds",
             .pre_check_error_code = PreCheckErrorCode::kInsufficientFunds};
-        ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS};
+        ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_OUT_OF_GAS};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{20'000};
         call.value = intx::uint256{500'000'000};
@@ -442,7 +442,7 @@ TEST_CASE("estimate gas") {
         ExecutionResult expect_result_fail_pre_check{
             .pre_check_error = "insufficient funds",
             .pre_check_error_code = PreCheckErrorCode::kInsufficientFunds};
-        ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_OUT_OF_GAS, .data = data};
+        ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_OUT_OF_GAS, .data = data};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{20'000};
         call.value = intx::uint256{500'000'000};
@@ -468,7 +468,7 @@ TEST_CASE("estimate gas") {
         ExecutionResult expect_result_fail_pre_check{
             .pre_check_error = "insufficient funds",
             .pre_check_error_code = PreCheckErrorCode::kInsufficientFunds};
-        ExecutionResult expect_result_fail{.error_code = evmc_status_code::EVMC_INVALID_INSTRUCTION};
+        ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_INVALID_INSTRUCTION};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{20'000};
         call.value = intx::uint256{500'000'000};

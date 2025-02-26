@@ -100,7 +100,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
             }
 
             nlohmann::json reply;
-            if (call_execution_result.error_code == evmc_status_code::EVMC_SUCCESS) {
+            if (call_execution_result.status_code == evmc_status_code::EVMC_SUCCESS) {
                 if (rpc::compatibility::is_erigon_json_api_compatibility_required()) {
                     reply["value"] = silkworm::to_hex(call_execution_result.data);
                 } else {

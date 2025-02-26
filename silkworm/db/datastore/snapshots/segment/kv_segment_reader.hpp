@@ -159,9 +159,9 @@ class KVSegmentReader {
             Decoder& base_key_decoder = *(it_->first);
             Decoder& base_value_decoder = *(it_->second);
             // dynamic_cast is safe because TKeyDecoder was used when creating the Iterator
-            DecoderConcept auto& key_decoder = dynamic_cast<TKeyDecoder&>(base_key_decoder);
+            auto& key_decoder = dynamic_cast<TKeyDecoder&>(base_key_decoder);
             // dynamic_cast is safe because TValueDecoder was used when creating the Iterator
-            DecoderConcept auto& key_value_decoder = dynamic_cast<TValueDecoder&>(base_value_decoder);
+            auto& key_value_decoder = dynamic_cast<TValueDecoder&>(base_value_decoder);
             return {key_decoder.value, key_value_decoder.value};
         }
 
@@ -236,7 +236,7 @@ class KVSegmentKeysReader {
         value_type& value() const {
             Decoder& base_key_decoder = *(it_->first);
             // dynamic_cast is safe because TKeyDecoder was used when creating the Iterator
-            DecoderConcept auto& key_decoder = dynamic_cast<TKeyDecoder&>(base_key_decoder);
+            auto& key_decoder = dynamic_cast<TKeyDecoder&>(base_key_decoder);
             return key_decoder.value;
         }
 
@@ -310,7 +310,7 @@ class KVSegmentValuesReader {
         value_type& value() const {
             Decoder& base_value_decoder = *(it_->second);
             // dynamic_cast is safe because TValueDecoder was used when creating the Iterator
-            DecoderConcept auto& value_decoder = dynamic_cast<TValueDecoder&>(base_value_decoder);
+            auto& value_decoder = dynamic_cast<TValueDecoder&>(base_value_decoder);
             return value_decoder.value;
         }
 

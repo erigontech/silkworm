@@ -53,8 +53,6 @@
 #include "../common/encoding/sequence.hpp"
 #include "list_iterator.hpp"
 
-bool operator==(std::span<const uint64_t> lhs, std::span<const uint64_t> rhs);
-
 namespace silkworm::snapshots::elias_fano {
 
 //! 32-bit Elias-Fano (EF) list reader that can be used to decode one monotone non-decreasing sequence
@@ -91,10 +89,7 @@ class EliasFanoList32 {
     friend std::ostream& operator<<(std::ostream& os, const EliasFanoList32& ef);
 
     bool operator==(const EliasFanoList32& other) const {
-        return (count_ == other.count_) &&
-               (u_ == other.u_) /*&&
-               (data_ == other.data_)*/
-            ;
+        return (count_ == other.count_) && (u_ == other.u_) && std::ranges::equal(data_, other.data_);
     }
 
     static uint64_t total_words(uint64_t count, uint64_t max_value);

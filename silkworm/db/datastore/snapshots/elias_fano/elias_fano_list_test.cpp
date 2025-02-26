@@ -118,7 +118,7 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
             CHECK(x == ef_test.offsets[i]);
         }
 
-        CHECK(ef_list.data() == std::span<const uint64_t>(ef_test.expected_data));
+        CHECK(std::ranges::equal(ef_list.data(), ef_test.expected_data));
 
         std::stringstream str_stream;
         str_stream << ef_list;

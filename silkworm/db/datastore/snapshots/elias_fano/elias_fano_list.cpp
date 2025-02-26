@@ -56,18 +56,6 @@
 #include "../common/encoding/util.hpp"
 #include "elias_fano_common.hpp"
 
-bool operator==(const std::span<const uint64_t> lhs, const std::span<const uint64_t> rhs) {
-    if (lhs.size() != rhs.size()) {
-        return false;
-    }
-    for (size_t i = 0; i < lhs.size(); ++i) {
-        if (lhs[i] != rhs[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
 namespace silkworm::snapshots::elias_fano {
 
 EliasFanoList32 EliasFanoList32::from_encoded_data(std::span<const uint8_t> encoded_data) {

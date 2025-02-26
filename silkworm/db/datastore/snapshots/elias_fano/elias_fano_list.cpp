@@ -72,8 +72,6 @@ EliasFanoList32::EliasFanoList32(uint64_t count, uint64_t max_value, std::span<c
       data_{reinterpret_cast<const uint64_t*>(encoded_data.data()), EliasFanoList32::total_words(count, max_value)} {
     SILKWORM_ASSERT(EliasFanoList32::total_words(count, max_value) * sizeof(uint64_t) <= encoded_data.size());
     derive_fields();
-    // data = data.subspan(0, total_words * sizeof(uint64_t));
-    // std::copy(data.begin(), data.end(), reinterpret_cast<uint8_t*>(data_.data()));
 }
 
 uint64_t EliasFanoList32::at(size_t i) const {

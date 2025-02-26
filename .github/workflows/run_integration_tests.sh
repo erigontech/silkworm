@@ -40,6 +40,8 @@ debug_traceTransaction/test_91,\
 debug_traceTransaction/test_92,\
 debug_traceTransaction/test_96,\
 trace_replayBlockTransactions/test_29,\
+trace_transaction/test_44,\
+trace_transaction/test_47,\
 engine_
 
 failed_test=$?

@@ -26,7 +26,7 @@
 #include <silkworm/db/datastore/domain_get_latest_query.hpp>
 #include <silkworm/db/datastore/domain_range_as_of_query.hpp>
 #include <silkworm/db/datastore/history_get_query.hpp>
-#include <silkworm/db/datastore/history_range_query.hpp>
+#include <silkworm/db/datastore/history_range_in_period_query.hpp>
 #include <silkworm/db/datastore/inverted_index_range_by_key_query.hpp>
 #include <silkworm/db/datastore/kvdb/raw_codec.hpp>
 #include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
@@ -86,7 +86,7 @@ using ReceiptsHistoryGetQuery = RawHistoryGetQuery<state::kHistorySegmentAndIdxN
 using RawInvertedIndexRangeByKeyQuery = InvertedIndexRangeByKeyQuery<
     kvdb::RawEncoder<Bytes>, snapshots::RawEncoder<Bytes>>;  // TODO(canepat) try ByteView
 
-using RawHistoryRangeQuery = datastore::HistoryRangeQuery<
+using RawHistoryRangeInPeriodQuery = datastore::HistoryRangeInPeriodQuery<
     kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>, kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
 
 template <typename PageResult>
@@ -265,14 +265,14 @@ Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeQuery quer
     auto paginator = [this, query = std::move(query)](api::PaginatedKeysValues::PageToken) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         datastore::TimestampRange ts_range = as_datastore_ts_range({query.from_timestamp, query.to_timestamp}, !query.ascending_order);
         const auto entity_name = kTable2EntityNames.at(query.table);
-        RawHistoryRangeQuery store_query{
+        RawHistoryRangeInPeriodQuery store_query{
             entity_name,
             data_store_.chaindata,
             tx_,
             data_store_.state_repository_historical,
         };
         const size_t limit = (query.limit == kUnlimited) ? std::numeric_limits<size_t>::max() : static_cast<size_t>(query.limit);
-        std::vector<RawHistoryRangeQuery::ResultItem> kv_pair_sequence;
+        std::vector<RawHistoryRangeInPeriodQuery::ResultItem> kv_pair_sequence;
         // TODO: support pagination: apply page_size using std::views::chunk, save the range for future requests using page_token and return the first chunk
         auto kv_view = store_query.exec(ts_range, query.ascending_order) | std::views::take(limit);
         // TODO: avoid range copy using std::views::as_rvalue (C++23)

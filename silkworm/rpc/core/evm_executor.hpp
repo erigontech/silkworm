@@ -50,14 +50,14 @@ enum class PreCheckErrorCode {
 };
 
 struct ExecutionResult {
-    std::optional<int64_t> error_code;
+    std::optional<evmc_status_code> status_code;
     uint64_t gas_left{0};
     Bytes data;
     std::optional<std::string> pre_check_error{std::nullopt};
     std::optional<PreCheckErrorCode> pre_check_error_code{std::nullopt};
 
     bool success() const {
-        return ((error_code == std::nullopt || *error_code == evmc_status_code::EVMC_SUCCESS) && pre_check_error == std::nullopt);
+        return ((status_code == std::nullopt || *status_code == evmc_status_code::EVMC_SUCCESS) && pre_check_error == std::nullopt);
     }
 
     std::string error_message(bool full_error = true) const;

@@ -1,5 +1,5 @@
 /*
-   Copyright 2024 The Silkworm Authors
+   Copyright 2025 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,8 +14,20 @@
    limitations under the License.
 */
 
-#include "list_iterator.hpp"
+#pragma once
 
-namespace silkworm::snapshots::elias_fano {
+#include <optional>
 
-}  // namespace silkworm::snapshots::elias_fano
+#include <silkworm/core/common/bytes.hpp>
+
+#include "inverted_index.hpp"
+
+namespace silkworm::snapshots {
+
+struct InvertedIndexLowerBoundKeyOffsetSegmentQuery {
+    InvertedIndex entity;
+
+    std::optional<size_t> exec(ByteView key);
+};
+
+}  // namespace silkworm::snapshots

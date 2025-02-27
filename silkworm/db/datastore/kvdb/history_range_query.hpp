@@ -145,7 +145,8 @@ struct HistoryRangeQuery {
                std::views::transform(std::move(seek_func)) |
                silkworm::views::caching |
                std::views::filter(as_bool_predicate<std::shared_ptr<ROCursor>>) |
-               std::views::transform(kv_pair_from_cursor_func(entity.has_large_values));
+               std::views::transform(kv_pair_from_cursor_func(entity.has_large_values)) |
+               silkworm::views::caching;
     }
 
     auto exec(TimestampRange ts_range, bool ascending) {

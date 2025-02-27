@@ -19,6 +19,7 @@
 #include <silkworm/core/common/assert.hpp>
 
 #include "common/pair_get.hpp"
+#include "common/ranges/caching_view.hpp"
 #include "common/ranges/merge_unique_view.hpp"
 #include "kvdb/database.hpp"
 #include "kvdb/domain_range_latest_query.hpp"
@@ -86,7 +87,7 @@ struct DomainRangeLatestQuery {
         return ResultItem{std::move(key), std::move(value)};
     }
 
-    static constexpr auto kDecodeKVPairFunc = [](std::pair<Bytes, Bytes>&& kv_pair) -> ResultItem {
+    static constexpr auto kDecodeKVPairFunc = [](std::pair<Bytes, Bytes>& kv_pair) -> ResultItem {
         return decode_kv_pair(std::move(kv_pair));
     };
 
@@ -99,7 +100,8 @@ struct DomainRangeLatestQuery {
                    silkworm::views::MergeUniqueCompareFunc{},
                    PairGetFirst<Bytes, Bytes>{},
                    PairGetFirst<Bytes, Bytes>{}) |
-               std::views::transform(kDecodeKVPairFunc);
+               std::views::transform(kDecodeKVPairFunc) |
+               silkworm::views::caching;
     }
 
   private:

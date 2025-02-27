@@ -33,11 +33,11 @@
 namespace silkworm::views {
 
 template <
-    std::ranges::input_range Range,
-    class Container = std::vector<Range>,
+    std::ranges::input_range Ranges,
+    std::ranges::input_range Range = std::iter_value_t<std::ranges::iterator_t<Ranges>>,
     class Comp = MergeUniqueCompareFunc,
     class Proj = std::identity>
-class MergeUniqueManyView : public std::ranges::view_interface<MergeUniqueManyView<Range, Container, Comp, Proj>> {
+class MergeUniqueManyView : public std::ranges::view_interface<MergeUniqueManyView<Range, Ranges, Comp, Proj>> {
   public:
     class Iterator {
       public:
@@ -54,11 +54,11 @@ class MergeUniqueManyView : public std::ranges::view_interface<MergeUniqueManyVi
 
         Iterator() = default;
         Iterator(
-            Container& ranges,
+            Ranges& ranges,
             const Comp* comp, Proj proj)
             : comp_{comp},
               proj_{std::move(proj)} {
-            for (auto& range : ranges) {
+            for (auto&& range : ranges) {
                 iterators_.emplace_back(std::ranges::begin(range));
                 sentinels_.emplace_back(std::ranges::end(range));
             }
@@ -153,7 +153,7 @@ class MergeUniqueManyView : public std::ranges::view_interface<MergeUniqueManyVi
     static_assert(std::input_iterator<Iterator>);
 
     MergeUniqueManyView(
-        Container ranges,
+        Ranges ranges,
         Comp comp, Proj proj)
         : ranges_{std::move(ranges)},
           comp_{std::move(comp)},
@@ -167,21 +167,21 @@ class MergeUniqueManyView : public std::ranges::view_interface<MergeUniqueManyVi
     std::default_sentinel_t end() const { return std::default_sentinel; }
 
   private:
-    Container ranges_;
+    Ranges ranges_;
     Comp comp_;
     Proj proj_;
 };
 
 template <
-    class Range,
-    class Container = std::vector<Range>,
+    class Ranges,
+    class Range = std::iter_value_t<std::ranges::iterator_t<Ranges>>,
     class Comp = MergeUniqueCompareFunc,
     class Proj = std::identity>
-MergeUniqueManyView<Range, Container, Comp, Proj> merge_unique_many(
-    Container&& ranges,
+MergeUniqueManyView<Ranges, Range, Comp, Proj> merge_unique_many(
+    Ranges&& ranges,
     Comp comp = {}, Proj proj = {}) {
-    return MergeUniqueManyView<Range, Container, Comp, Proj>{
-        std::forward<Container>(ranges),
+    return MergeUniqueManyView<Ranges, Range, Comp, Proj>{
+        std::forward<Ranges>(ranges),
         std::move(comp),
         std::move(proj),
     };

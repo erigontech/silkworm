@@ -23,8 +23,8 @@
 
 namespace silkworm::views {
 
-static_assert(std::ranges::input_range<MergeUniqueManyView<std::vector<int>>>);
-static_assert(std::ranges::view<MergeUniqueManyView<std::vector<int>>>);
+static_assert(std::ranges::input_range<MergeUniqueManyView<std::vector<std::vector<int>>>>);
+static_assert(std::ranges::view<MergeUniqueManyView<std::vector<std::vector<int>>>>);
 
 template <std::ranges::input_range TRange>
 std::vector<TRange> ranges(TRange r1, TRange r2) {
@@ -35,24 +35,22 @@ std::vector<TRange> ranges(TRange r1, TRange r2) {
 }
 
 TEST_CASE("MergeUniqueManyView") {
-    using VectorRange = silkworm::ranges::OwningView<std::vector<int>>;
-
-    CHECK(vector_from_range(merge_unique_many<VectorRange>(ranges(
+    CHECK(vector_from_range(merge_unique_many(ranges(
               silkworm::ranges::owning_view(std::vector<int>{1, 2, 3}),
               silkworm::ranges::owning_view(std::vector<int>{2, 3, 4})))) ==
           std::vector<int>{1, 2, 3, 4});
 
-    CHECK(vector_from_range(merge_unique_many<VectorRange>(ranges(
+    CHECK(vector_from_range(merge_unique_many(ranges(
               silkworm::ranges::owning_view(std::vector<int>{1, 2, 3, 4, 5}),
               silkworm::ranges::owning_view(std::vector<int>{3, 4, 5, 6, 7})))) ==
           std::vector<int>{1, 2, 3, 4, 5, 6, 7});
 
-    CHECK(vector_from_range(merge_unique_many<VectorRange>(ranges(
+    CHECK(vector_from_range(merge_unique_many(ranges(
               silkworm::ranges::owning_view(std::vector<int>{1, 2, 3, 4, 5, 5, 5}),
               silkworm::ranges::owning_view(std::vector<int>{3, 4, 5, 6, 7})))) ==
           std::vector<int>{1, 2, 3, 4, 5, 6, 7});
 
-    CHECK(vector_from_range(merge_unique_many<VectorRange>(ranges(
+    CHECK(vector_from_range(merge_unique_many(ranges(
               silkworm::ranges::owning_view(std::vector<int>{0, 2, 2, 2, 4, 5, 6, 6, 7, 7}),
               silkworm::ranges::owning_view(std::vector<int>{0, 0, 1, 2, 3, 5, 5, 6, 8, 9})))) ==
           std::vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
@@ -60,23 +58,21 @@ TEST_CASE("MergeUniqueManyView") {
     using IntPredicate = std::function<bool(int)>;
     IntPredicate even = [](int x) { return x % 2 == 0; };
     IntPredicate odd = [](int x) { return x % 2 == 1; };
-    using VectorRangeFiltered = std::ranges::filter_view<VectorRange, IntPredicate>;
-    CHECK(vector_from_range(merge_unique_many<VectorRangeFiltered>(ranges(
+    CHECK(vector_from_range(merge_unique_many(ranges(
               silkworm::ranges::owning_view(std::vector<int>{1, 2, 3}) | std::views::filter(even),
               silkworm::ranges::owning_view(std::vector<int>{2, 3, 4}) | std::views::filter(odd)))) ==
           std::vector<int>{2, 3});
-    CHECK(vector_from_range(merge_unique_many<VectorRangeFiltered>(ranges(
+    CHECK(vector_from_range(merge_unique_many(ranges(
               silkworm::ranges::owning_view(std::vector<int>{1, 2, 3}) | std::views::filter(odd),
               silkworm::ranges::owning_view(std::vector<int>{2, 3, 4}) | std::views::filter(even)))) ==
           std::vector<int>{1, 2, 3, 4});
 
-    CHECK(vector_from_range(merge_unique_many<VectorRange>(ranges(std::vector<int>{}, std::vector<int>{}))).empty());
-    CHECK(vector_from_range(merge_unique_many<VectorRange>(ranges(silkworm::ranges::owning_view(std::vector<int>{1, 2, 3}), silkworm::ranges::owning_view(std::vector<int>{})))) == std::vector<int>{1, 2, 3});
-    CHECK(vector_from_range(merge_unique_many<VectorRange>(ranges(silkworm::ranges::owning_view(std::vector<int>{}), silkworm::ranges::owning_view(std::vector<int>{2, 3, 4})))) == std::vector<int>{2, 3, 4});
+    CHECK(vector_from_range(merge_unique_many(ranges(std::vector<int>{}, std::vector<int>{}))).empty());
+    CHECK(vector_from_range(merge_unique_many(ranges(silkworm::ranges::owning_view(std::vector<int>{1, 2, 3}), silkworm::ranges::owning_view(std::vector<int>{})))) == std::vector<int>{1, 2, 3});
+    CHECK(vector_from_range(merge_unique_many(ranges(silkworm::ranges::owning_view(std::vector<int>{}), silkworm::ranges::owning_view(std::vector<int>{2, 3, 4})))) == std::vector<int>{2, 3, 4});
 
     using IntToVectorFunc = std::function<std::vector<int>(int)>;
-    using VectorTransformJoinRange = std::ranges::join_view<std::ranges::transform_view<VectorRange, IntToVectorFunc>>;
-    CHECK(vector_from_range(merge_unique_many<VectorTransformJoinRange>(ranges(
+    CHECK(vector_from_range(merge_unique_many(ranges(
               silkworm::ranges::owning_view(std::vector<int>{1, 2, 3}) | std::views::transform(IntToVectorFunc{[](int v) { return std::vector<int>{v, v, v}; }}) | std::views::join,
               silkworm::ranges::owning_view(std::vector<int>{4, 4, 4}) | std::views::transform(IntToVectorFunc{[](int v) { return std::vector<int>{v}; }}) | std::views::join))) ==
           std::vector<int>{1, 2, 3, 4});

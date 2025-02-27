@@ -33,7 +33,7 @@
 namespace silkworm::datastore::kvdb {
 
 template <DecoderConcept TKeyDecoder, DecoderConcept TValueDecoder>
-struct HistoryRangeQuery {
+struct HistoryRangeInPeriodQuery {
     ROTxn& tx;
     History entity;
 

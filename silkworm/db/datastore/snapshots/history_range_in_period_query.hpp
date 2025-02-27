@@ -30,9 +30,9 @@
 namespace silkworm::snapshots {
 
 template <DecoderConcept TKeyDecoder, DecoderConcept TValueDecoder>
-struct HistoryRangeSegmentQuery {
-    explicit HistoryRangeSegmentQuery(History entity) : entity_{entity} {}
-    HistoryRangeSegmentQuery(const SnapshotBundle& bundle, datastore::EntityName entity_name)
+struct HistoryRangeInPeriodSegmentQuery {
+    explicit HistoryRangeInPeriodSegmentQuery(History entity) : entity_{entity} {}
+    HistoryRangeInPeriodSegmentQuery(const SnapshotBundle& bundle, datastore::EntityName entity_name)
         : entity_{bundle.history(entity_name)} {}
 
     using Key = decltype(TKeyDecoder::value);
@@ -89,8 +89,8 @@ struct HistoryRangeSegmentQuery {
 };
 
 template <DecoderConcept TKeyDecoder, DecoderConcept TValueDecoder>
-struct HistoryRangeQuery {
-    HistoryRangeQuery(
+struct HistoryRangeInPeriodQuery {
+    HistoryRangeInPeriodQuery(
         const SnapshotRepositoryROAccess& repository,
         datastore::EntityName entity_name)
         : repository_{repository},
@@ -104,7 +104,7 @@ struct HistoryRangeQuery {
         SILKWORM_ASSERT(ascending);  // descending is not implemented
 
         auto results_in_bundle = [entity_name = entity_name_, ts_range, ascending](const std::shared_ptr<SnapshotBundle>& bundle) {
-            HistoryRangeSegmentQuery<TKeyDecoder, TValueDecoder> query{*bundle, entity_name};
+            HistoryRangeInPeriodSegmentQuery<TKeyDecoder, TValueDecoder> query{*bundle, entity_name};
             return query.exec(ts_range, ascending);
         };
 

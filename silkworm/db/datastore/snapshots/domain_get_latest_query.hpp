@@ -53,7 +53,8 @@ struct DomainGetLatestSegmentQuery {
         }
 
         TValueDecoder value_decoder;
-        value_decoder.decode_word(*value_data);
+        BytesOrByteView value{std::move(*value_data)};
+        value_decoder.decode_word(value);
         return std::move(value_decoder.value);
     }
 

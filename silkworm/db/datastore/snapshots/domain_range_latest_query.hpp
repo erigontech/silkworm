@@ -84,11 +84,13 @@ struct DomainRangeLatestQuery {
         }
 
         TKeyDecoder key_decoder;
-        key_decoder.decode_word(kv_pair.first);
+        BytesOrByteView key_byte_sequence{std::move(kv_pair.first)};
+        key_decoder.decode_word(key_byte_sequence);
         ResultItemKey& key = key_decoder.value;
 
         TValueDecoder value_decoder;
-        value_decoder.decode_word(kv_pair.second);
+        BytesOrByteView value_byte_sequence{std::move(kv_pair.second)};
+        value_decoder.decode_word(value_byte_sequence);
         ResultItemValue& value = value_decoder.value;
 
         return ResultItem{std::move(key), std::move(value)};

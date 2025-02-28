@@ -69,9 +69,10 @@ struct AccountSnapshotsCodec : public snapshots::Codec {
         return word;
     }
 
-    void decode_word(Bytes& input_word) override {
-        if (!input_word.empty()) {
-            value = unwrap_or_throw(AccountCodec::from_encoded_storage_v3(input_word),
+    void decode_word(BytesOrByteView& input_word) override {
+        const auto input_word_view = input_word.byte_view();
+        if (!input_word_view.empty()) {
+            value = unwrap_or_throw(AccountCodec::from_encoded_storage_v3(input_word_view),
                                     "AccountSnapshotsCodec failed to decode Account");
         } else {
             value.reset();

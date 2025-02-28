@@ -48,7 +48,6 @@
 #include <bit>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -156,7 +155,7 @@ std::optional<std::pair<size_t, uint64_t>> EliasFanoList32::seek([[maybe_unused]
 
     uint64_t hi = v >> l_;
     IndexRange index_range{0, count_};
-    IndexRange::Iterator start_it = std::ranges::partition_point(index_range, [=, this](size_t i) -> bool {
+    IndexRange::Iterator start_it = std::ranges::partition_point(index_range, [reverse, last, hi, this](size_t i) -> bool {
         return reverse ? (upper(last - i) > hi) : (upper(i) < hi);
     });
 
@@ -215,10 +214,9 @@ uint64_t EliasFanoList32::derive_fields() {
     uint64_t words_upper_bits = (count_ + (u_ >> l_) + 63) / 64;
     uint64_t jump_words = jump_size_words(count_);
     uint64_t total_words = words_lower_bits + words_upper_bits + jump_words;
-    // data_ = std::span<const uint64_t>{data_.data(), total_words};
-    lower_bits_ = std::span<const uint64_t>{data_.data(), words_lower_bits};
-    upper_bits_ = std::span<const uint64_t>{data_.data() + words_lower_bits, words_upper_bits};
-    jump_ = std::span<const uint64_t>{data_.data() + words_lower_bits + words_upper_bits, jump_words};
+    lower_bits_ = data_.subspan(0, words_lower_bits);
+    upper_bits_ = data_.subspan(words_lower_bits, words_upper_bits);
+    jump_ = data_.subspan(words_lower_bits + words_upper_bits, jump_words);
 
     return total_words;
 }

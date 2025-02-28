@@ -61,7 +61,8 @@ struct HistoryRangeSegmentQuery {
 
         // return the key-value pair
         TKeyDecoder key_decoder;
-        key_decoder.decode_word(key_data);
+        BytesOrByteView key{std::move(key_data)};
+        key_decoder.decode_word(key);
         return ResultItem{std::move(key_decoder.value), std::move(*value_opt)};
     }
 

@@ -121,7 +121,6 @@ class EliasFanoList32 {
     //! The strict upper bound on the EF data points, i.e. max + 1
     uint64_t u_{0};
     uint64_t l_{0};
-    uint64_t i_{0};
     std::span<const uint64_t> data_;
 };
 

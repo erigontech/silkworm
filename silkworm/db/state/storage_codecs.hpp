@@ -59,10 +59,11 @@ struct Bytes32SnapshotsCodec : public snapshots::Codec {
     ByteView encode_word() override {
         return ByteView{value.bytes};
     }
-    void decode_word(Bytes& word) override {
-        if (word.size() < sizeof(value.bytes))
+    void decode_word(BytesOrByteView& word) override {
+        auto word_view = word.byte_view();
+        if (word_view.size() < sizeof(value.bytes))
             throw std::runtime_error{"Bytes32SnapshotsCodec failed to decode"};
-        std::memcpy(value.bytes, word.data(), sizeof(value.bytes));
+        std::memcpy(value.bytes, word_view.data(), sizeof(value.bytes));
     }
 };
 static_assert(snapshots::EncoderConcept<Bytes32SnapshotsCodec>);
@@ -74,10 +75,11 @@ struct PackedBytes32SnapshotsCodec : public snapshots::Codec {
     ByteView encode_word() override {
         return silkworm::zeroless_view(ByteView{value});
     }
-    void decode_word(Bytes& word) override {
-        if (word.size() > sizeof(value.bytes))
+    void decode_word(BytesOrByteView& word) override {
+        auto word_view = word.byte_view();
+        if (word_view.size() > sizeof(value.bytes))
             throw std::runtime_error{"PackedBytes32SnapshotsCodec failed to decode"};
-        value = silkworm::to_bytes32(word);
+        value = silkworm::to_bytes32(word_view);
     }
 };
 static_assert(snapshots::EncoderConcept<PackedBytes32SnapshotsCodec>);
@@ -117,7 +119,7 @@ struct StorageAddressAndLocationSnapshotsCodec : public snapshots::Codec {
     ~StorageAddressAndLocationSnapshotsCodec() override = default;
 
     ByteView encode_word() override;
-    void decode_word(Bytes& input_word) override;
+    void decode_word(BytesOrByteView& input_word) override;
 };
 static_assert(snapshots::EncoderConcept<StorageAddressAndLocationSnapshotsCodec>);
 static_assert(snapshots::DecoderConcept<StorageAddressAndLocationSnapshotsCodec>);

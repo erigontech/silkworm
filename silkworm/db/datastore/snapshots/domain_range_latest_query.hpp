@@ -77,6 +77,10 @@ struct DomainRangeLatestQuery {
     using ResultItemKey = decltype(TKeyDecoder::value);
     using ResultItemValue = decltype(TValueDecoder::value);
     using ResultItem = std::pair<ResultItemKey, ResultItemValue>;
+    using Word1 = typename TKeyDecoder::Word;
+    using Word2 = typename TValueDecoder::Word;
+    static_assert(std::same_as<Word1, Word2>);
+    using Word = Word1;
 
     static ResultItem decode_kv_pair(std::pair<Bytes, Bytes>&& kv_pair) {
         if constexpr (std::same_as<ResultItem, std::pair<Bytes, Bytes>>) {
@@ -84,13 +88,13 @@ struct DomainRangeLatestQuery {
         }
 
         TKeyDecoder key_decoder;
-        BytesOrByteView key_byte_sequence{std::move(kv_pair.first)};
-        key_decoder.decode_word(key_byte_sequence);
+        Word key_byte_word{std::move(kv_pair.first)};
+        key_decoder.decode_word(key_byte_word);
         ResultItemKey& key = key_decoder.value;
 
         TValueDecoder value_decoder;
-        BytesOrByteView value_byte_sequence{std::move(kv_pair.second)};
-        value_decoder.decode_word(value_byte_sequence);
+        Word value_byte_word{std::move(kv_pair.second)};
+        value_decoder.decode_word(value_byte_word);
         ResultItemValue& value = value_decoder.value;
 
         return ResultItem{std::move(key), std::move(value)};

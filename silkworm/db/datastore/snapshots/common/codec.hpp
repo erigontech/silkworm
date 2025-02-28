@@ -35,7 +35,8 @@ concept EncoderConcept =
 
 struct Decoder {
     virtual ~Decoder() = default;
-    virtual void decode_word(BytesOrByteView& word) = 0;  // this allows word to be moved after decoding
+    using Word = BytesOrByteView;
+    virtual void decode_word(Word& word) = 0;  // this allows word to be moved after decoding
     virtual void check_sanity_with_metadata(const SnapshotPath& /*path*/) {}
 };
 

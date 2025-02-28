@@ -58,6 +58,11 @@ struct DomainRangeLatestQuery {
     static_assert(std::same_as<Key1, Key2>);
     using Key = Key1;
 
+    using Word1 = typename TKeyDecoder2::Word;
+    using Word2 = typename TValueDecoder2::Word;
+    static_assert(std::same_as<Word1, Word2>);
+    using Word = Word1;
+
     using ResultItemKey1 = decltype(TKeyDecoder1::value);
     using ResultItemKey2 = decltype(TKeyDecoder2::value);
     static_assert(std::same_as<ResultItemKey1, ResultItemKey2>);
@@ -76,13 +81,13 @@ struct DomainRangeLatestQuery {
         }
 
         TKeyDecoder2 key_decoder;
-        BytesOrByteView key_byte_sequence{std::move(kv_pair.first)};
-        key_decoder.decode_word(key_byte_sequence);
+        Word key_byte_word{std::move(kv_pair.first)};
+        key_decoder.decode_word(key_byte_word);
         ResultItemKey& key = key_decoder.value;
 
         TValueDecoder2 value_decoder;
-        BytesOrByteView value_byte_sequence{std::move(kv_pair.second)};
-        value_decoder.decode_word(value_byte_sequence);
+        Word value_byte_word{std::move(kv_pair.second)};
+        value_decoder.decode_word(value_byte_word);
         ResultItemValue& value = value_decoder.value;
 
         return ResultItem{std::move(key), std::move(value)};

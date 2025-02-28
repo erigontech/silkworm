@@ -26,7 +26,7 @@ struct EliasFanoDecoder : public snapshots::Decoder {
 
     ~EliasFanoDecoder() override = default;
 
-    void decode_word(BytesOrByteView& word) override {
+    void decode_word(Word& word) override {
         if (word.holds_bytes()) {
             auto word_value = std::get<Bytes>(word);
             value = EliasFanoList32::from_encoded_data(word_value);

@@ -48,7 +48,7 @@ struct HeaderSegmentWordDecoder : public Decoder {
 
     ~HeaderSegmentWordDecoder() override = default;
 
-    void decode_word(BytesOrByteView& word) override {
+    void decode_word(Word& word) override {
         decode_word_into_header(word.byte_view(), value);
     }
 

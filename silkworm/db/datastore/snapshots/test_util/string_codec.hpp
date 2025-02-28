@@ -34,7 +34,7 @@ struct StringCodec : public Codec {
         word = string_to_bytes(value);
         return word;
     }
-    void decode_word(BytesOrByteView& input_word) override {
+    void decode_word(Word& input_word) override {
         if (input_word.holds_bytes()) {
             value = bytes_to_string(std::move(std::get<Bytes>(input_word)));
         } else {

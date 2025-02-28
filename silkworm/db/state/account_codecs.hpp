@@ -69,7 +69,7 @@ struct AccountSnapshotsCodec : public snapshots::Codec {
         return word;
     }
 
-    void decode_word(BytesOrByteView& input_word) override {
+    void decode_word(Word& input_word) override {
         const auto input_word_view = input_word.byte_view();
         if (!input_word_view.empty()) {
             value = unwrap_or_throw(AccountCodec::from_encoded_storage_v3(input_word_view),

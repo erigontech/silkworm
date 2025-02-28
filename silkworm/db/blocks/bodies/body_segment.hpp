@@ -48,7 +48,7 @@ struct BodySegmentWordDecoder : public Decoder {
 
     ~BodySegmentWordDecoder() override = default;
 
-    void decode_word(BytesOrByteView& word) override {
+    void decode_word(Word& word) override {
         decode_word_into_body(word.byte_view(), value);
     }
 };

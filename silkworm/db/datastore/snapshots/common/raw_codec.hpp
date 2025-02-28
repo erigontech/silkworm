@@ -27,7 +27,7 @@ template <BytesOrByteViewConcept TBytes>
 struct RawDecoder : public Decoder {
     TBytes value;
     ~RawDecoder() override = default;
-    void decode_word(BytesOrByteView& word) override {
+    void decode_word(Word& word) override {
         if (word.holds_bytes()) {
             value = std::move(std::get<Bytes>(word));  // TODO(canepat) BytesOrByteView vs TBytes
         } else {

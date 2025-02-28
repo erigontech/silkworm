@@ -224,7 +224,6 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     });
 
     txn_id++;  // query db on next txn
-    db::state::VarintSnapshotsDecoder varint;
 
     db::kv::api::GetAsOfQuery query_cumulative_gas{
         .table = db::table::kReceiptDomain,
@@ -236,6 +235,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
         co_return std::nullopt;
     }
 
+    db::state::VarintSnapshotsDecoder varint;
     BytesOrByteView value1{std::move(result.value)};
     varint.decode_word(value1);
     auto first_cumulative_gas_used_in_tx = varint.value;

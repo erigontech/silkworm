@@ -26,13 +26,13 @@
 
 #include <silkworm/core/common/assert.hpp>
 
-#include "merge_unique_compare_func.hpp"
+#include "merge_compare_func.hpp"
 
 namespace silkworm::views {
 
 template <
     std::ranges::input_range Range1, std::ranges::input_range Range2,
-    class Comp = MergeUniqueCompareFunc,
+    class Comp = MergeCompareFunc,
     class Proj1 = std::identity, class Proj2 = std::identity>
 class MergeUniqueView : public std::ranges::view_interface<MergeUniqueView<Range1, Range2, Comp, Proj1, Proj2>> {
   public:
@@ -176,7 +176,7 @@ class MergeUniqueView : public std::ranges::view_interface<MergeUniqueView<Range
 
 template <
     class Range1, class Range2,
-    class Comp = MergeUniqueCompareFunc,
+    class Comp = MergeCompareFunc,
     class Proj1 = std::identity, class Proj2 = std::identity>
 MergeUniqueView<Range1, Range2, Comp, Proj1, Proj2> merge_unique(
     Range1&& v1, Range2&& v2,

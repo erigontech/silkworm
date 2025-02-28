@@ -89,7 +89,7 @@ struct DomainRangeLatestQuery {
 
         return std::ranges::subrange{std::move(begin_it), CursorKVIteratorRaw{}} |
                std::views::transform([](auto&& kvts_pair) { return std::pair<ByteView, ByteView>{kvts_pair.first.key.value, kvts_pair.second.value.value}; }) |
-               silkworm::views::unique<silkworm::views::MergeUniqueCompareFunc, PairGetFirst<ByteView, ByteView>> |  // filter out duplicate keys when has_large_values
+               silkworm::views::unique<silkworm::views::MergeCompareFunc, PairGetFirst<ByteView, ByteView>> |  // filter out duplicate keys when has_large_values
                std::views::take_while(std::move(before_key_end_predicate)) |
                std::views::transform(kDecodeKVPairFunc) |
                silkworm::views::caching;

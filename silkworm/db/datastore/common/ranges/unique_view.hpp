@@ -22,11 +22,11 @@ namespace silkworm::views {
 
 template <
     std::ranges::input_range TRange,
-    class Comp = MergeUniqueCompareFunc,
+    class Comp = MergeCompareFunc,
     class Proj = std::identity>
 using UniqueView = MergeUniqueView<TRange, std::ranges::empty_view<std::iter_value_t<std::ranges::iterator_t<TRange>>>, Comp, Proj, Proj>;
 
-template <class Comp = MergeUniqueCompareFunc, class Proj = std::identity>
+template <class Comp = MergeCompareFunc, class Proj = std::identity>
 struct UniqueViewFactory {
     template <class TRange>
     constexpr UniqueView<TRange, Comp, Proj> operator()(
@@ -41,7 +41,7 @@ struct UniqueViewFactory {
     }
 };
 
-template <class Comp = MergeUniqueCompareFunc, class Proj = std::identity>
+template <class Comp = MergeCompareFunc, class Proj = std::identity>
 inline constexpr UniqueViewFactory<Comp, Proj> unique;
 
 }  // namespace silkworm::views

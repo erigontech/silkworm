@@ -20,6 +20,7 @@
 
 #include "../common/entity_name.hpp"
 #include "../common/ranges/caching_view.hpp"
+#include "../common/ranges/merge_many_view.hpp"
 #include "../common/ranges/owning_view.hpp"
 #include "../common/timestamp.hpp"
 #include "common/raw_codec.hpp"
@@ -108,9 +109,13 @@ struct HistoryRangeInPeriodQuery {
             return query.exec(ts_range, ascending);
         };
 
-        return silkworm::ranges::owning_view(repository_.bundles_intersecting_range(ts_range, ascending)) |
-               std::views::transform(std::move(results_in_bundle)) |
-               std::views::join;
+        auto bundle_results = silkworm::ranges::owning_view(repository_.bundles_intersecting_range(ts_range, ascending)) |
+                              std::views::transform(std::move(results_in_bundle));
+
+        return silkworm::views::merge_many(
+            std::move(bundle_results),
+            silkworm::views::MergeCompareFunc{},
+            PairGetFirst<Key, Value>{});
     }
 
   private:

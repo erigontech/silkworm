@@ -101,7 +101,7 @@ struct DomainRangeLatestQuery {
         return silkworm::views::merge_unique(
                    query1_.exec(key_start, key_end, ascending),
                    query2_.exec(key_start, key_end, ascending),
-                   silkworm::views::MergeUniqueCompareFunc{},
+                   silkworm::views::MergeCompareFunc{},
                    PairGetFirst<Bytes, Bytes>{},
                    PairGetFirst<Bytes, Bytes>{}) |
                std::views::transform(kDecodeKVPairFunc) |

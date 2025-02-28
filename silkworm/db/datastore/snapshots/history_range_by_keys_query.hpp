@@ -27,7 +27,7 @@
 #include "../common/entity_name.hpp"
 #include "../common/pair_get.hpp"
 #include "../common/ranges/caching_view.hpp"
-#include "../common/ranges/merge_unique_many_view.hpp"
+#include "../common/ranges/merge_many_view.hpp"
 #include "../common/ranges/owning_view.hpp"
 #include "common/codec.hpp"
 #include "history.hpp"
@@ -160,7 +160,7 @@ struct HistoryRangeByKeysQuery {
 
         auto results = silkworm::views::merge_unique_many(
             std::move(bundle_results),
-            silkworm::views::MergeUniqueCompareFunc{},
+            silkworm::views::MergeCompareFunc{},
             PairGetFirst<HistoryRangeByKeysSegmentQuery::ResultItem::first_type, HistoryRangeByKeysSegmentQuery::ResultItem::second_type>{});
 
         return silkworm::ranges::owning_view(std::move(results)) |

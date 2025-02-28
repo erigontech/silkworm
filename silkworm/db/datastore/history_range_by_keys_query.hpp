@@ -99,7 +99,7 @@ struct HistoryRangeByKeysQuery {
         return silkworm::views::merge_unique(
                    query2_.exec(key_start, key_end, timestamp, ascending),
                    query1_.exec(key_start, key_end, timestamp, ascending),
-                   silkworm::views::MergeUniqueCompareFunc{},
+                   silkworm::views::MergeCompareFunc{},
                    PairGetFirst<Bytes, Bytes>{},
                    PairGetFirst<Bytes, Bytes>{}) |
                std::views::transform(kDecodeKVPairFunc) |

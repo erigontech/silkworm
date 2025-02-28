@@ -37,6 +37,7 @@ struct DomainGetLatestSegmentQuery {
 
     using Key = decltype(TKeyEncoder::value);
     using Value = decltype(TValueDecoder::value);
+    using Word = typename TValueDecoder::Word;
 
     std::optional<Value> exec(const Key& key) {
         TKeyEncoder key_encoder;
@@ -53,7 +54,8 @@ struct DomainGetLatestSegmentQuery {
         }
 
         TValueDecoder value_decoder;
-        value_decoder.decode_word(*value_data);
+        Word value{std::move(*value_data)};
+        value_decoder.decode_word(value);
         return std::move(value_decoder.value);
     }
 

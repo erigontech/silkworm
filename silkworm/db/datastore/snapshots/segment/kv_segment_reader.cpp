@@ -21,7 +21,6 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::snapshots::segment {
 

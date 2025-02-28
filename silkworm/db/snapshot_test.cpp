@@ -61,7 +61,7 @@ TEST_CASE("Snapshot::for_each_item", "[silkworm][node][snapshot][snapshot]") {
     seg::Decompressor decoder{hello_world_snapshot_file.fs_path()};
     auto it = decoder.begin();
     auto& word = *it;
-    CHECK(std::string{word.cbegin(), word.cend()} == "hello, world");
+    CHECK(byte_view_to_string_view(word.byte_view()) == "hello, world");
     CHECK(it.current_word_offset() == 0);
     CHECK(++it == decoder.end());
 }

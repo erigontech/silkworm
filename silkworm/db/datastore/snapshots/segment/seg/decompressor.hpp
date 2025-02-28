@@ -202,12 +202,14 @@ class Decompressor {
         //! Extract one *compressed* word from current offset in the file and append it to buffer
         //! After extracting current word, move at the beginning of the next one
         //! @return the next word position
+        //! @warning full data copy into buffer happens here
         uint64_t next_compressed(Bytes& buffer);
 
-        //! Extract one *uncompressed* word from current offset in the file and append it to buffer
+        //! Extract one *uncompressed* word *view* from current offset in the file and return it in buffer view
         //! After extracting current word, move at the beginning of the next one
         //! @return the next word position
-        uint64_t next_uncompressed(Bytes& buffer);
+        //! @warning no data copy happens here
+        uint64_t next_uncompressed(ByteView& buffer_view);
 
         //! Move at the offset of the next *compressed* word skipping current one
         //! @return the next word position
@@ -231,7 +233,7 @@ class Decompressor {
 
         using iterator_category [[maybe_unused]] = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
-        using value_type = Bytes;
+        using value_type = BytesOrByteView;
         using pointer = value_type*;
         using reference = value_type&;
 
@@ -274,7 +276,7 @@ class Decompressor {
         uint8_t bit_position_{0};
 
         //! Last extracted word
-        Bytes current_word_;
+        value_type current_word_;
 
         std::shared_ptr<ReadModeGuard> read_mode_guard_;
 

@@ -41,11 +41,11 @@ TxsAndBodiesSegmentQuery::Iterator::Iterator(
       expected_tx_count_(expected_tx_count),
       log_title_(std::move(log_title)) {
     value_.block_num = first_block_num;
-    value_.body_rlp = *body_it_;
+    value_.body_rlp = body_it_->byte_view();
     if (!value_.body_rlp.empty()) {
         decode_body_rlp(value_.body_rlp, value_.body);
     }
-    value_.tx_buffer = *tx_it_;
+    value_.tx_buffer = tx_it_->byte_view();
 }
 
 void TxsAndBodiesSegmentQuery::Iterator::skip_bodies_until_tx_id(uint64_t tx_id) {
@@ -55,7 +55,7 @@ void TxsAndBodiesSegmentQuery::Iterator::skip_bodies_until_tx_id(uint64_t tx_id)
             throw std::runtime_error{log_title_ + " not enough bodies"};
         }
         ++value_.block_num;
-        value_.body_rlp = *body_it_;
+        value_.body_rlp = body_it_->byte_view();
         decode_body_rlp(value_.body_rlp, value_.body);
     }
 }
@@ -70,7 +70,7 @@ TxsAndBodiesSegmentQuery::Iterator& TxsAndBodiesSegmentQuery::Iterator::operator
     ++i_;
 
     if (tx_it_ != txs_decoder_->end()) {
-        value_.tx_buffer = *tx_it_;
+        value_.tx_buffer = tx_it_->byte_view();
         skip_bodies_until_tx_id(first_tx_id_ + i_);
     } else {
         if (i_ != expected_tx_count_) {

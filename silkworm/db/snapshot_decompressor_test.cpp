@@ -334,12 +334,12 @@ TEST_CASE("Iterator::Iterator empty data", "[silkworm][node][seg][decompressor]"
         CHECK_FALSE(decoder.make_iterator().has_next());
     }
     SECTION("next") {
-        silkworm::Bytes buffer;
+        Bytes buffer;
         CHECK_THROWS_AS(decoder.make_iterator().next_compressed(buffer), std::runtime_error);
     }
     SECTION("next_uncompressed") {
-        silkworm::Bytes buffer;
-        CHECK_THROWS_AS(decoder.make_iterator().next_uncompressed(buffer), std::runtime_error);
+        ByteView buffer_view;
+        CHECK_THROWS_AS(decoder.make_iterator().next_uncompressed(buffer_view), std::runtime_error);
     }
     SECTION("skip") {
         CHECK_THROWS_AS(decoder.make_iterator().skip_compressed(), std::runtime_error);
@@ -395,7 +395,7 @@ TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][node][seg][
             } else {
                 const std::string word_plus_index{kLoremIpsumWords[i] + " " + std::to_string(i)};
                 const Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
-                Bytes decoded_word;
+                ByteView decoded_word;
                 it.next_uncompressed(decoded_word);
                 CHECK(decoded_word == expected_word);
             }

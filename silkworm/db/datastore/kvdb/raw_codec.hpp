@@ -23,9 +23,9 @@
 namespace silkworm::datastore::kvdb {
 
 template <class TBytes>
-concept BytesOrByteView = std::same_as<TBytes, Bytes> || std::same_as<TBytes, ByteView>;
+concept BytesOrByteViewConcept = std::same_as<TBytes, Bytes> || std::same_as<TBytes, ByteView>;
 
-template <BytesOrByteView TBytes>
+template <BytesOrByteViewConcept TBytes>
 struct RawDecoder : public Decoder {
     TBytes value;
     ~RawDecoder() override = default;
@@ -37,7 +37,7 @@ struct RawDecoder : public Decoder {
 static_assert(DecoderConcept<RawDecoder<Bytes>>);
 static_assert(DecoderConcept<RawDecoder<ByteView>>);
 
-template <BytesOrByteView TBytes>
+template <BytesOrByteViewConcept TBytes>
 struct RawEncoder : public Encoder {
     TBytes value;
     ~RawEncoder() override = default;

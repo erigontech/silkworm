@@ -114,7 +114,7 @@ TEST_CASE("Bytes32SnapshotsCodec.full_word") {
     CHECK(encoded.size() == 32);
 
     Bytes32SnapshotsCodec codec2;
-    Bytes encoded_bytes{encoded};
+    BytesOrByteView encoded_bytes{encoded};
     codec2.decode_word(encoded_bytes);
     CHECK(codec2.value == kFullWord);
 }
@@ -126,7 +126,7 @@ TEST_CASE("Bytes32SnapshotsCodec.partial_word") {
     CHECK(encoded.size() == 32);
 
     Bytes32SnapshotsCodec codec2;
-    Bytes encoded_bytes{encoded};
+    BytesOrByteView encoded_bytes{encoded};
     codec2.decode_word(encoded_bytes);
     CHECK(codec2.value == kPartialWord);
 }
@@ -138,7 +138,7 @@ TEST_CASE("Bytes32SnapshotsCodec.empty_word") {
     CHECK(encoded.size() == 32);
 
     Bytes32SnapshotsCodec codec2;
-    Bytes encoded_bytes{encoded};
+    BytesOrByteView encoded_bytes{encoded};
     codec2.decode_word(encoded_bytes);
     CHECK(codec2.value == kEmptyWord);
 }
@@ -150,7 +150,7 @@ TEST_CASE("PackedBytes32SnapshotsCodec.full_word") {
     CHECK(encoded.size() == 32);
 
     PackedBytes32SnapshotsCodec codec2;
-    Bytes encoded_bytes{encoded};
+    BytesOrByteView encoded_bytes{encoded};
     codec2.decode_word(encoded_bytes);
     CHECK(codec2.value == kFullWord);
 }
@@ -162,7 +162,7 @@ TEST_CASE("PackedBytes32SnapshotsCodec.partial_word") {
     CHECK(encoded.size() == 10);
 
     PackedBytes32SnapshotsCodec codec2;
-    Bytes encoded_bytes{encoded};
+    BytesOrByteView encoded_bytes{encoded};
     codec2.decode_word(encoded_bytes);
     CHECK(codec2.value == kPartialWord);
 }
@@ -174,7 +174,7 @@ TEST_CASE("PackedBytes32SnapshotsCodec.empty_word") {
     CHECK(encoded.empty());
 
     PackedBytes32SnapshotsCodec codec2;
-    Bytes encoded_bytes{encoded};
+    BytesOrByteView encoded_bytes{encoded};
     codec2.decode_word(encoded_bytes);
     CHECK(codec2.value == kEmptyWord);
 }
@@ -182,14 +182,14 @@ TEST_CASE("PackedBytes32SnapshotsCodec.empty_word") {
 TEST_CASE("StorageAddressAndLocationSnapshotsCodec.decode_word") {
     StorageAddressAndLocationSnapshotsCodec decoder;
 
-    auto word = *from_hex(
+    auto word = BytesOrByteView{*from_hex(
         "000000000000000000636f6e736f6c652e6c6f67"
-        "000000000000000000000000000000000000000000005666856076ebaf477f07");
+        "000000000000000000000000000000000000000000005666856076ebaf477f07")};
     decoder.decode_word(word);
     CHECK(decoder.value.address == 0x000000000000000000636f6e736f6c652e6c6f67_address);
     CHECK(decoder.value.location_hash == 0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32);
 
-    Bytes empty;
+    BytesOrByteView empty;
     CHECK_THROWS_AS(decoder.decode_word(empty), std::runtime_error);
 }
 

@@ -18,6 +18,8 @@
 
 #include <silkworm/core/common/assert.hpp>
 
+#include "common/ranges/if_view.hpp"
+#include "common/ranges/merge_unique_view.hpp"
 #include "domain_range_latest_query.hpp"
 #include "history_range_by_keys_query.hpp"
 
@@ -50,12 +52,21 @@ struct DomainRangeAsOfQuery {
     using ResultItem = typename DomainRangeLatestQuery<TKeyEncoder1, TKeyEncoder2, TKeyDecoder1, TKeyDecoder2, TValueDecoder1, TValueDecoder2>::ResultItem;
 
     auto exec(const Key& key_start, const Key& key_end, std::optional<Timestamp> timestamp, bool ascending) {
+        return silkworm::views::if_view(
+            !timestamp.has_value(),
+            query2_.exec(key_start, key_end, ascending),
+            this->exec(key_start, key_end, timestamp.value_or(0), ascending));
+    }
+
+    auto exec(const Key& key_start, const Key& key_end, Timestamp timestamp, bool ascending) {
         SILKWORM_ASSERT(ascending);  // descending is not implemented
 
-        [[maybe_unused]] auto historical_results = query1_.exec(key_start, key_end, timestamp.value_or(-1), ascending);
-
-        // TODO: merge unique with history_range_by_keys_query
-        return query2_.exec(key_start, key_end, ascending);
+        return silkworm::views::merge_unique(
+            query1_.exec(key_start, key_end, timestamp, ascending),
+            query2_.exec(key_start, key_end, ascending),
+            silkworm::views::MergeCompareFunc{},
+            PairGetFirst<typename ResultItem::first_type, typename ResultItem::second_type>{},
+            PairGetFirst<typename ResultItem::first_type, typename ResultItem::second_type>{});
     }
 
   private:

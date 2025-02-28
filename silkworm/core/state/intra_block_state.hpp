@@ -120,8 +120,6 @@ class IntraBlockState {
 
     void set_transient_storage(const evmc::address& addr, const evmc::bytes32& key, const evmc::bytes32& value);
 
-    void inspect_storage(const evmc::address& addr) const;
-
   private:
     friend class state::CreateDelta;
     friend class state::UpdateDelta;
@@ -151,6 +149,8 @@ class IntraBlockState {
 
     mutable FlatHashMap<evmc::bytes32, ByteView> existing_code_;
     FlatHashMap<evmc::bytes32, std::vector<uint8_t>> new_code_;
+    // EIP- 7702
+    FlatHashSet<evmc::address> delegated_designations_;
 
     std::vector<std::unique_ptr<state::Delta>> journal_;
 

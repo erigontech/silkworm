@@ -74,7 +74,7 @@ bool IntraBlockState::is_dead(const evmc::address& address) const noexcept {
     return obj->current->code_hash == kEmptyHash && obj->current->nonce == 0 && obj->current->balance == 0;
 }
 
-void IntraBlockState::create_contract(const evmc::address& address, [[maybe_unused ]] bool is_code_delegation) noexcept {
+void IntraBlockState::create_contract(const evmc::address& address, bool is_code_delegation) noexcept {
     created_.insert(address);
     state::Object created{};
     created.current = Account{};
@@ -105,7 +105,8 @@ void IntraBlockState::create_contract(const evmc::address& address, [[maybe_unus
         prev_incarnation = prev->current->previous_incarnation;
     }
 
-    if (!is_code_delegation) {
+    // EIP-7702 Reincarnation works for accounts which are not delegated designations
+    if (!is_code_delegation && !delegated_designations_.contains(address)) {
         created.current->incarnation = *prev_incarnation + 1;
         created.current->previous_incarnation = *prev_incarnation;
     }
@@ -117,7 +118,8 @@ void IntraBlockState::create_contract(const evmc::address& address, [[maybe_unus
         journal_.emplace_back(std::make_unique<state::StorageCreateDelta>(address));
     } else {
         journal_.emplace_back(std::make_unique<state::StorageWipeDelta>(address, it->second));
-        if (!is_code_delegation) {
+        // EIP-7702 Storage cannot be cleared for delegated designations
+        if (!is_code_delegation && !delegated_designations_.contains(address)) {
             storage_.erase(address);
         }
     }
@@ -163,7 +165,10 @@ bool IntraBlockState::is_self_destructed(const evmc::address& address) const noe
 // Doesn't create a delta since it's called at the end of a transaction,
 // when we don't need snapshots anymore.
 void IntraBlockState::destruct(const evmc::address& address) {
-    storage_.erase(address);
+    // EIP-7702 Storage cannot be cleared for delegated designations
+    if (!delegated_designations_.contains(address)) {
+        storage_.erase(address);
+    }
     auto* obj{get_object(address)};
     if (obj) {
         obj->current.reset();
@@ -243,6 +248,9 @@ void IntraBlockState::set_code(const evmc::address& address, ByteView code) noex
     journal_.emplace_back(std::make_unique<state::UpdateDelta>(address, obj));
     obj.current->code_hash = std::bit_cast<evmc_bytes32>(keccak256(code));
 
+    if (eip7702::is_code_delegated(code)) {
+        delegated_designations_.insert(address);
+    }
     // Don't overwrite already existing code so that views of it
     // that were previously returned by get_code() are still valid.
     new_code_.try_emplace(obj.current->code_hash, code.begin(), code.end());
@@ -273,18 +281,6 @@ evmc::bytes32 IntraBlockState::get_current_storage(const evmc::address& address,
 evmc::bytes32 IntraBlockState::get_original_storage(const evmc::address& address,
                                                     const evmc::bytes32& key) const noexcept {
     return get_storage(address, key, /*original=*/true);
-}
-
-void IntraBlockState::inspect_storage([[maybe_unused]] const evmc::address& addr) const {
-    // for (const auto& acc : objects_) {
-    //     if (acc.second.current.has_value()) {
-    //         std::cerr << "There is acc: " << hex(acc.first) << ", with nonce: " << acc.second.current.value().nonce << std::endl;
-    //     }
-    // }
-    // std::cerr << "Inspecting storagefor addr: " << hex(addr) << std::endl;
-    // if (const auto it = storage_.find(addr); it != storage_.end()) {
-    //     std::cerr << "Keys orig: " << it->second.current.size() << ", committed: " << it->second.committed.size() << std::endl;
-    // }
 }
 
 evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address, const evmc::bytes32& key,
@@ -328,6 +324,7 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     if (prev == value) {
         return;
     }
+    // std::cerr << "Setting storage for: " << hex(address) << ", at: " << hex(key) << ", with val: " << hex(value) << std::endl;
     storage_[address].current[key] = value;
     journal_.emplace_back(std::make_unique<state::StorageChangeDelta>(address, key, prev));
 }
@@ -347,6 +344,7 @@ void IntraBlockState::write_to_db(uint64_t block_num) {
     db_.begin_block(block_num, objects_.size());
 
     for (const auto& [address, storage] : storage_) {
+        // std::cerr << "Writing do db storage: " << hex(address) << std::endl;
         auto it1{objects_.find(address)};
         if (it1 == objects_.end()) {
             continue;
@@ -363,6 +361,7 @@ void IntraBlockState::write_to_db(uint64_t block_num) {
     }
 
     for (const auto& [address, obj] : objects_) {
+        // std::cerr << "Writing do db address: " << hex(address) << std::endl;
         db_.update_account(address, obj.initial, obj.current);
         if (!obj.current) {
             continue;
@@ -378,15 +377,17 @@ void IntraBlockState::write_to_db(uint64_t block_num) {
         const evmc::bytes_view DELEGATION_MAGIC{DELEGATION_MAGIC_BYTES, std::size(DELEGATION_MAGIC_BYTES)};
         const auto is_code_delegated = code_view.starts_with(DELEGATION_MAGIC);
 
+        // {
+        //     const auto old_acc = db_.read_account(address);
+        //     const auto old_code = db_.read_code(address, old_acc->code_hash);
+        //     std::cerr << "Old code has size: " << old_code.size() << ", new: " << code_view.size() << std::endl;
+        // }
+
         if (code_hash != kEmptyHash &&
             (!obj.initial || obj.initial->incarnation != obj.current->incarnation || is_code_delegated)) {
-
             if (auto it{new_code_.find(code_hash)}; it != new_code_.end()) {
                 db_.update_account_code(address, obj.current->incarnation, code_hash, code_view);
             }
-        }
-        if (is_code_delegated) {
-            db_.zero_nonce(address);
         }
     }
 }
@@ -412,8 +413,10 @@ void IntraBlockState::finalize_transaction(evmc_revision rev) {
         destruct_touched_dead();
     }
     for (auto& x : storage_) {
+        // std::cerr << "Destructing storage for address: " << hex(x.first) << std::endl;
         state::Storage& storage{x.second};
         for (const auto& [key, val] : storage.current) {
+            // std::cerr << "Committing key: " << hex(key) << ", and val: " << hex(val) << std::endl;
             storage.committed[key].original = val;
         }
         storage.current.clear();

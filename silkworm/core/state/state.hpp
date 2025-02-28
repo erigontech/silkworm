@@ -87,8 +87,6 @@ class State : public BlockState {
 
     virtual void unwind_state_changes(BlockNum block_num) = 0;
 
-    virtual void zero_nonce(const evmc::address& address) = 0;
-
     //!@}
 };
 

@@ -23,16 +23,16 @@
 #include "common/pair_get.hpp"
 #include "common/ranges/merge_view.hpp"
 #include "kvdb/database.hpp"
-#include "kvdb/history_range_query.hpp"
-#include "snapshots/history_range_query.hpp"
+#include "kvdb/history_range_in_period_query.hpp"
+#include "snapshots/history_range_in_period_query.hpp"
 
 namespace silkworm::datastore {
 
 template <
     kvdb::DecoderConcept TKeyDecoder1, snapshots::DecoderConcept TKeyDecoder2,
     kvdb::DecoderConcept TValueDecoder1, snapshots::DecoderConcept TValueDecoder2>
-struct HistoryRangeQuery {
-    HistoryRangeQuery(
+struct HistoryRangeInPeriodQuery {
+    HistoryRangeInPeriodQuery(
         datastore::EntityName entity_name,
         kvdb::History kvdb_entity,
         kvdb::ROTxn& tx,
@@ -40,12 +40,12 @@ struct HistoryRangeQuery {
         : query1_{tx, kvdb_entity},
           query2_{repository, entity_name} {}
 
-    HistoryRangeQuery(
+    HistoryRangeInPeriodQuery(
         datastore::EntityName entity_name,
         const kvdb::DatabaseRef& database,
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
-        : HistoryRangeQuery{
+        : HistoryRangeInPeriodQuery{
               entity_name,
               database.domain(entity_name).history.value(),
               tx,
@@ -67,8 +67,8 @@ struct HistoryRangeQuery {
     }
 
   private:
-    kvdb::HistoryRangeQuery<TKeyDecoder1, TValueDecoder1> query1_;
-    snapshots::HistoryRangeQuery<TKeyDecoder2, TValueDecoder2> query2_;
+    kvdb::HistoryRangeInPeriodQuery<TKeyDecoder1, TValueDecoder1> query1_;
+    snapshots::HistoryRangeInPeriodQuery<TKeyDecoder2, TValueDecoder2> query2_;
 };
 
 }  // namespace silkworm::datastore

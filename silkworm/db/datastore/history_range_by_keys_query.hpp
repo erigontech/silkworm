@@ -22,10 +22,10 @@
 #include "common/ranges/caching_view.hpp"
 #include "common/ranges/merge_unique_view.hpp"
 #include "kvdb/database.hpp"
-#include "kvdb/domain_range_latest_query.hpp"
+#include "kvdb/history_range_by_keys_query.hpp"
 #include "kvdb/raw_codec.hpp"
 #include "snapshots/common/raw_codec.hpp"
-#include "snapshots/domain_range_latest_query.hpp"
+#include "snapshots/history_range_by_keys_query.hpp"
 
 namespace silkworm::datastore {
 
@@ -33,23 +33,23 @@ template <
     kvdb::EncoderConcept TKeyEncoder1, snapshots::EncoderConcept TKeyEncoder2,
     kvdb::DecoderConcept TKeyDecoder1, snapshots::DecoderConcept TKeyDecoder2,
     kvdb::DecoderConcept TValueDecoder1, snapshots::DecoderConcept TValueDecoder2>
-struct DomainRangeLatestQuery {
-    DomainRangeLatestQuery(
+struct HistoryRangeByKeysQuery {
+    HistoryRangeByKeysQuery(
         datastore::EntityName entity_name,
-        kvdb::Domain kvdb_entity,
+        kvdb::History kvdb_entity,
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
         : query1_{tx, std::move(kvdb_entity)},
           query2_{repository, entity_name} {}
 
-    DomainRangeLatestQuery(
+    HistoryRangeByKeysQuery(
         datastore::EntityName entity_name,
         const kvdb::DatabaseRef& database,
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
-        : DomainRangeLatestQuery{
+        : HistoryRangeByKeysQuery{
               entity_name,
-              database.domain(entity_name),
+              database.domain(entity_name).history.value(),
               tx,
               repository,
           } {}
@@ -91,12 +91,12 @@ struct DomainRangeLatestQuery {
         return decode_kv_pair(std::move(kv_pair));
     };
 
-    auto exec(const Key& key_start, const Key& key_end, bool ascending) {
+    auto exec(const Key& key_start, const Key& key_end, Timestamp timestamp, bool ascending) {
         SILKWORM_ASSERT(ascending);  // descending is not implemented
 
         return silkworm::views::merge_unique(
-                   query1_.exec(key_start, key_end, ascending),
-                   query2_.exec(key_start, key_end, ascending),
+                   query2_.exec(key_start, key_end, timestamp, ascending),
+                   query1_.exec(key_start, key_end, timestamp, ascending),
                    silkworm::views::MergeCompareFunc{},
                    PairGetFirst<Bytes, Bytes>{},
                    PairGetFirst<Bytes, Bytes>{}) |
@@ -105,8 +105,8 @@ struct DomainRangeLatestQuery {
     }
 
   private:
-    kvdb::DomainRangeLatestQuery<TKeyEncoder1, kvdb::RawDecoder<Bytes>, kvdb::RawDecoder<Bytes>> query1_;
-    snapshots::DomainRangeLatestQuery<TKeyEncoder2, snapshots::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>> query2_;
+    kvdb::HistoryRangeByKeysQuery<TKeyEncoder1, kvdb::RawDecoder<Bytes>, kvdb::RawDecoder<Bytes>> query1_;
+    snapshots::HistoryRangeByKeysQuery<TKeyEncoder2, snapshots::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>> query2_;
 };
 
 }  // namespace silkworm::datastore

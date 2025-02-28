@@ -314,7 +314,7 @@ Task<PaginatedKeysValues> LocalTransaction::range_as_of(DomainRangeQuery query) 
 
     // TODO: this is just a test example, instead of direct iteration, apply page_size using std::views::chunk,
     // TODO: save the range for future requests using page_token and return the first chunk
-    for ([[maybe_unused]] decltype(store_query)::ResultItem&& kv_pair : store_query.exec(query.from_key, query.to_key, query.timestamp, query.ascending_order) | std::views::take(limit)) {
+    for ([[maybe_unused]] decltype(store_query)::ResultItem& kv_pair : store_query.exec(query.from_key, query.to_key, query.timestamp, query.ascending_order) | std::views::take(limit)) {
     }
 
     // TODO(canepat) implement using E3-like aggregator abstraction [tx_id_ must be changed]

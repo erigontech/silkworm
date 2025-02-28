@@ -26,6 +26,7 @@
 
 #include "../common/entity_name.hpp"
 #include "../common/pair_get.hpp"
+#include "../common/ranges/caching_view.hpp"
 #include "../common/ranges/merge_unique_many_view.hpp"
 #include "../common/ranges/owning_view.hpp"
 #include "common/codec.hpp"
@@ -109,24 +110,23 @@ struct DomainRangeLatestQuery {
         key_end_encoder.value = key_end;
         ByteView key_end_data = key_end_encoder.encode_word();
 
-        using Range = decltype(std::declval<DomainRangeLatestSegmentQuery>().exec(Bytes{key_start_data}, Bytes{key_end_data}, ascending));
-        std::vector<Range> bundle_results;
-
-        for (auto& bundle_ptr : repository.view_bundles_reverse()) {
+        auto results_in_bundle = [entity_name1 = this->entity_name, key_start_data = Bytes{key_start_data}, key_end_data = Bytes{key_end_data}, ascending](const std::shared_ptr<SnapshotBundle>& bundle_ptr) {
             const SnapshotBundle& bundle = *bundle_ptr;
-            DomainRangeLatestSegmentQuery query{bundle, entity_name};
-            bundle_results.emplace_back(query.exec(Bytes{key_start_data}, Bytes{key_end_data}, ascending));
-        }
+            DomainRangeLatestSegmentQuery query{bundle, entity_name1};
+            return query.exec(key_start_data, key_end_data, ascending);
+        };
 
-        auto results = silkworm::views::merge_unique_many<
-            Range,
-            std::vector<Range>,
-            silkworm::views::MergeUniqueCompareFunc,
-            PairGetFirst<DomainRangeLatestSegmentQuery::ResultItem::first_type, DomainRangeLatestSegmentQuery::ResultItem::second_type>>(
-            std::move(bundle_results));
+        auto bundle_results = silkworm::ranges::owning_view(repository.view_bundles_reverse()) |
+                              std::views::transform(std::move(results_in_bundle));
+
+        auto results = silkworm::views::merge_unique_many(
+            std::move(bundle_results),
+            silkworm::views::MergeUniqueCompareFunc{},
+            PairGetFirst<DomainRangeLatestSegmentQuery::ResultItem::first_type, DomainRangeLatestSegmentQuery::ResultItem::second_type>{});
 
         return silkworm::ranges::owning_view(std::move(results)) |
-               std::views::transform(kDecodeKVPairFunc);
+               std::views::transform(kDecodeKVPairFunc) |
+               silkworm::views::caching;
     }
 };
 

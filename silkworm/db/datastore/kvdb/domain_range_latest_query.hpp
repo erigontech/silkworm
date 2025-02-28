@@ -23,6 +23,7 @@
 #include <silkworm/core/common/assert.hpp>
 
 #include "../common/pair_get.hpp"
+#include "../common/ranges/caching_view.hpp"
 #include "../common/ranges/unique_view.hpp"
 #include "cursor_iterator.hpp"
 #include "domain.hpp"
@@ -90,7 +91,8 @@ struct DomainRangeLatestQuery {
                std::views::transform([](auto&& kvts_pair) { return std::pair<ByteView, ByteView>{kvts_pair.first.key.value, kvts_pair.second.value.value}; }) |
                silkworm::views::unique<silkworm::views::MergeUniqueCompareFunc, PairGetFirst<ByteView, ByteView>> |  // filter out duplicate keys when has_large_values
                std::views::take_while(std::move(before_key_end_predicate)) |
-               std::views::transform(kDecodeKVPairFunc);
+               std::views::transform(kDecodeKVPairFunc) |
+               silkworm::views::caching;
     }
 
     auto exec(const Key& key_start, const Key& key_end, bool ascending) {

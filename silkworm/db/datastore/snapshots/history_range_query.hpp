@@ -74,11 +74,12 @@ struct HistoryRangeSegmentQuery {
 
         auto ii_reader = entity_.inverted_index.kv_segment_reader<RawDecoder<Bytes>>();
 
-        return std::ranges::subrange{ii_reader.begin(), ii_reader.end()} |
+        return ii_reader |
                std::views::transform(std::move(lookup_kv_pair_func)) |
                silkworm::views::caching |
                std::views::filter([](const std::optional<ResultItem>& result_opt) { return result_opt.has_value(); }) |
-               std::views::transform([](std::optional<ResultItem> result_opt) -> ResultItem { return std::move(*result_opt); });
+               std::views::transform([](std::optional<ResultItem>& result_opt) -> ResultItem { return std::move(*result_opt); }) |
+               silkworm::views::caching;
     }
 
   private:

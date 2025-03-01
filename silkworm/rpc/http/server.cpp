@@ -49,7 +49,7 @@ Server::Server(const std::string& end_point,
                bool use_websocket,
                bool ws_compression,
                bool http_compression,
-               bool  rpc_compatability)
+               bool rpc_compatability)
     : handler_factory_{std::move(handler_factory)},
       acceptor_{ioc},
       allowed_origins_{std::move(allowed_origins)},

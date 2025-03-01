@@ -70,7 +70,6 @@ Connection::Connection(boost::asio::ip::tcp::socket socket,
       http_compression_{http_compression},
       workers_{workers},
       rpc_compatability_{rpc_compatability} {
-
     socket_.set_option(boost::asio::ip::tcp::socket::keep_alive(true));
     SILK_TRACE << "Connection::Connection created for " << socket_.remote_endpoint();
 }

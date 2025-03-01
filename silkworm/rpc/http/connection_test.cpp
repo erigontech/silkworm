@@ -54,7 +54,7 @@ TEST_CASE("connection creation", "[rpc][http][connection]") {
                                         false,
                                         false,
                                         false,
-                                        workers, 
+                                        workers,
                                         true /* rpc_compatability */});
     }
 }

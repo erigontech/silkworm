@@ -250,7 +250,7 @@ Daemon::Daemon(
     state_changes_stream_ = std::make_unique<db::kv::StateChangesStream>(context, *state_changes_client_);
 
     // Set compatibility with Erigon RpcDaemon at JSON RPC level
-    compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_json_rpc_compatibility);
+    compatibility::set_erigon_json_api_compatibility_required(settings_.erigon_rpc_compatibility);
 
     // Load JSON RPC specification for Ethereum API
     rpc::json_rpc::Validator::load_specification();
@@ -348,7 +348,7 @@ void Daemon::start() {
 
         return std::make_unique<http::Server>(
             end_point, std::move(make_jsonrpc_handler), ioc, worker_pool_, settings_.cors_domain, std::move(jwt_secret),
-            settings_.use_websocket, settings_.ws_compression, settings_.http_compression);
+            settings_.use_websocket, settings_.ws_compression, settings_.http_compression, settings_.erigon_rpc_compatibility);
     };
 
     // Put the interface logs into the data folder

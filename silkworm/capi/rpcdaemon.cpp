@@ -81,7 +81,7 @@ static DaemonSettings make_daemon_settings(SilkwormHandle handle, const struct S
         .cors_domain = parse_cors_domains(settings.cors_domains),
         .jwt_secret_file = jwt_path.empty() ? std::nullopt : std::make_optional(jwt_path.string()),
         .skip_protocol_check = settings.skip_internal_protocol_check,
-        .erigon_json_rpc_compatibility = settings.erigon_json_rpc_compatibility,
+        .erigon_rpc_compatibility = settings.erigon_rpc_compatibility,
         .use_websocket = settings.ws_enabled,
         .ws_compression = settings.ws_compression,
         .http_compression = settings.http_compression,

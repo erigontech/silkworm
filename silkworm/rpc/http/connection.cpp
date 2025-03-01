@@ -58,7 +58,8 @@ Connection::Connection(boost::asio::ip::tcp::socket socket,
                        bool ws_upgrade_enabled,
                        bool ws_compression,
                        bool http_compression,
-                       WorkerPool& workers)
+                       WorkerPool& workers,
+                       bool rpc_compatability)
     : socket_{std::move(socket)},
       handler_factory_{handler_factory},
       handler_{handler_factory_(this)},
@@ -67,7 +68,9 @@ Connection::Connection(boost::asio::ip::tcp::socket socket,
       ws_upgrade_enabled_{ws_upgrade_enabled},
       ws_compression_{ws_compression},
       http_compression_{http_compression},
-      workers_{workers} {
+      workers_{workers},
+      rpc_compatability_{rpc_compatability} {
+
     socket_.set_option(boost::asio::ip::tcp::socket::keep_alive(true));
     SILK_TRACE << "Connection::Connection created for " << socket_.remote_endpoint();
 }
@@ -185,12 +188,12 @@ Task<void> Connection::handle_actual_request(const RequestWithStringBody& req) {
     }
 
     const auto accept_encoding = req[boost::beast::http::field::accept_encoding];
-    if (!http_compression_ && !accept_encoding.empty()) {
+    if (!http_compression_ && !accept_encoding.empty() && !rpc_compatability_) {
         co_await do_write("unsupported compression\n", boost::beast::http::status::unsupported_media_type, "identity");
         co_return;
     }
 
-    gzip_encoding_requested_ = accept_encoding.contains(kGzipEncoding);
+    gzip_encoding_requested_ = accept_encoding.contains(kGzipEncoding) && http_compression_;
     if (http_compression_ && !accept_encoding.empty() && !accept_encoding.contains(kIdentity) && !gzip_encoding_requested_) {
         co_await do_write("unsupported requested compression\n", boost::beast::http::status::unsupported_media_type, kGzipEncoding);
         co_return;

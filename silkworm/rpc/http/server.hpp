@@ -48,7 +48,8 @@ class Server {
            std::optional<std::string> jwt_secret,
            bool use_websocket,
            bool ws_compression,
-           bool http_compression);
+           bool http_compression,
+           bool rpc_compatability);
 
     void start();
 
@@ -80,6 +81,8 @@ class Server {
 
     //! The configured workers
     WorkerPool& workers_;
+
+    bool rpc_compatability_;
 };
 
 }  // namespace silkworm::rpc::http

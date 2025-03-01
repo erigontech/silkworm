@@ -54,7 +54,8 @@ TEST_CASE("connection creation", "[rpc][http][connection]") {
                                         false,
                                         false,
                                         false,
-                                        workers});
+                                        workers, 
+                                        true /* rpc_compatability */});
     }
 }
 
@@ -92,7 +93,7 @@ TEST_CASE("is_request_authorized", "[rpc][http][connection]") {
     ConnectionForTest connection = [&]() -> ConnectionForTest {
         boost::asio::ip::tcp::socket socket{ioc};
         socket.open(boost::asio::ip::tcp::v4());
-        return {std::move(socket), handler_factory, allowed_origins, jwt_secret, false, false, false, workers};
+        return {std::move(socket), handler_factory, allowed_origins, jwt_secret, false, false, false, workers, true /* rpc_compatibility */};
     }();
 
     SECTION("no HTTP Authorization header") {

@@ -60,7 +60,8 @@ class Connection : public StreamWriter {
                bool ws_upgrade_enabled,
                bool ws_compression,
                bool http_compression,
-               WorkerPool& workers);
+               WorkerPool& workers,
+               bool rpc_compatability);
     ~Connection() override;
 
     /* StreamWriter Interface */
@@ -128,6 +129,8 @@ class Connection : public StreamWriter {
     std::string vary_;
     std::string origin_;
     boost::beast::http::verb method_{boost::beast::http::verb::unknown};
+
+    bool rpc_compatability_{false};
 };
 
 }  // namespace silkworm::rpc::http

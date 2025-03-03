@@ -371,9 +371,7 @@ void IntraBlockState::write_to_db(uint64_t block_num) {
             code_view = {it->second.data(), it->second.size()};
         }
 
-        constexpr uint8_t DELEGATION_MAGIC_BYTES[] = {0xef, 0x01, 0x00};
-        const evmc::bytes_view DELEGATION_MAGIC{DELEGATION_MAGIC_BYTES, std::size(DELEGATION_MAGIC_BYTES)};
-        const auto is_code_delegated = code_view.starts_with(DELEGATION_MAGIC);
+        const auto is_code_delegated = eip7702::is_code_delegated(code_view);
 
         if (code_hash != kEmptyHash &&
             (!obj.initial || obj.initial->incarnation != obj.current->incarnation || is_code_delegated)) {

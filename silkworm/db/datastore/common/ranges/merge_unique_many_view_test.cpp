@@ -71,7 +71,8 @@ TEST_CASE("MergeUniqueManyView") {
     CHECK(vector_from_range(merge_unique_many(ranges(silkworm::ranges::owning_view(std::vector<int>{1, 2, 3}), silkworm::ranges::owning_view(std::vector<int>{})))) == std::vector<int>{1, 2, 3});
     CHECK(vector_from_range(merge_unique_many(ranges(silkworm::ranges::owning_view(std::vector<int>{}), silkworm::ranges::owning_view(std::vector<int>{2, 3, 4})))) == std::vector<int>{2, 3, 4});
 
-// Skip to avoid error C3889: call to object of class type 'std::ranges::_Begin::_Cpo': no matching call operator found
+// Skip to avoid Windows error C3889: call to object of class type 'std::ranges::_Begin::_Cpo': no matching call operator found
+// Unable to reproduce: https://godbolt.org/z/3jd5brKMj
 #ifndef _WIN32
     using IntToVectorFunc = std::function<std::vector<int>(int)>;
     CHECK(vector_from_range(merge_unique_many(ranges(

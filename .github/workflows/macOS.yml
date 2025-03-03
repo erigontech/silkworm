@@ -40,7 +40,7 @@ jobs:
       fail-fast: false # This makes it so that if 1 of the tests in the matrix fail, they don't all fail
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
         fetch-depth: "0"
@@ -58,7 +58,7 @@ jobs:
       run: cmake -E make_directory ${{runner.workspace}}/build
 
     - name: ccache
-      uses: hendrikmuhs/ccache-action@v1.2
+      uses: hendrikmuhs/ccache-action@v1.3
       with:
         key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.config.cc }}-${{ matrix.config.build_type }}  # Eg. "linux_x64-ubuntu-latest-clang-12-Debug"
 

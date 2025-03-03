@@ -133,12 +133,9 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     // Plain debug assertion instead of SILKWORM_ASSERT not to validate txn twice (see execute_block_no_post_validation)
     assert(protocol::validate_transaction(txn, state_, available_gas()) == ValidationResult::kOk);
 
-    state_.inspect_storage(0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address);
-
     StateView evm1_state_view{state_};
     BlockHashes evm1_block_hashes{evm_};
 
-    std::cerr << "Executing from: " << hex(*txn.sender()) << ", to: " << hex(*txn.to) << ", nonce: " << txn.nonce << std::endl;
     evmone::state::Transaction evm1_txn{
         .type = static_cast<evmone::state::Transaction::Type>(txn.type),
         .data = txn.data,
@@ -160,15 +157,13 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     for (const evmc::bytes32& h : txn.blob_versioned_hashes)
         evm1_txn.blob_hashes.emplace_back(h);
     for (const auto& authorization : txn.authorizations) {
-        evm1_txn.authorization_list.push_back({
-            .chain_id = authorization.chain_id,
-            .addr = authorization.address,
-            .nonce = authorization.nonce,
-            .signer = authorization.recover_authority(txn),
-            .r = authorization.r,
-            .s = authorization.s,
-            .v = authorization.v()
-        });
+        evm1_txn.authorization_list.push_back({.chain_id = authorization.chain_id,
+                                               .addr = authorization.address,
+                                               .nonce = authorization.nonce,
+                                               .signer = authorization.recover_authority(txn),
+                                               .r = authorization.r,
+                                               .s = authorization.s,
+                                               .v = authorization.v()});
     }
 
     const auto rev = evm_.revision();
@@ -204,15 +199,11 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         const auto& state_diff = evm1_receipt.state_diff;
         for (const auto& m : state_diff.modified_accounts) {
             if (m.code) {
-                constexpr uint8_t DELEGATION_MAGIC_BYTES[] = {0xef, 0x01, 0x00};
-                const evmc::bytes_view DELEGATION_MAGIC{DELEGATION_MAGIC_BYTES, std::size(DELEGATION_MAGIC_BYTES)};
-                const auto is_code_delegation = m.code->starts_with(DELEGATION_MAGIC);
-                state_.create_contract(m.addr, is_code_delegation);
+                state_.create_contract(m.addr, eip7702::is_code_delegated(*m.code));
                 state_.set_code(m.addr, *m.code);
             }
 
             auto& acc = state_.get_or_create_object(m.addr);
-            std::cerr << "Setting nonce for acc: " << hex(m.addr) << ", nonce: " << m.nonce << std::endl;
             acc.current->nonce = m.nonce;
             acc.current->balance = m.balance;
 
@@ -221,7 +212,6 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
                 storage.committed[k].original = v;
             }
         }
-
         for (const auto& a : state_diff.deleted_accounts) {
             state_.destruct(a);
         }
@@ -403,8 +393,6 @@ uint64_t ExecutionProcessor::calculate_refund_gas(const Transaction& txn, uint64
 }
 
 ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept {
-    std::cerr << "RUNNING NEW BLOCK!" << std::endl;
-    state_.inspect_storage(0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address);
     const evmc_revision rev{evm_.revision()};
     rule_set_.initialize(evm_);
     state_.finalize_transaction(rev);
@@ -431,7 +419,6 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
     for (const auto& receipt : receipts) {
         std::ranges::copy(receipt.logs, std::back_inserter(logs));
     }
-    state_.inspect_storage(0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address);
     state_.clear_journal_and_substate();
     const auto finalization_result = rule_set_.finalize(state_, block, evm_, logs);
     state_.finalize_transaction(rev);
@@ -449,7 +436,7 @@ ValidationResult ExecutionProcessor::execute_block(std::vector<Receipt>& receipt
     const auto& header{evm_.block().header};
 
     if (cumulative_gas_used_ != header.gas_used) {
-        //return ValidationResult::kWrongBlockGas;
+        // return ValidationResult::kWrongBlockGas;
     }
 
     if (evm_.revision() >= EVMC_BYZANTIUM) {
@@ -458,7 +445,7 @@ ValidationResult ExecutionProcessor::execute_block(std::vector<Receipt>& receipt
         static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
         evmc::bytes32 receipt_root{trie::root_hash(receipts, kEncoder)};
         if (receipt_root != header.receipts_root) {
-            //return ValidationResult::kWrongReceiptsRoot;
+            // return ValidationResult::kWrongReceiptsRoot;
         }
     }
 
@@ -467,7 +454,7 @@ ValidationResult ExecutionProcessor::execute_block(std::vector<Receipt>& receipt
         join(bloom, receipt.bloom);
     }
     if (bloom != header.logs_bloom) {
-        //return ValidationResult::kWrongLogsBloom;
+        // return ValidationResult::kWrongLogsBloom;
     }
 
     return ValidationResult::kOk;
@@ -475,8 +462,6 @@ ValidationResult ExecutionProcessor::execute_block(std::vector<Receipt>& receipt
 
 void ExecutionProcessor::flush_state() {
     state_.write_to_db(evm_.block().header.number);
-    std::cerr << "AFTER FLUSH" << std::endl;
-    state_.inspect_storage(evmc::address{});
 }
 
 //! \brief Notify the registered tracers at the start of block execution.

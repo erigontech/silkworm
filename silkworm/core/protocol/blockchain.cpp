@@ -94,25 +94,17 @@ ValidationResult Blockchain::execute_block(const Block& block, bool check_state_
     ExecutionProcessor processor{block, *rule_set_, state_, config_, true};
     processor.evm().exo_evm = exo_evm;
 
-    std::cerr << "BEFORE EXEC NEW BLOCK" << std::endl;
-    static_cast<InMemoryState&>(state_).inspect_storage(evmc::address{});
-
     if (const ValidationResult res = processor.execute_block(receipts_); res != ValidationResult::kOk) {
         return res;
     }
 
-    static_cast<InMemoryState&>(state_).inspect_storage(evmc::address{});
-    std::cerr << "IN BEFORE FLUSH" << std::endl;
     processor.flush_state();
-    std::cerr << "IN MMEORY AND AFTER FLUSH" << std::endl;
-    static_cast<InMemoryState&>(state_).inspect_storage(evmc::address{});
 
     if (check_state_root) {
         evmc::bytes32 state_root{state_.state_root_hash()};
         if (state_root != block.header.state_root) {
-            //state_.unwind_state_changes(block.header.number);
-            //return ValidationResult::kWrongStateRoot;
-            std::cerr << "State root mismatch" << std::endl;
+            state_.unwind_state_changes(block.header.number);
+            return ValidationResult::kWrongStateRoot;
         }
     }
 

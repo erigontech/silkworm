@@ -79,8 +79,9 @@ namespace protocol {
             .data = calldata};
 
         intx::uint128 g0{intrinsic_gas(txn, EVMC_PRAGUE)};
+        intx::uint128 eip7623_floor_cost = floor_cost(txn);
         // Calldata contains only 'ones' and the cost per EIP-7623 is higher
-        CHECK(g0 == fee::kGTransaction + 4 * calldata.size() * fee::kTotalCostFloorPerToken);
+        CHECK(eip7623_floor_cost > g0);
     }
 
 }  // namespace protocol

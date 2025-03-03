@@ -34,10 +34,10 @@
 namespace silkworm {
 
 std::optional<evmc::address> Authorization::recover_authority(const Transaction& txn) const {
-    if (chain_id != 0 && chain_id != txn.chain_id ) {
+    if (chain_id != 0 && chain_id != txn.chain_id) {
         return {};
     }
-    if (r >= kSecp256k1n || s >= kSecp256k1n ) {
+    if (r >= kSecp256k1n || s >= kSecp256k1n) {
         return {};
     }
     if (s > kSecp256k1Halfn) {

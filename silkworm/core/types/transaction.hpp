@@ -54,6 +54,15 @@ struct Authorization {
     intx::uint256 v() const;
 };
 
+namespace eip7702 {
+    // EIP-7702 Set EOA account code
+    constexpr uint8_t kDelegationBytes[] = {0xef, 0x01, 0x00};
+    constexpr ByteView kDelegationPrefix{kDelegationBytes, std::size(kDelegationBytes)};
+    constexpr bool is_code_delegated(ByteView code) noexcept {
+        return code.starts_with(kDelegationPrefix);
+    }
+}  // namespace eip7702
+
 // EIP-2718 transaction type
 // https://github.com/ethereum/eth1.0-specs/tree/master/lists/signature-types
 enum class TransactionType : uint8_t {

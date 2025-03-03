@@ -183,7 +183,7 @@ bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
         if (storage_size != j["storage"].size()) {
             std::cout << "Storage size mismatch for " << entry.key() << ":\n"
                       << storage_size << " != " << j["storage"].size() << std::endl;
-            //return false;
+            return false;
         }
 
         for (const auto& storage : j["storage"].items()) {
@@ -252,7 +252,6 @@ RunResults blockchain_test(const nlohmann::json& json_test) {
     Blockchain blockchain{state, config_it->second, genesis_block};
     blockchain.exo_evm = exo_evm;
 
-    state.inspect_storage(0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address);
     for (const auto& json_block : json_test["blocks"]) {
         Status status{run_block(json_block, blockchain)};
         if (status != Status::kPassed) {

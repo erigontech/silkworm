@@ -79,7 +79,6 @@ TEST_CASE("MergeUniqueManyView") {
               silkworm::ranges::owning_view(std::vector<int>{1, 2, 3}) | std::views::transform(IntToVectorFunc{[](int v) { return std::vector<int>{v, v, v}; }}) | std::views::join,
               silkworm::ranges::owning_view(std::vector<int>{4, 4, 4}) | std::views::transform(IntToVectorFunc{[](int v) { return std::vector<int>{v}; }}) | std::views::join))) ==
           std::vector<int>{1, 2, 3, 4});
-
 }
 #endif  // _WIN32
 

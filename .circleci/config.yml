@@ -1,4 +1,4 @@
-#   Copyright 2020 The Silkworm Authors
+#   Copyright 2023 The Silkworm Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ orbs:
 commands:
   checkout_with_submodules:
     parameters:
-      ethereum_tests:
+      :
         description: Include a heavy Ethereum tests submodule if needed.
         type: boolean
         default: true

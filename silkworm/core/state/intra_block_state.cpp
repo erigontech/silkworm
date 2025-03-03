@@ -324,7 +324,6 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     if (prev == value) {
         return;
     }
-    // std::cerr << "Setting storage for: " << hex(address) << ", at: " << hex(key) << ", with val: " << hex(value) << std::endl;
     storage_[address].current[key] = value;
     journal_.emplace_back(std::make_unique<state::StorageChangeDelta>(address, key, prev));
 }
@@ -361,7 +360,6 @@ void IntraBlockState::write_to_db(uint64_t block_num) {
     }
 
     for (const auto& [address, obj] : objects_) {
-        // std::cerr << "Writing do db address: " << hex(address) << std::endl;
         db_.update_account(address, obj.initial, obj.current);
         if (!obj.current) {
             continue;
@@ -376,12 +374,6 @@ void IntraBlockState::write_to_db(uint64_t block_num) {
         constexpr uint8_t DELEGATION_MAGIC_BYTES[] = {0xef, 0x01, 0x00};
         const evmc::bytes_view DELEGATION_MAGIC{DELEGATION_MAGIC_BYTES, std::size(DELEGATION_MAGIC_BYTES)};
         const auto is_code_delegated = code_view.starts_with(DELEGATION_MAGIC);
-
-        // {
-        //     const auto old_acc = db_.read_account(address);
-        //     const auto old_code = db_.read_code(address, old_acc->code_hash);
-        //     std::cerr << "Old code has size: " << old_code.size() << ", new: " << code_view.size() << std::endl;
-        // }
 
         if (code_hash != kEmptyHash &&
             (!obj.initial || obj.initial->incarnation != obj.current->incarnation || is_code_delegated)) {
@@ -413,10 +405,8 @@ void IntraBlockState::finalize_transaction(evmc_revision rev) {
         destruct_touched_dead();
     }
     for (auto& x : storage_) {
-        // std::cerr << "Destructing storage for address: " << hex(x.first) << std::endl;
         state::Storage& storage{x.second};
         for (const auto& [key, val] : storage.current) {
-            // std::cerr << "Committing key: " << hex(key) << ", and val: " << hex(val) << std::endl;
             storage.committed[key].original = val;
         }
         storage.current.clear();

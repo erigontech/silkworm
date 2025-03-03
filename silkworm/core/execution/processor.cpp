@@ -436,7 +436,7 @@ ValidationResult ExecutionProcessor::execute_block(std::vector<Receipt>& receipt
     const auto& header{evm_.block().header};
 
     if (cumulative_gas_used_ != header.gas_used) {
-        // return ValidationResult::kWrongBlockGas;
+        return ValidationResult::kWrongBlockGas;
     }
 
     if (evm_.revision() >= EVMC_BYZANTIUM) {
@@ -445,7 +445,7 @@ ValidationResult ExecutionProcessor::execute_block(std::vector<Receipt>& receipt
         static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
         evmc::bytes32 receipt_root{trie::root_hash(receipts, kEncoder)};
         if (receipt_root != header.receipts_root) {
-            // return ValidationResult::kWrongReceiptsRoot;
+            return ValidationResult::kWrongReceiptsRoot;
         }
     }
 
@@ -454,7 +454,7 @@ ValidationResult ExecutionProcessor::execute_block(std::vector<Receipt>& receipt
         join(bloom, receipt.bloom);
     }
     if (bloom != header.logs_bloom) {
-        // return ValidationResult::kWrongLogsBloom;
+        return ValidationResult::kWrongLogsBloom;
     }
 
     return ValidationResult::kOk;

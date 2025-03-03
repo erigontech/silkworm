@@ -59,11 +59,11 @@ BloomFilter::BloomFilter(
     if (std::filesystem::file_size(path) == 0) {
         throw std::runtime_error("index file " + path.filename().string() + " is empty");
     }
-    std::ifstream file_stream{path, std::ios::in | std::ios::binary};
+    path_ = std::move(path);
+    std::ifstream file_stream{path_, std::ios::in | std::ios::binary};
     file_stream.exceptions(std::ios::failbit | std::ios::badbit);
     file_stream >> *this;
 
-    path_ = std::move(path);
     data_key_hasher_ = std::move(data_key_hasher);
 }
 
@@ -216,7 +216,8 @@ std::istream& operator>>(std::istream& is, BloomFilter& filter) {
     // Verify that the computed hash checksum does match the expected one
     const auto computed_hash = hashing_istream.hash();
     if (computed_hash.buffer != sha384_hash.buffer) {
-        throw std::runtime_error{"hash mismatch: got=" + to_hex(computed_hash.buffer) + " expected=" + to_hex(sha384_hash.buffer)};
+        throw std::runtime_error{"hash mismatch: got=" + to_hex(computed_hash.buffer) + " expected=" + to_hex(sha384_hash.buffer) +
+                                 " in file: " + filter.path().string()};
     }
 
     return is;

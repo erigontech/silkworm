@@ -25,10 +25,12 @@ namespace silkworm::db::state {
 TEST_CASE("HashSnapshotsDecoder") {
     using evmc::literals::operator""_bytes32;
     HashSnapshotsDecoder decoder;
-    decoder.decode_word(*from_hex("0xb397a22bb95bf14753ec174f02f99df3f0bdf70d1851cdff813ebf745f5aeb55"));
+    auto word = *from_hex("0xb397a22bb95bf14753ec174f02f99df3f0bdf70d1851cdff813ebf745f5aeb55");
+    decoder.decode_word(word);
     CHECK(decoder.value == 0xb397a22bb95bf14753ec174f02f99df3f0bdf70d1851cdff813ebf745f5aeb55_bytes32);
 
-    CHECK_THROWS_AS(decoder.decode_word({}), std::runtime_error);
+    Bytes empty;
+    CHECK_THROWS_AS(decoder.decode_word(empty), std::runtime_error);
 }
 
 }  // namespace silkworm::db::state

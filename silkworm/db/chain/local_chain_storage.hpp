@@ -55,6 +55,7 @@ class LocalChainStorage : public ChainStorage {
     Task<std::optional<BlockHeader>> read_canonical_header(BlockNum block_num) const override;
 
     Task<bool> read_canonical_body(BlockNum block_num, BlockBody& body) const override;
+    Task<std::optional<Bytes>> read_raw_canonical_body_for_storage(BlockNum block_num) const override;
 
     Task<bool> read_canonical_block(BlockNum block_num, Block& block) const override;
 
@@ -67,7 +68,7 @@ class LocalChainStorage : public ChainStorage {
     Task<std::optional<intx::uint256>> read_total_difficulty(const Hash& block_hash, BlockNum block_num) const override;
 
     Task<std::optional<BlockNum>> read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const override;
-    Task<std::optional<Transaction>> read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_id) const override;
+    Task<std::optional<Transaction>> read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_idx) const override;
 
     Task<std::pair<std::optional<BlockHeader>, std::optional<Hash>>> read_head_header_and_hash() const override;
 

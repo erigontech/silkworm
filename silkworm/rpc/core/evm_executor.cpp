@@ -30,6 +30,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/util.hpp>
+#include <silkworm/rpc/core/override_state.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
 #include "silkworm/core/execution/processor.hpp"
@@ -40,8 +41,8 @@ std::string ExecutionResult::error_message(bool full_error) const {
     if (pre_check_error) {
         return *pre_check_error;
     }
-    if (error_code) {
-        return silkworm::rpc::EVMExecutor::get_error_message(*error_code, data, full_error);
+    if (status_code) {
+        return silkworm::rpc::EVMExecutor::get_error_message(*status_code, data, full_error);
     }
     return "";
 }
@@ -286,10 +287,16 @@ Task<ExecutionResult> EVMExecutor::call(
     StateFactory state_factory,
     const Tracers& tracers,
     bool refund,
-    bool gas_bailout) {
+    bool gas_bailout,
+    std::optional<AccountsOverrides> accounts_overrides) {
     auto this_executor = co_await boost::asio::this_coro::executor;
     const auto execution_result = co_await async_task(workers.executor(), [&]() -> ExecutionResult {
         auto state = state_factory(this_executor, txn_id, chain_storage);
+        if (accounts_overrides) {
+            auto state_overrides = std::make_shared<state::OverrideState>(*state, *accounts_overrides);
+            EVMExecutor executor{block, config, workers, state_overrides};
+            return executor.call(txn, tracers, refund, gas_bailout);
+        }
         EVMExecutor executor{block, config, workers, state};
         return executor.call(txn, tracers, refund, gas_bailout);
     });

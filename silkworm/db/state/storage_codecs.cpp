@@ -42,9 +42,10 @@ ByteView StorageAddressAndLocationSnapshotsCodec::encode_word() {
     return word;
 }
 
-void StorageAddressAndLocationSnapshotsCodec::decode_word(ByteView input_word) {
+void StorageAddressAndLocationSnapshotsCodec::decode_word(Bytes& input_word) {
     codec.address.decode_word(input_word);
-    codec.location_hash.decode_word(input_word.substr(kAddressLength));
+    auto input_word_remaining = input_word.substr(kAddressLength);
+    codec.location_hash.decode_word(input_word_remaining);
     value = {codec.address.value, codec.location_hash.value};
 }
 

@@ -160,9 +160,9 @@ struct RecSplit<LEAF_SIZE>::SequentialBuildingStrategy : public BuildingStrategy
         return false;  // no collision
     }
 
-    void build_enum_index(std::unique_ptr<EliasFano>& ef_offsets) override {
+    void build_enum_index(std::unique_ptr<EliasFanoBuilder>& ef_offsets) override {
         // Build Elias-Fano index for offsets (if any)
-        ef_offsets = std::make_unique<EliasFano>(keys_added_, max_offset_);
+        ef_offsets = std::make_unique<EliasFanoBuilder>(keys_added_, max_offset_);
         offset_collector_->load([&](const datastore::etl::Entry& entry) {
             const uint64_t offset = endian::load_big_u64(entry.key.data());
             ef_offsets->add_offset(offset);

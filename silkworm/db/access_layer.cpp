@@ -27,7 +27,6 @@
 #include <silkworm/db/blocks/headers/header_queries.hpp>
 #include <silkworm/db/blocks/transactions/txn_queries.hpp>
 #include <silkworm/db/datastore/kvdb/bitmap.hpp>
-#include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/receipt_cbor.hpp>
 #include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
@@ -185,7 +184,7 @@ void delete_header(RWTxn& txn, BlockNum block_num, const evmc::bytes32& hash) {
 std::optional<BlockNum> read_stored_header_number_after(ROTxn& txn, BlockNum min_block_num) {
     auto cursor = txn.ro_cursor(table::kHeaders);
     auto key = block_key(min_block_num);
-    auto result = cursor->lower_bound(to_slice(key), /* throw_notfound = */ false);
+    auto result = cursor->lower_bound(to_slice(key), /*throw_notfound=*/false);
     if (!result) {
         return std::nullopt;
     }
@@ -207,7 +206,7 @@ static Bytes header_numbers_key(evmc::bytes32 hash) {
 std::optional<BlockNum> read_block_num(ROTxn& txn, const evmc::bytes32& hash) {
     auto header_number_cursor = txn.ro_cursor(table::kHeaderNumbers);
     auto key = header_numbers_key(hash);
-    auto data = header_number_cursor->find(to_slice(key), /*throw_notfound*/ false);
+    auto data = header_number_cursor->find(to_slice(key), /*throw_notfound=*/false);
     if (!data) {
         return std::nullopt;
     }
@@ -244,7 +243,7 @@ std::optional<intx::uint256> read_total_difficulty(
 
 std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, ByteView key) {
     auto cursor = txn.ro_cursor(table::kDifficulty);
-    auto data{cursor->find(to_slice(key), false)};
+    auto data{cursor->find(to_slice(key), /*throw_notfound=*/false)};
     if (!data) {
         return std::nullopt;
     }
@@ -357,8 +356,8 @@ void read_transactions(ROCursor& txn_table, uint64_t base_id, uint64_t count, st
     auto key{block_key(base_id)};
 
     uint64_t i{0};
-    for (auto data{txn_table.find(to_slice(key), false)}; data.done && i < count;
-         data = txn_table.to_next(/*throw_notfound = */ false), ++i) {
+    for (auto data = txn_table.find(to_slice(key), /*throw_notfound=*/false); data.done && i < count;
+         data = txn_table.to_next(/*throw_notfound=*/false), ++i) {
         ByteView data_view{from_slice(data.value)};
         success_or_throw(rlp::decode(data_view, out.at(i)));
     }
@@ -374,8 +373,8 @@ static void read_rlp_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, 
     const auto key{block_key(base_id)};
     auto cursor = txn.ro_cursor(table::kBlockTransactions);
     uint64_t i{0};
-    for (auto data{cursor->find(to_slice(key), false)}; data.done && i < count;
-         data = cursor->to_next(/*throw_notfound = */ false), ++i) {
+    for (auto data = cursor->find(to_slice(key), /*throw_notfound=*/false); data.done && i < count;
+         data = cursor->to_next(/*throw_notfound=*/false), ++i) {
         rlp_txs[i] = from_slice(data.value);
     }
     SILKWORM_ASSERT(i == count);
@@ -384,8 +383,8 @@ static void read_rlp_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, 
 void delete_transactions(RWTxn& txn, uint64_t base_id, uint64_t count) {
     auto cursor = txn.rw_cursor(table::kBlockTransactions);
     auto first_key = block_key(base_id);
-    auto result = cursor->find(to_slice(first_key), /* throw_notfound = */ false);
-    for (uint64_t i = 0; result && (i < count); result = cursor->to_next(/* throw_notfound = */ false), ++i) {
+    auto result = cursor->find(to_slice(first_key), /*throw_notfound=*/false);
+    for (uint64_t i = 0; result && (i < count); result = cursor->to_next(/*throw_notfound=*/false), ++i) {
         cursor->erase();
     }
 }
@@ -393,7 +392,7 @@ void delete_transactions(RWTxn& txn, uint64_t base_id, uint64_t count) {
 bool read_block_by_number(ROTxn& txn, BlockNum block_num, bool read_senders, Block& block) {
     auto canonical_hashes_cursor = txn.ro_cursor(table::kCanonicalHashes);
     const Bytes key{block_key(block_num)};
-    const auto data{canonical_hashes_cursor->find(to_slice(key), false)};
+    const auto data{canonical_hashes_cursor->find(to_slice(key), /*throw_notfound=*/false)};
     if (!data) {
         return false;
     }
@@ -484,6 +483,15 @@ std::optional<BlockBodyForStorage> read_body_for_storage(ROTxn& txn, const Bytes
     return body;
 }
 
+std::optional<Bytes> read_raw_body_for_storage(ROTxn& txn, const Bytes& key) {
+    auto cursor = txn.ro_cursor(table::kBlockBodies);
+    auto data{cursor->find(to_slice(key), false)};
+    if (!data) {
+        return std::nullopt;
+    }
+    return Bytes{from_slice(data.value)};
+}
+
 bool read_body(ROTxn& txn, const Bytes& key, bool read_senders, BlockBody& out) {
     auto body_opt = read_body_for_storage(txn, key);
     if (!body_opt) {
@@ -531,6 +539,12 @@ std::optional<BlockBodyForStorage> read_canonical_body_for_storage(ROTxn& txn, B
     auto hash = read_canonical_header_hash(txn, block_num);
     if (!hash) return std::nullopt;
     return read_body_for_storage(txn, block_key(block_num, hash->bytes));
+}
+
+std::optional<Bytes> read_raw_canonical_body_for_storage(ROTxn& txn, BlockNum block_num) {
+    auto hash = read_canonical_header_hash(txn, block_num);
+    if (!hash) return std::nullopt;
+    return read_raw_body_for_storage(txn, block_key(block_num, hash->bytes));
 }
 
 bool read_canonical_block(ROTxn& txn, BlockNum block_num, Block& block) {
@@ -737,7 +751,7 @@ std::optional<Account> read_account(ROTxn& txn, const evmc::address& address, st
 
     if (!encoded.has_value()) {
         auto state_cursor = txn.ro_cursor_dup_sort(table::kPlainState);
-        if (auto data{state_cursor->find({address.bytes, sizeof(evmc::address)}, false)}; data.done) {
+        if (auto data = state_cursor->find({address.bytes, sizeof(evmc::address)}, /*throw_notfound=*/false); data.done) {
             encoded.emplace(from_slice(data.value));
         }
     }
@@ -753,7 +767,7 @@ std::optional<Account> read_account(ROTxn& txn, const evmc::address& address, st
         // restore code hash
         auto code_cursor = txn.ro_cursor(table::kPlainCodeHash);
         auto key{storage_prefix(address, acc.incarnation)};
-        if (auto data{code_cursor->find(to_slice(key), /*throw_notfound*/ false)};
+        if (auto data = code_cursor->find(to_slice(key), /*throw_notfound=*/false);
             data.done && data.value.length() == kHashLength) {
             std::memcpy(acc.code_hash.bytes, data.value.data(), kHashLength);
         }
@@ -802,7 +816,7 @@ std::optional<uint64_t> read_previous_incarnation(ROTxn& txn, const evmc::addres
     }
 
     auto cursor = txn.ro_cursor(table::kIncarnationMap);
-    if (auto data{cursor->find(to_slice(address), /*throw_notfound=*/false)}; data.done) {
+    if (auto data = cursor->find(to_slice(address), /*throw_notfound=*/false); data.done) {
         SILKWORM_ASSERT(data.value.length() == 8);
         const uint64_t previous_incarnation{endian::load_big_u64(static_cast<uint8_t*>(data.value.data()))};
         return previous_incarnation;
@@ -951,7 +965,7 @@ uint64_t increment_map_sequence(RWTxn& txn, const char* map_name, uint64_t incre
 uint64_t read_map_sequence(ROTxn& txn, const char* map_name) {
     auto target = txn.ro_cursor(table::kSequence);
     mdbx::slice key(map_name);
-    auto data{target->find(key, /*throw_notfound=*/false)};
+    const auto data = target->find(key, /*throw_notfound=*/false);
     if (!data.done) {
         return 0;
     }
@@ -1039,7 +1053,7 @@ std::optional<ChainId> DataModel::read_chain_id() const {
 BlockNum DataModel::max_block_num() const {
     // Assume last block is likely on db: first lookup there
     const auto header_cursor{txn_.ro_cursor(table::kHeaders)};
-    const auto data{header_cursor->to_last(/*.throw_not_found*/ false)};
+    const auto data = header_cursor->to_last(/*throw_notfound=*/false);
     if (data.done && data.key.size() >= sizeof(uint64_t)) {
         ByteView key = from_slice(data.key);
         ByteView block_num_data = key.substr(0, sizeof(BlockNum));
@@ -1166,24 +1180,30 @@ std::optional<Hash> DataModel::read_canonical_header_hash(BlockNum block_num) co
 }
 
 std::optional<BlockHeader> DataModel::read_canonical_header(BlockNum block_num) const {
+    // We don't use DataModel::read_canonical_header_hash here to avoid double read for headers in snapshots
     const auto canonical_hash{db::read_canonical_header_hash(txn_, block_num)};
-    if (!canonical_hash) return {};
+    if (canonical_hash) {
+        return db::read_header(txn_, block_num, *canonical_hash);
+    }
 
-    return read_header(block_num, *canonical_hash);
+    return read_header_from_snapshot(block_num);
 }
 
 bool DataModel::read_canonical_body(BlockNum block_num, BlockBody& body) const {
-    const auto canonical_hash{db::read_canonical_header_hash(txn_, block_num)};
+    const auto canonical_hash{read_canonical_header_hash(block_num)};
     if (!canonical_hash) return {};
 
     return read_body(*canonical_hash, block_num, body);
 }
 
 bool DataModel::read_canonical_block(BlockNum block_num, Block& block) const {
-    const auto canonical_hash{db::read_canonical_header_hash(txn_, block_num)};
-    if (!canonical_hash) return {};
+    const auto canonical_hash = db::read_canonical_header_hash(txn_, block_num);
+    if (canonical_hash) {
+        const bool found = db::read_block(txn_, *canonical_hash, block_num, block);
+        if (found) return found;
+    }
 
-    return read_block(*canonical_hash, block_num, block);
+    return read_block_from_snapshot(block_num, block);
 }
 
 bool DataModel::has_body(BlockNum block_num, HashAsArray hash) const {
@@ -1255,11 +1275,13 @@ void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader)
 }
 
 bool DataModel::read_block(BlockNum block_num, bool read_senders, Block& block) const {
-    const auto hash{db::read_canonical_header_hash(txn_, block_num)};
-    if (!hash) {
-        return false;
+    const auto hash = db::read_canonical_header_hash(txn_, block_num);
+    if (hash) {
+        const bool found = db::read_block(txn_, hash->bytes, block_num, read_senders, block);
+        if (found) return found;
     }
-    return read_block(hash->bytes, block_num, read_senders, block);
+
+    return read_block_from_snapshot(block_num, block);
 }
 
 bool DataModel::read_block_from_snapshot(BlockNum block_num, Block& block) const {
@@ -1277,6 +1299,20 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(BlockNum block_n
 
 std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash) const {
     return HeaderFindByHashQuery{repository_}.exec(hash);
+}
+
+std::optional<BlockBodyForStorage> DataModel::read_canonical_body_for_storage(BlockNum block_num) const {
+    auto block_body_for_storage = db::read_canonical_body_for_storage(txn_, block_num);
+    if (block_body_for_storage) return block_body_for_storage;
+
+    return read_body_for_storage_from_snapshot(block_num);
+}
+
+std::optional<Bytes> DataModel::read_raw_canonical_body_for_storage(BlockNum block_num) const {
+    auto block_body_for_storage = db::read_raw_canonical_body_for_storage(txn_, block_num);
+    if (block_body_for_storage) return block_body_for_storage;
+
+    return read_raw_body_for_storage_from_snapshot(block_num);
 }
 
 std::optional<BlockBodyForStorage> DataModel::read_body_for_storage_from_snapshot(BlockNum block_num) const {
@@ -1325,20 +1361,16 @@ bool DataModel::read_rlp_transactions_from_snapshot(BlockNum block_num, std::vec
     auto stored_body = BodyFindByBlockNumQuery{repository_}.exec(block_num);
     if (!stored_body) return false;
 
-    {
-        // Skip first and last *system transactions* in block body
-        const auto base_txn_id{stored_body->base_txn_id + 1};
-        const auto txn_count{stored_body->txn_count >= 2 ? stored_body->txn_count - 2 : stored_body->txn_count};
-        if (txn_count == 0) return true;
+    // Skip first and last *system transactions* in block body
+    const auto base_txn_id{stored_body->base_txn_id + 1};
+    const auto txn_count{stored_body->txn_count >= 2 ? stored_body->txn_count - 2 : stored_body->txn_count};
+    if (txn_count == 0) return true;
 
-        auto txs_opt = TransactionPayloadRlpRangeFromIdQuery{repository_}.exec(block_num, base_txn_id, txn_count);
-        if (!txs_opt) return false;
+    auto txs_opt = TransactionPayloadRlpRangeFromIdQuery{repository_}.exec(block_num, base_txn_id, txn_count);
+    if (!txs_opt) return false;
 
-        rlp_txs = std::move(*txs_opt);
-        return true;
-    }
-
-    return false;
+    rlp_txs = std::move(*txs_opt);
+    return true;
 }
 
 bool DataModel::read_rlp_transactions(BlockNum block_num, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const {
@@ -1359,7 +1391,7 @@ std::optional<BlockNum> DataModel::read_tx_lookup(const evmc::bytes32& tx_hash) 
 
 std::optional<BlockNum> DataModel::read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const {
     auto cursor = txn_.ro_cursor(table::kTxLookup);
-    auto data{cursor->find(to_slice(tx_hash), /*throw_notfound = */ false)};
+    const auto data = cursor->find(to_slice(tx_hash), /*throw_notfound=*/false);
     if (!data) {
         return std::nullopt;
     }

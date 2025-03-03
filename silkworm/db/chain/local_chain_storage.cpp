@@ -99,6 +99,10 @@ Task<bool> LocalChainStorage::read_canonical_body(BlockNum block_num, BlockBody&
     co_return data_model_.read_canonical_body(block_num, body);
 }
 
+Task<std::optional<Bytes>> LocalChainStorage::read_raw_canonical_body_for_storage(BlockNum block_num) const {
+    co_return data_model_.read_raw_canonical_body_for_storage(block_num);
+}
+
 Task<bool> LocalChainStorage::read_canonical_block(BlockNum block_num, Block& block) const {
     co_return data_model_.read_canonical_block(block_num, block);
 }
@@ -145,8 +149,15 @@ Task<std::optional<BlockNum>> LocalChainStorage::read_block_num_by_transaction_h
     co_return data_model_.read_tx_lookup(transaction_hash);
 }
 
-Task<std::optional<Transaction>> LocalChainStorage::read_transaction_by_idx_in_block(BlockNum /*block_num*/, uint64_t /*txn_id*/) const {
-    throw std::runtime_error{"not yet implemented"};
+Task<std::optional<Transaction>> LocalChainStorage::read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_idx) const {
+    BlockBody body;
+    if (!data_model_.read_canonical_body(block_num, body)) {
+        co_return std::nullopt;
+    }
+    if (txn_idx >= body.transactions.size()) {
+        co_return std::nullopt;
+    }
+    co_return body.transactions[txn_idx];
 }
 
 Task<std::pair<std::optional<BlockHeader>, std::optional<Hash>>> LocalChainStorage::read_head_header_and_hash() const {

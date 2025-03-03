@@ -16,6 +16,8 @@
 
 #include "util.hpp"
 
+#include <evmone/instructions_traits.hpp>
+
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {
@@ -156,15 +158,14 @@ std::string get_opcode_hex(uint8_t opcode) {
     return {'0', 'x', kHexDigits[opcode >> 4], kHexDigits[opcode & 0xf]};
 }
 
-std::optional<std::string> get_opcode_name(const char* const* names, std::uint8_t opcode) {
-    SILKWORM_ASSERT(names != nullptr);
-
-    std::optional<std::string> op_name;
-    const auto name = names[opcode];
-    if (name != nullptr) {
-        op_name = name;
-    }
-    return op_name;
+std::optional<std::string_view> get_opcode_name(std::uint8_t opcode) noexcept {
+    // TODO(evmone): evmone can provide a function like this directly with optimized lookup table.
+    const auto& tr = evmone::instr::traits[opcode];
+    if (!tr.since.has_value())
+        return std::nullopt;
+    if (opcode == evmone::OP_PREVRANDAO)
+        return "DIFFICULTY";  // Overwrite for compatibility with Erigon and Geth.
+    return tr.name;
 }
 
 }  // namespace silkworm

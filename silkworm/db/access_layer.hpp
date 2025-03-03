@@ -332,6 +332,9 @@ class DataModel {
     [[nodiscard]] bool read_body(const Hash& hash, BlockNum block_num, BlockBody& body) const;
     [[nodiscard]] bool read_body(const Hash& hash, BlockBody& body) const;
 
+    std::optional<BlockBodyForStorage> read_canonical_body_for_storage(BlockNum block_num) const;
+    std::optional<Bytes> read_raw_canonical_body_for_storage(BlockNum block_num) const;
+
     //! Read block body for storage from the snapshot repository
     std::optional<BlockBodyForStorage> read_body_for_storage_from_snapshot(BlockNum block_num) const;
     std::optional<Bytes> read_raw_body_for_storage_from_snapshot(BlockNum block_num) const;

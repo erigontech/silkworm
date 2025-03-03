@@ -113,6 +113,17 @@ int Daemon::run(const DaemonSettings& settings) {
     const auto tid = std::this_thread::get_id();
 
     try {
+        constexpr uint64_t kMaxFileDescriptors{10'240};
+        const uint64_t current_max_file_descriptors = os::max_file_descriptors();
+        if (current_max_file_descriptors < kMaxFileDescriptors) {
+            const bool set_fd_result = os::set_max_file_descriptors(kMaxFileDescriptors);
+            if (!set_fd_result) {
+                throw std::runtime_error{"Cannot increase max file descriptors up to " + std::to_string(kMaxFileDescriptors)};
+            }
+            const uint64_t new_max_file_descriptors = os::max_file_descriptors();
+            SILK_INFO << "Silkrpc raised fd limit from " << current_max_file_descriptors << " to " << new_max_file_descriptors;
+        }
+
         if (!settings.datadir) {
             SILK_INFO << "Silkrpc launched with private address " << settings.private_api_addr << " using "
                       << context_pool_settings.num_contexts << " contexts, " << settings.num_workers << " workers";
@@ -128,7 +139,7 @@ int Daemon::run(const DaemonSettings& settings) {
 
             silkworm::datastore::kvdb::EnvConfig db_config{
                 .path = data_dir.chaindata().path().string(),
-                .in_memory = true,
+                .readonly = true,
                 .shared = true,
                 .max_readers = kDatabaseMaxReaders};
 

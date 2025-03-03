@@ -16,25 +16,16 @@
 
 #include "inverted_index_range_by_key_query.hpp"
 
-#include <algorithm>
-#include <iterator>
-#include <vector>
-
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/common/directories.hpp>
 
+#include "../common/ranges/vector_from_range.hpp"
 #include "big_endian_codec.hpp"
 #include "database.hpp"
 #include "inverted_index_put_query.hpp"
 
 namespace silkworm::datastore::kvdb {
-
-std::vector<Timestamp> vector_from_range(auto range) {
-    std::vector<Timestamp> results;
-    std::ranges::copy(range, std::back_inserter(results));
-    return results;
-}
 
 void init_inverted_index(RWTxn& tx, InvertedIndex ii, const std::multimap<uint64_t, Timestamp>& kvs) {
     InvertedIndexPutQuery<BigEndianU64Codec> put_query{tx, ii};

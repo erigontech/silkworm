@@ -24,6 +24,8 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/hash.hpp>
 
+#include "chain_storage.hpp"
+
 namespace silkworm::db::chain {
 
 using BlockProvider = std::function<Task<bool>(BlockNum, HashAsSpan, bool, Block&)>;
@@ -39,5 +41,12 @@ struct Providers {
     CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number;
     CanonicalBodyForStorageProvider canonical_body_for_storage;
 };
+
+inline CanonicalBodyForStorageProvider canonical_body_provider_from_chain_storage(const ChainStorage& chain_storage) {
+    return db::chain::CanonicalBodyForStorageProvider{
+        [&chain_storage](BlockNum block_num) -> Task<std::optional<Bytes>> {
+            co_return co_await chain_storage.read_raw_canonical_body_for_storage(block_num);
+        }};
+}
 
 }  // namespace silkworm::db::chain

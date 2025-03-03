@@ -19,7 +19,7 @@
 #include <ranges>
 
 #include "../common/entity_name.hpp"
-#include "../common/owning_view.hpp"
+#include "../common/ranges/owning_view.hpp"
 #include "../common/timestamp.hpp"
 #include "inverted_index_find_by_key_segment_query.hpp"
 #include "snapshot_repository_ro_access.hpp"

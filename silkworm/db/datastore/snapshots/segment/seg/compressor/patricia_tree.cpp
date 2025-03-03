@@ -426,7 +426,7 @@ uint32_t PatriciaTreeMatchFinderImpl::unfold(unsigned char b) {
                 node_stack.push_back(top->n1.get());
                 top = top->n1.get();
             } else {
-#ifdef DEBUG
+#ifndef NDEBUG
                 SILKWORM_ASSERT(false);
 #else
                 throw std::runtime_error("PatriciaTreeMatchFinder::unfold: unexpected condition side > 1");
@@ -495,7 +495,7 @@ uint32_t PatriciaTreeMatchFinderImpl::unfold(unsigned char b) {
                 node_stack.push_back(top->n1.get());
                 top = top->n1.get();
             } else {
-#ifdef DEBUG
+#ifndef NDEBUG
                 SILKWORM_ASSERT(false);
 #else
                 throw std::runtime_error("PatriciaTreeMatchFinder::unfold: unexpected condition side > 1");
@@ -537,7 +537,7 @@ void PatriciaTreeMatchFinderImpl::fold(size_t bits) {
                 side = kSide1;
                 head_len = top->p1 & 0x1f;
             } else {
-#ifdef DEBUG
+#ifndef NDEBUG
                 SILKWORM_ASSERT(false);
 #else
                 throw std::runtime_error("PatriciaTreeMatchFinder::fold: unexpected condition top prev_top is not a top child");
@@ -677,7 +677,7 @@ std::pair<Bytes, size_t> PatriciaTreeMatchFinderImpl::current() {
             } else if (n->n1.get() == next) {
                 p = n->p1;
             } else {
-#ifdef DEBUG
+#ifndef NDEBUG
                 SILKWORM_ASSERT(false);
 #else
                 throw std::runtime_error("PatriciaTreeMatchFinder::current: unexpected condition next is not a child of n");

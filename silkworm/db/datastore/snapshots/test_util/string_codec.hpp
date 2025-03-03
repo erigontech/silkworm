@@ -34,7 +34,7 @@ struct StringCodec : public Codec {
         word = string_to_bytes(value);
         return word;
     }
-    void decode_word(ByteView input_word) override {
+    void decode_word(Bytes& input_word) override {
         value = byte_view_to_string_view(input_word);
     }
 };

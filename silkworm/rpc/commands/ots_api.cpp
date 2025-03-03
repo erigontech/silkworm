@@ -23,6 +23,7 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
+#include <silkworm/db/chain/providers.hpp>
 #include <silkworm/db/datastore/kvdb/bitmap.hpp>
 #include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/kv/state_reader.hpp>
@@ -36,7 +37,6 @@
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_trace.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
-#include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 
@@ -53,6 +53,9 @@ static constexpr int kCurrentApiLevel{8};
 
 //! The window size used when probing history periodically
 static constexpr uint64_t kTxnProbeWindowSize{4096};
+
+//! The maximum allowed page size for the Otterscan API
+static constexpr int kMaxPageSize{25};
 
 Task<void> OtsRpcApi::handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply) {
     reply = make_json_content(request, kCurrentApiLevel);
@@ -374,11 +377,12 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             reply = make_json_content(request, nlohmann::detail::value_t::null);
         }
 
-        auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
-        const auto block_num_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, provider);
+        const auto chain_storage = tx->create_storage();
+        auto canonical_body_provider = db::chain::canonical_body_provider_from_chain_storage(*chain_storage);
+        const auto block_num_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, canonical_body_provider);
         if (block_num_opt) {
             const auto block_num = block_num_opt.value();
-            const auto min_txn_id = co_await db::txn::min_tx_num(*tx, block_num, provider);
+            const auto min_txn_id = co_await db::txn::min_tx_num(*tx, block_num, canonical_body_provider);
             const auto first_txn_id = co_await tx->first_txn_num_in_block(block_num);
             SILK_DEBUG << "block_num: " << block_num << ", min_txn_id: " << min_txn_id << ", first_txn_id: " << first_txn_id;
 
@@ -389,8 +393,6 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
                 tx_index = creation_txn_id - min_txn_id - 1;
             }
             SILK_DEBUG << "block_num: " << block_num << ", tx_index: " << tx_index;
-
-            const auto chain_storage{tx->create_storage()};
 
             const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(block_num, tx_index);
             if (!transaction) {
@@ -527,11 +529,11 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             SILK_DEBUG << "binary search in [" << prev_txn_id << ", " << next_txn_id << "] found nothing";
             reply = make_json_content(request, nlohmann::detail::value_t::null);
         }
-        auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
-        const auto block_num_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, provider);
+        auto canonical_body_provider = db::chain::canonical_body_provider_from_chain_storage(*chain_storage);
+        const auto block_num_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, canonical_body_provider);
         if (block_num_opt) {
             block_num = block_num_opt.value();
-            const auto min_txn_id = co_await db::txn::min_tx_num(*tx, block_num, provider);
+            const auto min_txn_id = co_await db::txn::min_tx_num(*tx, block_num, canonical_body_provider);
             const auto first_txn_id = co_await tx->first_txn_num_in_block(block_num);
             SILK_DEBUG << "block_num: " << block_num
                        << ", min_txn_id: " << min_txn_id
@@ -739,7 +741,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
 
     if (page_size > kMaxPageSize) {
         auto error_msg = "max allowed page size: " + std::to_string(kMaxPageSize);
-        SILK_ERROR << error_msg;
+        SILK_DEBUG << error_msg;
         reply = make_json_error(request, kServerError, error_msg);
         co_return;
     }
@@ -749,16 +751,18 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
     }
     auto tx = co_await database_->begin_transaction();
     try {
-        auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
+        const auto chain_storage = tx->create_storage();
+        auto canonical_body_provider = db::chain::canonical_body_provider_from_chain_storage(*chain_storage);
 
         db::kv::api::Timestamp from_timestamp{-1};
         if (block_num > 0) {
-            const auto max_tx_num = co_await db::txn::max_tx_num(*tx, block_num, provider);
+            const auto max_tx_num = co_await db::txn::max_tx_num(*tx, block_num, canonical_body_provider);
             from_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num);
             SILK_DEBUG << "block_num: " << block_num << " max_tx_num: " << max_tx_num;
         }
 
-        const auto results = co_await collect_transactions_with_receipts(*tx, provider, block_num, address, from_timestamp, false, page_size);
+        const auto results = co_await collect_transactions_with_receipts(
+            *tx, chain_storage, canonical_body_provider, block_num, address, from_timestamp, /*ascending=*/false, page_size);
 
         reply = make_json_content(request, results);
     } catch (const std::invalid_argument& iv) {
@@ -792,7 +796,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
 
     if (page_size > kMaxPageSize) {
         auto error_msg = "max allowed page size: " + std::to_string(kMaxPageSize);
-        SILK_ERROR << error_msg;
+        SILK_DEBUG << error_msg;
         reply = make_json_error(request, kServerError, error_msg);
         co_return;
     }
@@ -800,16 +804,18 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
     auto tx = co_await database_->begin_transaction();
 
     try {
-        auto provider = ethdb::kv::canonical_body_for_storage_provider(backend_);
+        const auto chain_storage = tx->create_storage();
+        auto canonical_body_provider = db::chain::canonical_body_provider_from_chain_storage(*chain_storage);
 
         db::kv::api::Timestamp from_timestamp{-1};
         if (block_num > 0) {
-            const auto max_tx_num = co_await db::txn::min_tx_num(*tx, block_num + 1, provider);
+            const auto max_tx_num = co_await db::txn::min_tx_num(*tx, block_num + 1, canonical_body_provider);
             from_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num);
             SILK_DEBUG << "block_num: " << block_num << " max_tx_num: " << max_tx_num;
         }
 
-        auto results = co_await collect_transactions_with_receipts(*tx, provider, block_num, address, from_timestamp, true, page_size);
+        auto results = co_await collect_transactions_with_receipts(
+            *tx, chain_storage, canonical_body_provider, block_num, address, from_timestamp, /*ascending=*/true, page_size);
 
         std::reverse(results.transactions.begin(), results.transactions.end());
         std::reverse(results.receipts.begin(), results.receipts.end());
@@ -832,6 +838,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
 
 Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     kv::api::Transaction& tx,
+    const std::shared_ptr<db::chain::ChainStorage>& chain_storage,
     db::chain::CanonicalBodyForStorageProvider& provider,
     BlockNum block_num_param,
     const evmc::address& address,
@@ -871,7 +878,6 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
 
     auto paginated_stream = db::kv::api::set_union(std::move(it_from), std::move(it_to), ascending);
     auto txn_nums_it = db::txn::make_txn_nums_stream(std::move(paginated_stream), ascending, tx, provider);
-    const auto chain_storage = tx.create_storage();
 
     while (const auto tnx_nums = co_await txn_nums_it->next()) {
         SILK_DEBUG
@@ -936,49 +942,6 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     co_return results;
 }
 
-Task<bool> OtsRpcApi::trace_blocks(
-    FromToBlockProvider& from_to_provider,
-    kv::api::Transaction& tx,
-    const evmc::address& address,
-    uint64_t page_size,
-    uint64_t result_count,
-    std::vector<TransactionsWithReceipts>& results) {
-    uint64_t est_blocks_to_trace = page_size - result_count;
-    bool has_more = true;
-    results.clear();
-    results.reserve(est_blocks_to_trace);
-
-    for (size_t i = 0; i < est_blocks_to_trace; ++i) {
-        TransactionsWithReceipts transactions_with_receipts;
-
-        auto from_to_response = co_await from_to_provider.get();  // extract_next_block(from_cursor,to_cursor);
-        auto next_block = from_to_response.block_num;
-        has_more = from_to_response.has_more;
-        if (!from_to_response.has_more && next_block == 0) {
-            break;
-        }
-
-        co_await trace_block(tx, next_block, address, transactions_with_receipts);
-        results.push_back(std::move(transactions_with_receipts));
-    }
-
-    co_return has_more;
-}
-
-Task<void> OtsRpcApi::trace_block(kv::api::Transaction& tx, BlockNum block_num, const evmc::address& search_addr, TransactionsWithReceipts& results) {
-    const auto chain_storage = tx.create_storage();
-    const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
-    if (!block_with_hash) {
-        co_return;
-    }
-
-    const auto receipts = co_await core::get_receipts(tx, *block_with_hash, *chain_storage, workers_);
-    const Block extended_block{block_with_hash, false};
-
-    trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, tx};
-    co_await executor.trace_touch_block(*block_with_hash, search_addr, extended_block.get_block_size(), receipts, results);
-}
-
 IssuanceDetails OtsRpcApi::get_issuance(const silkworm::ChainConfig& config, const silkworm::BlockWithHash& block) {
     const auto rule_set_factory = protocol::rule_set_factory(config);
     const auto block_reward{rule_set_factory->compute_reward(block.block)};
@@ -1005,376 +968,6 @@ intx::uint256 OtsRpcApi::get_block_fees(const silkworm::BlockWithHash& block, co
         fees += effective_gas_price * receipt.gas_used;
     }
     return fees;
-}
-
-Task<ChunkProviderResponse> ChunkProvider::get() {
-    if (error_) {
-        co_return ChunkProviderResponse{Bytes{0}, false, true};
-    }
-
-    if (eof_) {
-        co_return ChunkProviderResponse{Bytes{0}, false, false};
-    }
-
-    KeyValue key_value;
-
-    try {
-        if (first_) {
-            first_ = false;
-            key_value = first_seek_key_value_;
-        } else {
-            if (navigate_forward_) {
-                key_value = co_await cursor_->next();
-            } else {
-                key_value = co_await cursor_->previous();
-            }
-        }
-    } catch (const std::exception&) {
-        error_ = true;
-    }
-
-    if (error_) {
-        eof_ = true;
-        co_return ChunkProviderResponse{Bytes{0}, false, true};
-    }
-
-    if (key_value.key.empty() || !key_value.key.starts_with(address_)) {
-        eof_ = true;
-        co_return ChunkProviderResponse{Bytes{0}, false, false};
-    }
-
-    co_return ChunkProviderResponse{key_value.value, true, false};
-}
-
-ChunkProvider::ChunkProvider(kv::api::Cursor* cursor, const evmc::address& address,
-                             bool navigate_forward, kv::api::KeyValue first_seek_key_value)
-    : cursor_{cursor},
-      address_{address},
-      navigate_forward_{navigate_forward},
-      first_seek_key_value_{std::move(first_seek_key_value)} {
-}
-
-Task<ChunkLocatorResponse> ChunkLocator::get(BlockNum min_block) {
-    KeyValue key_value;
-    try {
-        key_value = co_await cursor_->seek(account_history_key(address_, min_block));
-
-        if (key_value.key.empty()) {
-            co_return ChunkLocatorResponse{ChunkProvider{cursor_, address_, navigate_forward_, key_value}, false, false};
-        }
-
-        co_return ChunkLocatorResponse{ChunkProvider{cursor_, address_, navigate_forward_, key_value}, true, false};
-
-    } catch (const std::exception&) {
-        co_return ChunkLocatorResponse{ChunkProvider{cursor_, address_, navigate_forward_, key_value}, false, true};
-    }
-}
-
-ChunkLocator::ChunkLocator(kv::api::Cursor* cursor, const evmc::address& address, bool navigate_forward)
-    : cursor_{cursor},
-      address_{address},
-      navigate_forward_{navigate_forward} {
-}
-
-Task<BlockProviderResponse> ForwardBlockProvider::get() {
-    if (finished_) {
-        co_return BlockProviderResponse{0, false, false};
-    }
-
-    if (is_first_) {
-        is_first_ = false;
-
-        auto chunk_loc_res = co_await chunk_locator_.get(min_block_);
-        chunk_provider_ = chunk_loc_res.chunk_provider;
-
-        if (chunk_loc_res.error) {
-            finished_ = true;
-            co_return BlockProviderResponse{0, false, true};
-        }
-
-        if (!chunk_loc_res.ok) {
-            finished_ = true;
-            co_return BlockProviderResponse{0, false, false};
-        }
-
-        auto chunk_provider_res = co_await chunk_provider_.get();
-
-        if (chunk_provider_res.error) {
-            finished_ = true;
-            co_return BlockProviderResponse{0, false, true};
-        }
-
-        if (!chunk_provider_res.ok) {
-            finished_ = true;
-            co_return BlockProviderResponse{0, false, false};
-        }
-
-        try {
-            roaring::Roaring64Map bitmap = bitmap::parse(chunk_provider_res.chunk);
-
-            iterator(bitmap);
-
-            // It can happen that on the first chunk we'll get a chunk that contains
-            // the first block >= minBlock in the middle of the chunk/bitmap, so we
-            // skip all previous blocks before it.
-            advance_if_needed(min_block_);
-
-            // This means it is the last chunk and the min block is > the last one
-            if (!has_next()) {
-                finished_ = true;
-                co_return BlockProviderResponse{0, false, false};
-            }
-
-        } catch (std::exception&) {
-            finished_ = true;
-            co_return BlockProviderResponse{0, false, true};
-        }
-    }
-
-    BlockNum next_block = next();
-    bool next = has_next();
-
-    if (!next) {
-        auto chunk_provider_res = co_await chunk_provider_.get();
-
-        if (chunk_provider_res.error) {
-            co_return BlockProviderResponse{0, false, true};
-        }
-
-        if (!chunk_provider_res.ok) {
-            finished_ = true;
-            co_return BlockProviderResponse{next_block, false, false};
-        }
-
-        next = true;
-
-        try {
-            auto bitmap = bitmap::parse(chunk_provider_res.chunk);
-            iterator(bitmap);
-
-        } catch (std::exception&) {
-            finished_ = true;
-            co_return BlockProviderResponse{0, false, true};
-        }
-    }
-
-    co_return BlockProviderResponse{next_block, next, false};
-}
-
-bool ForwardBlockProvider::has_next() {
-    return bitmap_index_ < bitmap_vector_.size();
-}
-
-BlockNum ForwardBlockProvider::next() {
-    uint64_t result = bitmap_vector_.at(bitmap_index_);
-    ++bitmap_index_;
-    return result;
-}
-
-void ForwardBlockProvider::iterator(roaring::Roaring64Map& bitmap) {
-    bitmap_vector_.resize(bitmap.cardinality());
-    bitmap.toUint64Array(bitmap_vector_.data());
-    bitmap_index_ = 0;
-}
-
-void ForwardBlockProvider::advance_if_needed(BlockNum min_block) {
-    auto found_index = bitmap_vector_.size();
-    for (size_t i = bitmap_index_; i < bitmap_vector_.size(); ++i) {
-        if (bitmap_vector_.at(i) >= min_block) {
-            found_index = i;
-            break;
-        }
-    }
-    bitmap_index_ = found_index;
-}
-
-Task<BlockProviderResponse> BackwardBlockProvider::get() {
-    if (finished_) {
-        co_return BlockProviderResponse{0, false, false};
-    }
-
-    if (is_first_) {
-        is_first_ = false;
-
-        auto chunk_loc_res = co_await chunk_locator_.get(max_block_);
-        chunk_provider_ = chunk_loc_res.chunk_provider;
-
-        if (chunk_loc_res.error) {
-            finished_ = true;
-            co_return BlockProviderResponse{0, false, true};
-        }
-
-        if (!chunk_loc_res.ok) {
-            finished_ = true;
-            co_return BlockProviderResponse{0, false, false};
-        }
-
-        auto chunk_provider_res = co_await chunk_provider_.get();
-
-        if (chunk_provider_res.error) {
-            finished_ = true;
-            co_return BlockProviderResponse{0, false, true};
-        }
-
-        if (!chunk_provider_res.ok) {
-            finished_ = true;
-            co_return BlockProviderResponse{0, false, false};
-        }
-
-        try {
-            roaring::Roaring64Map bitmap = bitmap::parse(chunk_provider_res.chunk);
-
-            // It can happen that on the first chunk we'll get a chunk that contains
-            // the last block <= max_block_ in the middle of the chunk/bitmap, so we
-            // remove all blocks after it (since there is no AdvanceIfNeeded() in
-            // IntIterable64)
-            if (max_block_ != std::numeric_limits<uint64_t>::max()) {
-                bitmap.removeRange(max_block_ + 1, std::numeric_limits<uint64_t>::max());
-            }
-
-            reverse_iterator(bitmap);
-
-            if (!has_next()) {
-                chunk_provider_res = co_await chunk_provider_.get();
-
-                if (chunk_provider_res.error) {
-                    finished_ = true;
-                    co_return BlockProviderResponse{0, false, true};
-                }
-
-                if (!chunk_provider_res.ok) {
-                    finished_ = true;
-                    co_return BlockProviderResponse{0, false, false};
-                }
-
-                bitmap = bitmap::parse(chunk_provider_res.chunk);
-                reverse_iterator(bitmap);
-            }
-
-        } catch (std::exception&) {
-            finished_ = true;
-            co_return BlockProviderResponse{0, false, true};
-        }
-    }
-
-    BlockNum next_block = next();
-    bool next = has_next();
-
-    if (!next) {
-        auto chunk_provider_res = co_await chunk_provider_.get();
-
-        if (chunk_provider_res.error) {
-            co_return BlockProviderResponse{0, false, true};
-        }
-
-        if (!chunk_provider_res.ok) {
-            finished_ = true;
-            co_return BlockProviderResponse{next_block, false, false};
-        }
-
-        next = true;
-
-        try {
-            auto bitmap = bitmap::parse(chunk_provider_res.chunk);
-            reverse_iterator(bitmap);
-
-        } catch (std::exception&) {
-            finished_ = true;
-            co_return BlockProviderResponse{0, false, true};
-        }
-    }
-
-    co_return BlockProviderResponse{next_block, next, false};
-}
-
-bool BackwardBlockProvider::has_next() {
-    return bitmap_index_ < bitmap_vector_.size();
-}
-
-uint64_t BackwardBlockProvider::next() {
-    uint64_t result = bitmap_vector_.at(bitmap_index_);
-    ++bitmap_index_;
-    return result;
-}
-
-void BackwardBlockProvider::reverse_iterator(roaring::Roaring64Map& bitmap) {
-    bitmap_vector_.resize(bitmap.cardinality());
-    bitmap.toUint64Array(bitmap_vector_.data());
-    std::reverse(bitmap_vector_.begin(), bitmap_vector_.end());
-    bitmap_index_ = 0;
-}
-
-Task<BlockProviderResponse> FromToBlockProvider::get() {
-    if (!initialized_) {
-        initialized_ = true;
-
-        auto from_prov_res = co_await call_from_provider_->get();
-        if (from_prov_res.error) {
-            co_return BlockProviderResponse{0, false, true};
-        }
-        next_from_ = from_prov_res.block_num;
-        has_more_from_ = from_prov_res.has_more || next_from_ != 0;
-
-        auto to_prov_res = co_await call_to_provider_->get();
-        if (to_prov_res.error) {
-            co_return BlockProviderResponse{0, false, true};
-        }
-        next_to_ = to_prov_res.block_num;
-        has_more_to_ = to_prov_res.has_more || next_to_ != 0;
-    }
-
-    if (!has_more_from_ && !has_more_to_) {
-        co_return BlockProviderResponse{0, false, true};
-    }
-
-    BlockNum block_num{0};
-
-    if (!has_more_from_) {
-        block_num = next_to_;
-    } else if (!has_more_to_) {
-        block_num = next_from_;
-    } else {
-        block_num = next_from_;
-        if (is_backwards_) {
-            if (next_to_ < next_from_) {
-                block_num = next_to_;
-            }
-        } else {
-            if (next_to_ > next_from_) {
-                block_num = next_to_;
-            }
-        }
-    }
-
-    // Pull next; it may be that from AND to contains the same blockNum
-    if (has_more_from_ && block_num == next_from_) {
-        auto from_prov_res = co_await call_from_provider_->get();
-
-        if (from_prov_res.error) {
-            co_return BlockProviderResponse{0, false, true};
-        }
-        next_from_ = from_prov_res.block_num;
-        has_more_from_ = from_prov_res.has_more || next_from_ != 0;
-    }
-
-    if (has_more_to_ && block_num == next_to_) {
-        auto to_prov_res = co_await call_to_provider_->get();
-
-        if (to_prov_res.error) {
-            co_return BlockProviderResponse{0, false, true};
-        }
-
-        next_to_ = to_prov_res.block_num;
-        has_more_to_ = to_prov_res.has_more || next_to_ != 0;
-    }
-
-    co_return BlockProviderResponse{block_num, has_more_from_ || has_more_to_, false};
-}
-
-FromToBlockProvider::FromToBlockProvider(bool is_backwards, BlockProvider* call_from_provider, BlockProvider* call_to_provider)
-    : is_backwards_{is_backwards},
-      call_from_provider_{call_from_provider},
-      call_to_provider_{call_to_provider} {
 }
 
 }  // namespace silkworm::rpc::commands

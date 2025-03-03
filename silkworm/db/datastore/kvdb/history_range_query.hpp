@@ -22,7 +22,7 @@
 
 #include <silkworm/core/common/assert.hpp>
 
-#include "../common/caching_view.hpp"
+#include "../common/ranges/caching_view.hpp"
 #include "../common/timestamp.hpp"
 #include "cursor_iterator.hpp"
 #include "history.hpp"
@@ -32,13 +32,14 @@
 
 namespace silkworm::datastore::kvdb {
 
-template <EncoderConcept TKeyDecoder, EncoderConcept TValueDecoder>
+template <DecoderConcept TKeyDecoder, DecoderConcept TValueDecoder>
 struct HistoryRangeQuery {
     ROTxn& tx;
     History entity;
 
     using Key = decltype(TKeyDecoder::value);
     using Value = decltype(TValueDecoder::value);
+    using ResultItem = std::pair<Key, Value>;
 
     template <typename T>
     static constexpr bool as_bool_predicate(const T& v) {
@@ -144,7 +145,8 @@ struct HistoryRangeQuery {
                std::views::transform(std::move(seek_func)) |
                silkworm::views::caching |
                std::views::filter(as_bool_predicate<std::shared_ptr<ROCursor>>) |
-               std::views::transform(kv_pair_from_cursor_func(entity.has_large_values));
+               std::views::transform(kv_pair_from_cursor_func(entity.has_large_values)) |
+               silkworm::views::caching;
     }
 
     auto exec(TimestampRange ts_range, bool ascending) {

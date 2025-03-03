@@ -24,8 +24,8 @@ namespace silkworm::db::state {
 
 TEST_CASE("Decode account from storage") {
     SECTION("Correct payload") {
-        Bytes encoded{*from_hex("0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239")};
-        auto decoded = AccountCodec::from_encoded_storage(encoded);
+        const Bytes encoded{*from_hex("0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239")};
+        const auto decoded = AccountCodec::from_encoded_storage(encoded);
         REQUIRE(decoded);
 
         CHECK(decoded->nonce == 2);
@@ -38,14 +38,14 @@ TEST_CASE("Decode account from storage") {
     }
 
     SECTION("Correct payload only incarnation") {
-        Bytes encoded{*from_hex("0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239")};
-        auto incarnation = AccountCodec::incarnation_from_encoded_storage(encoded);
+        const Bytes encoded{*from_hex("0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239")};
+        const auto incarnation = AccountCodec::incarnation_from_encoded_storage(encoded);
         CHECK(incarnation == 5);
     }
 
     SECTION("Empty payload") {
-        Bytes encoded{};
-        auto decoded = AccountCodec::from_encoded_storage(encoded);
+        const Bytes encoded{};
+        const auto decoded = AccountCodec::from_encoded_storage(encoded);
         REQUIRE(decoded);
 
         CHECK(decoded->nonce == 0);
@@ -55,32 +55,32 @@ TEST_CASE("Decode account from storage") {
     }
 
     SECTION("One zero byte payload") {
-        Bytes encoded{*from_hex("00")};
+        const Bytes encoded{*from_hex("00")};
         CHECK(AccountCodec::from_encoded_storage(encoded));
     }
 
     SECTION("One non-zero byte payload") {
-        Bytes encoded{*from_hex("04")};
+        const Bytes encoded{*from_hex("04")};
         CHECK(AccountCodec::from_encoded_storage(encoded) == tl::unexpected{DecodingError::kInputTooShort});
     }
 
     SECTION("One >15 byte head plus 1byte") {
-        Bytes encoded{*from_hex("1e01")};
+        const Bytes encoded{*from_hex("1e01")};
         CHECK(AccountCodec::from_encoded_storage(encoded) == tl::unexpected{DecodingError::kInvalidFieldset});
     }
 
     SECTION("Too short payload") {
-        Bytes encoded{*from_hex("0f")};
+        const Bytes encoded{*from_hex("0f")};
         CHECK(AccountCodec::from_encoded_storage(encoded) == tl::unexpected{DecodingError::kInputTooShort});
     }
 
     SECTION("Wrong nonce payload") {
-        Bytes encoded{*from_hex("01020001")};
+        const Bytes encoded{*from_hex("01020001")};
         CHECK(AccountCodec::from_encoded_storage(encoded) == tl::unexpected{DecodingError::kLeadingZero});
     }
 
     SECTION("Wrong code_hash payload") {
-        Bytes encoded{*from_hex("0x0805c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4")};
+        const Bytes encoded{*from_hex("0x0805c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4")};
         CHECK(AccountCodec::from_encoded_storage(encoded) == tl::unexpected{DecodingError::kUnexpectedLength});
     }
 }
@@ -95,7 +95,7 @@ TEST_CASE("AccountCodec::encode_for_storage_v3") {
 }
 
 TEST_CASE("AccountCodec::from_encoded_storage_v3") {
-    auto decode = [](std::string_view payload) -> tl::expected<Account, DecodingError> {
+    const auto decode = [](std::string_view payload) -> tl::expected<Account, DecodingError> {
         return AccountCodec::from_encoded_storage_v3(*from_hex(payload));
     };
 

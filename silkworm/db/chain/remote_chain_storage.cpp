@@ -163,6 +163,10 @@ Task<bool> RemoteChainStorage::read_canonical_body(BlockNum block_num, BlockBody
     co_return true;
 }
 
+Task<std::optional<Bytes>> RemoteChainStorage::read_raw_canonical_body_for_storage(BlockNum block_num) const {
+    co_return co_await providers_.canonical_body_for_storage(block_num);
+}
+
 Task<bool> RemoteChainStorage::read_canonical_block(BlockNum block_num, Block& block) const {
     const auto hash = co_await providers_.canonical_block_hash_from_number(block_num);
     if (!hash) {
@@ -246,7 +250,7 @@ Task<std::optional<BlockNum>> RemoteChainStorage::read_block_num_by_transaction_
     co_return co_await providers_.block_num_from_txn_hash(transaction_hash.bytes);
 }
 
-Task<std::optional<Transaction>> RemoteChainStorage::read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_id) const {
+Task<std::optional<Transaction>> RemoteChainStorage::read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_idx) const {
     const auto block_hash = co_await read_canonical_header_hash(block_num);
     if (!block_hash) {
         co_return std::nullopt;
@@ -255,10 +259,10 @@ Task<std::optional<Transaction>> RemoteChainStorage::read_transaction_by_idx_in_
     if (const bool success = co_await read_body(*block_hash, block_num, body); !success) {
         co_return std::nullopt;
     }
-    if (txn_id >= body.transactions.size()) {
+    if (txn_idx >= body.transactions.size()) {
         co_return std::nullopt;
     }
-    co_return body.transactions[txn_id];
+    co_return body.transactions[txn_idx];
 }
 
 Task<std::pair<std::optional<BlockHeader>, std::optional<Hash>>> RemoteChainStorage::read_head_header_and_hash() const {

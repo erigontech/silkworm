@@ -64,12 +64,16 @@ struct StepRange {
 
     BlockNumRange to_block_num_range() const { return {start.to_block_num(), end.to_block_num()}; }
     static StepRange from_block_num_range(BlockNumRange range) {
-        return {Step::from_block_num(range.start), Step::from_block_num(range.end + kStepSizeForBlockSnapshots - 1)};
+        return {Step::from_block_num(range.start),
+                Step::from_block_num(range.end >= kMaxBlockNum - kStepSizeForBlockSnapshots + 1 ? kMaxBlockNum
+                                                                                                : range.end + kStepSizeForBlockSnapshots - 1)};
     }
 
     TxnIdRange to_txn_id_range() const { return {start.to_txn_id(), end.to_txn_id()}; }
     static StepRange from_txn_id_range(TxnIdRange range) {
-        return {Step::from_txn_id(range.start), Step::from_txn_id(range.end + kStepSizeForTemporalSnapshots - 1)};
+        return {Step::from_txn_id(range.start),
+                Step::from_txn_id(range.end >= kMaxTxnId - kStepSizeForTemporalSnapshots + 1 ? kMaxTxnId
+                                                                                             : range.end + kStepSizeForTemporalSnapshots - 1)};
     }
 };
 

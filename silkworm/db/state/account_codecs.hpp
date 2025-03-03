@@ -27,18 +27,27 @@
 namespace silkworm::db::state {
 
 struct AccountKVDBCodec : public datastore::kvdb::Codec {
-    Account value;
+    std::optional<Account> value;
     Bytes data;
 
     ~AccountKVDBCodec() override = default;
 
     datastore::kvdb::Slice encode() override {
-        data = AccountCodec::encode_for_storage_v3(value);
+        if (value) {
+            data = AccountCodec::encode_for_storage_v3(*value);
+        } else {
+            data.clear();
+        }
         return datastore::kvdb::to_slice(data);
     }
 
     void decode(datastore::kvdb::Slice slice) override {
-        value = unwrap_or_throw(AccountCodec::from_encoded_storage_v3(datastore::kvdb::from_slice(slice)));
+        if (!slice.empty()) {
+            value = unwrap_or_throw(AccountCodec::from_encoded_storage_v3(datastore::kvdb::from_slice(slice)),
+                                    "AccountKVDBCodec failed to decode Account");
+        } else {
+            value.reset();
+        }
     }
 };
 
@@ -46,21 +55,27 @@ static_assert(datastore::kvdb::EncoderConcept<AccountKVDBCodec>);
 static_assert(datastore::kvdb::DecoderConcept<AccountKVDBCodec>);
 
 struct AccountSnapshotsCodec : public snapshots::Codec {
-    Account value;
+    std::optional<Account> value;
     Bytes word;
 
     ~AccountSnapshotsCodec() override = default;
 
     ByteView encode_word() override {
-        word = AccountCodec::encode_for_storage_v3(value);
+        if (value) {
+            word = AccountCodec::encode_for_storage_v3(*value);
+        } else {
+            word.clear();
+        }
         return word;
     }
 
-    void decode_word(ByteView input_word) override {
-        auto account = AccountCodec::from_encoded_storage_v3(input_word);
-        if (!account)
-            throw DecodingException{account.error(), "AccountSnapshotsCodec failed to decode Account"};
-        value = std::move(*account);
+    void decode_word(Bytes& input_word) override {
+        if (!input_word.empty()) {
+            value = unwrap_or_throw(AccountCodec::from_encoded_storage_v3(input_word),
+                                    "AccountSnapshotsCodec failed to decode Account");
+        } else {
+            value.reset();
+        }
     }
 };
 

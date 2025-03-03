@@ -57,6 +57,7 @@
 #include "elias_fano_common.hpp"
 
 namespace silkworm::snapshots::elias_fano {
+
 EliasFanoList32 EliasFanoList32::from_encoded_data(std::span<const uint8_t> encoded_data) {
     ensure(encoded_data.size() >= kCountLength + kULength, "EliasFanoList32::from_encoded_data data too short");
     const uint64_t last = endian::load_big_u64(encoded_data.data());
@@ -65,19 +66,12 @@ EliasFanoList32 EliasFanoList32::from_encoded_data(std::span<const uint8_t> enco
     return EliasFanoList32{last + 1, u - 1, remaining_data};
 }
 
-EliasFanoList32::EliasFanoList32(uint64_t count, uint64_t max_value)
+EliasFanoList32::EliasFanoList32(uint64_t count, uint64_t max_value, std::span<const uint8_t> encoded_data)
     : count_{count},
-      u_{max_value + 1} {
+      u_{max_value + 1},
+      data_{reinterpret_cast<const uint64_t*>(encoded_data.data()), EliasFanoList32::total_words(count, max_value)} {
+    SILKWORM_ASSERT(EliasFanoList32::total_words(count, max_value) * sizeof(uint64_t) <= encoded_data.size());
     derive_fields();
-}
-
-EliasFanoList32::EliasFanoList32(uint64_t count, uint64_t max_value, std::span<const uint8_t> data)
-    : count_{count},
-      u_{max_value + 1} {
-    const auto total_words = derive_fields();
-    SILKWORM_ASSERT(total_words * sizeof(uint64_t) <= data.size());
-    data = data.subspan(0, total_words * sizeof(uint64_t));
-    std::copy(data.begin(), data.end(), reinterpret_cast<uint8_t*>(data_.data()));
 }
 
 uint64_t EliasFanoList32::at(size_t i) const {
@@ -177,7 +171,65 @@ std::optional<std::pair<size_t, uint64_t>> EliasFanoList32::seek([[maybe_unused]
     return std::nullopt;
 }
 
-void EliasFanoList32::add_offset(uint64_t offset) {
+std::ostream& operator<<(std::ostream& os, const EliasFanoList32& ef) {
+    Bytes uint64_buffer(8, '\0');
+
+    endian::store_big_u64(uint64_buffer.data(), ef.count_ - 1);
+    os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
+    SILK_DEBUG << "[index] written EF code count: " << ef.count_ - 1;
+
+    endian::store_big_u64(uint64_buffer.data(), ef.u_);
+    os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
+    SILK_DEBUG << "[index] written EF upper: " << ef.u_;
+
+    os.write(reinterpret_cast<const char*>(ef.data_.data()), static_cast<std::streamsize>(ef.data_.size() * sizeof(uint64_t)));
+    return os;
+}
+
+uint64_t EliasFanoList32::total_words(uint64_t count, uint64_t max_value) {
+    ensure(count > 0, "EliasFanoList32 size is zero");
+    const uint64_t u = max_value + 1;
+    const uint64_t l = (u / count == 0) ? 0 : (63 ^ static_cast<uint64_t>(std::countl_zero(u / count)));
+
+    const uint64_t words_lower_bits = (count * l + 63) / 64 + 1;
+    const uint64_t words_upper_bits = (count + (u >> l) + 63) / 64;
+    const uint64_t jump_words = jump_size_words(count);
+    const uint64_t total_words = words_lower_bits + words_upper_bits + jump_words;
+    return total_words;
+}
+
+uint64_t EliasFanoList32::jump_size_words(uint64_t count) {
+    uint64_t size = (count / kSuperQ) * kSuperQSize32;  // Whole blocks
+    if (count % kSuperQ != 0) {
+        size += 1 + ((count % kSuperQ + kQ - 1) / kQ + 3) / 2;  // Partial block
+    }
+    return size;
+}
+
+uint64_t EliasFanoList32::derive_fields() {
+    ensure(count_ > 0, "EliasFanoList32 size is zero");
+    l_ = (u_ / count_ == 0) ? 0 : (63 ^ static_cast<uint64_t>(std::countl_zero(u_ / count_)));
+    lower_bits_mask_ = (uint64_t{1} << l_) - 1;
+
+    uint64_t words_lower_bits = (count_ * l_ + 63) / 64 + 1;
+    uint64_t words_upper_bits = (count_ + (u_ >> l_) + 63) / 64;
+    uint64_t jump_words = jump_size_words(count_);
+    uint64_t total_words = words_lower_bits + words_upper_bits + jump_words;
+    // data_ = std::span<const uint64_t>{data_.data(), total_words};
+    lower_bits_ = std::span<const uint64_t>{data_.data(), words_lower_bits};
+    upper_bits_ = std::span<const uint64_t>{data_.data() + words_lower_bits, words_upper_bits};
+    jump_ = std::span<const uint64_t>{data_.data() + words_lower_bits + words_upper_bits, jump_words};
+
+    return total_words;
+}
+
+EliasFanoList32Builder::EliasFanoList32Builder(uint64_t count, uint64_t max_value)
+    : count_{count},
+      u_{max_value + 1} {
+    derive_fields();
+}
+
+void EliasFanoList32Builder::add_offset(uint64_t offset) {
     if (l_ != 0) {
         set_bits(lower_bits_, i_ * l_, l_, offset & lower_bits_mask_);
     }
@@ -185,7 +237,7 @@ void EliasFanoList32::add_offset(uint64_t offset) {
     ++i_;
 }
 
-void EliasFanoList32::build() {
+void EliasFanoList32Builder::build() {
     for (uint64_t i{0}, c{0}, last_super_q{0}; i < upper_bits_.size(); ++i) {
         for (uint64_t b{0}; b < 64; ++b) {
             if ((upper_bits_[i] & (uint64_t{1} << b)) != 0) {
@@ -213,7 +265,24 @@ void EliasFanoList32::build() {
     }
 }
 
-std::ostream& operator<<(std::ostream& os, const EliasFanoList32& ef) {
+uint64_t EliasFanoList32Builder::derive_fields() {
+    ensure(count_ > 0, "EliasFanoList32Builder size is zero");
+    l_ = (u_ / count_ == 0) ? 0 : (63 ^ static_cast<uint64_t>(std::countl_zero(u_ / count_)));
+    lower_bits_mask_ = (uint64_t{1} << l_) - 1;
+
+    uint64_t words_lower_bits = (count_ * l_ + 63) / 64 + 1;
+    uint64_t words_upper_bits = (count_ + (u_ >> l_) + 63) / 64;
+    uint64_t jump_words = EliasFanoList32::jump_size_words(count_);
+    uint64_t total_words = words_lower_bits + words_upper_bits + jump_words;
+    data_.resize(total_words);
+    lower_bits_ = std::span{data_.data(), words_lower_bits};
+    upper_bits_ = std::span{data_.data() + words_lower_bits, words_upper_bits};
+    jump_ = std::span{data_.data() + words_lower_bits + words_upper_bits, jump_words};
+
+    return total_words;
+}
+
+std::ostream& operator<<(std::ostream& os, const EliasFanoList32Builder& ef) {
     Bytes uint64_buffer(8, '\0');
 
     endian::store_big_u64(uint64_buffer.data(), ef.count_ - 1);
@@ -226,31 +295,6 @@ std::ostream& operator<<(std::ostream& os, const EliasFanoList32& ef) {
 
     os.write(reinterpret_cast<const char*>(ef.data_.data()), static_cast<std::streamsize>(ef.data_.size() * sizeof(uint64_t)));
     return os;
-}
-
-uint64_t EliasFanoList32::derive_fields() {
-    ensure(count_ > 0, "EliasFanoList32 size is zero");
-    l_ = (u_ / count_ == 0) ? 0 : (63 ^ static_cast<uint64_t>(std::countl_zero(u_ / count_)));
-    lower_bits_mask_ = (uint64_t{1} << l_) - 1;
-
-    uint64_t words_lower_bits = (count_ * l_ + 63) / 64 + 1;
-    uint64_t words_upper_bits = (count_ + (u_ >> l_) + 63) / 64;
-    uint64_t jump_words = jump_size_words();
-    uint64_t total_words = words_lower_bits + words_upper_bits + jump_words;
-    data_.resize(total_words);
-    lower_bits_ = std::span{data_.data(), words_lower_bits};
-    upper_bits_ = std::span{data_.data() + words_lower_bits, words_upper_bits};
-    jump_ = std::span{data_.data() + words_lower_bits + words_upper_bits, jump_words};
-
-    return total_words;
-}
-
-uint64_t EliasFanoList32::jump_size_words() const {
-    uint64_t size = (count_ / kSuperQ) * kSuperQSize32;  // Whole blocks
-    if (count_ % kSuperQ != 0) {
-        size += 1 + ((count_ % kSuperQ + kQ - 1) / kQ + 3) / 2;  // Partial block
-    }
-    return size;
 }
 
 }  // namespace silkworm::snapshots::elias_fano

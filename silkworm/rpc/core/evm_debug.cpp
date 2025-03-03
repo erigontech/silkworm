@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include <evmc/evmc.h>
 #include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
 #include <evmone/instructions_traits.hpp>
@@ -122,9 +123,7 @@ void insert_error(DebugLog& log, evmc_status_code status_code) {
 
 void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept {
     last_opcode_ = std::nullopt;
-    if (opcode_names_ == nullptr) {
-        latest_opcode_names_ = evmc_get_instruction_names_table(EVMC_LATEST_STABLE_REVISION);
-        opcode_names_ = evmc_get_instruction_names_table(rev);
+    if (metrics_ == nullptr) {
         metrics_ = evmc_get_instruction_metrics_table(rev);
     }
 
@@ -152,10 +151,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     const evmc::address sender(execution_state.msg->sender);
 
     const auto opcode = execution_state.original_code[pc];
-    auto opcode_name = get_opcode_name(opcode_names_, opcode);
-    if (!opcode_name) {
-        opcode_name = get_opcode_name(latest_opcode_names_, opcode);
-    }
+    const auto opcode_name = get_opcode_name(opcode);
     last_opcode_ = opcode;
 
     SILK_DEBUG << "on_instruction_start:"
@@ -261,6 +257,12 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
                 }
                 break;
 
+            case evmc_status_code::EVMC_REVERT:
+                if (log.op_code == OP_REVERT) {
+                    log.gas_cost = result.gas_cost;
+                }
+                break;
+
             default:
                 if (log.op_code == OP_CALL || log.op_code == OP_CALLCODE || log.op_code == OP_STATICCALL || log.op_code == OP_DELEGATECALL || log.op_code == OP_CREATE || log.op_code == OP_CREATE2) {
                     log.gas_cost += result.gas_cost;
@@ -274,7 +276,7 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
         if (result.status_code == EVMC_SUCCESS && last_opcode_ && last_opcode_ != OP_SELFDESTRUCT && last_opcode_ != OP_RETURN && last_opcode_ != OP_STOP) {
             DebugLog newlog;
             newlog.pc = log.pc + 1;
-            newlog.op_name = get_opcode_name(opcode_names_, OP_STOP);
+            newlog.op_name = get_opcode_name(OP_STOP);
             newlog.op_code = OP_STOP;
             newlog.gas = log.gas - log.gas_cost;
             newlog.gas_cost = 0;
@@ -557,12 +559,17 @@ Task<void> DebugExecutor::execute(
         debug_tracer->flush_logs();
         stream.close_array();
 
-        SILK_DEBUG << "debug return: " << execution_result.error_message();
+        SILK_DEBUG << "result error_code: " << execution_result.status_code.value_or(evmc_status_code::EVMC_SUCCESS) << ", message: " << execution_result.error_message();
 
         if (!execution_result.pre_check_error) {
             stream.write_json_field("failed", !execution_result.success());
             stream.write_field("gas", transaction.gas_limit - execution_result.gas_left);
-            stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
+            const auto status_code = execution_result.status_code.value_or(evmc_status_code::EVMC_SUCCESS);
+            if (status_code == evmc_status_code::EVMC_SUCCESS || status_code == evmc_status_code::EVMC_REVERT) {
+                stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
+            } else {
+                stream.write_field("returnValue", "");
+            }
         }
         stream.close_object();
 

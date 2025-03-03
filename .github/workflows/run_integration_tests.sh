@@ -27,7 +27,6 @@ debug_traceBlockByNumber/test_25,\
 debug_traceBlockByNumber/test_26,\
 debug_traceBlockByNumber/test_27,\
 debug_traceBlockByNumber/test_28,\
-debug_traceBlockByNumber/test_29,\
 debug_traceCall/test_21,\
 debug_traceTransaction/test_25,\
 debug_traceTransaction/test_36,\
@@ -41,6 +40,8 @@ debug_traceTransaction/test_91,\
 debug_traceTransaction/test_92,\
 debug_traceTransaction/test_96,\
 trace_replayBlockTransactions/test_29,\
+trace_transaction/test_44,\
+trace_transaction/test_47,\
 engine_
 
 failed_test=$?

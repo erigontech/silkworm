@@ -17,3 +17,4 @@
 #pragma once
 
 #include "history_get_query.hpp"
+#include "history_range_query.hpp"

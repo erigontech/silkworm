@@ -41,6 +41,22 @@ void Validator::load_specification() {
     if (spec.contains("openrpc")) {
         openrpc_version_ = spec["openrpc"];
     }
+    std::function<void(const nlohmann::json&)> fill_patterns = [&](const nlohmann::json& json) mutable {
+        if (json.is_object()) {
+            for (auto& [key, value] : json.items()) {
+                if (key == "pattern" && value.is_string()) {
+                    const auto value_string = value.get<std::string>();
+                    patterns_[value_string] = boost::regex(value_string, boost::regex::optimize | boost::regex::icase);
+                }
+                fill_patterns(value);
+            }
+        } else if (json.is_array()) {
+            for (const auto& element : json) {
+                fill_patterns(element);
+            }
+        }
+    };
+    fill_patterns(spec);
 }
 
 ValidationResult Validator::validate(const nlohmann::json& request) {
@@ -182,17 +198,13 @@ ValidationResult Validator::validate_string(const nlohmann::json& string, const 
 
     const auto& schema_pattern_field = schema.find("pattern");
     if (schema_pattern_field != schema.end()) {
-        boost::regex pattern;
         const auto& schema_pattern = schema_pattern_field.value().get<std::string>();
 
         const auto& pattern_field = patterns_.find(schema_pattern);
-        if (pattern_field != patterns_.end()) {
-            pattern = pattern_field->second;
-        } else {
-            pattern = boost::regex(schema_pattern, boost::regex::optimize | boost::regex::icase);
-            patterns_[schema_pattern] = pattern;
+        if (pattern_field == patterns_.end()) {
+            return tl::make_unexpected("Prebuilt pattern not found for: " + schema_pattern);
         }
-
+        const auto& pattern = pattern_field->second;
         if (!boost::regex_match(string.get<std::string>(), pattern)) {
             return tl::make_unexpected("Invalid string pattern: " + string.get<std::string>());
         }

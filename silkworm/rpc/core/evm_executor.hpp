@@ -34,6 +34,7 @@
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
+#include <silkworm/rpc/types/call.hpp>
 #include <silkworm/rpc/types/receipt.hpp>
 
 namespace silkworm::rpc {
@@ -49,14 +50,14 @@ enum class PreCheckErrorCode {
 };
 
 struct ExecutionResult {
-    std::optional<int64_t> error_code;
+    std::optional<evmc_status_code> status_code;
     uint64_t gas_left{0};
     Bytes data;
     std::optional<std::string> pre_check_error{std::nullopt};
     std::optional<PreCheckErrorCode> pre_check_error_code{std::nullopt};
 
     bool success() const {
-        return ((error_code == std::nullopt || *error_code == evmc_status_code::EVMC_SUCCESS) && pre_check_error == std::nullopt);
+        return ((status_code == std::nullopt || *status_code == evmc_status_code::EVMC_SUCCESS) && pre_check_error == std::nullopt);
     }
 
     std::string error_message(bool full_error = true) const;
@@ -96,7 +97,8 @@ class EVMExecutor {
         StateFactory state_factory,
         const Tracers& tracers = {},
         bool refund = true,
-        bool gas_bailout = false);
+        bool gas_bailout = false,
+        std::optional<AccountsOverrides> accounts_overrides = std::nullopt);
     static std::string get_error_message(int64_t error_code, const Bytes& error_data, bool full_error = true);
 
     EVMExecutor(const silkworm::Block& block, const silkworm::ChainConfig& config, WorkerPool& workers, std::shared_ptr<State> state)

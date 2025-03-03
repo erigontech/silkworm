@@ -42,7 +42,10 @@ class SilkwormRecipe(ConanFile):
         self.requires('libtorrent/2.0.10')
         self.requires('mimalloc/2.1.2')
         self.requires('openssl/3.3.2')
-        self.requires('protobuf/5.27.0#fe72d115daa683469cd940f0407ce55e', override=True)
+        if self.settings.os == 'Windows':
+            self.requires('protobuf/5.27.0#fe72d115daa683469cd940f0407ce55e', override=True)
+        else:
+            self.requires('protobuf/5.27.0')
         self.requires('roaring/1.1.2')
         self.requires('snappy/1.1.7')
         self.requires('spdlog/1.12.0')

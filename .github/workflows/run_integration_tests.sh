@@ -38,6 +38,7 @@ debug_traceTransaction/test_91,\
 debug_traceTransaction/test_92,\
 debug_traceTransaction/test_96,\
 engine_,\
+erigon_getBalanceChangesInBlock,\
 eth_getLogs/test_16,\
 eth_getLogs/test_17,\
 eth_getLogs/test_18,\

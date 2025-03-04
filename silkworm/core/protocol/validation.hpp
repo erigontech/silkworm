@@ -160,7 +160,7 @@ namespace protocol {
     intx::uint256 expected_base_fee_per_gas(const BlockHeader& parent);
 
     //! \see EIP-4844: Shard Blob Transactions
-    uint64_t calc_excess_blob_gas(const BlockHeader& parent);
+    uint64_t calc_excess_blob_gas(const BlockHeader& parent, evmc_revision revision);
 
     //! \brief Calculate the transaction root of a block body
     evmc::bytes32 compute_transaction_root(const BlockBody& body);

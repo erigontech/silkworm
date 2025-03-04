@@ -2225,7 +2225,8 @@ Task<void> EthereumRpcApi::handle_eth_blob_base_fee(const nlohmann::json& reques
         auto& header = latest_block_with_hash->block.header;
 
         if (header.excess_blob_gas) {
-            blob_base_fee = calc_blob_gas_price(protocol::calc_excess_blob_gas(header));
+            const auto revision = header.requests_hash ? EVMC_PRAGUE : EVMC_CANCUN;
+            blob_base_fee = calc_blob_gas_price(protocol::calc_excess_blob_gas(header, revision), revision);
         } else {
             blob_base_fee = 0;
         }

@@ -62,7 +62,8 @@ ValidationResult RuleSet::pre_validate_block_body(const Block& block, const Bloc
         for (const Transaction& tx : block.transactions) {
             *blob_gas_used += tx.total_blob_gas();
         }
-        if (blob_gas_used > kMaxBlobGasPerBlock) {
+        const auto max_blob_gas_per_block = rev >= EVMC_PRAGUE ? kMaxBlobGasPerBlockPrague : kMaxBlobGasPerBlock;
+        if (blob_gas_used > max_blob_gas_per_block) {
             return ValidationResult::kTooManyBlobs;
         }
     }
@@ -197,7 +198,7 @@ ValidationResult RuleSet::validate_block_header(const BlockHeader& header, const
         if (!header.blob_gas_used || !header.excess_blob_gas || !header.parent_beacon_block_root) {
             return ValidationResult::kMissingField;
         }
-        if (header.excess_blob_gas != calc_excess_blob_gas(*parent)) {
+        if (header.excess_blob_gas != calc_excess_blob_gas(*parent, rev)) {
             return ValidationResult::kWrongExcessBlobGas;
         }
     }

@@ -301,14 +301,16 @@ intx::uint256 expected_base_fee_per_gas(const BlockHeader& parent) {
     return 0;
 }
 
-uint64_t calc_excess_blob_gas(const BlockHeader& parent) {
+uint64_t calc_excess_blob_gas(const BlockHeader& parent, evmc_revision revision) {
     const uint64_t parent_excess_blob_gas{parent.excess_blob_gas.value_or(0)};
     const uint64_t consumed_blob_gas{parent.blob_gas_used.value_or(0)};
 
-    if (parent_excess_blob_gas + consumed_blob_gas < kTargetBlobGasPerBlock) {
+    // EIP-7691: Blob throughput increase
+    const auto target_block_gas_per_block = revision >= EVMC_PRAGUE ? kTargetBlobGasPerBlockPrague : kTargetBlobGasPerBlock;
+    if (parent_excess_blob_gas + consumed_blob_gas < target_block_gas_per_block) {
         return 0;
     }
-    return parent_excess_blob_gas + consumed_blob_gas - kTargetBlobGasPerBlock;
+    return parent_excess_blob_gas + consumed_blob_gas - target_block_gas_per_block;
 }
 
 evmc::bytes32 compute_transaction_root(const BlockBody& body) {

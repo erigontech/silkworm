@@ -233,7 +233,9 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
     block_fees.blob_base_fee = header.blob_gas_price().value_or(0);
 
     if (header.excess_blob_gas) {
-        block_fees.next_blob_base_fee = calc_blob_gas_price(protocol::calc_excess_blob_gas(header));
+        // EIP-7691: Blob throughput increase
+        const auto revision = config_.revision(header.number, header.timestamp);
+        block_fees.next_blob_base_fee = calc_blob_gas_price(*header.excess_blob_gas, revision);
 
     } else {
         block_fees.next_blob_base_fee = 0;
@@ -246,7 +248,9 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
     }
 
     if (header.blob_gas_used) {
-        block_fees.blob_gas_used_ratio = static_cast<double>(*(header.blob_gas_used)) / static_cast<double>(protocol::kMaxBlobGasPerBlock);
+        // EIP-7691: Blob throughput increase
+        const auto max_blob_gas_per_block = config_.is_prague(header.number, header.timestamp) ? protocol::kMaxBlobGasPerBlockPrague : protocol::kMaxBlobGasPerBlock;
+        block_fees.blob_gas_used_ratio = static_cast<double>(*(header.blob_gas_used)) / static_cast<double>(max_blob_gas_per_block);
     }
 
     if (block_fees.receipts.size() != block_fees.block->block.transactions.size()) {

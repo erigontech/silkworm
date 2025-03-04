@@ -65,7 +65,7 @@ jobs:
 
       - name: Wait for port 51515 to be opened
         run: |
-          api_port = 51515
+          api_port=51515
           for i in {1..30}; do
             if nc -z localhost $api_port; then
               echo "Port $api_port is open"

@@ -49,7 +49,7 @@ class Server {
            bool use_websocket,
            bool ws_compression,
            bool http_compression,
-           bool rpc_compatability);
+           bool erigon_json_rpc_compatibility);
 
     void start();
 

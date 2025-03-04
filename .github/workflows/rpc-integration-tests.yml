@@ -52,9 +52,9 @@ jobs:
         working-directory: ${{runner.workspace}}/silkworm/build
         run: cmake --build . --config Release --target rpcdaemon -j 8
 
-      - name: Pause the Erigon instance dedicated to db maintenance, if needed
+      - name: Resume the Erigon instance dedicated to db maintenance, if needed
         run: |
-          python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
+          python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
 
       - name: Start Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
@@ -63,18 +63,19 @@ jobs:
           RPC_DAEMON_PID=$!
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
 
-      - name: Wait for port 8545 to be opened
+      - name: Wait for port 51515 to be opened
         run: |
+          api_port = 51515
           for i in {1..30}; do
-            if nc -z localhost 8545; then
-              echo "Port 8545 is open"
+            if nc -z localhost $api_port; then
+              echo "Port $api_port is open"
               break
             fi
-            echo "Waiting for port 8545 to open..."
+            echo "Waiting for port $api_port to open..."
             sleep 10
           done
-          if ! nc -z localhost 8545; then
-            echo "Port 8545 did not open in time"
+          if ! nc -z localhost $api_port; then
+            echo "Port $api_port did not open in time"
             exit 1
           fi
 

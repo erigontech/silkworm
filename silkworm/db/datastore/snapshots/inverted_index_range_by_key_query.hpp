@@ -36,11 +36,10 @@ struct InvertedIndexRangeByKeyQuery {
 
     using Key = decltype(TKeyEncoder::value);
 
-    template <bool ascending = true>
-    auto exec(Key key, datastore::TimestampRange ts_range) {
-        auto timestamps_in_bundle = [entity_name = entity_name_, key = std::move(key), ts_range](const std::shared_ptr<SnapshotBundle>& bundle) {
+    auto exec(Key key, datastore::TimestampRange ts_range, bool ascending) {
+        auto timestamps_in_bundle = [entity_name = entity_name_, key = std::move(key), ts_range, ascending](const std::shared_ptr<SnapshotBundle>& bundle) {
             InvertedIndexFindByKeySegmentQuery<TKeyEncoder> query{*bundle, entity_name};
-            return query.template exec_filter<ascending>(key, ts_range);
+            return query.exec_filter(key, ts_range, ascending);
         };
 
         return silkworm::ranges::owning_view(repository_.bundles_intersecting_range(ts_range, ascending)) |

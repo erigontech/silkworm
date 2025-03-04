@@ -348,7 +348,7 @@ void Daemon::start() {
 
         return std::make_unique<http::Server>(
             end_point, std::move(make_jsonrpc_handler), ioc, worker_pool_, settings_.cors_domain, std::move(jwt_secret),
-            settings_.use_websocket, settings_.ws_compression, settings_.http_compression);
+            settings_.use_websocket, settings_.ws_compression, settings_.http_compression, settings_.erigon_json_rpc_compatibility);
     };
 
     // Put the interface logs into the data folder

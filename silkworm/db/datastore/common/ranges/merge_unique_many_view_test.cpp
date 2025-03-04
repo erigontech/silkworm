@@ -34,6 +34,9 @@ std::vector<TRange> ranges(TRange r1, TRange r2) {
     return results;
 }
 
+// Skip to avoid Windows error C3889: call to object of class type 'std::ranges::_Begin::_Cpo': no matching call operator found
+// Unable to reproduce: https://godbolt.org/z/3jd5brKMj
+#ifndef _WIN32
 TEST_CASE("MergeUniqueManyView") {
     CHECK(vector_from_range(merge_unique_many(ranges(
               silkworm::ranges::owning_view(std::vector<int>{1, 2, 3}),
@@ -77,5 +80,6 @@ TEST_CASE("MergeUniqueManyView") {
               silkworm::ranges::owning_view(std::vector<int>{4, 4, 4}) | std::views::transform(IntToVectorFunc{[](int v) { return std::vector<int>{v}; }}) | std::views::join))) ==
           std::vector<int>{1, 2, 3, 4});
 }
+#endif  // _WIN32
 
 }  // namespace silkworm::views

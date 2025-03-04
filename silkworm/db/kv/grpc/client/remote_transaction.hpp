@@ -61,22 +61,22 @@ class RemoteTransaction : public api::BaseTransaction {
     Task<void> close() override;
 
     // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=true (ts ignored)
-    Task<api::GetLatestResult> get_latest(api::GetLatestQuery query) override;
+    Task<api::GetLatestResult> get_latest(api::GetLatestRequest request) override;
 
     // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=false (ts used)
-    Task<api::GetAsOfResult> get_as_of(api::GetAsOfQuery query) override;
+    Task<api::GetAsOfResult> get_as_of(api::GetAsOfRequest request) override;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
-    Task<api::HistoryPointResult> history_seek(api::HistoryPointQuery query) override;
+    Task<api::HistoryPointResult> history_seek(api::HistoryPointRequest request) override;
 
     // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
-    Task<api::PaginatedTimestamps> index_range(api::IndexRangeQuery query) override;
+    Task<api::PaginatedTimestamps> index_range(api::IndexRangeRequest request) override;
 
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-    Task<api::PaginatedKeysValues> history_range(api::HistoryRangeQuery query) override;
+    Task<api::PaginatedKeysValues> history_range(api::HistoryRangeRequest request) override;
 
     // rpc RangeAsOf(RangeAsOfReq) returns (Pairs);
-    Task<api::PaginatedKeysValues> range_as_of(api::DomainRangeQuery query) override;
+    Task<api::PaginatedKeysValues> range_as_of(api::DomainRangeRequest request) override;
 
   private:
     Task<std::shared_ptr<api::CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);

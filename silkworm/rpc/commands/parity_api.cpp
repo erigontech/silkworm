@@ -86,7 +86,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         increment(to);
         SILK_DEBUG << "handle_parity_list_storage_keys: from " << from << ", to " << to;
 
-        db::kv::api::DomainRangeQuery query{
+        db::kv::api::DomainRangeRequest query{
             .table = db::table::kStorageDomain,
             .from_key = from,
             .to_key = to,

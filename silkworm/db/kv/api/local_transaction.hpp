@@ -63,22 +63,22 @@ class LocalTransaction : public BaseTransaction {
     Task<void> close() override;
 
     // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=true (ts ignored)
-    Task<GetLatestResult> get_latest(GetLatestQuery query) override;
+    Task<GetLatestResult> get_latest(GetLatestRequest request) override;
 
     // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=false (ts used)
-    Task<GetAsOfResult> get_as_of(GetAsOfQuery query) override;
+    Task<GetAsOfResult> get_as_of(GetAsOfRequest request) override;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
-    Task<HistoryPointResult> history_seek(HistoryPointQuery query) override;
+    Task<HistoryPointResult> history_seek(HistoryPointRequest request) override;
 
     // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
-    Task<PaginatedTimestamps> index_range(IndexRangeQuery query) override;
+    Task<PaginatedTimestamps> index_range(IndexRangeRequest request) override;
 
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-    Task<PaginatedKeysValues> history_range(HistoryRangeQuery query) override;
+    Task<PaginatedKeysValues> history_range(HistoryRangeRequest request) override;
 
     // rpc RangeAsOf(RangeAsOfReq) returns (Pairs);
-    Task<PaginatedKeysValues> range_as_of(DomainRangeQuery query) override;
+    Task<PaginatedKeysValues> range_as_of(DomainRangeRequest request) override;
 
   private:
     template <typename DomainGetAsOfQuery>

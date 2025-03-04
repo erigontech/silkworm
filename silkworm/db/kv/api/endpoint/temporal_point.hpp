@@ -28,7 +28,7 @@ struct PointResult {
     Bytes value;
 };
 
-struct HistoryPointQuery {
+struct HistoryPointRequest {
     TxId tx_id{0};
     std::string table;
     Bytes key;
@@ -37,17 +37,17 @@ struct HistoryPointQuery {
 
 using HistoryPointResult = PointResult;
 
-struct GetLatestQuery {
+struct GetLatestRequest {
     TxId tx_id{0};
     std::string table;
     Bytes key;
     Bytes sub_key;
 
     // TODO(canepat) we need clang >= 17 to use spaceship operator instead of hand-made operator== below
-    // auto operator<=>(const GetLatestQuery&) const = default;
+    // auto operator<=>(const GetLatestRequest&) const = default;
 };
 
-inline bool operator==(const GetLatestQuery& lhs, const GetLatestQuery& rhs) {
+inline bool operator==(const GetLatestRequest& lhs, const GetLatestRequest& rhs) {
     return (lhs.tx_id == rhs.tx_id) &&
            (lhs.table == rhs.table) &&
            (lhs.key == rhs.key) &&
@@ -56,7 +56,7 @@ inline bool operator==(const GetLatestQuery& lhs, const GetLatestQuery& rhs) {
 
 using GetLatestResult = PointResult;
 
-struct GetAsOfQuery {
+struct GetAsOfRequest {
     TxId tx_id{0};
     std::string table;
     Bytes key;
@@ -64,10 +64,10 @@ struct GetAsOfQuery {
     Timestamp timestamp;
 
     // TODO(canepat) we need clang >= 17 to use spaceship operator instead of hand-made operator== below
-    // auto operator<=>(const GetAsOfQuery&) const = default;
+    // auto operator<=>(const GetAsOfRequest&) const = default;
 };
 
-inline bool operator==(const GetAsOfQuery& lhs, const GetAsOfQuery& rhs) {
+inline bool operator==(const GetAsOfRequest& lhs, const GetAsOfRequest& rhs) {
     return (lhs.tx_id == rhs.tx_id) &&
            (lhs.table == rhs.table) &&
            (lhs.key == rhs.key) &&

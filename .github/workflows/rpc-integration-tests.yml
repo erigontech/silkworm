@@ -52,9 +52,16 @@ jobs:
         working-directory: ${{runner.workspace}}/silkworm/build
         run: cmake --build . --config Release --target rpcdaemon -j 8
 
-      - name: Resume the Erigon instance dedicated to db maintenance, if needed
+      - name: Pause the Erigon instance dedicated to db maintenance, if needed
         run: |
-          python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
+          python3 $ERIGON_QA_PATH/test_system/db-producer/pause_production.py || true
+
+      - name: Start Silkworm RpcDaemon
+        working-directory: ${{runner.workspace}}/silkworm/build/cmd
+        run: |
+          ${{runner.workspace}}/silkworm/.github/workflows/start_integration_rpcdaemon.sh $ERIGON_DATA_DIR ./jwt.hex &
+          RPC_DAEMON_PID=$!
+          echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
 
       - name: Wait for port 8545 to be opened
         run: |
@@ -70,13 +77,6 @@ jobs:
             echo "Port 8545 did not open in time"
             exit 1
           fi
-
-      - name: Start Silkworm RpcDaemon
-        working-directory: ${{runner.workspace}}/silkworm/build/cmd
-        run: |
-          ${{runner.workspace}}/silkworm/.github/workflows/start_integration_rpcdaemon.sh $ERIGON_DATA_DIR ./jwt.hex &
-          RPC_DAEMON_PID=$!
-          echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
 
       - name: Run RPC Integration Tests
         id: test_step

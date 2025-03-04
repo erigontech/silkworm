@@ -82,7 +82,8 @@ class Server {
     //! The configured workers
     WorkerPool& workers_;
 
-    bool rpc_compatability_;
+    //! Flag indicating if JSON-RPC compatibility with Erigon is enabled or not
+    bool erigon_json_rpc_compatibility_;
 };
 
 }  // namespace silkworm::rpc::http

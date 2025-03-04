@@ -243,7 +243,7 @@ struct SilkwormRpcSettings {
     //! Path to the JWT file in UTF-8.
     char jwt_file_path[SILKWORM_PATH_SIZE];
     //! Flag indicating if JSON-RPC strict compatibility w/ Erigon is supported
-    bool erigon_rpc_compatibility;
+    bool erigon_json_rpc_compatibility;
     //! Flag indicating if WebSocket support is enabled
     bool ws_enabled;
     //! Flag indicating if compression of WebSocket messages is supported

@@ -127,7 +127,7 @@ void add_rpcdaemon_options(CLI::App& cli, silkworm::rpc::DaemonSettings& setting
         ->description("Flag indicating if gRPC protocol version check should be skipped")
         ->capture_default_str();
 
-    cli.add_flag("--erigon_compatibility", settings.erigon_rpc_compatibility)
+    cli.add_flag("--erigon_compatibility", settings.erigon_json_rpc_compatibility)
         ->description("Flag indicating if strict compatibility with Erigon RpcDaemon is enabled")
         ->capture_default_str();
 

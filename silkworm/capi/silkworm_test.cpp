@@ -1092,7 +1092,7 @@ static SilkwormRpcSettings make_rpc_settings_for_test(uint16_t api_listening_por
         },
         .eth_api_port = api_listening_port,
         .num_workers = 0,
-        .erigon_rpc_compatibility = false,
+        .erigon_json_rpc_compatibility = false,
         .ws_enabled = false,
         .ws_compression = false,
         .http_compression = false,

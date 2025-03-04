@@ -14,7 +14,7 @@ rm -rf ./mainnet/results/
  
 # eth_getLogs: waiting erigon fix on wrong FirstLogIndex in ReceiptsDomain
 # debug_traceBlockByNumber[24-28]: response different wrt erigon
-python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --json-diff --port 51515 --transport_type http,websocket -x \
+python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only-fail --json-diff --port 51515 --transport_type http,websocket --serial -x \
 debug_accountRange,\
 debug_getModifiedAccountsBy,\
 debug_storageRangeAt,\

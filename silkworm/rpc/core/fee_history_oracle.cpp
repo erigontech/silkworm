@@ -235,7 +235,7 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
     if (header.excess_blob_gas) {
         // EIP-7691: Blob throughput increase
         const auto revision = config_.revision(header.number, header.timestamp);
-        block_fees.next_blob_base_fee = calc_blob_gas_price(*header.excess_blob_gas, revision);
+        block_fees.next_blob_base_fee = calc_blob_gas_price(protocol::calc_excess_blob_gas(header, revision), revision);
 
     } else {
         block_fees.next_blob_base_fee = 0;

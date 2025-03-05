@@ -163,7 +163,7 @@ jobs:
           
           # Launch the RPC performance test runner
           failed_test= 0
-          run_perf mainnet eth_call stress_test_eth_call_001_20M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_call stress_test_eth_call_20M 1:1,100:30,1000:20,10000:20,20000:20
           run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 1:1,100:30,1000:20,10000:20,20000:20
           run_perf mainnet eth_getBalance stress_test_eth_getBalance_15M 1:1,100:30,1000:20,10000:20,20000:20
           run_perf mainnet eth_getBlockByHash stress_test_eth_getBlockByHash_14M 1:1,100:30,1000:20,10000:20

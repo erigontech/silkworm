@@ -17,6 +17,7 @@
 #include "schema_config.hpp"
 
 #include "blocks_index_builders_factory.hpp"
+#include "step_block_num_converter.hpp"
 
 namespace silkworm::db::blocks {
 
@@ -65,7 +66,7 @@ snapshots::SnapshotRepository make_blocks_repository(
         std::move(dir_path),
         open,
         make_blocks_repository_schema(),
-        std::make_unique<datastore::StepToBlockNumConverter>(),
+        kStepToBlockNumConverter,
         index_salt,
         make_blocks_index_builders_factory(),
     };

@@ -38,7 +38,7 @@ SnapshotRepository::SnapshotRepository(
     std::filesystem::path dir_path,
     bool open,
     Schema::RepositoryDef schema,
-    std::unique_ptr<StepToTimestampConverter> step_converter,
+    StepToTimestampConverter step_converter,
     std::optional<uint32_t> index_salt,
     std::unique_ptr<IndexBuildersFactory> index_builders_factory)
     : name_(std::move(name)),
@@ -77,16 +77,10 @@ size_t SnapshotRepository::bundles_count() const {
     return bundles_->size();
 }
 
-BlockNum SnapshotRepository::max_block_available() const {
-    Step end_step = max_end_step();
-    if (end_step.value == 0) return 0;
-    return end_step.to_block_num() - 1;
-}
-
 Timestamp SnapshotRepository::max_timestamp_available() const {
     Step end_step = max_end_step();
     if (end_step.value == 0) return 0;
-    return step_converter_->timestamp_from_step(end_step) - 1;
+    return step_converter_.timestamp_from_step(end_step) - 1;
 }
 
 Step SnapshotRepository::max_end_step() const {
@@ -175,7 +169,7 @@ SnapshotBundle SnapshotRepository::open_bundle(StepRange range) const {
 }
 
 std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(Timestamp t) const {
-    return find_bundle(step_converter_->step_from_timestamp(t));
+    return find_bundle(step_converter_.step_from_timestamp(t));
 }
 
 std::shared_ptr<SnapshotBundle> SnapshotRepository::find_bundle(Step step) const {
@@ -221,7 +215,7 @@ std::vector<std::shared_ptr<SnapshotBundle>> SnapshotRepository::bundles_interse
     if (range.size() == 0) {
         return {};
     }
-    return bundles_intersecting_range(step_converter_->step_range_from_timestamp_range(range), ascending);
+    return bundles_intersecting_range(step_converter_.step_range_from_timestamp_range(range), ascending);
 }
 
 SnapshotPathList SnapshotRepository::get_files(std::string_view ext) const {

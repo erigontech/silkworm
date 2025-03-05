@@ -65,13 +65,13 @@ struct BytesOrByteView : public std::variant<Bytes, ByteView> {
 
     bool holds_bytes() const { return std::holds_alternative<Bytes>(*this); }
 
-    bool holds_byte_view() const { return std::holds_alternative<ByteView>(*this); }
-
     BytesOrByteView substr(size_t offset) {
-        return holds_bytes() ? BytesOrByteView{std::get<Bytes>(*this).substr(offset)} : BytesOrByteView{std::get<ByteView>(*this).substr(offset)};
+        return holds_bytes() ? BytesOrByteView{std::get<Bytes>(*this).substr(offset)}
+                             : BytesOrByteView{std::get<ByteView>(*this).substr(offset)};
     }
 
-    ByteView byte_view() const {
+    // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
+    operator ByteView() const {
         return holds_bytes() ? std::get<Bytes>(*this) : std::get<ByteView>(*this);
     }
 };

@@ -65,6 +65,16 @@ EliasFanoList32 EliasFanoList32::from_encoded_data(std::span<const uint8_t> enco
     return EliasFanoList32{last + 1, u - 1, remaining_data};
 }
 
+EliasFanoList32 EliasFanoList32::from_encoded_data(ByteView encoded_data) {
+    return from_encoded_data(std::span<const uint8_t>{encoded_data});
+}
+
+EliasFanoList32 EliasFanoList32::from_encoded_data(Bytes encoded_data) {
+    auto elias_fano_list = from_encoded_data(std::span<const uint8_t>{encoded_data});
+    elias_fano_list.data_holder_ = std::move(encoded_data);
+    return elias_fano_list;
+}
+
 EliasFanoList32::EliasFanoList32(uint64_t count, uint64_t max_value, std::span<const uint8_t> encoded_data)
     : count_{count},
       u_{max_value + 1},

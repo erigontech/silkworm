@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <silkworm/infra/common/ensure.hpp>
+
 #include "codec.hpp"
 
 namespace silkworm::snapshots {
@@ -29,7 +31,10 @@ struct RawDecoder : public Decoder {
     ~RawDecoder() override = default;
     void decode_word(Word& word) override {
         if (word.holds_bytes()) {
-            value = std::move(std::get<Bytes>(word));  // TODO(canepat) BytesOrByteView vs TBytes
+            if constexpr (std::same_as<TBytes, ByteView>) {
+                ensure(false, "RawDecoder<ByteView> should be instead RawDecoder<Bytes>");
+            }
+            value = std::move(std::get<Bytes>(word));
         } else {
             value = std::get<ByteView>(word);
         }

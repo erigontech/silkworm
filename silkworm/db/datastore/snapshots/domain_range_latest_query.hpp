@@ -77,10 +77,7 @@ struct DomainRangeLatestQuery {
     using ResultItemKey = decltype(TKeyDecoder::value);
     using ResultItemValue = decltype(TValueDecoder::value);
     using ResultItem = std::pair<ResultItemKey, ResultItemValue>;
-    using Word1 = typename TKeyDecoder::Word;
-    using Word2 = typename TValueDecoder::Word;
-    static_assert(std::same_as<Word1, Word2>);
-    using Word = Word1;
+    using Word = snapshots::Decoder::Word;
 
     static ResultItem decode_kv_pair(std::pair<Bytes, Bytes>&& kv_pair) {
         if constexpr (std::same_as<ResultItem, std::pair<Bytes, Bytes>>) {

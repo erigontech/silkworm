@@ -58,10 +58,7 @@ struct DomainRangeLatestQuery {
     static_assert(std::same_as<Key1, Key2>);
     using Key = Key1;
 
-    using Word1 = typename TKeyDecoder2::Word;
-    using Word2 = typename TValueDecoder2::Word;
-    static_assert(std::same_as<Word1, Word2>);
-    using Word = Word1;
+    using Word = snapshots::Decoder::Word;
 
     using ResultItemKey1 = decltype(TKeyDecoder1::value);
     using ResultItemKey2 = decltype(TKeyDecoder2::value);

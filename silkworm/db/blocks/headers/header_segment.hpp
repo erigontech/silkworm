@@ -49,7 +49,7 @@ struct HeaderSegmentWordDecoder : public Decoder {
     ~HeaderSegmentWordDecoder() override = default;
 
     void decode_word(Word& word) override {
-        decode_word_into_header(word.byte_view(), value);
+        decode_word_into_header(word, value);
     }
 
     void check_sanity_with_metadata(const SnapshotPath& path) override {

@@ -39,7 +39,7 @@ struct ReceiptsDomainKeySnapshotsDecoder : public snapshots::Decoder {
     ReceiptsDomainKey value{};
     ~ReceiptsDomainKeySnapshotsDecoder() override = default;
     void decode_word(Word& word) override {
-        auto word_view = word.byte_view();
+        const ByteView word_view = word;
         if (word_view.empty())
             throw std::runtime_error{"ReceiptsDomainKeySnapshotsDecoder failed to decode an empty word"};
         value = static_cast<ReceiptsDomainKey>(word_view[0]);
@@ -52,7 +52,7 @@ struct VarintSnapshotsDecoder : public snapshots::Decoder {
     uint64_t value{};
     ~VarintSnapshotsDecoder() override = default;
     void decode_word(Word& word) override {
-        auto word_view = word.byte_view();
+        ByteView word_view = word;
         auto value_opt = snapshots::seg::varint::decode(word_view);
         if (!value_opt)
             throw std::runtime_error{"VarintSnapshotsDecoder failed to decode"};

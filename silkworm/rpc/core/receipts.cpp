@@ -206,6 +206,8 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
                                          const silkworm::Transaction& transaction,
                                          const db::chain::ChainStorage& chain_storage,
                                          WorkerPool& workers) {
+    using Word = snapshots::Decoder::Word;
+
     const auto chain_config = co_await chain_storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
 
@@ -236,7 +238,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     }
 
     db::state::VarintSnapshotsDecoder varint;
-    BytesOrByteView value1{std::move(result.value)};
+    Word value1{std::move(result.value)};
     varint.decode_word(value1);
     auto first_cumulative_gas_used_in_tx = varint.value;
 
@@ -250,7 +252,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
         co_return std::nullopt;
     }
 
-    BytesOrByteView value2{std::move(result.value)};
+    Word value2{std::move(result.value)};
     varint.decode_word(value2);
     auto first_log_index = static_cast<uint32_t>(varint.value);
 

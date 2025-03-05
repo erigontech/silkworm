@@ -37,7 +37,7 @@ struct CharCodec : public Codec {
         return word;
     }
     void decode_word(Word& input_word) override {
-        auto input_word_view = input_word.byte_view();
+        const ByteView input_word_view = input_word;
         if (input_word_view.empty()) {
             throw std::runtime_error{"CharCodec failed to decode"};
         }

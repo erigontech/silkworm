@@ -38,7 +38,7 @@ struct HistoryRangeSegmentQuery {
     using Key = decltype(TKeyDecoder::value);
     using Value = decltype(TValueDecoder::value);
     using ResultItem = std::pair<Key, Value>;
-    using Word = typename TKeyDecoder::Word;
+    using Word = snapshots::Decoder::Word;
     using AccessorIndexKeyEncoder = HistoryAccessorIndexKeyEncoder<RawEncoder<ByteView>>;
 
     std::optional<ResultItem> lookup_kv_pair(

@@ -60,7 +60,7 @@ struct Bytes32SnapshotsCodec : public snapshots::Codec {
         return ByteView{value.bytes};
     }
     void decode_word(Word& word) override {
-        auto word_view = word.byte_view();
+        const ByteView word_view = word;
         if (word_view.size() < sizeof(value.bytes))
             throw std::runtime_error{"Bytes32SnapshotsCodec failed to decode"};
         std::memcpy(value.bytes, word_view.data(), sizeof(value.bytes));
@@ -76,7 +76,7 @@ struct PackedBytes32SnapshotsCodec : public snapshots::Codec {
         return silkworm::zeroless_view(ByteView{value});
     }
     void decode_word(Word& word) override {
-        auto word_view = word.byte_view();
+        const ByteView word_view = word;
         if (word_view.size() > sizeof(value.bytes))
             throw std::runtime_error{"PackedBytes32SnapshotsCodec failed to decode"};
         value = silkworm::to_bytes32(word_view);

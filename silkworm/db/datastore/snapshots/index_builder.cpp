@@ -40,7 +40,7 @@ bool operator==(const IndexInputDataQuery::Iterator& lhs, const IndexInputDataQu
 
 static IndexInputDataQuery::Iterator::value_type decompressor_index_query_entry(seg::Decompressor::Iterator& it) {
     return {
-        .key_data = it->byte_view(),
+        .key_data = *it,
         .value = it.current_word_offset(),
     };
 }

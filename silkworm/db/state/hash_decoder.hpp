@@ -29,7 +29,7 @@ struct HashSnapshotsDecoder : public snapshots::Decoder {
     ~HashSnapshotsDecoder() override = default;
 
     void decode_word(Word& word) override {
-        auto word_view = word.byte_view();
+        const ByteView word_view = word;
         if (word_view.size() < kHashLength)
             throw std::runtime_error{"HashSnapshotsDecoder failed to decode"};
         value = Hash{word_view};

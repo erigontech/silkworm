@@ -49,7 +49,7 @@ void seg_unzip(const std::filesystem::path& path) {
     RawWordsStream words{out_path, RawWordsStream::OpenMode::kCreate, 1_Mebi};
 
     for (auto& word : decompressor) {
-        words.write_word(word.byte_view());
+        words.write_word(word);
     }
 }
 

@@ -17,6 +17,7 @@
 #include "schema_config.hpp"
 
 #include "state_index_builders_factory.hpp"
+#include "step_txn_id_converter.hpp"
 
 namespace silkworm::db::state {
 
@@ -90,7 +91,7 @@ static snapshots::SnapshotRepository make_state_repository(
         std::move(dir_path),
         open,
         schema,
-        std::make_unique<datastore::StepToTxnIdConverter>(),
+        kStepToTxnIdConverter,
         index_salt,
         std::make_unique<StateIndexBuildersFactory>(schema),
     };

@@ -20,8 +20,6 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 
 #include "blocks/bodies/body_index.hpp"
 #include "blocks/bodies/body_queries.hpp"
@@ -61,7 +59,7 @@ TEST_CASE("Snapshot::for_each_item", "[silkworm][node][snapshot][snapshot]") {
     seg::Decompressor decoder{hello_world_snapshot_file.fs_path()};
     auto it = decoder.begin();
     auto& word = *it;
-    CHECK(std::string{word.cbegin(), word.cend()} == "hello, world");
+    CHECK(byte_view_to_string_view(word) == "hello, world");
     CHECK(it.current_word_offset() == 0);
     CHECK(++it == decoder.end());
 }

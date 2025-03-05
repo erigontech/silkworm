@@ -63,6 +63,13 @@ class EliasFanoList32 {
     //! Create a new 32-bit EF list from the given encoded data (i.e. data plus data header)
     static EliasFanoList32 from_encoded_data(std::span<const uint8_t> encoded_data);
 
+    //! Create a new 32-bit EF list from the given encoded data (i.e. data plus data header)
+    static EliasFanoList32 from_encoded_data(ByteView encoded_data);
+
+    //! Create a new 32-bit EF list from the given encoded data (i.e. data plus data header)
+    //! @warning using this factory method will hold a copy of encoded data in data_holder_
+    static EliasFanoList32 from_encoded_data(Bytes encoded_data);
+
     //! Create a new 32-bit EF list from an existing data sequence
     //! \param count
     //! \param max_value
@@ -102,8 +109,6 @@ class EliasFanoList32 {
     Iterator begin() const { return Iterator{*this, 0}; }
     Iterator end() const { return Iterator{*this, size()}; }
 
-    std::optional<Bytes> data_holder{};
-
   private:
     EliasFanoList32() = default;
 
@@ -121,8 +126,10 @@ class EliasFanoList32 {
     //! The strict upper bound on the EF data points, i.e. max + 1
     uint64_t u_{0};
     uint64_t l_{0};
-    uint64_t i_{0};
+    //! Lightweight view over the EF encoded data sequence.
     std::span<const uint64_t> data_;
+    //! Copy of the EF encoded data sequence when it must be kept for lifetime reasons
+    std::optional<Bytes> data_holder_{};
 };
 
 //! 32-bit Elias-Fano (EF) list writer that can be used to encode one monotone non-decreasing sequence

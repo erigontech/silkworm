@@ -56,27 +56,28 @@ jobs:
         run: |
           python3 $ERIGON_QA_PATH/test_system/db-producer/resume_production.py || true
 
-      - name: Wait for port 8545 to be opened
-        run: |
-          for i in {1..30}; do
-            if nc -z localhost 8545; then
-              echo "Port 8545 is open"
-              break
-            fi
-            echo "Waiting for port 8545 to open..."
-            sleep 10
-          done
-          if ! nc -z localhost 8545; then
-            echo "Port 8545 did not open in time"
-            exit 1
-          fi
-
       - name: Start Silkworm RpcDaemon
         working-directory: ${{runner.workspace}}/silkworm/build/cmd
         run: |
           ${{runner.workspace}}/silkworm/.github/workflows/start_integration_rpcdaemon.sh $ERIGON_DATA_DIR ./jwt.hex &
           RPC_DAEMON_PID=$!
           echo "RPC_DAEMON_PID=$RPC_DAEMON_PID" >> $GITHUB_ENV
+
+      - name: Wait for port 51515 to be opened
+        run: |
+          api_port=51515
+          for i in {1..30}; do
+            if nc -z localhost $api_port; then
+              echo "Port $api_port is open"
+              break
+            fi
+            echo "Waiting for port $api_port to open..."
+            sleep 10
+          done
+          if ! nc -z localhost $api_port; then
+            echo "Port $api_port did not open in time"
+            exit 1
+          fi
 
       - name: Run RPC Integration Tests
         id: test_step

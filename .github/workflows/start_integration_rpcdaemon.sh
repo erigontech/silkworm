@@ -11,7 +11,16 @@ if [ "$#" -ne 2 ]; then
 fi
 
 echo "Silkworm RpcDaemon starting..."
-./rpcdaemon --eth.addr 127.0.0.1:51515 --engine.addr 127.0.0.1:51516 --api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --log.verbosity 1 --erigon_compatibility --jwt "$2" --skip_protocol_check --ws &
+./rpcdaemon \
+--eth.addr 127.0.0.1:51515 \
+--engine.addr 127.0.0.1:51516 \
+--api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net \
+--log.verbosity info \
+--erigon_compatibility \
+--datadir "$1" \
+--jwt "$2" \
+--skip_protocol_check \
+--ws &
 
 
 PID=$!

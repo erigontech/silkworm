@@ -167,18 +167,18 @@ class SegmentReader {
 
     using DecoderType = TDecoder;
 
-    explicit SegmentReader(const SegmentFileReader& reader) : reader_(reader) {}
+    explicit SegmentReader(const SegmentFileReader& reader) : reader_{&reader} {}
 
     Iterator begin() const {
-        return Iterator{reader_.begin(std::make_shared<TDecoder>())};
+        return Iterator{reader_->begin(std::make_shared<TDecoder>())};
     }
 
     Iterator end() const {
-        return Iterator{reader_.end()};
+        return Iterator{reader_->end()};
     }
 
     Iterator seek(uint64_t offset, std::optional<ByteView> check_prefix = std::nullopt) const {
-        return Iterator{reader_.seek(offset, check_prefix, std::make_shared<TDecoder>())};
+        return Iterator{reader_->seek(offset, check_prefix, std::make_shared<TDecoder>())};
     }
 
     std::optional<typename Iterator::value_type> seek_one(uint64_t offset, std::optional<ByteView> check_prefix = std::nullopt) const {
@@ -194,10 +194,10 @@ class SegmentReader {
         return iterator_read_into_vector(std::move(it), count);
     }
 
-    const SnapshotPath& path() const { return reader_.path(); }
+    const SnapshotPath& path() const { return reader_->path(); }
 
   private:
-    const SegmentFileReader& reader_;
+    const SegmentFileReader* reader_;
 };
 
 template <class TSegmentReader>

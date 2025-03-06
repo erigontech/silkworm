@@ -78,8 +78,9 @@ runs:
           do
              network=$1
              method=$2
-             pattern=$3
-             sequence=$4
+             repetitions=$3
+             pattern=$4
+             sequence=$5
 
              # clean temporary area
              cd ${{runner.workspace}}/rpc-tests/perf
@@ -89,7 +90,7 @@ runs:
                                       --test-type "$method" \
                                       --pattern-file pattern/"$network"/"$pattern".tar \
                                       --test-sequence "$sequence" \
-                                      --repetitions 5 \
+                                      --repetitions $repetitions \
                                       --silk-dir ${{runner.workspace}}/silkworm \
                                       --erigon-dir $ERIGON_DATA_DIR \
                                       --test-mode $i \
@@ -159,23 +160,22 @@ runs:
         # Launch the RPC performance test runner
         failed_test= 0
         if [[ "${{ inputs.activation_mode }}" == "light" ]]; then
-          # Lightweight mode: narrower API coverage, shorter sequences
-          run_perf mainnet eth_call stress_test_eth_call_20M 100:30,1000:20,10000:20,20000:20
-          run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 100:30,1000:20,10000:20
-          run_perf mainnet eth_getBalance stress_test_eth_getBalance_15M 100:30,1000:20,10000:20
-          run_perf mainnet eth_getBlockByHash stress_test_eth_getBlockByHash_14M 100:30,1000:20
-          run_perf mainnet eth_getTransactionByHash stress_test_eth_getTransactionByHash_13M 100:30,1000:20,10000:20
-          run_perf mainnet eth_getTransactionReceipt stress_test_eth_getTransactionReceipt_14M 100:30
+          # Lightweight mode: narrower API coverage, less repetitions, shorter sequences
+          run_perf mainnet eth_call 3 stress_test_eth_call_20M 100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getLogs 3 stress_test_eth_getLogs_15M 100:30,1000:20,10000:20
+          run_perf mainnet eth_getBlockByHash 3 stress_test_eth_getBlockByHash_14M 100:30,1000:20
+          run_perf mainnet eth_getTransactionByHash 3 stress_test_eth_getTransactionByHash_13M 100:30,1000:20,10000:20
+          run_perf mainnet eth_getTransactionReceipt 3 stress_test_eth_getTransactionReceipt_14M 100:30
         else
-          # Full mode: wider API coverage, longer sequences
-          run_perf mainnet eth_call stress_test_eth_call_20M 1:1,100:30,1000:20,10000:20,20000:20
-          run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 1:1,100:30,1000:20,10000:20,20000:20
-          run_perf mainnet eth_getBalance stress_test_eth_getBalance_15M 1:1,100:30,1000:20,10000:20,20000:20
-          run_perf mainnet eth_getBlockByHash stress_test_eth_getBlockByHash_14M 1:1,100:30,1000:20,10000:20
-          run_perf mainnet eth_getBlockByNumber stress_test_eth_getBlockByNumber_13M 1:1,100:30,1000:20,5000:20
-          run_perf mainnet eth_getTransactionByHash stress_test_eth_getTransactionByHash_13M 1:1,100:30,1000:20,10000:20
-          run_perf mainnet eth_getTransactionReceipt stress_test_eth_getTransactionReceipt_14M 1:1,100:30,1000:20,5000:20,10000:20,20000:20
-          run_perf mainnet eth_createAccessList stress_test_eth_createAccessList_16M 1:1,100:30,1000:20,10000:20,20000:20
+          # Full mode: wider API coverage, more repetitions, longer sequences
+          run_perf mainnet eth_call 5 stress_test_eth_call_20M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getLogs 5 stress_test_eth_getLogs_15M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getBalance 5 stress_test_eth_getBalance_15M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getBlockByHash 5 stress_test_eth_getBlockByHash_14M 1:1,100:30,1000:20,10000:20
+          run_perf mainnet eth_getBlockByNumber 5 stress_test_eth_getBlockByNumber_13M 1:1,100:30,1000:20,5000:20
+          run_perf mainnet eth_getTransactionByHash 5 stress_test_eth_getTransactionByHash_13M 1:1,100:30,1000:20,10000:20
+          run_perf mainnet eth_getTransactionReceipt 5 stress_test_eth_getTransactionReceipt_14M 1:1,100:30,1000:20,5000:20,10000:20,20000:20
+          run_perf mainnet eth_createAccessList 5 stress_test_eth_createAccessList_16M 1:1,100:30,1000:20,10000:20,20000:20
         fi
         
         if [ $failed_test -eq 0 ]; then

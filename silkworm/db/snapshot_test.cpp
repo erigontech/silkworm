@@ -59,7 +59,9 @@ TEST_CASE("Snapshot::for_each_item", "[silkworm][node][snapshot][snapshot]") {
     seg::Decompressor decoder{hello_world_snapshot_file.fs_path()};
     auto it = decoder.begin();
     auto& word = *it;
-    CHECK(byte_view_to_string_view(word) == "hello, world");
+    // Using byte_view_to_string_view causes unresolved linker error on Windows build
+    // https://github.com/catchorg/Catch2/issues/2605
+    CHECK(bytes_to_string(Bytes{word}) == "hello, world");
     CHECK(it.current_word_offset() == 0);
     CHECK(++it == decoder.end());
 }

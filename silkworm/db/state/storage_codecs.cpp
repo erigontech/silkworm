@@ -18,28 +18,22 @@
 
 namespace silkworm::db::state {
 
-datastore::kvdb::Slice StorageAddressAndLocationKVDBEncoder::encode() {
-    // TODO: this extra copy could be avoided if encoders are able to contain a reference
-    encoder.address.value = value.address;
-    encoder.location_hash.value = value.location_hash;
+static_assert(sizeof(StorageAddressAndLocation) == kAddressLength + kHashLength);
 
-    data.clear();
-    data.reserve(kAddressLength + kHashLength);
-    data.append(datastore::kvdb::from_slice(encoder.address.encode()));
-    data.append(datastore::kvdb::from_slice(encoder.location_hash.encode()));
+datastore::kvdb::Slice StorageAddressAndLocationKVDBEncoder::encode() {
+    ByteView data{reinterpret_cast<uint8_t*>(&value), sizeof(StorageAddressAndLocation)};
     return datastore::kvdb::to_slice(data);
 }
 
 ByteView StorageAddressAndLocationSnapshotsCodec::encode_word() {
-    // TODO: this extra copy could be avoided if encoders are able to contain a reference
-    codec.address.value = value.address;
-    codec.location_hash.value = value.location_hash;
+    return ByteView{reinterpret_cast<uint8_t*>(&value), sizeof(StorageAddressAndLocation)};
+}
 
-    word.clear();
-    word.reserve(kAddressLength + kHashLength);
-    word.append(codec.address.encode_word());
-    word.append(codec.location_hash.encode_word());
-    return word;
+void StorageAddressAndLocationKVDBEncoder::decode(datastore::kvdb::Slice slice) {
+    codec.address.decode(slice);
+    slice.remove_prefix(kAddressLength);
+    codec.location_hash.decode(slice);
+    value = {codec.address.value, codec.location_hash.value};
 }
 
 void StorageAddressAndLocationSnapshotsCodec::decode_word(Word& input_word) {

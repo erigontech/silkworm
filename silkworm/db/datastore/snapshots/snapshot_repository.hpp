@@ -87,11 +87,11 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
     const std::optional<uint32_t>& index_salt() const { return index_salt_; }
     void build_indexes(const SnapshotBundlePaths& bundle) const;
 
-    BundlesView<MapValuesView<Bundles::key_type, Bundles::mapped_type>> view_bundles() const override {
+    BundlesView<MapValuesView<Bundles::key_type, Bundles::mapped_type, Bundles>> view_bundles() const override {
         std::scoped_lock lock(*bundles_mutex_);
         return BundlesView{make_map_values_view(*bundles_), bundles_};
     }
-    BundlesView<MapValuesViewReverse<Bundles::key_type, Bundles::mapped_type>> view_bundles_reverse() const override {
+    BundlesView<MapValuesViewReverse<Bundles::key_type, Bundles::mapped_type, Bundles>> view_bundles_reverse() const override {
         std::scoped_lock lock(*bundles_mutex_);
         return BundlesView{std::ranges::reverse_view(make_map_values_view(*bundles_)), bundles_};
     }

@@ -19,24 +19,25 @@
 #include <iterator>
 #include <map>
 #include <ranges>
+#include <unordered_map>
 #include <utility>
+
+#include <absl/container/flat_hash_map.h>
 
 namespace silkworm::map_values_view::fallback {
 
-template <typename TMapKey, typename TMapValue>
-class MapValuesView : public std::ranges::view_interface<MapValuesView<TMapKey, TMapValue>> {
+template <typename TMapKey, typename TMapValue, class TMap>
+class MapValuesView : public std::ranges::view_interface<MapValuesView<TMapKey, TMapValue, TMap>> {
   public:
-    using Map = std::map<TMapKey, TMapValue>;
-
     class Iterator {
       public:
-        using value_type = typename Map::mapped_type;
+        using value_type = TMapValue;
         using iterator_category [[maybe_unused]] = std::bidirectional_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = const value_type*;
         using reference = const value_type&;
 
-        explicit Iterator(typename Map::const_iterator it) : it_(it) {}
+        explicit Iterator(typename TMap::const_iterator it) : it_(it) {}
         Iterator() = default;
 
         reference operator*() const { return it_->second; }
@@ -57,12 +58,12 @@ class MapValuesView : public std::ranges::view_interface<MapValuesView<TMapKey, 
         friend bool operator==(const Iterator& lhs, const Iterator& rhs) = default;
 
       private:
-        typename Map::const_iterator it_;
+        typename TMap::const_iterator it_;
     };
 
     static_assert(std::bidirectional_iterator<Iterator>);
 
-    explicit MapValuesView(const Map& map)
+    explicit MapValuesView(const TMap& map)
         : begin_(Iterator{map.cbegin()}),
           end_(Iterator{map.cend()}) {}
     MapValuesView() = default;
@@ -79,8 +80,8 @@ class MapValuesView : public std::ranges::view_interface<MapValuesView<TMapKey, 
 
 namespace silkworm::map_values_view::builtin {
 
-template <typename TMapKey, typename TMapValue>
-using MapValuesView = std::ranges::values_view<std::ranges::views::all_t<const std::map<TMapKey, TMapValue>&>>;
+template <typename TMapKey, typename TMapValue, class TMap>
+using MapValuesView = std::ranges::values_view<std::ranges::views::all_t<const TMap&>>;
 
 }  // namespace silkworm::map_values_view::builtin
 
@@ -96,11 +97,21 @@ using silkworm::map_values_view::builtin::MapValuesView;
 #endif
 
 template <typename TMapKey, typename TMapValue>
-MapValuesView<TMapKey, TMapValue> make_map_values_view(const std::map<TMapKey, TMapValue>& map) {
-    return MapValuesView<TMapKey, TMapValue>{map};
+MapValuesView<TMapKey, TMapValue, std::map<TMapKey, TMapValue>> make_map_values_view(const std::map<TMapKey, TMapValue>& map) {
+    return MapValuesView<TMapKey, TMapValue, std::map<TMapKey, TMapValue>>{map};
 }
 
 template <typename TMapKey, typename TMapValue>
-using MapValuesViewReverse = std::ranges::reverse_view<MapValuesView<TMapKey, TMapValue>>;
+MapValuesView<TMapKey, TMapValue, std::unordered_map<TMapKey, TMapValue>> make_map_values_view(const std::unordered_map<TMapKey, TMapValue>& map) {
+    return MapValuesView<TMapKey, TMapValue, std::unordered_map<TMapKey, TMapValue>>{map};
+}
+
+template <typename TMapKey, typename TMapValue, class THash>
+MapValuesView<TMapKey, TMapValue, absl::flat_hash_map<TMapKey, TMapValue, THash>> make_map_values_view(const absl::flat_hash_map<TMapKey, TMapValue, THash>& map) {
+    return MapValuesView<TMapKey, TMapValue, absl::flat_hash_map<TMapKey, TMapValue, THash>>{map};
+}
+
+template <typename TMapKey, typename TMapValue, class TMap>
+using MapValuesViewReverse = std::ranges::reverse_view<MapValuesView<TMapKey, TMapValue, TMap>>;
 
 }  // namespace silkworm

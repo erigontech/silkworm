@@ -16,6 +16,8 @@
 
 #include "inverted_index_range_by_key_query.hpp"
 
+#include <map>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/common/directories.hpp>

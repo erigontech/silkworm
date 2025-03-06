@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <map>
 #include <utility>
 
 #include "domain.hpp"
@@ -31,7 +30,7 @@ class DatabaseUnmanaged;
 
 class DatabaseRef {
   public:
-    using EntitiesMap = std::map<datastore::EntityName, std::map<datastore::EntityName, MapConfig>>;
+    using EntitiesMap = EntityMap<EntityMap<MapConfig>>;
 
     ROAccess access_ro() const { return ROAccess{env_}; }
     RWAccess access_rw() const { return RWAccess{env_}; }
@@ -81,7 +80,7 @@ class Database {
   private:
     mdbx::env_managed env_;
     Schema::DatabaseDef schema_;
-    std::map<datastore::EntityName, std::map<datastore::EntityName, MapConfig>> entities_;
+    EntityMap<EntityMap<MapConfig>> entities_;
 };
 
 class DatabaseUnmanaged {
@@ -104,7 +103,7 @@ class DatabaseUnmanaged {
   private:
     EnvUnmanaged env_;
     Schema::DatabaseDef schema_;
-    std::map<datastore::EntityName, std::map<datastore::EntityName, MapConfig>> entities_;
+    EntityMap<EntityMap<MapConfig>> entities_;
 };
 
 }  // namespace silkworm::datastore::kvdb

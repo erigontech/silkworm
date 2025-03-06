@@ -66,8 +66,8 @@ struct SnapshotRepositoryROAccess {
     //! All types of .seg and .idx files are available up to this timestamp
     virtual Timestamp max_timestamp_available() const = 0;
 
-    virtual BundlesView<MapValuesView<Bundles::key_type, Bundles::mapped_type>> view_bundles() const = 0;
-    virtual BundlesView<MapValuesViewReverse<Bundles::key_type, Bundles::mapped_type>> view_bundles_reverse() const = 0;
+    virtual BundlesView<MapValuesView<Bundles::key_type, Bundles::mapped_type, Bundles>> view_bundles() const = 0;
+    virtual BundlesView<MapValuesViewReverse<Bundles::key_type, Bundles::mapped_type, Bundles>> view_bundles_reverse() const = 0;
 
     virtual std::pair<std::optional<SegmentAndAccessorIndex>, std::shared_ptr<SnapshotBundle>> find_segment(
         const SegmentAndAccessorIndexNames& names,

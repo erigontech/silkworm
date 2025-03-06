@@ -96,9 +96,9 @@ class DataStore {
   private:
     static datastore::Schema make_schema();
 
-    static std::map<datastore::EntityName, std::unique_ptr<datastore::kvdb::Database>> make_databases_map(
+    static datastore::EntityMap<std::unique_ptr<datastore::kvdb::Database>> make_databases_map(
         datastore::kvdb::Database chaindata_database);
-    static std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> make_repositories_map(
+    static datastore::EntityMap<std::unique_ptr<snapshots::SnapshotRepository>> make_repositories_map(
         snapshots::SnapshotRepository blocks_repository,
         snapshots::SnapshotRepository state_repository_latest,
         snapshots::SnapshotRepository state_repository_historical);

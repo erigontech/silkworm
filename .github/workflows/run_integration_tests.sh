@@ -18,8 +18,6 @@ python3 ./run_tests.py --continue --blockchain mainnet --jwt "$2" --display-only
 debug_accountRange,\
 debug_getModifiedAccountsBy,\
 debug_storageRangeAt,\
-debug_traceBlockByHash/test_10,\
-debug_traceBlockByNumber/test_10,\
 debug_traceBlockByNumber/test_24,\
 debug_traceBlockByNumber/test_25,\
 debug_traceBlockByNumber/test_26,\
@@ -28,15 +26,10 @@ debug_traceBlockByNumber/test_28,\
 debug_traceCall/test_21,\
 debug_traceTransaction/test_25,\
 debug_traceTransaction/test_36,\
-debug_traceTransaction/test_43,\
 debug_traceTransaction/test_62,\
 debug_traceTransaction/test_74,\
 debug_traceTransaction/test_75,\
 debug_traceTransaction/test_77,\
-debug_traceTransaction/test_90,\
-debug_traceTransaction/test_91,\
-debug_traceTransaction/test_92,\
-debug_traceTransaction/test_96,\
 engine_,\
 erigon_getBalanceChangesInBlock,\
 eth_getLogs/test_16,\

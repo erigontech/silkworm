@@ -1,6 +1,7 @@
 name: QA - RPC Performance Tests Light
 
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - master

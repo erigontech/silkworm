@@ -1096,7 +1096,7 @@ Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& reque
 
     const auto address = params[0].get<evmc::address>();
     const auto position = params[1].get<std::string>();
-    if (!is_valid_hex(position) || position.length() != 2 + kHashLength * 2) {
+    if (!is_valid_hex(position)) {
         const auto error_msg = "unable to decode storage key: hex string invalid: " + params.dump();
         SILK_ERROR << error_msg;
         reply = make_json_error(request, kInvalidParams, error_msg);

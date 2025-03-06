@@ -36,8 +36,12 @@ struct CharCodec : public Codec {
         word.push_back(*byte_ptr_cast(&value));
         return word;
     }
-    void decode_word(Bytes& input_word) override {
-        value = *byte_ptr_cast(input_word.data());
+    void decode_word(Word& input_word) override {
+        const ByteView input_word_view = input_word;
+        if (input_word_view.empty()) {
+            throw std::runtime_error{"CharCodec failed to decode"};
+        }
+        value = *byte_ptr_cast(input_word_view.data());
     }
 };
 

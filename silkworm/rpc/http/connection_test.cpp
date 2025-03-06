@@ -51,10 +51,11 @@ TEST_CASE("connection creation", "[rpc][http][connection]") {
                                         handler_factory,
                                         allowed_origins,
                                         std::move(jwt_secret),
-                                        false,
-                                        false,
-                                        false,
-                                        workers});
+                                        /*ws_upgrade_enabled=*/false,
+                                        /*ws_compression=*/false,
+                                        /*http_compression=*/false,
+                                        workers,
+                                        /*erigon_json_rpc_compatibility=*/true});
     }
 }
 
@@ -92,7 +93,16 @@ TEST_CASE("is_request_authorized", "[rpc][http][connection]") {
     ConnectionForTest connection = [&]() -> ConnectionForTest {
         boost::asio::ip::tcp::socket socket{ioc};
         socket.open(boost::asio::ip::tcp::v4());
-        return {std::move(socket), handler_factory, allowed_origins, jwt_secret, false, false, false, workers};
+        return {
+            std::move(socket),
+            handler_factory,
+            allowed_origins,
+            jwt_secret,
+            /*ws_upgrade_enabled=*/false,
+            /*ws_compression=*/false,
+            /*http_compression=*/false,
+            workers,
+            /*erigon_json_rpc_compatibility=*/true};
     }();
 
     SECTION("no HTTP Authorization header") {

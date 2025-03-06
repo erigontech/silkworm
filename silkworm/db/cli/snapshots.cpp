@@ -527,9 +527,11 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
     auto kv_iterator = kv_decompressor.begin();
     while (kv_iterator != kv_decompressor.end()) {
         // KV files contain alternated keys and values: k1|v1|...|kN|vN
+        SILKWORM_ASSERT(kv_iterator->holds_bytes());  // kv_decompressor has CompressionKind::kAll
+        auto word = std::move(std::get<Bytes>(*kv_iterator));
         if (is_key) {
             previous_key = key;
-            key = *kv_iterator;
+            key = std::move(word);
             // Check if there's any gap between adjacent keys in KV file: if so, we have nonexistent keys to check
             const auto previous = intx::from_string<intx::uint256>(to_hex(previous_key, /*with_prefix=*/true));
             const auto current = intx::from_string<intx::uint256>(to_hex(key, /*with_prefix=*/true));
@@ -550,7 +552,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
             }
             ++key_count;
         } else {
-            value = *kv_iterator;
+            value = std::move(word);
             SILK_DEBUG << "KV: key=" << to_hex(key) << " value=" << to_hex(value);
             ensure(existence_index.contains(key),
                    [&]() { return "open_existence_index: unexpected not found key=" + to_hex(key) +

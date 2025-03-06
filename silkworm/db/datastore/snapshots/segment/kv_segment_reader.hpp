@@ -96,7 +96,7 @@ class KVSegmentFileReader {
     const std::filesystem::path& fs_path() const { return path_.path(); }
 
     bool empty() const { return item_count() == 0; }
-    size_t item_count() const { return decompressor_.words_count(); }
+    size_t item_count() const { return decompressor_.words_count() / 2; }
 
     MemoryMappedRegion memory_file_region() const;
 

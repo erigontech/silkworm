@@ -84,28 +84,29 @@ TEST_CASE("AccountSnapshotsCodec") {
         CHECK(codec.encode_word() == *from_hex("010201030000"));
     }
     SECTION("decode") {
-        auto word1 = *from_hex("");
+        using Word = snapshots::Decoder::Word;
+        Word word1{*from_hex("")};
         codec.decode_word(word1);
         CHECK(!codec.value);
-        auto word2 = *from_hex("00000000");
+        Word word2{*from_hex("00000000")};
         codec.decode_word(word2);
         CHECK(codec.value == Account{});
-        auto word3 = *from_hex("010201032056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b4210104");
+        Word word3{*from_hex("010201032056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b4210104")};
         codec.decode_word(word3);
         CHECK(codec.value == Account{2, 3, kEmptyRoot, 4});
-        auto word4 = *from_hex("01020103000104");
+        Word word4{*from_hex("01020103000104")};
         codec.decode_word(word4);
         CHECK(codec.value == Account{2, 3, kEmptyHash, 4});
-        auto word5 = *from_hex("000103000104");
+        Word word5{*from_hex("000103000104")};
         codec.decode_word(word5);
         CHECK(codec.value == Account{0, 3, kEmptyHash, 4});
-        auto word6 = *from_hex("010200000104");
+        Word word6{*from_hex("010200000104")};
         codec.decode_word(word6);
         CHECK(codec.value == Account{2, 0, kEmptyHash, 4});
-        auto word7 = *from_hex("010201030000");
+        Word word7{*from_hex("010201030000")};
         codec.decode_word(word7);
         CHECK(codec.value == Account{2, 3, kEmptyHash, 0});
-        auto word8 = *from_hex("01020203e820f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c92390105");
+        Word word8{*from_hex("01020203e820f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c92390105")};
         codec.decode_word(word8);
         CHECK(codec.value == Account{2, 1000, 0xf1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239_bytes32, 5});
     }

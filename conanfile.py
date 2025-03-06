@@ -19,6 +19,7 @@ class SilkwormRecipe(ConanFile):
     settings = 'os', 'compiler', 'build_type', 'arch'
     generators = 'CMakeDeps'
 
+    # Hard-coded recipe revisions prevent issues in Windows build after publication of a new revision
     def requirements(self):
         self.requires('catch2/3.6.0')
         self.requires('magic_enum/0.8.2')
@@ -35,14 +36,16 @@ class SilkwormRecipe(ConanFile):
         self.requires('boost/1.83.0', override=True)
         self.requires('cli11/2.2.0')
         self.requires('gmp/6.2.1')
-        # Hard-coded recipe revision to prevent issue in Windows build after publication of new revision
         self.requires('grpc/1.67.1#eae57ed8067bb53c6b0441a563b56d59', override=True)
         self.requires('gtest/1.12.1')
         self.requires('jwt-cpp/0.6.0')
         self.requires('libtorrent/2.0.10')
         self.requires('mimalloc/2.1.2')
         self.requires('openssl/3.3.2')
-        self.requires('protobuf/5.27.0')
+        if self.settings.os == 'Windows':
+            self.requires('protobuf/5.27.0#fe72d115daa683469cd940f0407ce55e', override=True)
+        else:
+            self.requires('protobuf/5.27.0')
         self.requires('roaring/1.1.2')
         self.requires('snappy/1.1.7')
         self.requires('spdlog/1.12.0')

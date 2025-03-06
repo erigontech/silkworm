@@ -27,7 +27,7 @@
 #include "../common/entity_name.hpp"
 #include "../common/pair_get.hpp"
 #include "../common/ranges/caching_view.hpp"
-#include "../common/ranges/merge_unique_many_view.hpp"
+#include "../common/ranges/merge_many_view.hpp"
 #include "../common/ranges/owning_view.hpp"
 #include "common/codec.hpp"
 #include "domain.hpp"
@@ -78,6 +78,7 @@ struct DomainRangeLatestQuery {
     using ResultItemKey = decltype(TKeyDecoder::value);
     using ResultItemValue = decltype(TValueDecoder::value);
     using ResultItem = std::pair<ResultItemKey, ResultItemValue>;
+    using Word = snapshots::Decoder::Word;
 
     static ResultItem decode_kv_pair(std::pair<Bytes, Bytes>&& kv_pair) {
         if constexpr (std::same_as<ResultItem, std::pair<Bytes, Bytes>>) {
@@ -85,11 +86,13 @@ struct DomainRangeLatestQuery {
         }
 
         TKeyDecoder key_decoder;
-        key_decoder.decode_word(kv_pair.first);
+        Word key_byte_word{std::move(kv_pair.first)};
+        key_decoder.decode_word(key_byte_word);
         ResultItemKey& key = key_decoder.value;
 
         TValueDecoder value_decoder;
-        value_decoder.decode_word(kv_pair.second);
+        Word value_byte_word{std::move(kv_pair.second)};
+        value_decoder.decode_word(value_byte_word);
         ResultItemValue& value = value_decoder.value;
 
         return ResultItem{std::move(key), std::move(value)};
@@ -121,7 +124,7 @@ struct DomainRangeLatestQuery {
 
         auto results = silkworm::views::merge_unique_many(
             std::move(bundle_results),
-            silkworm::views::MergeUniqueCompareFunc{},
+            silkworm::views::MergeCompareFunc{},
             PairGetFirst<DomainRangeLatestSegmentQuery::ResultItem::first_type, DomainRangeLatestSegmentQuery::ResultItem::second_type>{});
 
         return silkworm::ranges::owning_view(std::move(results)) |

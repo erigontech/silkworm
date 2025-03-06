@@ -14,20 +14,17 @@
    limitations under the License.
 */
 
-#include "receipts_domain.hpp"
+#pragma once
 
-#include <catch2/catch_test_macros.hpp>
+#include <compare>
 
-namespace silkworm::db::state {
+namespace silkworm::views {
 
-TEST_CASE("ReceiptsDomainKeySnapshotsDecoder") {
-    ReceiptsDomainKeySnapshotsDecoder decoder;
-    BytesOrByteView one{Bytes{1}};
-    decoder.decode_word(one);
-    CHECK(decoder.value == ReceiptsDomainKey::kCumulativeBlobGasUsedInBlockKey);
+struct MergeCompareFunc {
+    template <typename T>
+    constexpr std::strong_ordering operator()(const T& lhs, const T& rhs) const noexcept {
+        return std::compare_strong_order_fallback(lhs, rhs);
+    }
+};
 
-    BytesOrByteView empty;
-    CHECK_THROWS_AS(decoder.decode_word(empty), std::runtime_error);
-}
-
-}  // namespace silkworm::db::state
+}  // namespace silkworm::views

@@ -26,7 +26,7 @@ namespace silkworm::snapshots {
 using TransactionSegmentReader = segment::SegmentReader<TransactionSegmentWordDecoder>;
 using TransactionSegmentWriter = segment::SegmentWriter<TransactionSegmentWordEncoder>;
 
-template <BytesOrByteView TBytes>
+template <BytesOrByteViewConcept TBytes>
 using TransactionSegmentPayloadRlpReader = segment::SegmentReader<TransactionSegmentWordPayloadRlpDecoder<TBytes>>;
 
 }  // namespace silkworm::snapshots

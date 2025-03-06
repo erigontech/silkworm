@@ -158,7 +158,7 @@ runs:
         
         # Launch the RPC performance test runner
         failed_test= 0
-        if [[ ${{ inputs.activation_mode }}" == "light" ]]; then
+        if [[ "${{ inputs.activation_mode }}" == "light" ]]; then
           # Lightweight mode: narrower API coverage, shorter sequences
           run_perf mainnet eth_call stress_test_eth_call_20M 100:30,1000:20,10000:20,20000:20
           run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 100:30,1000:20,10000:20

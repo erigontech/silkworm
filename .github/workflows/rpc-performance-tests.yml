@@ -9,7 +9,7 @@ jobs:
   performance-test-suite:
     strategy:
       matrix:
-        backend: [ Erigon2 ]
+        backend: [ Erigon3 ]
     runs-on: [ self-hosted, "${{ matrix.backend }}" ]
     env:
       ERIGON_DIR: /opt/erigon-versions/reference-version
@@ -27,7 +27,7 @@ jobs:
       - name: Checkout RPC Tests Repository & Install Requirements
         run: |
           rm -rf ${{runner.workspace}}/rpc-tests
-          git -c advice.detachedHead=false clone --depth 1 --branch v0.26.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
+          git -c advice.detachedHead=false clone --depth 1 --branch v1.48.0 https://github.com/erigontech/rpc-tests ${{runner.workspace}}/rpc-tests
           cd ${{runner.workspace}}/rpc-tests
           pip3 install -r requirements.txt --break-system-packages
 
@@ -163,7 +163,7 @@ jobs:
           
           # Launch the RPC performance test runner
           failed_test= 0
-          run_perf mainnet eth_call stress_test_eth_call_001_14M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_call stress_test_eth_call_20M 1:1,100:30,1000:20,10000:20,20000:20
           run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 1:1,100:30,1000:20,10000:20,20000:20
           run_perf mainnet eth_getBalance stress_test_eth_getBalance_15M 1:1,100:30,1000:20,10000:20,20000:20
           run_perf mainnet eth_getBlockByHash stress_test_eth_getBlockByHash_14M 1:1,100:30,1000:20,10000:20

@@ -10,12 +10,6 @@ runs:
   using: "composite"
 
   steps:
-    - name: Checkout Silkworm repository
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
-        fetch-depth: "0"
-
     - name: Checkout RPC Tests Repository & Install Requirements
       shell: bash
       run: |

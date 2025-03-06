@@ -1,12 +1,14 @@
-name: QA - RPC Performance Tests
+name: QA - RPC Performance Tests Light
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 0 * * 1-6'  # Runs every day from Monday to Saturday at 00:00 AM UTC
+  pull_request:
+    branches:
+      - master
+    types:
+      - ready_for_review
 
 jobs:
-  performance-test-suite:
+  performance-test-suite-light:
     strategy:
       matrix:
         backend: [ Erigon3 ]
@@ -20,4 +22,4 @@ jobs:
     steps:
       - uses: ./.github/actions/perf-common-steps
         with:
-          activation_mode: full
+          activation_mode: light

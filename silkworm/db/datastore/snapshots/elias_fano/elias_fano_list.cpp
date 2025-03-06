@@ -53,6 +53,7 @@
 #include <silkworm/infra/common/log.hpp>
 
 #include "../common/encoding/util.hpp"
+#include "../common/util/iterator/index_range.hpp"
 #include "elias_fano_common.hpp"
 
 namespace silkworm::snapshots::elias_fano {
@@ -126,21 +127,6 @@ uint64_t EliasFanoList32::upper(uint64_t i) const {
 }
 
 std::optional<std::pair<size_t, uint64_t>> EliasFanoList32::seek([[maybe_unused]] uint64_t v, bool reverse) const {
-    struct IndexRange {
-        using value_type = size_t;
-
-        size_t start_index{0};
-        size_t end_index{0};
-
-        size_t size() const { return end_index - start_index; }
-        size_t operator[](size_t i) const { return i; }
-
-        using Iterator = ListIterator<IndexRange, size_t>;
-        Iterator begin() const { return Iterator{*this, start_index}; }
-        Iterator end() const { return Iterator{*this, end_index}; }
-    };
-    static_assert(IndexedListConcept<IndexRange>);
-
     if (count_ == 0) {
         return std::nullopt;
     }

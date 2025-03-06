@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "history_range_query.hpp"
+#include "history_range_in_period_query.hpp"
 
 #include <functional>
 
@@ -49,7 +49,7 @@ struct DomainWithLargeValues {
     }
 };
 
-TEMPLATE_TEST_CASE("HistoryRangeQuery", "", DomainDefault, DomainWithLargeValues) {
+TEMPLATE_TEST_CASE("HistoryRangeInPeriodQuery", "", DomainDefault, DomainWithLargeValues) {
     const TemporaryDirectory tmp_dir;
     ::mdbx::env_managed env = open_env(EnvConfig{.path = tmp_dir.path().string(), .create = true, .in_memory = true});
 
@@ -75,7 +75,7 @@ TEMPLATE_TEST_CASE("HistoryRangeQuery", "", DomainDefault, DomainWithLargeValues
         }
 
         ROTxnManaged tx = db_access.start_ro_tx();
-        HistoryRangeQuery<BigEndianU64Codec, BigEndianU64Codec> query{tx, entity};
+        HistoryRangeInPeriodQuery<BigEndianU64Codec, BigEndianU64Codec> query{tx, entity};
         return vector_from_range(query.exec(ts_range, true));
     };
 

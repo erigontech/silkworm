@@ -51,7 +51,7 @@
 #include <utility>
 
 #include "../common/encoding/sequence.hpp"
-#include "list_iterator.hpp"
+#include "../common/util/iterator/list_iterator.hpp"
 
 namespace silkworm::snapshots::elias_fano {
 

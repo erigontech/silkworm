@@ -158,14 +158,13 @@ runs:
         }
         
         # Launch the RPC performance test runner
-        failed_test= 0
+        failed_test=0
         if [[ "${{ inputs.activation_mode }}" == "light" ]]; then
           # Lightweight mode: narrower API coverage, less repetitions, shorter sequences
-          run_perf mainnet eth_call 3 stress_test_eth_call_20M 100:30,1000:20,10000:20,20000:20
-          run_perf mainnet eth_getLogs 3 stress_test_eth_getLogs_15M 100:30,1000:20,10000:20
-          run_perf mainnet eth_getBlockByHash 3 stress_test_eth_getBlockByHash_14M 100:30,1000:20
-          run_perf mainnet eth_getTransactionByHash 3 stress_test_eth_getTransactionByHash_13M 100:30,1000:20,10000:20
-          run_perf mainnet eth_getTransactionReceipt 3 stress_test_eth_getTransactionReceipt_14M 100:30
+          run_perf mainnet eth_call 2 stress_test_eth_call_20M 100:30,1000:20
+          run_perf mainnet eth_getLogs 2 stress_test_eth_getLogs_15M 100:30,1000:20
+          run_perf mainnet eth_getBlockByHash 2 stress_test_eth_getBlockByHash_14M 100:30,1000:20
+          run_perf mainnet eth_getTransactionByHash 2 stress_test_eth_getTransactionByHash_13M 100:30,1000:20
         else
           # Full mode: wider API coverage, more repetitions, longer sequences
           run_perf mainnet eth_call 5 stress_test_eth_call_20M 1:1,100:30,1000:20,10000:20,20000:20

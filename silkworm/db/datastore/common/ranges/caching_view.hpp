@@ -56,7 +56,7 @@ class CachingView : public std::ranges::view_interface<CachingView<TRange>> {
 
         reference operator*() const {
             if (!cached_value_) {
-                cached_value_ = *it_;
+                cached_value_.emplace(std::move(*it_));
             }
             return *cached_value_;
         }

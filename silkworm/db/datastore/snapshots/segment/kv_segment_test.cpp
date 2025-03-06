@@ -14,6 +14,9 @@
    limitations under the License.
 */
 
+#include <concepts>
+#include <ranges>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
@@ -44,6 +47,15 @@ struct CharCodec : public Codec {
         value = *byte_ptr_cast(input_word_view.data());
     }
 };
+
+static_assert(std::ranges::input_range<KVSegmentReader<StringCodec, CharCodec>>);
+static_assert(std::movable<KVSegmentReader<StringCodec, CharCodec>>);
+
+static_assert(std::ranges::input_range<KVSegmentKeysReader<StringCodec>>);
+static_assert(std::movable<KVSegmentKeysReader<StringCodec>>);
+
+static_assert(std::ranges::input_range<KVSegmentValuesReader<CharCodec>>);
+static_assert(std::movable<KVSegmentValuesReader<CharCodec>>);
 
 TEST_CASE("KVSegmentFile") {
     using namespace datastore;

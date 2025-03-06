@@ -29,6 +29,7 @@
 #include <silkworm/core/common/assert.hpp>
 
 #include "merge_compare_func.hpp"
+#include "vector_from_range.hpp"
 
 namespace silkworm::views {
 
@@ -57,9 +58,10 @@ class MergeManyView : public std::ranges::view_interface<MergeManyView<Range, Ra
         Iterator(
             Ranges& ranges,
             const Comp* comp, Proj proj)
-            : comp_{comp},
+            : ranges_{vector_from_range(ranges)},
+              comp_{comp},
               proj_{std::move(proj)} {
-            for (auto&& range : ranges) {
+            for (Range& range : ranges_) {
                 iterators_.emplace_back(std::ranges::begin(range));
                 sentinels_.emplace_back(std::ranges::end(range));
             }
@@ -154,6 +156,7 @@ class MergeManyView : public std::ranges::view_interface<MergeManyView<Range, Ra
             };
         }
 
+        std::vector<Range> ranges_;
         std::vector<RangeIterator> iterators_;
         std::vector<RangeSentinel> sentinels_;
         const Comp* comp_{nullptr};

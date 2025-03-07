@@ -85,26 +85,31 @@ struct PackedBytes32SnapshotsCodec : public snapshots::Codec {
 static_assert(snapshots::EncoderConcept<PackedBytes32SnapshotsCodec>);
 static_assert(snapshots::DecoderConcept<PackedBytes32SnapshotsCodec>);
 
+#pragma pack(push)
+#pragma pack(1)
 struct StorageAddressAndLocation {
     evmc::address address;
     evmc::bytes32 location_hash;
 };
+#pragma pack(pop)
 
-struct StorageAddressAndLocationKVDBEncoder : public datastore::kvdb::Encoder {
+struct StorageAddressAndLocationKVDBCodec : public datastore::kvdb::Codec {
     StorageAddressAndLocation value;
 
     struct {
-        AddressKVDBEncoder address;
+        AddressKVDBCodec address;
         Bytes32KVDBCodec location_hash;
-    } encoder;
+    } codec;
 
-    Bytes data;
-
-    ~StorageAddressAndLocationKVDBEncoder() override = default;
+    ~StorageAddressAndLocationKVDBCodec() override = default;
 
     datastore::kvdb::Slice encode() override;
+    void decode(datastore::kvdb::Slice slice) override;
 };
-static_assert(datastore::kvdb::EncoderConcept<StorageAddressAndLocationKVDBEncoder>);
+static_assert(datastore::kvdb::EncoderConcept<StorageAddressAndLocationKVDBCodec>);
+static_assert(datastore::kvdb::DecoderConcept<StorageAddressAndLocationKVDBCodec>);
+using StorageAddressAndLocationKVDBEncoder = StorageAddressAndLocationKVDBCodec;
+using StorageAddressAndLocationKVDBDecoder = StorageAddressAndLocationKVDBCodec;
 
 struct StorageAddressAndLocationSnapshotsCodec : public snapshots::Codec {
     StorageAddressAndLocation value;
@@ -113,8 +118,6 @@ struct StorageAddressAndLocationSnapshotsCodec : public snapshots::Codec {
         AddressSnapshotsCodec address;
         Bytes32SnapshotsCodec location_hash;
     } codec;
-
-    Bytes word;
 
     ~StorageAddressAndLocationSnapshotsCodec() override = default;
 

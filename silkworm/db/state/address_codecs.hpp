@@ -25,17 +25,27 @@
 
 namespace silkworm::db::state {
 
-struct AddressKVDBEncoder : public datastore::kvdb::Encoder {
+struct AddressKVDBCodec : public datastore::kvdb::Codec {
     evmc::address value;
 
-    ~AddressKVDBEncoder() override = default;
+    ~AddressKVDBCodec() override = default;
 
     datastore::kvdb::Slice encode() override {
         return {&value.bytes, kAddressLength};
     }
+
+    void decode(datastore::kvdb::Slice slice) override {
+        if (slice.size() < kAddressLength)
+            throw std::runtime_error{"AddressKVDBDecoder failed to decode"};
+        std::memcpy(value.bytes, slice.data(), kAddressLength);
+    }
 };
 
-static_assert(datastore::kvdb::EncoderConcept<AddressKVDBEncoder>);
+static_assert(datastore::kvdb::EncoderConcept<AddressKVDBCodec>);
+static_assert(datastore::kvdb::EncoderConcept<AddressKVDBCodec>);
+
+using AddressKVDBEncoder = AddressKVDBCodec;
+using AddressKVDBDecoder = AddressKVDBCodec;
 
 struct AddressSnapshotsCodec : public snapshots::Codec {
     evmc::address value;

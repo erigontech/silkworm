@@ -298,6 +298,7 @@ constinit const ChainConfig kHoleskyConfig{
     .terminal_total_difficulty = 0,
     .shanghai_time = 1696000704,
     .cancun_time = 1707305664,
+    .prague_time = 1740434112,
     .rule_set_config = protocol::NoPreMergeConfig{},
 };
 
@@ -317,6 +318,7 @@ constinit const ChainConfig kSepoliaConfig{
     .merge_netsplit_block = 1'735'371,
     .shanghai_time = 1677557088,
     .cancun_time = 1706655072,
+    .prague_time = 1741159776,
     .rule_set_config = protocol::EthashConfig{},
 };
 

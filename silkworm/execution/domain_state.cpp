@@ -37,7 +37,7 @@ using namespace datastore;
 //  - add base_txn_id to block and get_txn_by_id method
 
 std::optional<Account> DomainState::read_account(const evmc::address& address) const noexcept {
-    AccountsDomainGetLatestQuery query{database_, tx_, state_repository_};
+    AccountsDomainGetLatestQuery query{database_, tx_, latest_state_repository_};
     auto result = query.exec(address);
     if (result) {
         return std::move(result->value);
@@ -46,10 +46,15 @@ std::optional<Account> DomainState::read_account(const evmc::address& address) c
 }
 
 ByteView DomainState::read_code(const evmc::address& address, const evmc::bytes32& /*code_hash*/) const noexcept {
-    CodeDomainGetLatestQuery query{database_, tx_, state_repository_};
+    if (code_.contains(address)) {
+        return code_[address];  // NOLINT(runtime/arrays)
+    }
+
+    CodeDomainGetLatestQuery query{database_, tx_, latest_state_repository_};
     auto result = query.exec(address);
     if (result) {
-        return std::move(result->value);
+        auto [it, _] = code_.emplace(address, std::move(result->value));
+        return it->second;
     }
     return ByteView{};
 }
@@ -58,7 +63,7 @@ evmc::bytes32 DomainState::read_storage(
     const evmc::address& address,
     uint64_t /*incarnation*/,
     const evmc::bytes32& location) const noexcept {
-    StorageDomainGetLatestQuery query{database_, tx_, state_repository_};
+    StorageDomainGetLatestQuery query{database_, tx_, latest_state_repository_};
     auto result = query.exec({address, location});
     if (result) {
         return std::move(result->value);
@@ -107,7 +112,7 @@ void DomainState::update_account(
     std::optional<Account> original,
     std::optional<Account> current) {
     if (!original) {
-        AccountsDomainGetLatestQuery query_prev{database_, tx_, state_repository_};
+        AccountsDomainGetLatestQuery query_prev{database_, tx_, latest_state_repository_};
         auto result_prev = query_prev.exec(address);
         if (result_prev) {
             original = std::move(result_prev->value);
@@ -130,7 +135,7 @@ void DomainState::update_account_code(
     uint64_t /*incarnation*/,
     const evmc::bytes32& /*code_hash*/,
     ByteView code) {
-    CodeDomainGetLatestQuery query_prev{database_, tx_, state_repository_};
+    CodeDomainGetLatestQuery query_prev{database_, tx_, latest_state_repository_};
     auto result_prev = query_prev.exec(address);
 
     std::optional<ByteView> original_code = std::nullopt;
@@ -140,6 +145,7 @@ void DomainState::update_account_code(
 
     CodeDomainPutQuery query{database_, tx_};
     query.exec(address, code, txn_id_, original_code, Step::from_txn_id(txn_id_));
+    code_.insert_or_assign(address, code);
 }
 
 void DomainState::update_storage(
@@ -151,7 +157,7 @@ void DomainState::update_storage(
     evmc::bytes32 original_value{};
 
     if (initial == evmc::bytes32{}) {
-        StorageDomainGetLatestQuery query_prev{database_, tx_, state_repository_};
+        StorageDomainGetLatestQuery query_prev{database_, tx_, latest_state_repository_};
         auto result_prev = query_prev.exec({address, location});
         if (result_prev) {
             original_value = std::move(result_prev->value);

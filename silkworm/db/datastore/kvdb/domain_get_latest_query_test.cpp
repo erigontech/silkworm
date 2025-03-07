@@ -14,18 +14,14 @@
    limitations under the License.
 */
 
-#include "domain_put_latest_query.hpp"
-
-#include <functional>
+#include "domain_get_latest_query.hpp"
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/infra/common/directories.hpp>
-
 #include "big_endian_codec.hpp"
-#include "database.hpp"
-#include "domain_get_latest_query.hpp"
+#include "domain_put_latest_query.hpp"
+#include "query_test.hpp"
 
 namespace silkworm::datastore::kvdb {
 
@@ -42,46 +38,17 @@ bool operator==(const Result& lhs, const Result& rhs) {
     return (lhs.value == rhs.value) && (lhs.step == rhs.step);
 };
 
-// by default has_large_values = false, is_multi_value = true
-using DomainDefault = std::identity;
+TEMPLATE_TEST_CASE("DomainGetLatestQuery", "", DomainDefault, DomainWithLargeValues) {
+    QueryTest test = QueryTest::make<TestType>();
 
-struct DomainWithLargeValues {
-    Schema::DomainDef& operator()(Schema::DomainDef& domain) const {
-        domain.enable_large_values().values_disable_multi_value();
-        return domain;
-    }
-};
-
-TEMPLATE_TEST_CASE("DomainPutLatestQuery", "", DomainDefault, DomainWithLargeValues) {
-    const TemporaryDirectory tmp_dir;
-    ::mdbx::env_managed env = open_env(EnvConfig{.path = tmp_dir.path().string(), .create = true, .in_memory = true});
-
-    EntityName name{"Test"};
-    Schema::DatabaseDef schema;
-    TestType domain_config;
-    [[maybe_unused]] auto _ = domain_config(schema.domain(name));
-
-    Database db{std::move(env), schema};
-    db.create_tables();
-    Domain entity = db.domain(name);
-    RWAccess db_access = db.access_rw();
-
-    auto find_in = [&db_access, &entity](const std::vector<DomainPutEntry>& data, uint64_t key) -> std::optional<Result> {
-        {
-            RWTxnManaged tx = db_access.start_rw_tx();
-            DomainPutLatestQuery<BigEndianU64Codec, BigEndianU64Codec> query{tx, entity};
-            for (auto& entry : data) {
-                query.exec(entry.key, entry.value, entry.step);
-            }
-            tx.commit_and_stop();
-        }
-
-        ROTxnManaged tx = db_access.start_ro_tx();
-        DomainGetQuery query{tx, entity};
-        return query.exec(key);
+    auto find_in = [&test](const std::vector<DomainPutEntry>& data, uint64_t key) -> std::optional<Result> {
+        return test.find_in<EntityKind::kDomain, DomainPutEntry, DomainPutLatestQuery<BigEndianU64Codec, BigEndianU64Codec>, DomainGetQuery>(data, key);
     };
 
-    auto count = [&db_access, &entity]() -> uint64_t {
+    auto count = [&test]() -> uint64_t {
+        Domain entity = test.domain();
+        RWAccess db_access = test.access_rw();
+
         ROTxnManaged tx = db_access.start_ro_tx();
         PooledCursor cursor{tx, entity.values_table};
         return cursor.get_map_stat().ms_entries;

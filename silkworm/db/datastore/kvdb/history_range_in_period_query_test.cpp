@@ -16,17 +16,12 @@
 
 #include "history_range_in_period_query.hpp"
 
-#include <functional>
-
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/infra/common/directories.hpp>
-
-#include "../common/ranges/vector_from_range.hpp"
 #include "big_endian_codec.hpp"
-#include "database.hpp"
 #include "history_put_query.hpp"
+#include "query_test.hpp"
 
 namespace silkworm::datastore::kvdb {
 
@@ -37,46 +32,14 @@ struct HistoryPutEntry {
 };
 using Entry = HistoryPutEntry;
 
+using HistoryRangeQuery = HistoryRangeInPeriodQuery<BigEndianU64Codec, BigEndianU64Codec>;
 using Result = std::vector<std::pair<uint64_t, uint64_t>>;
 
-// by default has_large_values = false, is_multi_value = true
-using DomainDefault = std::identity;
-
-struct DomainWithLargeValues {
-    Schema::DomainDef& operator()(Schema::DomainDef& domain) const {
-        domain.enable_large_values().values_disable_multi_value();
-        return domain;
-    }
-};
-
 TEMPLATE_TEST_CASE("HistoryRangeInPeriodQuery", "", DomainDefault, DomainWithLargeValues) {
-    const TemporaryDirectory tmp_dir;
-    ::mdbx::env_managed env = open_env(EnvConfig{.path = tmp_dir.path().string(), .create = true, .in_memory = true});
+    QueryTest test = QueryTest::make<TestType>();
 
-    EntityName name{"Test"};
-    Schema::DatabaseDef schema;
-    TestType domain_config;
-    [[maybe_unused]] auto _ = domain_config(schema.domain(name));
-
-    Database db{std::move(env), schema};
-    db.create_tables();
-    Domain domain = db.domain(name);
-    History& entity = *domain.history;
-    RWAccess db_access = db.access_rw();
-
-    auto find_in = [&db_access, &entity](const std::vector<Entry>& data, TimestampRange ts_range) -> Result {
-        {
-            RWTxnManaged tx = db_access.start_rw_tx();
-            HistoryPutQuery<BigEndianU64Codec, BigEndianU64Codec> query{tx, entity};
-            for (auto& entry : data) {
-                query.exec(entry.key, entry.value, entry.timestamp);
-            }
-            tx.commit_and_stop();
-        }
-
-        ROTxnManaged tx = db_access.start_ro_tx();
-        HistoryRangeInPeriodQuery<BigEndianU64Codec, BigEndianU64Codec> query{tx, entity};
-        return vector_from_range(query.exec(ts_range, true));
+    auto find_in = [&test](const std::vector<Entry>& data, TimestampRange ts_range) -> Result {
+        return test.find_in<EntityKind::kHistory, Entry, HistoryPutQuery<BigEndianU64Codec, BigEndianU64Codec>, HistoryRangeQuery>(data, ts_range, /* ascending = */ true);
     };
 
     SECTION("find all") {

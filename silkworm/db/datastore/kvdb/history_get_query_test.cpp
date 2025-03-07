@@ -14,18 +14,14 @@
    limitations under the License.
 */
 
-#include "history_put_query.hpp"
-
-#include <functional>
+#include "history_get_query.hpp"
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/infra/common/directories.hpp>
-
 #include "big_endian_codec.hpp"
-#include "database.hpp"
-#include "history_get_query.hpp"
+#include "history_put_query.hpp"
+#include "query_test.hpp"
 
 namespace silkworm::datastore::kvdb {
 
@@ -38,44 +34,11 @@ using Entry = HistoryPutEntry;
 
 using Result = tl::expected<uint64_t, HistoryGetQuery<BigEndianU64Codec, BigEndianU64Codec>::NoValueReason>;
 
-// by default has_large_values = false, is_multi_value = true
-using DomainDefault = std::identity;
+TEMPLATE_TEST_CASE("HistoryGetQuery", "", DomainDefault, DomainWithLargeValues) {
+    QueryTest test = QueryTest::make<TestType>();
 
-struct DomainWithLargeValues {
-    Schema::DomainDef& operator()(Schema::DomainDef& domain) const {
-        domain.enable_large_values().values_disable_multi_value();
-        return domain;
-    }
-};
-
-TEMPLATE_TEST_CASE("HistoryPutQuery", "", DomainDefault, DomainWithLargeValues) {
-    const TemporaryDirectory tmp_dir;
-    ::mdbx::env_managed env = open_env(EnvConfig{.path = tmp_dir.path().string(), .create = true, .in_memory = true});
-
-    EntityName name{"Test"};
-    Schema::DatabaseDef schema;
-    TestType domain_config;
-    [[maybe_unused]] auto _ = domain_config(schema.domain(name));
-
-    Database db{std::move(env), schema};
-    db.create_tables();
-    Domain domain = db.domain(name);
-    History& entity = *domain.history;
-    RWAccess db_access = db.access_rw();
-
-    auto find_in = [&db_access, &entity](const std::vector<Entry>& data, uint64_t key, Timestamp timestamp) -> Result {
-        {
-            RWTxnManaged tx = db_access.start_rw_tx();
-            HistoryPutQuery<BigEndianU64Codec, BigEndianU64Codec> query{tx, entity};
-            for (auto& entry : data) {
-                query.exec(entry.key, entry.value, entry.timestamp);
-            }
-            tx.commit_and_stop();
-        }
-
-        ROTxnManaged tx = db_access.start_ro_tx();
-        HistoryGetQuery<BigEndianU64Codec, BigEndianU64Codec> query{tx, entity};
-        return query.exec(key, timestamp);
+    auto find_in = [&test](const std::vector<Entry>& data, uint64_t key, Timestamp timestamp) -> Result {
+        return test.find_in<EntityKind::kHistory, Entry, HistoryPutQuery<BigEndianU64Codec, BigEndianU64Codec>, HistoryGetQuery<BigEndianU64Codec, BigEndianU64Codec>>(data, key, timestamp);
     };
 
     SECTION("single entry - correct key") {

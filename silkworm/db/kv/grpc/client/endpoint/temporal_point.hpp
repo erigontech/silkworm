@@ -22,13 +22,13 @@
 
 namespace silkworm::db::kv::grpc::client {
 
-::remote::HistorySeekReq history_seek_request_from_query(const api::HistoryPointQuery&);
+::remote::HistorySeekReq make_history_seek_req(const api::HistoryPointRequest&);
 api::HistoryPointResult history_seek_result_from_response(const ::remote::HistorySeekReply&);
 
-::remote::GetLatestReq get_latest_request_from_query(const api::GetLatestQuery&);
+::remote::GetLatestReq make_get_latest_req(const api::GetLatestRequest&);
 api::GetLatestResult get_latest_result_from_response(const ::remote::GetLatestReply&);
 
-::remote::GetLatestReq get_as_of_request_from_query(const api::GetAsOfQuery&);
+::remote::GetLatestReq make_get_as_of_req(const api::GetAsOfRequest&);
 api::GetAsOfResult get_as_of_result_from_response(const ::remote::GetLatestReply&);
 
 }  // namespace silkworm::db::kv::grpc::client

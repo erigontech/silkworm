@@ -227,7 +227,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
 
     txn_id++;  // query db on next txn
 
-    db::kv::api::GetAsOfQuery query_cumulative_gas{
+    db::kv::api::GetAsOfRequest query_cumulative_gas{
         .table = db::table::kReceiptDomain,
         .key = kCumulativeGasUsedKey,
         .timestamp = static_cast<db::kv::api::Timestamp>(txn_id),
@@ -242,7 +242,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     varint.decode_word(value1);
     auto first_cumulative_gas_used_in_tx = varint.value;
 
-    db::kv::api::GetAsOfQuery query_first_log_index{
+    db::kv::api::GetAsOfRequest query_first_log_index{
         .table = db::table::kReceiptDomain,
         .key = kFirstLogIndexKey,
         .timestamp = static_cast<db::kv::api::Timestamp>(txn_id),

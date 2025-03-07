@@ -33,7 +33,7 @@ namespace silkworm::db::kv::test_util {
 namespace proto = ::remote;
 using silkworm::test_util::ascii_from_hex;
 
-inline api::HistoryPointQuery sample_history_point_query() {
+inline api::HistoryPointRequest sample_history_point_request() {
     return {
         .tx_id = 1,
         .table = "AAA",
@@ -65,7 +65,7 @@ inline api::HistoryPointResult sample_history_point_result() {
     };
 }
 
-inline api::GetAsOfQuery sample_get_latest_query() {
+inline api::GetAsOfRequest sample_get_latest_request() {
     return {
         .tx_id = 1,
         .table = "AAA",
@@ -74,7 +74,7 @@ inline api::GetAsOfQuery sample_get_latest_query() {
     };
 }
 
-inline api::GetAsOfQuery sample_get_as_of_query() {
+inline api::GetAsOfRequest sample_get_as_of_request() {
     return {
         .tx_id = 1,
         .table = "AAA",
@@ -132,7 +132,7 @@ inline api::GetAsOfResult sample_get_as_of_result() {
     };
 }
 
-inline api::IndexRangeQuery sample_index_range_query() {
+inline api::IndexRangeRequest sample_index_range_request() {
     return {
         .tx_id = 1,
         .table = "AAA",
@@ -181,7 +181,7 @@ inline api::IndexRangeResult sample_index_range_result() {
     };
 }
 
-inline api::HistoryRangeQuery sample_history_range_query() {
+inline api::HistoryRangeRequest sample_history_range_request() {
     return {
         .tx_id = 1,
         .table = "AAA",
@@ -231,7 +231,7 @@ inline api::HistoryRangeResult sample_history_range_result() {
     };
 }
 
-inline api::DomainRangeQuery sample_domain_range_query() {
+inline api::DomainRangeRequest sample_domain_range_request() {
     return {
         .tx_id = 1,
         .table = "AAA",

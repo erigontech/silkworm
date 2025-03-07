@@ -65,7 +65,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOr
     }
     StateReader state_reader{transaction_, txn_id};
 
-    db::kv::api::HistoryRangeQuery query{
+    db::kv::api::HistoryRangeRequest query{
         .table = db::table::kAccountDomain,
         .from_timestamp = static_cast<db::kv::api::Timestamp>(start_txn_number),
         .to_timestamp = static_cast<db::kv::api::Timestamp>(end_txn_number),

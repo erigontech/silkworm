@@ -323,7 +323,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
         SILK_TRACE << "Block number: " << block_num << " #tnx: " << transactions.size();
 
         const auto min_tx_num = co_await tx->first_txn_num_in_block(block_with_hash->block.header.number);
-        db::kv::api::GetAsOfQuery query_account{
+        db::kv::api::GetAsOfRequest query_account{
             .table = db::table::kAccountDomain,
             .key = db::account_domain_key(address),
             .timestamp = static_cast<db::kv::api::Timestamp>(min_tx_num + tx_index + 1),
@@ -348,7 +348,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
             json_result["balance"] = "0x" + intx::to_string(account->balance, 16);
             json_result["codeHash"] = account->code_hash;
 
-            db::kv::api::GetAsOfQuery query_code{
+            db::kv::api::GetAsOfRequest query_code{
                 .table = db::table::kCodeDomain,
                 .key = db::account_domain_key(address),
                 .timestamp = static_cast<db::kv::api::Timestamp>(min_tx_num + tx_index),
@@ -658,7 +658,7 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
     const auto start_txn_number = co_await tx.first_txn_num_in_block(start_block_num);
     const auto end_txn_number = co_await tx.first_txn_num_in_block(end_block_num == start_block_num ? end_block_num + 1 : end_block_num) - 1;
 
-    db::kv::api::HistoryRangeQuery query{
+    db::kv::api::HistoryRangeRequest query{
         .table = db::table::kAccountDomain,
         .from_timestamp = static_cast<db::kv::api::Timestamp>(start_txn_number),
         .to_timestamp = static_cast<db::kv::api::Timestamp>(end_txn_number),

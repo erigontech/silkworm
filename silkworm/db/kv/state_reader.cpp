@@ -35,17 +35,17 @@ Task<std::optional<Account>> StateReader::read_account(const evmc::address& addr
     api::PointResult result;
 
     if (!txn_number_) {
-        db::kv::api::GetLatestQuery query{
+        db::kv::api::GetLatestRequest request{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(address)};
-        result = co_await tx_.get_latest(std::move(query));
+        result = co_await tx_.get_latest(std::move(request));
     } else {
-        db::kv::api::GetAsOfQuery query{
+        db::kv::api::GetAsOfRequest request{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(address),
             .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
         };
-        result = co_await tx_.get_as_of(std::move(query));
+        result = co_await tx_.get_as_of(std::move(request));
     }
 
     if (!result.success) {
@@ -68,17 +68,17 @@ Task<evmc::bytes32> StateReader::read_storage(const evmc::address& address,
     api::PointResult result;
 
     if (!txn_number_) {
-        db::kv::api::GetLatestQuery query{
+        db::kv::api::GetLatestRequest request{
             .table = table::kStorageDomain,
             .key = db::storage_domain_key(address, location_hash)};
-        result = co_await tx_.get_latest(std::move(query));
+        result = co_await tx_.get_latest(std::move(request));
     } else {
-        db::kv::api::GetAsOfQuery query{
+        db::kv::api::GetAsOfRequest request{
             .table = table::kStorageDomain,
             .key = db::storage_domain_key(address, location_hash),
             .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
         };
-        result = co_await tx_.get_as_of(std::move(query));
+        result = co_await tx_.get_as_of(std::move(request));
     }
 
     if (!result.success) {
@@ -95,17 +95,17 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
     api::PointResult result;
 
     if (!txn_number_) {
-        db::kv::api::GetLatestQuery query{
+        db::kv::api::GetLatestRequest request{
             .table = table::kCodeDomain,
             .key = db::code_domain_key(address)};
-        result = co_await tx_.get_latest(std::move(query));
+        result = co_await tx_.get_latest(std::move(request));
     } else {
-        db::kv::api::GetAsOfQuery query{
+        db::kv::api::GetAsOfRequest request{
             .table = table::kCodeDomain,
             .key = db::code_domain_key(address),
             .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
         };
-        result = co_await tx_.get_as_of(std::move(query));
+        result = co_await tx_.get_as_of(std::move(request));
     }
 
     if (!result.success) {

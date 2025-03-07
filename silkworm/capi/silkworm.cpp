@@ -241,10 +241,10 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
         settings->state_repo_index_salt);
 
     log::Debug{"[1/12] Silkworm initialized",  // NOLINT(*-unused-raii)
-              {"data_dir", data_dir_path.string(),
-               "snapshots_dir", snapshots_dir_path.string(),
-               "blocks_repo_index_salt", std::to_string(settings->blocks_repo_index_salt),
-               "state_repo_index_salt", std::to_string(settings->state_repo_index_salt)}};
+               {"data_dir", data_dir_path.string(),
+                "snapshots_dir", snapshots_dir_path.string(),
+                "blocks_repo_index_salt", std::to_string(settings->blocks_repo_index_salt),
+                "state_repo_index_salt", std::to_string(settings->state_repo_index_salt)}};
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
     *handle = new SilkwormInstance{
@@ -670,12 +670,10 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
 
     auto& transaction = block.transactions[txn_index];
 
-
     SILK_DEBUG << "silkworm_execute_txn BlockNum " << std::to_string(block_num) << " BlockHash " << silkworm::to_hex(block_hash.bytes, true)
-     << " TxIndex " << std::to_string(txn_index) << " TxNum " << std::to_string(txn_num)
-     << " TxnHash " << silkworm::to_hex(transaction.hash().bytes, true) 
-     << " Sender " << silkworm::to_hex(transaction.sender().value_or(evmc::address{}).bytes, true);
-
+               << " TxIndex " << std::to_string(txn_index) << " TxNum " << std::to_string(txn_num)
+               << " TxnHash " << silkworm::to_hex(transaction.hash().bytes, true)
+               << " Sender " << silkworm::to_hex(transaction.sender().value_or(evmc::address{}).bytes, true);
 
     auto protocol_rule_set_{protocol::rule_set_factory(*handle->chain_config)};
     if (!protocol_rule_set_) {

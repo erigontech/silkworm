@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       measure_erigon:
-        description: 'Flag indicating if Erigon RPCDaemon must be measured or not'
+        description: 'Measure Erigon RPCDaemon'
         type: boolean
         default: false
   pull_request:

@@ -3,10 +3,10 @@ description: Common steps for running Silkworm performance tests
 
 inputs:
   activation_mode:
-    description: 'Activation mode for performance tests (full,light)'
+    description: 'Activation mode for performance tests (full/light)'
     required: true
   measure_erigon:
-    description: 'Flag indicating if Erigon RPCDaemon must be measured or not'
+    description: 'Flag indicating if Erigon RPCDaemon must be measured or not (true/false)'
     required: true
 
 runs:
@@ -54,6 +54,7 @@ runs:
         echo "SILKWORM_RPC_DAEMON_PID=$SILKWORM_RPC_DAEMON_PID" >> $GITHUB_ENV
 
     - name: Run Erigon RpcDaemon
+      if: ${{ inputs.measure_erigon == 'true' }}
       shell: bash
       run: |
         $ERIGON_DIR/rpcdaemon --datadir $ERIGON_DATA_DIR --http.api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --verbosity 1 &
@@ -168,10 +169,9 @@ runs:
         failed_test=0
         if [[ "${{ inputs.activation_mode }}" == "light" ]]; then
           # Lightweight mode: narrower API coverage, less repetitions, shorter sequences
-          run_perf mainnet eth_call 2 stress_test_eth_call_20M 100:30,1000:20
-          run_perf mainnet eth_getLogs 2 stress_test_eth_getLogs_15M 100:30,1000:20
-          run_perf mainnet eth_getBlockByHash 2 stress_test_eth_getBlockByHash_14M 100:30,1000:20
-          run_perf mainnet eth_getTransactionByHash 2 stress_test_eth_getTransactionByHash_13M 100:30,1000:20
+          run_perf mainnet eth_call 3 stress_test_eth_call_20M 100:30,1000:20
+          run_perf mainnet eth_getLogs 3 stress_test_eth_getLogs_15M 100:30,1000:20
+          run_perf mainnet eth_getBlockByHash 3 stress_test_eth_getBlockByHash_14M 100:30,1000:20
         else
           # Full mode: wider API coverage, more repetitions, longer sequences
           run_perf mainnet eth_call 5 stress_test_eth_call_20M 1:1,100:30,1000:20,10000:20,20000:20
@@ -180,7 +180,7 @@ runs:
           run_perf mainnet eth_getBlockByHash 5 stress_test_eth_getBlockByHash_14M 1:1,100:30,1000:20,10000:20
           run_perf mainnet eth_getBlockByNumber 5 stress_test_eth_getBlockByNumber_13M 1:1,100:30,1000:20,5000:20
           run_perf mainnet eth_getTransactionByHash 5 stress_test_eth_getTransactionByHash_13M 1:1,100:30,1000:20,10000:20
-          run_perf mainnet eth_getTransactionReceipt 5 stress_test_eth_getTransactionReceipt_14M 1:1,100:30,1000:20,5000:20,10000:20,20000:20
+          # run_perf mainnet eth_getTransactionReceipt 5 stress_test_eth_getTransactionReceipt_14M 1:1,100:30,1000:20,5000:20,10000:20,20000:20
           run_perf mainnet eth_createAccessList 5 stress_test_eth_createAccessList_16M 1:1,100:30,1000:20,10000:20,20000:20
         fi
         

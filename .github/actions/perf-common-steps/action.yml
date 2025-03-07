@@ -4,7 +4,10 @@ description: Common steps for running Silkworm performance tests
 inputs:
   activation_mode:
     description: 'Activation mode for performance tests (full,light)'
-    default: 'light'
+    required: true
+  measure_erigon:
+    description: 'Flag indicating if Erigon RPCDaemon must be measured or not'
+    required: true
 
 runs:
   using: "composite"
@@ -73,8 +76,12 @@ runs:
         mkdir -p $RPC_PAST_TEST_DIR/mainnet_bin
         
         run_perf () {
-          servers=("silkworm" "erigon")
-          for i in 1 2
+          servers=("silkworm")
+          if [[ "${{ inputs.measure_erigon }}" == "true" ]]; then
+            servers+=("erigon")
+          fi
+          num_servers=${#servers[@]}
+          for (( i=1; i<=num_servers; i++ ))
           do
              network=$1
              method=$2

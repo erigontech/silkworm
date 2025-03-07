@@ -26,3 +26,4 @@ jobs:
       - uses: ./.github/actions/perf-common-steps
         with:
           activation_mode: full
+          measure_erigon: true

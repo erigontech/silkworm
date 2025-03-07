@@ -686,7 +686,7 @@ uint64_t Decompressor::Iterator::next_compressed(Bytes& buffer) {
     return post_loop_offset;
 }
 
-uint64_t Decompressor::Iterator::next_uncompressed(Bytes& buffer) {
+uint64_t Decompressor::Iterator::next_uncompressed(ByteView& buffer_view) {
     uint64_t word_length = next_position(true);
     if (word_length == 0) {
         throw std::runtime_error{"invalid zero word length in: " + decoder_->compressed_filename()};
@@ -707,7 +707,7 @@ uint64_t Decompressor::Iterator::next_uncompressed(Bytes& buffer) {
     }
     uint64_t word_position = word_offset_;
     word_offset_ += word_length;
-    buffer.append(data().substr(word_position, word_length));
+    buffer_view = data().substr(word_position, word_length);
     return word_offset_;
 }
 
@@ -862,14 +862,15 @@ bool Decompressor::Iterator::is_next_word_compressed() const {
 Decompressor::Iterator& Decompressor::Iterator::operator++() {
     if (has_next()) {
         current_word_offset_ = word_offset_;
-        current_word_.clear();
 
         bool is_next_word_compressed = this->is_next_word_compressed();
         is_next_value_ = !is_next_value_;
         if (is_next_word_compressed) {
-            next_compressed(current_word_);
+            current_word_ = Bytes{};
+            next_compressed(std::get<Bytes>(current_word_));
         } else {
-            next_uncompressed(current_word_);
+            current_word_ = ByteView{};
+            next_uncompressed(std::get<ByteView>(current_word_));
         }
     } else {
         *this = make_end();

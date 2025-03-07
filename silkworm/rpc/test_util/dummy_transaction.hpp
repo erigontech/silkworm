@@ -79,27 +79,27 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
 
     Task<void> close() override { co_return; }
 
-    Task<db::kv::api::GetLatestResult> get_latest(db::kv::api::GetLatestQuery /*query*/) override {
+    Task<db::kv::api::GetLatestResult> get_latest(db::kv::api::GetLatestRequest /*query*/) override {
         co_return db::kv::api::GetLatestResult{};
     }
 
-    Task<db::kv::api::GetAsOfResult> get_as_of(db::kv::api::GetAsOfQuery /*query*/) override {
+    Task<db::kv::api::GetAsOfResult> get_as_of(db::kv::api::GetAsOfRequest /*query*/) override {
         co_return db::kv::api::GetAsOfResult{};
     }
 
-    Task<db::kv::api::HistoryPointResult> history_seek(db::kv::api::HistoryPointQuery /*query*/) override {
+    Task<db::kv::api::HistoryPointResult> history_seek(db::kv::api::HistoryPointRequest /*query*/) override {
         co_return db::kv::api::HistoryPointResult{};
     }
 
-    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeQuery /*query*/) override {
+    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeRequest /*query*/) override {
         co_return empty_paginated_timestamps();
     }
 
-    Task<db::kv::api::PaginatedKeysValues> history_range(db::kv::api::HistoryRangeQuery /*query*/) override {
+    Task<db::kv::api::PaginatedKeysValues> history_range(db::kv::api::HistoryRangeRequest /*query*/) override {
         co_return empty_paginated_keys_and_values();
     }
 
-    Task<db::kv::api::PaginatedKeysValues> range_as_of(db::kv::api::DomainRangeQuery /*query*/) override {
+    Task<db::kv::api::PaginatedKeysValues> range_as_of(db::kv::api::DomainRangeRequest /*query*/) override {
         co_return test::empty_paginated_keys_and_values();
     }
 

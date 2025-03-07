@@ -48,7 +48,8 @@ Server::Server(const std::string& end_point,
                std::optional<std::string> jwt_secret,
                bool use_websocket,
                bool ws_compression,
-               bool http_compression)
+               bool http_compression,
+               bool erigon_json_rpc_compatibility)
     : handler_factory_{std::move(handler_factory)},
       acceptor_{ioc},
       allowed_origins_{std::move(allowed_origins)},
@@ -56,7 +57,8 @@ Server::Server(const std::string& end_point,
       use_websocket_{use_websocket},
       ws_compression_{ws_compression},
       http_compression_{http_compression},
-      workers_{workers} {
+      workers_{workers},
+      erigon_json_rpc_compatibility_{erigon_json_rpc_compatibility} {
     const auto [host, port] = parse_endpoint(end_point);
 
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
@@ -91,7 +93,8 @@ Task<void> Server::run() {
             SILK_TRACE << "Server::run accepted connection from " << socket.remote_endpoint();
 
             auto new_connection = std::make_shared<Connection>(
-                std::move(socket), handler_factory_, allowed_origins_, jwt_secret_, use_websocket_, ws_compression_, http_compression_, workers_);
+                std::move(socket), handler_factory_, allowed_origins_, jwt_secret_,
+                use_websocket_, ws_compression_, http_compression_, workers_, erigon_json_rpc_compatibility_);
             boost::asio::co_spawn(this_executor, Connection::run_read_loop(new_connection), boost::asio::detached);
         }
     } catch (const boost::system::system_error& se) {

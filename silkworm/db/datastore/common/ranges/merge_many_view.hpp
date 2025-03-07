@@ -28,16 +28,18 @@
 
 #include <silkworm/core/common/assert.hpp>
 
-#include "merge_unique_compare_func.hpp"
+#include "merge_compare_func.hpp"
+#include "vector_from_range.hpp"
 
 namespace silkworm::views {
 
 template <
     std::ranges::input_range Ranges,
     std::ranges::input_range Range = std::iter_value_t<std::ranges::iterator_t<Ranges>>,
-    class Comp = MergeUniqueCompareFunc,
-    class Proj = std::identity>
-class MergeUniqueManyView : public std::ranges::view_interface<MergeUniqueManyView<Range, Ranges, Comp, Proj>> {
+    class Comp = MergeCompareFunc,
+    class Proj = std::identity,
+    bool kUnique = false>
+class MergeManyView : public std::ranges::view_interface<MergeManyView<Range, Ranges, Comp, Proj, kUnique>> {
   public:
     class Iterator {
       public:
@@ -56,9 +58,10 @@ class MergeUniqueManyView : public std::ranges::view_interface<MergeUniqueManyVi
         Iterator(
             Ranges& ranges,
             const Comp* comp, Proj proj)
-            : comp_{comp},
+            : ranges_{vector_from_range(ranges)},
+              comp_{comp},
               proj_{std::move(proj)} {
-            for (auto&& range : ranges) {
+            for (Range& range : ranges_) {
                 iterators_.emplace_back(std::ranges::begin(range));
                 sentinels_.emplace_back(std::ranges::end(range));
             }
@@ -82,22 +85,18 @@ class MergeUniqueManyView : public std::ranges::view_interface<MergeUniqueManyVi
 
         Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
         Iterator& operator++() {
+            if constexpr (!kUnique) {
+                next();
+                return *this;
+            }
+
             // backup the current key for duplicate detection
             auto current_key = std::invoke(proj_, **this);
 
             // first iteration: increment the current iterator once and restore the order
             // next iterations: skip duplicate keys and restore the order
             do {
-                size_t current = order_.front();
-                ++iterators_[current];
-
-                std::ranges::pop_heap(order_, order_compare_func());
-                order_.pop_back();
-
-                if (!it_ended(current)) {
-                    order_.push_back(current);
-                    std::ranges::push_heap(order_, order_compare_func());
-                }
+                next();
             } while (
                 !order_.empty() &&
                 std::is_eq(std::invoke(*comp_, std::invoke(proj_, *iterators_[order_.front()]), current_key)));
@@ -119,6 +118,20 @@ class MergeUniqueManyView : public std::ranges::view_interface<MergeUniqueManyVi
         }
 
       private:
+        //! Increment the current iterator once and restore the order
+        void next() {
+            size_t current = order_.front();
+            ++iterators_[current];
+
+            std::ranges::pop_heap(order_, order_compare_func());
+            order_.pop_back();
+
+            if (!it_ended(current)) {
+                order_.push_back(current);
+                std::ranges::push_heap(order_, order_compare_func());
+            }
+        }
+
         bool it_ended(size_t i) const {
             return iterators_[i] == sentinels_[i];
         }
@@ -143,6 +156,7 @@ class MergeUniqueManyView : public std::ranges::view_interface<MergeUniqueManyVi
             };
         }
 
+        std::vector<Range> ranges_;
         std::vector<RangeIterator> iterators_;
         std::vector<RangeSentinel> sentinels_;
         const Comp* comp_{nullptr};
@@ -152,16 +166,16 @@ class MergeUniqueManyView : public std::ranges::view_interface<MergeUniqueManyVi
 
     static_assert(std::input_iterator<Iterator>);
 
-    MergeUniqueManyView(
+    MergeManyView(
         Ranges ranges,
         Comp comp, Proj proj)
         : ranges_{std::move(ranges)},
           comp_{std::move(comp)},
           proj_{std::move(proj)} {}
-    MergeUniqueManyView() = default;
+    MergeManyView() = default;
 
-    MergeUniqueManyView(MergeUniqueManyView&&) = default;
-    MergeUniqueManyView& operator=(MergeUniqueManyView&&) noexcept = default;
+    MergeManyView(MergeManyView&&) = default;
+    MergeManyView& operator=(MergeManyView&&) noexcept = default;
 
     Iterator begin() { return Iterator{ranges_, &comp_, proj_}; }
     std::default_sentinel_t end() const { return std::default_sentinel; }
@@ -175,12 +189,27 @@ class MergeUniqueManyView : public std::ranges::view_interface<MergeUniqueManyVi
 template <
     class Ranges,
     class Range = std::iter_value_t<std::ranges::iterator_t<Ranges>>,
-    class Comp = MergeUniqueCompareFunc,
+    class Comp = MergeCompareFunc,
     class Proj = std::identity>
-MergeUniqueManyView<Ranges, Range, Comp, Proj> merge_unique_many(
+MergeManyView<Ranges, Range, Comp, Proj> merge_many(
     Ranges&& ranges,
     Comp comp = {}, Proj proj = {}) {
-    return MergeUniqueManyView<Ranges, Range, Comp, Proj>{
+    return MergeManyView<Ranges, Range, Comp, Proj>{
+        std::forward<Ranges>(ranges),
+        std::move(comp),
+        std::move(proj),
+    };
+}
+
+template <
+    class Ranges,
+    class Range = std::iter_value_t<std::ranges::iterator_t<Ranges>>,
+    class Comp = MergeCompareFunc,
+    class Proj = std::identity>
+MergeManyView<Ranges, Range, Comp, Proj, /* kUnique = */ true> merge_unique_many(
+    Ranges&& ranges,
+    Comp comp = {}, Proj proj = {}) {
+    return MergeManyView<Ranges, Range, Comp, Proj, /* kUnique = */ true>{
         std::forward<Ranges>(ranges),
         std::move(comp),
         std::move(proj),

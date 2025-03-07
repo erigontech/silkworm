@@ -163,12 +163,12 @@ TEST_CASE("get_modified_accounts") {
             .WillOnce(InvokeWithoutArgs([]() -> Task<TxnId> {
                 co_return 20;
             }));
-        db::kv::api::HistoryRangeQuery query{
+        db::kv::api::HistoryRangeRequest request{
             .table = db::table::kAccountDomain,
             .from_timestamp = static_cast<db::kv::api::Timestamp>(0),
             .to_timestamp = static_cast<db::kv::api::Timestamp>(19),
             .ascending_order = true};
-        EXPECT_CALL(transaction, history_range(std::move(query))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::PaginatedKeysValues> {
+        EXPECT_CALL(transaction, history_range(std::move(request))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::PaginatedKeysValues> {
             PaginatorKV paginator = [](auto next_page_token) -> Task<PageResultKV> {
                 co_return PageResultKV{
                     .keys = {*from_hex("07aaec0b237ccf56b03a7c43c1c7a783da5606420501010101")},

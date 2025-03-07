@@ -1,5 +1,5 @@
 /*
-   Copyright 2024 The Silkworm Authors
+   Copyright 2025 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,15 +16,18 @@
 
 #pragma once
 
-#include <compare>
+#include <optional>
 
-namespace silkworm::views {
+#include <silkworm/core/common/bytes.hpp>
 
-struct MergeUniqueCompareFunc {
-    template <typename T>
-    constexpr std::strong_ordering operator()(const T& lhs, const T& rhs) const noexcept {
-        return std::compare_strong_order_fallback(lhs, rhs);
-    }
+#include "inverted_index.hpp"
+
+namespace silkworm::snapshots {
+
+struct InvertedIndexLowerBoundKeyOffsetSegmentQuery {
+    InvertedIndex entity;
+
+    std::optional<size_t> exec(ByteView key);
 };
 
-}  // namespace silkworm::views
+}  // namespace silkworm::snapshots

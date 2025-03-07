@@ -46,12 +46,12 @@ class MockTransaction : public kv::api::Transaction {
     MOCK_METHOD((Task<Bytes>), get_one, (const std::string&, ByteView), (override));
     MOCK_METHOD((Task<std::optional<Bytes>>), get_both_range,
                 (const std::string&, ByteView, ByteView), (override));
-    MOCK_METHOD((Task<kv::api::GetLatestResult>), get_latest, (kv::api::GetLatestQuery), (override));
-    MOCK_METHOD((Task<kv::api::GetAsOfResult>), get_as_of, (kv::api::GetAsOfQuery), (override));
-    MOCK_METHOD((Task<kv::api::HistoryPointResult>), history_seek, (kv::api::HistoryPointQuery), (override));
-    MOCK_METHOD((Task<kv::api::PaginatedTimestamps>), index_range, (kv::api::IndexRangeQuery), (override));
-    MOCK_METHOD((Task<kv::api::PaginatedKeysValues>), history_range, (kv::api::HistoryRangeQuery), (override));
-    MOCK_METHOD((Task<kv::api::PaginatedKeysValues>), range_as_of, (kv::api::DomainRangeQuery), (override));
+    MOCK_METHOD((Task<kv::api::GetLatestResult>), get_latest, (kv::api::GetLatestRequest), (override));
+    MOCK_METHOD((Task<kv::api::GetAsOfResult>), get_as_of, (kv::api::GetAsOfRequest), (override));
+    MOCK_METHOD((Task<kv::api::HistoryPointResult>), history_seek, (kv::api::HistoryPointRequest), (override));
+    MOCK_METHOD((Task<kv::api::PaginatedTimestamps>), index_range, (kv::api::IndexRangeRequest), (override));
+    MOCK_METHOD((Task<kv::api::PaginatedKeysValues>), history_range, (kv::api::HistoryRangeRequest), (override));
+    MOCK_METHOD((Task<kv::api::PaginatedKeysValues>), range_as_of, (kv::api::DomainRangeRequest), (override));
 };
 
 }  // namespace silkworm::db::test_util

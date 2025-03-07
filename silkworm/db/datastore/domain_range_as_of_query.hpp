@@ -16,9 +16,12 @@
 
 #pragma once
 
-#include "domain_range_latest_query.hpp"
-// #include "history_range_by_keys_query.hpp"
 #include <silkworm/core/common/assert.hpp>
+
+#include "common/ranges/if_view.hpp"
+#include "common/ranges/merge_unique_view.hpp"
+#include "domain_range_latest_query.hpp"
+#include "history_range_by_keys_query.hpp"
 
 namespace silkworm::datastore {
 
@@ -32,8 +35,8 @@ struct DomainRangeAsOfQuery {
         kvdb::Domain kvdb_entity,
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository_latest,
-        const snapshots::SnapshotRepositoryROAccess& /*repository_historical*/)
-        : /*query1_{*kvdb_entity.history, tx, repository_historical},*/
+        const snapshots::SnapshotRepositoryROAccess& repository_historical)
+        : query1_{*kvdb_entity.history, tx, repository_historical},
           query2_{entity_name, kvdb_entity, tx, repository_latest} {}
 
     DomainRangeAsOfQuery(
@@ -41,22 +44,33 @@ struct DomainRangeAsOfQuery {
         const kvdb::DatabaseRef& database,
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository_latest,
-        const snapshots::SnapshotRepositoryROAccess& /*repository_historical*/)
-        : /*query1_{database, tx, repository_historical},*/
+        const snapshots::SnapshotRepositoryROAccess& repository_historical)
+        : query1_{entity_name, database, tx, repository_historical},
           query2_{entity_name, database, tx, repository_latest} {}
 
     using Key = decltype(TKeyEncoder1::value);
     using ResultItem = typename DomainRangeLatestQuery<TKeyEncoder1, TKeyEncoder2, TKeyDecoder1, TKeyDecoder2, TValueDecoder1, TValueDecoder2>::ResultItem;
 
-    auto exec(const Key& key_start, const Key& key_end, std::optional<Timestamp> /*timestamp*/, bool ascending) {
+    auto exec(const Key& key_start, const Key& key_end, std::optional<Timestamp> timestamp, bool ascending) {
+        return silkworm::views::if_view(
+            !timestamp.has_value(),
+            query2_.exec(key_start, key_end, ascending),
+            this->exec(key_start, key_end, timestamp.value_or(0), ascending));
+    }
+
+    auto exec(const Key& key_start, const Key& key_end, Timestamp timestamp, bool ascending) {
         SILKWORM_ASSERT(ascending);  // descending is not implemented
 
-        // TODO: merge unique with history_range_by_keys_query
-        return query2_.exec(key_start, key_end, ascending);
+        return silkworm::views::merge_unique(
+            query1_.exec(key_start, key_end, timestamp, ascending),
+            query2_.exec(key_start, key_end, ascending),
+            silkworm::views::MergeCompareFunc{},
+            PairGetFirst<typename ResultItem::first_type, typename ResultItem::second_type>{},
+            PairGetFirst<typename ResultItem::first_type, typename ResultItem::second_type>{});
     }
 
   private:
-    // HistoryRangeByKeysQuery<TKeyEncoder1, TKeyEncoder2, TKeyDecoder1, TKeyDecoder2, TValueDecoder1, TValueDecoder2> query1_;
+    HistoryRangeByKeysQuery<TKeyEncoder1, TKeyEncoder2, TKeyDecoder1, TKeyDecoder2, TValueDecoder1, TValueDecoder2> query1_;
     DomainRangeLatestQuery<TKeyEncoder1, TKeyEncoder2, TKeyDecoder1, TKeyDecoder2, TValueDecoder1, TValueDecoder2> query2_;
 };
 

@@ -48,7 +48,8 @@ class Server {
            std::optional<std::string> jwt_secret,
            bool use_websocket,
            bool ws_compression,
-           bool http_compression);
+           bool http_compression,
+           bool erigon_json_rpc_compatibility);
 
     void start();
 
@@ -80,6 +81,9 @@ class Server {
 
     //! The configured workers
     WorkerPool& workers_;
+
+    //! Flag indicating if JSON-RPC compatibility with Erigon is enabled or not
+    bool erigon_json_rpc_compatibility_;
 };
 
 }  // namespace silkworm::rpc::http

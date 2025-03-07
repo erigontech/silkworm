@@ -18,45 +18,23 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/infra/common/directories.hpp>
-
-#include "../common/ranges/vector_from_range.hpp"
 #include "big_endian_codec.hpp"
-#include "database.hpp"
 #include "inverted_index_put_query.hpp"
+#include "query_test.hpp"
 
 namespace silkworm::datastore::kvdb {
 
-void init_inverted_index(RWTxn& tx, InvertedIndex ii, const std::multimap<uint64_t, Timestamp>& kvs) {
-    InvertedIndexPutQuery<BigEndianU64Codec> put_query{tx, ii};
-    for (auto& entry : kvs) {
-        put_query.exec(entry.first, entry.second, true);
-    }
-}
+struct Entry {
+    uint64_t key{0};
+    Timestamp timestamp{0};
+    bool with_index_update{true};
+};
 
 TEST_CASE("InvertedIndexRangeByKeyQuery") {
-    const TemporaryDirectory tmp_dir;
-    ::mdbx::env_managed env = open_env(EnvConfig{.path = tmp_dir.path().string(), .create = true, .in_memory = true});
+    QueryTest test = QueryTest::make<DomainDefault>();
 
-    EntityName name{"Test"};
-    Schema::DatabaseDef schema;
-    schema.inverted_index(name);
-
-    Database db{std::move(env), schema};
-    db.create_tables();
-    InvertedIndex ii = db.inverted_index(name);
-    RWAccess db_access = db.access_rw();
-
-    auto find_in = [&db_access, &ii](const std::multimap<uint64_t, Timestamp>& kvs, uint64_t key, TimestampRange ts_range, bool ascending) -> std::vector<Timestamp> {
-        {
-            RWTxnManaged tx = db_access.start_rw_tx();
-            init_inverted_index(tx, ii, kvs);
-            tx.commit_and_stop();
-        }
-
-        ROTxnManaged tx = db_access.start_ro_tx();
-        InvertedIndexRangeByKeyQuery<BigEndianU64Codec> query{tx, ii};
-        return vector_from_range(query.exec(key, ts_range, ascending));
+    auto find_in = [&test](const std::vector<Entry>& data, uint64_t key, TimestampRange ts_range, bool ascending) -> std::vector<Timestamp> {
+        return test.find_in<EntityKind::kInvertedIndex, Entry, InvertedIndexPutQuery<BigEndianU64Codec>, InvertedIndexRangeByKeyQuery<BigEndianU64Codec>>(data, key, ts_range, ascending);
     };
 
     SECTION("asc - all") {

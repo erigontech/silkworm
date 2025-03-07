@@ -96,7 +96,7 @@ class KVSegmentFileReader {
     const std::filesystem::path& fs_path() const { return path_.path(); }
 
     bool empty() const { return item_count() == 0; }
-    size_t item_count() const { return decompressor_.words_count(); }
+    size_t item_count() const { return decompressor_.words_count() / 2; }
 
     MemoryMappedRegion memory_file_region() const;
 
@@ -174,18 +174,18 @@ class KVSegmentReader {
     using KeyDecoderType = TKeyDecoder;
     using ValueDecoderType = TValueDecoder;
 
-    explicit KVSegmentReader(const KVSegmentFileReader& reader) : reader_(reader) {}
+    explicit KVSegmentReader(const KVSegmentFileReader& reader) : reader_{&reader} {}
 
     Iterator begin() const {
-        return Iterator{reader_.begin(std::make_shared<TKeyDecoder>(), std::make_shared<TValueDecoder>())};
+        return Iterator{reader_->begin(std::make_shared<TKeyDecoder>(), std::make_shared<TValueDecoder>())};
     }
 
     Iterator end() const {
-        return Iterator{reader_.end()};
+        return Iterator{reader_->end()};
     }
 
     Iterator seek(uint64_t offset) const {
-        return Iterator{reader_.seek(offset, std::nullopt, std::make_shared<TKeyDecoder>(), std::make_shared<TValueDecoder>())};
+        return Iterator{reader_->seek(offset, std::nullopt, std::make_shared<TKeyDecoder>(), std::make_shared<TValueDecoder>())};
     }
 
     std::optional<typename Iterator::value_type_owned> seek_one(uint64_t offset) const {
@@ -193,10 +193,10 @@ class KVSegmentReader {
         return (it != end()) ? std::optional{it.move_value()} : std::nullopt;
     }
 
-    const SnapshotPath& path() const { return reader_.path(); }
+    const SnapshotPath& path() const { return reader_->path(); }
 
   private:
-    const KVSegmentFileReader& reader_;
+    const KVSegmentFileReader* reader_;
 };
 
 template <DecoderConcept TKeyDecoder>
@@ -248,18 +248,18 @@ class KVSegmentKeysReader {
 
     using KeyDecoderType = TKeyDecoder;
 
-    explicit KVSegmentKeysReader(const KVSegmentFileReader& reader) : reader_(reader) {}
+    explicit KVSegmentKeysReader(const KVSegmentFileReader& reader) : reader_{&reader} {}
 
     Iterator begin() const {
-        return Iterator{reader_.begin(std::make_shared<TKeyDecoder>(), {})};
+        return Iterator{reader_->begin(std::make_shared<TKeyDecoder>(), {})};
     }
 
     Iterator end() const {
-        return Iterator{reader_.end()};
+        return Iterator{reader_->end()};
     }
 
     Iterator seek(uint64_t offset) const {
-        return Iterator{reader_.seek(offset, std::nullopt, std::make_shared<TKeyDecoder>(), {})};
+        return Iterator{reader_->seek(offset, std::nullopt, std::make_shared<TKeyDecoder>(), {})};
     }
 
     std::optional<typename Iterator::value_type> seek_one(uint64_t offset) const {
@@ -267,10 +267,10 @@ class KVSegmentKeysReader {
         return (it != end()) ? std::optional{std::move(*it)} : std::nullopt;
     }
 
-    const SnapshotPath& path() const { return reader_.path(); }
+    const SnapshotPath& path() const { return reader_->path(); }
 
   private:
-    const KVSegmentFileReader& reader_;
+    const KVSegmentFileReader* reader_;
 };
 
 template <DecoderConcept TValueDecoder>
@@ -322,18 +322,18 @@ class KVSegmentValuesReader {
 
     using ValueDecoderType = TValueDecoder;
 
-    explicit KVSegmentValuesReader(const KVSegmentFileReader& reader) : reader_(reader) {}
+    explicit KVSegmentValuesReader(const KVSegmentFileReader& reader) : reader_{&reader} {}
 
     Iterator begin() const {
-        return Iterator{reader_.begin({}, std::make_shared<TValueDecoder>())};
+        return Iterator{reader_->begin({}, std::make_shared<TValueDecoder>())};
     }
 
     Iterator end() const {
-        return Iterator{reader_.end()};
+        return Iterator{reader_->end()};
     }
 
     Iterator seek(uint64_t offset) const {
-        return Iterator{reader_.seek(offset, std::nullopt, {}, std::make_shared<TValueDecoder>())};
+        return Iterator{reader_->seek(offset, std::nullopt, {}, std::make_shared<TValueDecoder>())};
     }
 
     std::optional<typename Iterator::value_type> seek_one(uint64_t offset) const {
@@ -341,10 +341,10 @@ class KVSegmentValuesReader {
         return (it != end()) ? std::optional{std::move(*it)} : std::nullopt;
     }
 
-    const SnapshotPath& path() const { return reader_.path(); }
+    const SnapshotPath& path() const { return reader_->path(); }
 
   private:
-    const KVSegmentFileReader& reader_;
+    const KVSegmentFileReader* reader_;
 };
 
 template <class TKVSegmentReader>

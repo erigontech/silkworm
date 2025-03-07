@@ -22,13 +22,13 @@ namespace silkworm::db::kv::grpc::client {
 
 namespace proto = ::remote;
 
-proto::HistorySeekReq history_seek_request_from_query(const api::HistoryPointQuery& query) {
-    proto::HistorySeekReq request;
-    request.set_tx_id(query.tx_id);
-    request.set_table(query.table);
-    request.set_k(query.key.data(), query.key.size());
-    request.set_ts(static_cast<uint64_t>(query.timestamp));
-    return request;
+proto::HistorySeekReq make_history_seek_req(const api::HistoryPointRequest& request) {
+    proto::HistorySeekReq req;
+    req.set_tx_id(request.tx_id);
+    req.set_table(request.table);
+    req.set_k(request.key.data(), request.key.size());
+    req.set_ts(static_cast<uint64_t>(request.timestamp));
+    return req;
 }
 
 api::HistoryPointResult history_seek_result_from_response(const proto::HistorySeekReply& response) {
@@ -38,14 +38,14 @@ api::HistoryPointResult history_seek_result_from_response(const proto::HistorySe
     return result;
 }
 
-proto::GetLatestReq get_latest_request_from_query(const api::GetLatestQuery& query) {
-    proto::GetLatestReq request;
-    request.set_tx_id(query.tx_id);
-    request.set_table(query.table);
-    request.set_k(query.key.data(), query.key.size());
-    request.set_latest(true);
-    request.set_k2(query.sub_key.data(), query.sub_key.size());
-    return request;
+proto::GetLatestReq make_get_latest_req(const api::GetLatestRequest& request) {
+    proto::GetLatestReq req;
+    req.set_tx_id(request.tx_id);
+    req.set_table(request.table);
+    req.set_k(request.key.data(), request.key.size());
+    req.set_latest(true);
+    req.set_k2(request.sub_key.data(), request.sub_key.size());
+    return req;
 }
 
 api::GetLatestResult get_latest_result_from_response(const proto::GetLatestReply& response) {
@@ -55,14 +55,14 @@ api::GetLatestResult get_latest_result_from_response(const proto::GetLatestReply
     return result;
 }
 
-::remote::GetLatestReq get_as_of_request_from_query(const api::GetAsOfQuery& query) {
-    proto::GetLatestReq request;
-    request.set_tx_id(query.tx_id);
-    request.set_table(query.table);
-    request.set_k(query.key.data(), query.key.size());
-    request.set_ts(static_cast<uint64_t>(query.timestamp));
-    request.set_k2(query.sub_key.data(), query.sub_key.size());
-    return request;
+::remote::GetLatestReq make_get_as_of_req(const api::GetAsOfRequest& request) {
+    proto::GetLatestReq req;
+    req.set_tx_id(request.tx_id);
+    req.set_table(request.table);
+    req.set_k(request.key.data(), request.key.size());
+    req.set_ts(static_cast<uint64_t>(request.timestamp));
+    req.set_k2(request.sub_key.data(), request.sub_key.size());
+    return req;
 }
 
 api::GetAsOfResult get_as_of_result_from_response(const ::remote::GetLatestReply& response) {

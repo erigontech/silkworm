@@ -14,6 +14,9 @@
    limitations under the License.
 */
 
+#include <concepts>
+#include <ranges>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <silkworm/infra/common/directories.hpp>
@@ -23,6 +26,9 @@
 #include "segment_writer.hpp"
 
 namespace silkworm::snapshots::segment {
+
+static_assert(std::ranges::input_range<SegmentReader<StringCodec>>);
+static_assert(std::movable<SegmentReader<StringCodec>>);
 
 TEST_CASE("SegmentFile") {
     using namespace datastore;

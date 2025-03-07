@@ -23,18 +23,18 @@ namespace silkworm::db::kv::grpc::client {
 
 namespace proto = ::remote;
 
-proto::IndexRangeReq index_range_request_from_query(const api::IndexRangeQuery& query) {
-    proto::IndexRangeReq request;
-    request.set_tx_id(query.tx_id);
-    request.set_table(query.table);
-    request.set_k(query.key.data(), query.key.size());
-    request.set_from_ts(query.from_timestamp);
-    request.set_to_ts(query.to_timestamp);
-    request.set_order_ascend(query.ascending_order);
-    request.set_limit(query.limit);
-    request.set_page_size(static_cast<int32_t>(query.page_size));
-    request.set_page_token(query.page_token);
-    return request;
+proto::IndexRangeReq make_index_range_req(const api::IndexRangeRequest& request) {
+    proto::IndexRangeReq req;
+    req.set_tx_id(request.tx_id);
+    req.set_table(request.table);
+    req.set_k(request.key.data(), request.key.size());
+    req.set_from_ts(request.from_timestamp);
+    req.set_to_ts(request.to_timestamp);
+    req.set_order_ascend(request.ascending_order);
+    req.set_limit(request.limit);
+    req.set_page_size(static_cast<int32_t>(request.page_size));
+    req.set_page_token(request.page_token);
+    return req;
 }
 
 api::IndexRangeResult index_range_result_from_response(const proto::IndexRangeReply& response) {
@@ -46,17 +46,17 @@ api::IndexRangeResult index_range_result_from_response(const proto::IndexRangeRe
     return result;
 }
 
-proto::HistoryRangeReq history_range_request_from_query(const api::HistoryRangeQuery& query) {
-    proto::HistoryRangeReq request;
-    request.set_tx_id(query.tx_id);
-    request.set_table(query.table);
-    request.set_from_ts(query.from_timestamp);
-    request.set_to_ts(query.to_timestamp);
-    request.set_order_ascend(query.ascending_order);
-    request.set_limit(static_cast<int64_t>(query.limit));
-    request.set_page_size(static_cast<int32_t>(query.page_size));
-    request.set_page_token(query.page_token);
-    return request;
+proto::HistoryRangeReq make_history_range_req(const api::HistoryRangeRequest& request) {
+    proto::HistoryRangeReq req;
+    req.set_tx_id(request.tx_id);
+    req.set_table(request.table);
+    req.set_from_ts(request.from_timestamp);
+    req.set_to_ts(request.to_timestamp);
+    req.set_order_ascend(request.ascending_order);
+    req.set_limit(static_cast<int64_t>(request.limit));
+    req.set_page_size(static_cast<int32_t>(request.page_size));
+    req.set_page_token(request.page_token);
+    return req;
 }
 
 api::HistoryRangeResult history_range_result_from_response(const proto::Pairs& response) {
@@ -71,22 +71,22 @@ api::HistoryRangeResult history_range_result_from_response(const proto::Pairs& r
     return result;
 }
 
-::remote::RangeAsOfReq domain_range_request_from_query(const api::DomainRangeQuery& query) {
-    ::remote::RangeAsOfReq request;
-    request.set_tx_id(query.tx_id);
-    request.set_table(query.table);
-    request.set_from_key(query.from_key.data(), query.from_key.size());
-    request.set_to_key(query.to_key.data(), query.to_key.size());
-    if (query.timestamp) {
-        request.set_ts(static_cast<uint64_t>(*query.timestamp));
+::remote::RangeAsOfReq make_domain_range_req(const api::DomainRangeRequest& request) {
+    ::remote::RangeAsOfReq req;
+    req.set_tx_id(request.tx_id);
+    req.set_table(request.table);
+    req.set_from_key(request.from_key.data(), request.from_key.size());
+    req.set_to_key(request.to_key.data(), request.to_key.size());
+    if (request.timestamp) {
+        req.set_ts(static_cast<uint64_t>(*request.timestamp));
     } else {
-        request.set_latest(true);
+        req.set_latest(true);
     }
-    request.set_order_ascend(query.ascending_order);
-    request.set_limit(static_cast<int64_t>(query.limit));
-    request.set_page_size(static_cast<int32_t>(query.page_size));
-    request.set_page_token(query.page_token);
-    return request;
+    req.set_order_ascend(request.ascending_order);
+    req.set_limit(static_cast<int64_t>(request.limit));
+    req.set_page_size(static_cast<int32_t>(request.page_size));
+    req.set_page_token(request.page_token);
+    return req;
 }
 
 api::DomainRangeResult domain_range_result_from_response(const ::remote::Pairs& response) {

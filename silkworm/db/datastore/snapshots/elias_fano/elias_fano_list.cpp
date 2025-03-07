@@ -48,12 +48,12 @@
 #include <bit>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 #include "../common/encoding/util.hpp"
+#include "../common/util/iterator/index_range.hpp"
 #include "elias_fano_common.hpp"
 
 namespace silkworm::snapshots::elias_fano {
@@ -64,6 +64,16 @@ EliasFanoList32 EliasFanoList32::from_encoded_data(std::span<const uint8_t> enco
     const uint64_t u = endian::load_big_u64(encoded_data.subspan(kCountLength).data());
     const auto remaining_data = encoded_data.subspan(kCountLength + kULength);
     return EliasFanoList32{last + 1, u - 1, remaining_data};
+}
+
+EliasFanoList32 EliasFanoList32::from_encoded_data(ByteView encoded_data) {
+    return from_encoded_data(std::span<const uint8_t>{encoded_data});
+}
+
+EliasFanoList32 EliasFanoList32::from_encoded_data(Bytes encoded_data) {
+    auto elias_fano_list = from_encoded_data(std::span<const uint8_t>{encoded_data});
+    elias_fano_list.data_holder_ = std::move(encoded_data);
+    return elias_fano_list;
 }
 
 EliasFanoList32::EliasFanoList32(uint64_t count, uint64_t max_value, std::span<const uint8_t> encoded_data)
@@ -117,21 +127,6 @@ uint64_t EliasFanoList32::upper(uint64_t i) const {
 }
 
 std::optional<std::pair<size_t, uint64_t>> EliasFanoList32::seek([[maybe_unused]] uint64_t v, bool reverse) const {
-    struct IndexRange {
-        using value_type = size_t;
-
-        size_t start_index{0};
-        size_t end_index{0};
-
-        size_t size() const { return end_index - start_index; }
-        size_t operator[](size_t i) const { return i; }
-
-        using Iterator = ListIterator<IndexRange, size_t>;
-        Iterator begin() const { return Iterator{*this, start_index}; }
-        Iterator end() const { return Iterator{*this, end_index}; }
-    };
-    static_assert(IndexedListConcept<IndexRange>);
-
     if (count_ == 0) {
         return std::nullopt;
     }
@@ -156,7 +151,7 @@ std::optional<std::pair<size_t, uint64_t>> EliasFanoList32::seek([[maybe_unused]
 
     uint64_t hi = v >> l_;
     IndexRange index_range{0, count_};
-    IndexRange::Iterator start_it = std::ranges::partition_point(index_range, [=, this](size_t i) -> bool {
+    IndexRange::Iterator start_it = std::ranges::partition_point(index_range, [reverse, last, hi, this](size_t i) -> bool {
         return reverse ? (upper(last - i) > hi) : (upper(i) < hi);
     });
 
@@ -215,10 +210,9 @@ uint64_t EliasFanoList32::derive_fields() {
     uint64_t words_upper_bits = (count_ + (u_ >> l_) + 63) / 64;
     uint64_t jump_words = jump_size_words(count_);
     uint64_t total_words = words_lower_bits + words_upper_bits + jump_words;
-    // data_ = std::span<const uint64_t>{data_.data(), total_words};
-    lower_bits_ = std::span<const uint64_t>{data_.data(), words_lower_bits};
-    upper_bits_ = std::span<const uint64_t>{data_.data() + words_lower_bits, words_upper_bits};
-    jump_ = std::span<const uint64_t>{data_.data() + words_lower_bits + words_upper_bits, jump_words};
+    lower_bits_ = data_.subspan(0, words_lower_bits);
+    upper_bits_ = data_.subspan(words_lower_bits, words_upper_bits);
+    jump_ = data_.subspan(words_lower_bits + words_upper_bits, jump_words);
 
     return total_words;
 }

@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <span>
+#include <variant>
 
 #include <evmc/bytes.hpp>
 
@@ -58,5 +59,21 @@ class ByteView : public evmc::bytes_view {
 
 template <size_t Extent>
 using ByteSpan = std::span<uint8_t, Extent>;
+
+struct BytesOrByteView : public std::variant<Bytes, ByteView> {
+    using std::variant<Bytes, ByteView>::operator=;
+
+    bool holds_bytes() const { return std::holds_alternative<Bytes>(*this); }
+
+    BytesOrByteView substr(size_t offset) {
+        return holds_bytes() ? BytesOrByteView{std::get<Bytes>(*this).substr(offset)}
+                             : BytesOrByteView{std::get<ByteView>(*this).substr(offset)};
+    }
+
+    // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
+    operator ByteView() const {
+        return holds_bytes() ? std::get<Bytes>(*this) : std::get<ByteView>(*this);
+    }
+};
 
 }  // namespace silkworm

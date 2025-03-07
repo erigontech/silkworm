@@ -1,0 +1,26 @@
+name: QA - RPC Performance Tests Light
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - master
+    types:
+      - ready_for_review
+
+jobs:
+  performance-test-suite-light:
+    strategy:
+      matrix:
+        backend: [ Erigon3 ]
+    runs-on: [ self-hosted, "${{ matrix.backend }}" ]
+    env:
+      ERIGON_DIR: /opt/erigon-versions/reference-version
+      ERIGON_DATA_DIR: /opt/erigon-versions/reference-version/datadir
+      RPC_PAST_TEST_DIR: /opt/rpc-past-tests
+      ERIGON_QA_PATH: /opt/erigon-qa
+
+    steps:
+      - uses: ./.github/actions/perf-common-steps
+        with:
+          activation_mode: light

@@ -206,6 +206,8 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
                                          const silkworm::Transaction& transaction,
                                          const db::chain::ChainStorage& chain_storage,
                                          WorkerPool& workers) {
+    using Word = snapshots::Decoder::Word;
+
     const auto chain_config = co_await chain_storage.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
 
@@ -224,9 +226,8 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     });
 
     txn_id++;  // query db on next txn
-    db::state::VarintSnapshotsDecoder varint;
 
-    db::kv::api::GetAsOfQuery query_cumulative_gas{
+    db::kv::api::GetAsOfRequest query_cumulative_gas{
         .table = db::table::kReceiptDomain,
         .key = kCumulativeGasUsedKey,
         .timestamp = static_cast<db::kv::api::Timestamp>(txn_id),
@@ -236,10 +237,12 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
         co_return std::nullopt;
     }
 
-    varint.decode_word(result.value);
+    db::state::VarintSnapshotsDecoder varint;
+    Word value1{std::move(result.value)};
+    varint.decode_word(value1);
     auto first_cumulative_gas_used_in_tx = varint.value;
 
-    db::kv::api::GetAsOfQuery query_first_log_index{
+    db::kv::api::GetAsOfRequest query_first_log_index{
         .table = db::table::kReceiptDomain,
         .key = kFirstLogIndexKey,
         .timestamp = static_cast<db::kv::api::Timestamp>(txn_id),
@@ -249,7 +252,8 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
         co_return std::nullopt;
     }
 
-    varint.decode_word(result.value);
+    Word value2{std::move(result.value)};
+    varint.decode_word(value2);
     auto first_log_index = static_cast<uint32_t>(varint.value);
 
     new_receipt.cumulative_gas_used = first_cumulative_gas_used_in_tx;

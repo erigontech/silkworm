@@ -67,26 +67,27 @@ struct TransactionSegmentWordDecoder : public Decoder {
 
     ~TransactionSegmentWordDecoder() override = default;
 
-    void decode_word(Bytes& word) override {
+    void decode_word(Word& word) override {
         decode_word_into_tx(word, value);
     }
 };
 
 static_assert(DecoderConcept<TransactionSegmentWordDecoder>);
 
-template <BytesOrByteView TBytes>
+template <BytesOrByteViewConcept TBytes>
 struct TransactionSegmentWordPayloadRlpDecoder : public Decoder {
     TBytes value;
 
     ~TransactionSegmentWordPayloadRlpDecoder() override = default;
 
-    void decode_word(Bytes& word) override {
-        if (word.empty()) {
+    void decode_word(Word& word) override {
+        const ByteView word_view = word;
+        if (word_view.empty()) {
             value = TBytes{};
             return;
         }
 
-        auto data = slice_tx_data(word);
+        auto data = slice_tx_data(word_view);
         value = slice_tx_payload(data.tx_rlp);
     }
 };

@@ -20,6 +20,7 @@
 
 #include "../common/entity_name.hpp"
 #include "../common/ranges/caching_view.hpp"
+#include "../common/ranges/merge_many_view.hpp"
 #include "../common/ranges/owning_view.hpp"
 #include "../common/timestamp.hpp"
 #include "common/raw_codec.hpp"
@@ -30,14 +31,15 @@
 namespace silkworm::snapshots {
 
 template <DecoderConcept TKeyDecoder, DecoderConcept TValueDecoder>
-struct HistoryRangeSegmentQuery {
-    explicit HistoryRangeSegmentQuery(History entity) : entity_{entity} {}
-    HistoryRangeSegmentQuery(const SnapshotBundle& bundle, datastore::EntityName entity_name)
+struct HistoryRangeInPeriodSegmentQuery {
+    explicit HistoryRangeInPeriodSegmentQuery(History entity) : entity_{entity} {}
+    HistoryRangeInPeriodSegmentQuery(const SnapshotBundle& bundle, datastore::EntityName entity_name)
         : entity_{bundle.history(entity_name)} {}
 
     using Key = decltype(TKeyDecoder::value);
     using Value = decltype(TValueDecoder::value);
     using ResultItem = std::pair<Key, Value>;
+    using Word = snapshots::Decoder::Word;
     using AccessorIndexKeyEncoder = HistoryAccessorIndexKeyEncoder<RawEncoder<ByteView>>;
 
     std::optional<ResultItem> lookup_kv_pair(
@@ -61,7 +63,8 @@ struct HistoryRangeSegmentQuery {
 
         // return the key-value pair
         TKeyDecoder key_decoder;
-        key_decoder.decode_word(key_data);
+        Word key_data_word{std::move(key_data)};
+        key_decoder.decode_word(key_data_word);
         return ResultItem{std::move(key_decoder.value), std::move(*value_opt)};
     }
 
@@ -74,7 +77,7 @@ struct HistoryRangeSegmentQuery {
 
         auto ii_reader = entity_.inverted_index.kv_segment_reader<RawDecoder<Bytes>>();
 
-        return ii_reader |
+        return silkworm::ranges::owning_view(std::move(ii_reader)) |
                std::views::transform(std::move(lookup_kv_pair_func)) |
                silkworm::views::caching |
                std::views::filter([](const std::optional<ResultItem>& result_opt) { return result_opt.has_value(); }) |
@@ -87,8 +90,8 @@ struct HistoryRangeSegmentQuery {
 };
 
 template <DecoderConcept TKeyDecoder, DecoderConcept TValueDecoder>
-struct HistoryRangeQuery {
-    HistoryRangeQuery(
+struct HistoryRangeInPeriodQuery {
+    HistoryRangeInPeriodQuery(
         const SnapshotRepositoryROAccess& repository,
         datastore::EntityName entity_name)
         : repository_{repository},
@@ -102,13 +105,17 @@ struct HistoryRangeQuery {
         SILKWORM_ASSERT(ascending);  // descending is not implemented
 
         auto results_in_bundle = [entity_name = entity_name_, ts_range, ascending](const std::shared_ptr<SnapshotBundle>& bundle) {
-            HistoryRangeSegmentQuery<TKeyDecoder, TValueDecoder> query{*bundle, entity_name};
+            HistoryRangeInPeriodSegmentQuery<TKeyDecoder, TValueDecoder> query{*bundle, entity_name};
             return query.exec(ts_range, ascending);
         };
 
-        return silkworm::ranges::owning_view(repository_.bundles_intersecting_range(ts_range, ascending)) |
-               std::views::transform(std::move(results_in_bundle)) |
-               std::views::join;
+        auto bundle_results = silkworm::ranges::owning_view(repository_.bundles_intersecting_range(ts_range, ascending)) |
+                              std::views::transform(std::move(results_in_bundle));
+
+        return silkworm::views::merge_many(
+            std::move(bundle_results),
+            silkworm::views::MergeCompareFunc{},
+            PairGetFirst<Key, Value>{});
     }
 
   private:

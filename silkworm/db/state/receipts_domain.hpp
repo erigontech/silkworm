@@ -38,10 +38,11 @@ enum class ReceiptsDomainKey : uint8_t {
 struct ReceiptsDomainKeySnapshotsDecoder : public snapshots::Decoder {
     ReceiptsDomainKey value{};
     ~ReceiptsDomainKeySnapshotsDecoder() override = default;
-    void decode_word(Bytes& word) override {
-        if (word.empty())
+    void decode_word(Word& word) override {
+        const ByteView word_view = word;
+        if (word_view.empty())
             throw std::runtime_error{"ReceiptsDomainKeySnapshotsDecoder failed to decode an empty word"};
-        value = static_cast<ReceiptsDomainKey>(word[0]);
+        value = static_cast<ReceiptsDomainKey>(word_view[0]);
     }
 };
 
@@ -50,8 +51,8 @@ static_assert(snapshots::DecoderConcept<ReceiptsDomainKeySnapshotsDecoder>);
 struct VarintSnapshotsDecoder : public snapshots::Decoder {
     uint64_t value{};
     ~VarintSnapshotsDecoder() override = default;
-    void decode_word(Bytes& word) override {
-        ByteView word_view{word};
+    void decode_word(Word& word) override {
+        ByteView word_view = word;
         auto value_opt = snapshots::seg::varint::decode(word_view);
         if (!value_opt)
             throw std::runtime_error{"VarintSnapshotsDecoder failed to decode"};

@@ -22,13 +22,13 @@
 
 namespace silkworm::db::kv::grpc::client {
 
-::remote::IndexRangeReq index_range_request_from_query(const api::IndexRangeQuery&);
+::remote::IndexRangeReq make_index_range_req(const api::IndexRangeRequest&);
 api::IndexRangeResult index_range_result_from_response(const ::remote::IndexRangeReply&);
 
-::remote::HistoryRangeReq history_range_request_from_query(const api::HistoryRangeQuery&);
+::remote::HistoryRangeReq make_history_range_req(const api::HistoryRangeRequest&);
 api::HistoryRangeResult history_range_result_from_response(const ::remote::Pairs&);
 
-::remote::RangeAsOfReq domain_range_request_from_query(const api::DomainRangeQuery&);
+::remote::RangeAsOfReq make_domain_range_req(const api::DomainRangeRequest&);
 api::DomainRangeResult domain_range_result_from_response(const ::remote::Pairs&);
 
 }  // namespace silkworm::db::kv::grpc::client

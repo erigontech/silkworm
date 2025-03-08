@@ -19,6 +19,7 @@
 #include <array>
 #include <chrono>
 #include <exception>
+#include <shared_mutex>
 #include <string_view>
 
 #include <boost/asio/buffer.hpp>
@@ -441,11 +442,38 @@ bool Connection::is_method_allowed(boost::beast::http::verb method) {
 
 std::string Connection::get_date_time() {
     static const absl::TimeZone kTz{absl::LocalTimeZone()};
-    const absl::Time now{absl::Now()};
+    static std::pair<int64_t, std::string> cache;
+    static std::shared_mutex cache_mutex;
 
+    // read cache
+    std::pair<int64_t, std::string> result;
+    {
+        std::shared_lock lock{cache_mutex};
+        result = cache;
+    }
+
+    const int64_t ts = absl::ToUnixSeconds(absl::Now());
+
+    // if timestamp matches - return the cached result
+    if (ts == result.first) {
+        return std::move(result.second);
+    }
+
+    // otherwise - format
+    const absl::Time now = absl::FromUnixSeconds(ts);
     std::stringstream ss;
     ss << absl::FormatTime("%a, %d %b %E4Y %H:%M:%S ", now, kTz) << kTz.name();
-    return ss.str();
+    result = {ts, ss.str()};
+
+    // update cache if timestamp increased
+    {
+        std::unique_lock lock{cache_mutex};
+        if (ts > cache.first) {
+            cache = result;
+        }
+    }
+
+    return std::move(result.second);
 }
 
 Task<void> Connection::compress(const std::string& clear_data, std::string& compressed_data) {

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "common/ranges/concat_view.hpp"
+#include "common/ranges/if_view.hpp"
 #include "kvdb/database.hpp"
 #include "kvdb/inverted_index_range_by_key_query.hpp"
 #include "snapshots/inverted_index_range_by_key_query.hpp"
@@ -50,17 +51,15 @@ struct InvertedIndexRangeByKeyQuery {
     static_assert(std::same_as<Key1, Key2>);
     using Key = Key1;
 
-    template <bool ascending = true>
-    auto exec(Key key, TimestampRange ts_range) {
-        if constexpr (ascending) {
-            return silkworm::views::concat(
-                query2_.template exec<ascending>(key, ts_range),
-                query1_.exec(key, ts_range, ascending));
-        } else {
-            return silkworm::views::concat(
+    auto exec(Key key, TimestampRange ts_range, bool ascending) {
+        return silkworm::views::if_view(
+            ascending,
+            silkworm::views::concat(
+                query2_.exec(key, ts_range, ascending),
+                query1_.exec(key, ts_range, ascending)),
+            silkworm::views::concat(
                 query1_.exec(key, ts_range, ascending),
-                query2_.template exec<ascending>(key, ts_range));
-        }
+                query2_.exec(key, ts_range, ascending)));
     }
 
   private:

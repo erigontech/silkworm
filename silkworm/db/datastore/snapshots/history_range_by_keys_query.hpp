@@ -19,7 +19,6 @@
 #include <iterator>
 #include <ranges>
 #include <utility>
-#include <variant>
 #include <vector>
 
 #include <silkworm/core/common/assert.hpp>
@@ -27,6 +26,7 @@
 #include "../common/entity_name.hpp"
 #include "../common/pair_get.hpp"
 #include "../common/ranges/caching_view.hpp"
+#include "../common/ranges/lazy_view.hpp"
 #include "../common/ranges/merge_many_view.hpp"
 #include "../common/ranges/owning_view.hpp"
 #include "common/codec.hpp"
@@ -93,11 +93,10 @@ struct HistoryRangeByKeysSegmentQuery {
     }
 
     auto exec(Bytes key_start, Bytes key_end, datastore::Timestamp timestamp, bool ascending) {
-        auto exec_func = [query = *this, key_start = std::move(key_start), key_end = std::move(key_end), timestamp, ascending](std::monostate) mutable {
+        auto exec_func = [query = *this, key_start = std::move(key_start), key_end = std::move(key_end), timestamp, ascending]() mutable {
             return query.exec_with_eager_begin(std::move(key_start), std::move(key_end), timestamp, ascending);
         };
-        // turn into a lazy view that runs exec_func only when iteration is started using range::begin()
-        return std::views::single(std::monostate{}) | std::views::transform(std::move(exec_func)) | std::views::join;
+        return silkworm::ranges::lazy(std::move(exec_func));
     }
 
   private:

@@ -51,18 +51,18 @@ datastore::kvdb::DatabaseUnmanaged DataStore::make_chaindata_database(datastore:
     };
 }
 
-std::map<datastore::EntityName, std::unique_ptr<datastore::kvdb::Database>> DataStore::make_databases_map(
+datastore::EntityMap<std::unique_ptr<datastore::kvdb::Database>> DataStore::make_databases_map(
     datastore::kvdb::Database chaindata_database) {
-    std::map<datastore::EntityName, std::unique_ptr<datastore::kvdb::Database>> databases;
+    datastore::EntityMap<std::unique_ptr<datastore::kvdb::Database>> databases;
     databases.emplace(datastore::kvdb::Schema::kDefaultEntityName, std::make_unique<datastore::kvdb::Database>(std::move(chaindata_database)));
     return databases;
 }
 
-std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> DataStore::make_repositories_map(
+datastore::EntityMap<std::unique_ptr<snapshots::SnapshotRepository>> DataStore::make_repositories_map(
     snapshots::SnapshotRepository blocks_repository,
     snapshots::SnapshotRepository state_repository_latest,
     snapshots::SnapshotRepository state_repository_historical) {
-    std::map<datastore::EntityName, std::unique_ptr<snapshots::SnapshotRepository>> repositories;
+    datastore::EntityMap<std::unique_ptr<snapshots::SnapshotRepository>> repositories;
     repositories.emplace(blocks::kBlocksRepositoryName, std::make_unique<snapshots::SnapshotRepository>(std::move(blocks_repository)));
     repositories.emplace(state::kStateRepositoryNameLatest, std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository_latest)));
     repositories.emplace(state::kStateRepositoryNameHistorical, std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository_historical)));

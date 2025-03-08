@@ -270,5 +270,4 @@ evmc::bytes32 InMemoryState::state_root_hash() const {
 
     return hb.root_hash();
 }
-
 }  // namespace silkworm

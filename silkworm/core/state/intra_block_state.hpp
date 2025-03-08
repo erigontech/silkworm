@@ -61,7 +61,7 @@ class IntraBlockState {
     // See EIP-161: State trie clearing (invariant-preserving alternative)
     bool is_dead(const evmc::address& address) const noexcept;
 
-    void create_contract(const evmc::address& address) noexcept;
+    void create_contract(const evmc::address& address, bool is_code_delegation) noexcept;
 
     void destruct(const evmc::address& address);
 
@@ -149,6 +149,8 @@ class IntraBlockState {
 
     mutable FlatHashMap<evmc::bytes32, ByteView> existing_code_;
     FlatHashMap<evmc::bytes32, std::vector<uint8_t>> new_code_;
+    // EIP- 7702
+    FlatHashSet<evmc::address> delegated_designations_;
 
     std::vector<std::unique_ptr<state::Delta>> journal_;
 

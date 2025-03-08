@@ -148,7 +148,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
 
     auto snapshot{state_.take_snapshot()};
 
-    state_.create_contract(contract_addr);
+    state_.create_contract(contract_addr, false);
 
     const evmc_revision rev{revision()};
     if (rev >= EVMC_SPURIOUS_DRAGON) {

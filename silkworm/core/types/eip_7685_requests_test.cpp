@@ -58,6 +58,13 @@ TEST_CASE("EIP-7585 tests") {
         const auto hash = requests.calculate_sha256();
         CHECK(hash == Hash{from_hex("fb11d3d094091e34794c99218a862850a4a85dc1e128ce8c85f2a2bcbcc899ef").value()});
     }
+
+    SECTION("Calculate sha256 of empty requests") {
+        FlatRequests requests;
+
+        const auto hash = requests.calculate_sha256();
+        CHECK(hash == Hash{from_hex("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").value()});
+    }
 }
 
 }  // namespace silkworm

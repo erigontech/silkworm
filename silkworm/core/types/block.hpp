@@ -36,7 +36,7 @@ namespace silkworm {
 
 using TotalDifficulty = intx::uint256;
 
-intx::uint256 calc_blob_gas_price(uint64_t excess_blob_gas);
+intx::uint256 calc_blob_gas_price(uint64_t excess_blob_gas, evmc_revision revision);
 
 struct BlockHeader {
     using NonceType = std::array<uint8_t, 8>;

@@ -34,6 +34,7 @@
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 
 #include "blocks/headers/header_segment.hpp"
+#include "blocks/step_block_num_converter.hpp"
 #include "datastore/kvdb/etl_mdbx_collector.hpp"
 #include "datastore/snapshots/bittorrent/torrent_file.hpp"
 #include "datastore/snapshots/common/snapshot_path.hpp"
@@ -54,10 +55,11 @@ struct PathHasher {
 };
 
 static bool snapshot_file_is_fully_merged(std::string_view file_name) {
+    auto step_converter = blocks::kStepToBlockNumConverter;
     const auto path = SnapshotPath::parse(std::filesystem::path{file_name});
     return path.has_value() &&
            (path->extension() == blocks::kSegmentExtension || path->extension() == blocks::kIdxExtension) &&
-           (path->step_range().to_block_num_range().size() >= kMaxMergerSnapshotSize);
+           (step_converter.timestamp_range_from_step_range(path->step_range()).size() >= kMaxMergerSnapshotSize);
 }
 
 SnapshotSync::SnapshotSync(
@@ -148,7 +150,7 @@ Task<void> SnapshotSync::setup() {
 
     // Update chain and stage progresses in database according to available snapshots
     datastore::kvdb::RWTxnManaged rw_txn = data_store_.chaindata.access_rw().start_rw_tx();
-    update_database(rw_txn, blocks_repository().max_block_available(), [this] { return is_stopping_latch_.try_wait(); });
+    update_database(rw_txn, blocks_repository().max_timestamp_available(), [this] { return is_stopping_latch_.try_wait(); });
     rw_txn.commit_and_stop();
 
     if (!settings_.no_seeding) {
@@ -290,9 +292,10 @@ Task<void> SnapshotSync::build_missing_indexes() {
 }
 
 void SnapshotSync::seed_frozen_local_snapshots() {
-    for (auto& bundle_ptr : blocks_repository().view_bundles()) {
+    const auto& repository = blocks_repository();
+    for (auto& bundle_ptr : repository.view_bundles()) {
         auto& bundle = *bundle_ptr;
-        auto block_num_range = bundle.step_range().to_block_num_range();
+        auto block_num_range = repository.step_converter().timestamp_range_from_step_range(bundle.step_range());
         bool is_frozen = block_num_range.size() >= kMaxMergerSnapshotSize;
         const segment::SegmentFileReader& first_snapshot = *bundle.segments().begin();
         // assume that if one snapshot in the bundle is preverified, then all of them are

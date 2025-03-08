@@ -22,6 +22,7 @@
 
 #include <absl/strings/str_format.h>
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::snapshots {

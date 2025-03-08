@@ -26,6 +26,7 @@
 
 #include "../common/entity_name.hpp"
 #include "../common/step.hpp"
+#include "../common/timestamp.hpp"
 #include "common/util/iterator/map_values_view.hpp"
 #include "segment_and_accessor_index.hpp"
 
@@ -61,8 +62,6 @@ struct SnapshotRepositoryROAccess {
 
     virtual size_t bundles_count() const = 0;
 
-    //! All types of .seg and .idx files are available up to this block number
-    virtual BlockNum max_block_available() const = 0;
     //! All types of .seg and .idx files are available up to this timestamp
     virtual Timestamp max_timestamp_available() const = 0;
 

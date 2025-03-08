@@ -22,6 +22,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/db/state/step_txn_id_converter.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_txn.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
@@ -156,7 +157,7 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
         CHECK(account_66_read->nonce == account_66_v2.nonce);
         CHECK(account_66_read->balance == account_66_v2.balance);
 
-        auto next_step_txn_id = silkworm::datastore::kStepSizeForTemporalSnapshots + 1;
+        auto next_step_txn_id = db::state::kStepSizeForTemporalSnapshots + 1;
         auto sut2 = DomainState{next_step_txn_id, rw_tx, db_ref, ds_context->blocks_repository(), ds_context->state_repository_latest()};
         Account account_66_v3{
             .nonce = 10,
@@ -215,7 +216,7 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
         CHECK(!code_66_read.empty());
         CHECK(code_66_read == code_66);
 
-        auto next_step_txn_id = silkworm::datastore::kStepSizeForTemporalSnapshots + 1;
+        auto next_step_txn_id = db::state::kStepSizeForTemporalSnapshots + 1;
         auto sut2 = DomainState{next_step_txn_id, rw_tx, db_ref, ds_context->blocks_repository(), ds_context->state_repository_latest()};
         code_66 = *from_hex("0x6044");
         code_hash_66 = std::bit_cast<evmc_bytes32>(keccak256(code_66));
@@ -272,7 +273,7 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
             0x0100_bytes32);
         CHECK(storage_66_01 == 0x0124_bytes32);
 
-        auto next_step_txn_id = silkworm::datastore::kStepSizeForTemporalSnapshots + 1;
+        auto next_step_txn_id = db::state::kStepSizeForTemporalSnapshots + 1;
         auto sut2 = DomainState{next_step_txn_id, rw_tx, db_ref, ds_context->blocks_repository(), ds_context->state_repository_latest()};
         sut2.update_storage(
             0x668bdf435d810c91414ec09147daa6db62406379_address,

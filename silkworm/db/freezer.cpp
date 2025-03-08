@@ -67,7 +67,7 @@ static std::optional<uint64_t> get_next_base_txn_id(SnapshotRepository& reposito
 }
 
 std::unique_ptr<DataMigrationCommand> Freezer::next_command() {
-    BlockNum last_frozen = snapshots_.max_block_available();
+    BlockNum last_frozen = snapshots_.max_timestamp_available();
     BlockNum start = (last_frozen > 0) ? last_frozen + 1 : 0;
     BlockNum end = start + kChunkSize;
 
@@ -108,7 +108,7 @@ static const SegmentCollation& get_collation(datastore::EntityName name) {
 std::shared_ptr<DataMigrationResult> Freezer::migrate(std::unique_ptr<DataMigrationCommand> command) {
     auto& freezer_command = dynamic_cast<SegmentCollationCommand&>(*command);
     auto range = freezer_command.range;
-    auto step_range = StepRange::from_block_num_range(range);
+    StepRange step_range = snapshots_.step_converter().step_range_from_timestamp_range({range.start, range.end});
 
     SnapshotBundlePaths bundle{snapshots_.schema(), tmp_dir_path_, step_range};
     for (const auto& [name, path] : bundle.segment_paths()) {
@@ -139,7 +139,7 @@ void Freezer::commit(std::shared_ptr<DataMigrationResult> result) {
 }
 
 BlockNumRange Freezer::cleanup_range() {
-    BlockNum last_frozen = snapshots_.max_block_available();
+    BlockNum last_frozen = snapshots_.max_timestamp_available();
 
     BlockNum first_stored_header_num = [this] {
         auto db_tx = db_access_.start_ro_tx();

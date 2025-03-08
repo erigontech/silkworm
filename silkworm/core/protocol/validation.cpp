@@ -79,7 +79,10 @@ ValidationResult validate_transaction(const Transaction& txn, const IntraBlockSt
     }
 
     if (state.get_code_hash(*sender) != kEmptyHash) {
-        return ValidationResult::kSenderNoEOA;  // EIP-3607
+        const auto code = state.get_code(*sender);
+        if (!eip7702::is_code_delegated(code)) {
+            return ValidationResult::kSenderNoEOA;  // EIP-3607
+        }
     }
 
     const uint64_t nonce{state.get_nonce(*sender)};
@@ -219,6 +222,11 @@ ValidationResult pre_validate_common_forks(const Transaction& txn, const evmc_re
                 return ValidationResult::kEmptyAuthorizations;
             }
         }
+        // EIP-7623
+        const auto floor_cost = protocol::floor_cost(txn);
+        if (txn.gas_limit < floor_cost) {
+            return ValidationResult::kFloorCost;
+        }
     }
     return ValidationResult::kOk;
 }
@@ -228,9 +236,14 @@ ValidationResult validate_call_funds(const Transaction& txn, const EVM& evm, con
     const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= evm.block().header.base_fee_per_gas ? txn.effective_gas_price(base_fee)
                                                                                                        : txn.max_priority_fee_per_gas};
 
-    const auto required_funds = compute_call_cost(txn, effective_gas_price, evm);
+    intx::uint512 required_funds = compute_call_cost(txn, effective_gas_price, evm);
+    // EIP-7623 Increase calldata cost
+    if (evm.revision() >= EVMC_PRAGUE) {
+        const auto floor_cost = protocol::floor_cost(txn);
+        const intx::uint512 gas_limit = std::max(txn.gas_limit, floor_cost);
+        required_funds = std::max(required_funds, gas_limit * effective_gas_price);
+    }
     const intx::uint256 value = bailout ? 0 : txn.value;
-
     if (owned_funds < required_funds + value) {
         return ValidationResult::kInsufficientFunds;
     }
@@ -288,14 +301,16 @@ intx::uint256 expected_base_fee_per_gas(const BlockHeader& parent) {
     return 0;
 }
 
-uint64_t calc_excess_blob_gas(const BlockHeader& parent) {
+uint64_t calc_excess_blob_gas(const BlockHeader& parent, evmc_revision revision) {
     const uint64_t parent_excess_blob_gas{parent.excess_blob_gas.value_or(0)};
     const uint64_t consumed_blob_gas{parent.blob_gas_used.value_or(0)};
 
-    if (parent_excess_blob_gas + consumed_blob_gas < kTargetBlobGasPerBlock) {
+    // EIP-7691: Blob throughput increase
+    const auto target_block_gas_per_block = revision >= EVMC_PRAGUE ? kTargetBlobGasPerBlockPrague : kTargetBlobGasPerBlock;
+    if (parent_excess_blob_gas + consumed_blob_gas < target_block_gas_per_block) {
         return 0;
     }
-    return parent_excess_blob_gas + consumed_blob_gas - kTargetBlobGasPerBlock;
+    return parent_excess_blob_gas + consumed_blob_gas - target_block_gas_per_block;
 }
 
 evmc::bytes32 compute_transaction_root(const BlockBody& body) {

@@ -111,6 +111,12 @@ enum class [[nodiscard]] ValidationResult {
     // EIP-7685: Requests root mismatch
     kRequestsRootMismatch,
 
+    // EIP-7623: Increase calldata cost
+    kFloorCost,
+
+    // EIP-7702 Set EOA account code
+    kIncorrectAuthorization,
+
     // Bor validation errors. See https://github.com/erigontech/erigon/blob/main/consensus/bor/bor.go
     kMissingVanity,          // Block's extra-data section is shorter than 32 bytes, which is required to store the signer vanity
     kMissingSignature,       // Block's extra-data section doesn't seem to contain a 65 byte secp256k1 signature
@@ -154,7 +160,7 @@ namespace protocol {
     intx::uint256 expected_base_fee_per_gas(const BlockHeader& parent);
 
     //! \see EIP-4844: Shard Blob Transactions
-    uint64_t calc_excess_blob_gas(const BlockHeader& parent);
+    uint64_t calc_excess_blob_gas(const BlockHeader& parent, evmc_revision revision);
 
     //! \brief Calculate the transaction root of a block body
     evmc::bytes32 compute_transaction_root(const BlockBody& body);

@@ -19,6 +19,7 @@
 #include <optional>
 #include <ranges>
 
+#include "../common/ranges/if_view.hpp"
 #include "../common/ranges/owning_view.hpp"
 #include "../common/timestamp.hpp"
 #include "common/raw_codec.hpp"
@@ -28,13 +29,11 @@
 
 namespace silkworm::snapshots {
 
-template <bool ascending = true>
-auto timestamp_range_filter(elias_fano::EliasFanoList32 list, datastore::TimestampRange ts_range) {
-    if constexpr (ascending) {
-        return silkworm::ranges::owning_view(std::move(list)) | std::views::all | std::views::filter(ts_range.contains_predicate());
-    } else {
-        return silkworm::ranges::owning_view(std::move(list)) | std::views::reverse | std::views::filter(ts_range.contains_predicate());
-    }
+inline auto timestamp_range_filter(elias_fano::EliasFanoList32 list, datastore::TimestampRange ts_range, bool ascending) {
+    return silkworm::views::if_view(
+        ascending,
+        silkworm::ranges::owning_view(std::move(list)) | std::views::all | std::views::filter(ts_range.contains_predicate()),
+        silkworm::ranges::owning_view(std::move(list)) | std::views::reverse | std::views::filter(ts_range.contains_predicate()));
 }
 
 template <EncoderConcept TKeyEncoder>
@@ -70,9 +69,8 @@ struct InvertedIndexFindByKeySegmentQuery {
         return std::nullopt;
     }
 
-    template <bool ascending = true>
-    auto exec_filter(Key key, datastore::TimestampRange ts_range) {
-        return timestamp_range_filter<ascending>(exec(std::move(key)).value_or(elias_fano::EliasFanoList32::empty_list()), ts_range);
+    auto exec_filter(Key key, datastore::TimestampRange ts_range, bool ascending) {
+        return timestamp_range_filter(exec(std::move(key)).value_or(elias_fano::EliasFanoList32::empty_list()), ts_range, ascending);
     }
 
   private:

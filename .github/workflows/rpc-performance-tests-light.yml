@@ -2,6 +2,11 @@ name: QA - RPC Performance Tests Light
 
 on:
   workflow_dispatch:
+    inputs:
+      measure_erigon:
+        description: 'Measure Erigon RPCDaemon'
+        type: boolean
+        default: false
   pull_request:
     branches:
       - master
@@ -21,6 +26,12 @@ jobs:
       ERIGON_QA_PATH: /opt/erigon-qa
 
     steps:
+      - name: Checkout Silkworm repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: "0"
       - uses: ./.github/actions/perf-common-steps
         with:
           activation_mode: light
+          measure_erigon: ${{github.event.inputs.measure_erigon}}

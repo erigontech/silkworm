@@ -240,6 +240,12 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
         /* open = */ false,
         settings->state_repo_index_salt);
 
+    log::Debug{"[1/12] Silkworm initialized",  // NOLINT(*-unused-raii)
+               {"data_dir", data_dir_path.string(),
+                "snapshots_dir", snapshots_dir_path.string(),
+                "blocks_repo_index_salt", std::to_string(settings->blocks_repo_index_salt),
+                "state_repo_index_salt", std::to_string(settings->state_repo_index_salt)}};
+
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
     *handle = new SilkwormInstance{
         .log_settings = std::move(log_settings),
@@ -614,6 +620,8 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
         return SILKWORM_INVALID_HANDLE;
     }
 
+    SILK_DEBUG << "silkworm_execute_txn block_num: " << std::to_string(block_num) << " txn_index: " << std::to_string(txn_index) << " txn_num: " << std::to_string(txn_num);
+
     silkworm::Hash block_header_hash{};
     memcpy(block_header_hash.bytes, block_hash.bytes, sizeof(block_hash.bytes));
     BlockNum block_number{block_num};
@@ -635,14 +643,6 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
         if (!handle->chain_config) {
             SILK_ERROR << "Chain config not found";
             return SILKWORM_INVALID_SETTINGS;
-        }
-
-        // TODO: make it compatible with other rulesets
-        // Dirty hack to force ethash config
-        auto chain_config_edit = handle->chain_config->to_json();
-        if (!chain_config_edit.contains("ethash")) {
-            chain_config_edit.emplace("ethash", silkworm::protocol::EthashConfig{}.to_json());
-            handle->chain_config = ChainConfig::from_json(chain_config_edit);
         }
     }
 
@@ -669,6 +669,11 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
     }
 
     auto& transaction = block.transactions[txn_index];
+
+    SILK_DEBUG << "silkworm_execute_txn BlockNum " << std::to_string(block_num) << " BlockHash " << silkworm::to_hex(block_hash.bytes, true)
+               << " TxIndex " << std::to_string(txn_index) << " TxNum " << std::to_string(txn_num)
+               << " TxnHash " << silkworm::to_hex(transaction.hash().bytes, true)
+               << " Sender " << silkworm::to_hex(transaction.sender().value_or(evmc::address{}).bytes, true);
 
     auto protocol_rule_set_{protocol::rule_set_factory(*handle->chain_config)};
     if (!protocol_rule_set_) {
@@ -697,6 +702,8 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
         SILK_ERROR << "transaction post-processing failed: " << ex.what();
         return SILKWORM_INTERNAL_ERROR;
     }
+
+    SILK_DEBUG << "Gas used " << receipt.cumulative_gas_used << " Blob gas used " << transaction.total_blob_gas();
 
     if (gas_used) {
         *gas_used = receipt.cumulative_gas_used;

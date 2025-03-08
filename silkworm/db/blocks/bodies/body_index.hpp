@@ -26,6 +26,7 @@
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 #include "../schema_config.hpp"
+#include "../step_block_num_converter.hpp"
 
 namespace silkworm::snapshots {
 
@@ -44,10 +45,11 @@ class BodyIndex {
 
   private:
     static IndexDescriptor make_descriptor(const SnapshotPath& segment_path) {
+        auto step_converter = db::blocks::kStepToBlockNumConverter;
         return {
             .index_file = segment_path.related_path_ext(db::blocks::kIdxExtension),
             .key_factory = std::make_unique<KeyFactory>(),
-            .base_data_id = segment_path.step_range().to_block_num_range().start,
+            .base_data_id = step_converter.timestamp_from_step(segment_path.step_range().start),
         };
     }
 };

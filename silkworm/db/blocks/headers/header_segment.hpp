@@ -26,7 +26,7 @@ namespace silkworm::snapshots {
 
 void encode_word_from_header(Bytes& word, const BlockHeader& header);
 void decode_word_into_header(ByteView word, BlockHeader& header);
-void check_sanity_of_header_with_metadata(const BlockHeader& header, BlockNumRange block_num_range);
+void check_sanity_of_header_with_metadata(const BlockHeader& header, datastore::StepRange step_range);
 
 struct HeaderSegmentWordEncoder : public Encoder {
     BlockHeader value;
@@ -53,7 +53,7 @@ struct HeaderSegmentWordDecoder : public Decoder {
     }
 
     void check_sanity_with_metadata(const SnapshotPath& path) override {
-        check_sanity_of_header_with_metadata(value, path.step_range().to_block_num_range());
+        check_sanity_of_header_with_metadata(value, path.step_range());
     }
 };
 

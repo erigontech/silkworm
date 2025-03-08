@@ -26,6 +26,7 @@
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 #include "../schema_config.hpp"
+#include "../step_block_num_converter.hpp"
 #include "txn_index.hpp"
 #include "txs_and_bodies_query.hpp"
 
@@ -51,7 +52,8 @@ class TransactionToBlockIndex {
     static IndexBuilder make(
         SnapshotPath bodies_segment_path,
         SnapshotPath segment_path) {
-        BlockNum first_block_num = segment_path.step_range().to_block_num_range().start;
+        auto step_converter = db::blocks::kStepToBlockNumConverter;
+        BlockNum first_block_num = step_converter.timestamp_from_step(segment_path.step_range().start);
         return make(
             std::move(bodies_segment_path),
             std::nullopt,
@@ -77,7 +79,8 @@ class TransactionToBlockIndex {
         std::optional<MemoryMappedRegion> bodies_segment_region,
         SnapshotPath segment_path,
         std::optional<MemoryMappedRegion> segment_region) {
-        BlockNum first_block_num = segment_path.step_range().to_block_num_range().start;
+        auto step_converter = db::blocks::kStepToBlockNumConverter;
+        BlockNum first_block_num = step_converter.timestamp_from_step(segment_path.step_range().start);
         return make(
             std::move(bodies_segment_path),
             bodies_segment_region,

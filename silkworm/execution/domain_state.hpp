@@ -27,6 +27,7 @@
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/data_store.hpp>
+#include <silkworm/db/datastore/common/step.hpp>
 #include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/execution/remote_state.hpp>
 
@@ -112,6 +113,8 @@ class DomainState : public State {
     void unwind_state_changes(BlockNum /*block_num*/) override {}
 
   private:
+    datastore::Step current_step() const;
+
     TxnId txn_id_;
     datastore::kvdb::RWTxn& tx_;
     datastore::kvdb::DatabaseRef& database_;

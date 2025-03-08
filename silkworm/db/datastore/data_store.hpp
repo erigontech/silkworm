@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <map>
 #include <memory>
 
 #include "common/entity_name.hpp"
@@ -30,8 +29,8 @@ class DataStore {
   public:
     DataStore(
         Schema schema,
-        std::map<EntityName, std::unique_ptr<kvdb::Database>> databases,
-        std::map<EntityName, std::unique_ptr<snapshots::SnapshotRepository>> repositories)
+        EntityMap<std::unique_ptr<kvdb::Database>> databases,
+        EntityMap<std::unique_ptr<snapshots::SnapshotRepository>> repositories)
         : schema_{std::move(schema)},
           databases_{std::move(databases)},
           repositories_{std::move(repositories)} {}
@@ -44,8 +43,8 @@ class DataStore {
 
   private:
     Schema schema_;
-    std::map<EntityName, std::unique_ptr<kvdb::Database>> databases_;
-    std::map<EntityName, std::unique_ptr<snapshots::SnapshotRepository>> repositories_;
+    EntityMap<std::unique_ptr<kvdb::Database>> databases_;
+    EntityMap<std::unique_ptr<snapshots::SnapshotRepository>> repositories_;
 };
 
 }  // namespace silkworm::datastore

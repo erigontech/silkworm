@@ -19,19 +19,36 @@
 #include <string>
 #include <string_view>
 
+#include <absl/container/flat_hash_map.h>
+
 namespace silkworm::datastore {
 
 struct EntityName {
     const std::string_view name;
 
-    friend bool operator==(const EntityName&, const EntityName&) = default;
-
-    bool operator<(const EntityName& other) const { return this->name < other.name; }
-    bool operator<=(const EntityName& other) const { return this->name <= other.name; }
-    bool operator>(const EntityName& other) const { return this->name > other.name; }
-    bool operator>=(const EntityName& other) const { return this->name >= other.name; }
+    friend bool operator==(const EntityName& lhs, const EntityName& rhs) {
+        return lhs.name.data() == rhs.name.data();
+    }
+    friend bool operator!=(const EntityName& lhs, const EntityName& rhs) {
+        return lhs.name.data() != rhs.name.data();
+    }
 
     std::string to_string() const { return std::string{name}; }
 };
 
+template <typename TValue>
+using EntityMap = absl::flat_hash_map<EntityName, TValue, std::hash<EntityName>>;
+
 }  // namespace silkworm::datastore
+
+namespace std {
+
+//! for using EntityName as a key of std::unordered_map
+template <>
+struct hash<silkworm::datastore::EntityName> {
+    size_t operator()(const silkworm::datastore::EntityName& value) const noexcept {
+        return reinterpret_cast<uintptr_t>(value.name.data());
+    }
+};
+
+}  // namespace std

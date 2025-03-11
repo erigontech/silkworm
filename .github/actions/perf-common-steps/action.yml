@@ -144,7 +144,7 @@ runs:
                 cd ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/
                 python3 $ERIGON_QA_PATH/test_system/qa-tests/rpc-tests/perf_hdr_analysis.py \
                   --test_name ${servers[i-1]}-$method \
-                  --input_file ./${servers[i-1]}-$method-result.json.json \
+                  --input_file ./${servers[i-1]}-$method-result.json \
                   --output_file ./${servers[i-1]}-${method}-latency_hdr_analysis.pdf                                    
              else
                 failed_test=1

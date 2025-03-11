@@ -1138,19 +1138,8 @@ Task<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& reque
     co_await tx->close();  // RAII not (yet) available with coroutines
 }
 
-//! The current supported version of the Otterscan API
-static constexpr int kCurrentApiLevel{8};
-
-bool first_time = true;
-silkworm::ChainConfig global_chain_config;
-
 // https://eth.wiki/json-rpc/API#eth_call
 Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::string& reply) {
-#ifdef notdef
-    make_glaze_json_null_content(request, reply);
-    co_return;
-#endif
-
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILK_ERROR << error_msg << request.dump();
@@ -1182,10 +1171,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
     try {
         const auto chain_storage{tx->create_storage()};
         rpc::BlockReader block_reader{*chain_storage, *tx};
-        if (first_time) {
-            global_chain_config = co_await chain_storage->read_chain_config();
-            first_time = false;
-        }
+        auto chain_config = co_await chain_storage->read_chain_config();
         const auto [block_num, is_latest_block] = co_await block_reader.get_block_num(block_id, /*latest_required=*/true);
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
@@ -1205,7 +1191,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
         }
 
         const auto execution_result = co_await EVMExecutor::call(
-            global_chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&state_factory](auto& io_executor, std::optional<TxnId> curr_txn_id, auto& storage) {
+            chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&state_factory](auto& io_executor, std::optional<TxnId> curr_txn_id, auto& storage) {
                 return state_factory.create_state(io_executor, storage, curr_txn_id);
             },
             /* tracers */ {}, /* refund */ true, /* gas_bailout */ false, accounts_overrides);

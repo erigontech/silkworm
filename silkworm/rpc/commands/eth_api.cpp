@@ -1171,7 +1171,7 @@ Task<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, std::s
     try {
         const auto chain_storage{tx->create_storage()};
         rpc::BlockReader block_reader{*chain_storage, *tx};
-        auto chain_config = co_await chain_storage->read_chain_config();
+        const auto chain_config = co_await chain_storage->read_chain_config();
         const auto [block_num, is_latest_block] = co_await block_reader.get_block_num(block_id, /*latest_required=*/true);
         tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 

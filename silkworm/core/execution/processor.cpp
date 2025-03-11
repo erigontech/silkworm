@@ -303,8 +303,10 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
     uint64_t gas_left{result.gas_left};
     uint64_t gas_used{txn.gas_limit - result.gas_left};
 
+    uint64_t gas_refund = 0;
     if (refund && !evm().bailout) {
-        gas_used = txn.gas_limit - refund_gas(txn, effective_gas_price, result.gas_left, result.gas_refund);
+        gas_refund = refund_gas(txn, effective_gas_price, result.gas_left, result.gas_refund) - result.gas_left;
+        gas_used = txn.gas_limit - (result.gas_left + gas_refund);
         gas_left = txn.gas_limit - gas_used;
     }
 
@@ -321,7 +323,7 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
 
     evm_.remove_tracers();
 
-    return {ValidationResult::kOk, result.status, gas_left, gas_used, result.data, result.error_message};
+    return {ValidationResult::kOk, result.status, gas_left, gas_refund, gas_used, result.data, result.error_message};
 }
 
 void ExecutionProcessor::reset() {

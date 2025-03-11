@@ -92,7 +92,7 @@ class EstimateGasOracle {
     EstimateGasOracle(const EstimateGasOracle&) = delete;
     EstimateGasOracle& operator=(const EstimateGasOracle&) = delete;
 
-    Task<intx::uint256> estimate_gas(const Call& call, const silkworm::Block& latest_block, std::optional<TxnId> txn_id, std::optional<BlockNum> block_num_for_gas_limit = {});
+    Task<intx::uint256> estimate_gas(const Call& call, const silkworm::Block& latest_block, std::optional<TxnId> txn_id);
 
   protected:
     virtual ExecutionResult try_execution(EVMExecutor& executor, const silkworm::Transaction& transaction);

@@ -16,6 +16,7 @@
 
 #include "state_cache.hpp"
 
+#include <chrono>
 #include <limits>
 #include <memory>
 #include <string>
@@ -38,6 +39,7 @@
 
 namespace silkworm::db::kv::api {
 
+using namespace std::chrono_literals;
 using namespace evmc::literals;  // NOLINT(build/namespaces_literals)
 
 using testing::_;
@@ -272,7 +274,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view returns empty vie
 }
 
 TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[db][kv][api][state_cache]") {
-    CoherentCacheConfig config{.block_wait_duration{1}};  // keep the block waiting as short as possible
+    CoherentCacheConfig config{.block_wait_duration{1ms}};  // keep the block waiting as short as possible
     CoherentStateCache cache{config};
 
     test_util::MockTransaction txn;
@@ -434,7 +436,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[db][
 }
 
 TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view two views", "[db][kv][api][state_cache]") {
-    CoherentCacheConfig config{.block_wait_duration{1}};  // keep the block waiting as short as possible
+    CoherentCacheConfig config{.block_wait_duration{1ms}};  // keep the block waiting as short as possible
     CoherentStateCache cache{config};
 
     test_util::MockTransaction txn1, txn2;
@@ -498,7 +500,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view two views", "[db]
 }
 
 TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block exceed max views", "[db][kv][api][state_cache]") {
-    const CoherentCacheConfig config{.block_wait_duration{1}};  // keep the block waiting as short as possible
+    const CoherentCacheConfig config{.block_wait_duration{1ms}};  // keep the block waiting as short as possible
     const auto max_views{config.max_views};
     CoherentStateCache cache{config};
 
@@ -541,7 +543,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block exceed max ke
         .wait_for_new_block = true,
         .max_state_keys = kMaxKeys,
         .max_code_keys = kMaxKeys,
-        .block_wait_duration = std::chrono::milliseconds{1}};
+        .block_wait_duration = 1ms};
     CoherentStateCache cache{config};
 
     // Create as many data and code keys as the maximum allowed number
@@ -562,7 +564,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block exceed max ke
 }
 
 TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block clear the cache on view ID wrapping", "[db][kv][api][state_cache]") {
-    const CoherentCacheConfig config{.block_wait_duration{1}};  // keep the block waiting as short as possible
+    const CoherentCacheConfig config{.block_wait_duration{1ms}};  // keep the block waiting as short as possible
     const auto max_views{config.max_views};
     CoherentStateCache cache{config};
 

@@ -283,153 +283,150 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[db][
         }));
 
     SECTION("single upsert change batch => search hit") {
-        cache.on_new_block(
-            new_batch_with_upsert(kTestStateVersionId0, kTestBlockNum + 0, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
-        cache.on_new_block(
-            new_batch_with_upsert(kTestStateVersionId1, kTestBlockNum + 1, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
-        CHECK(cache.latest_data_size() == 1);
+        spawn_and_wait([&]() -> Task<void> {
+            cache.on_new_block(
+                new_batch_with_upsert(kTestStateVersionId0, kTestBlockNum + 0, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
+            cache.on_new_block(
+                new_batch_with_upsert(kTestStateVersionId1, kTestBlockNum + 1, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
+            CHECK(cache.latest_data_size() == 1);
 
-        CHECK(spawn_and_wait(get_upsert(cache, txn, kTestAddress1)) == kTestAccountData);
+            CHECK((co_await get_upsert(cache, txn, kTestAddress1)) == kTestAccountData);
 
-        CHECK(cache.state_hit_count() == 1);
-        CHECK(cache.state_miss_count() == 0);
-        CHECK(cache.state_key_count() == 1);
-        CHECK(cache.state_eviction_count() == 1);
+            CHECK(cache.state_hit_count() == 1);
+            CHECK(cache.state_miss_count() == 0);
+            CHECK(cache.state_key_count() == 1);
+            CHECK(cache.state_eviction_count() == 1);
+        }());
     }
 
     SECTION("single upsert+code change batch => double search hit") {
-        auto batch = new_batch_with_upsert_code(kTestStateVersionId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
-                                                /*unwind=*/false, /*num_changes=*/1);
-        cache.on_new_block(batch);
-        CHECK(cache.latest_data_size() == 1);
-        CHECK(cache.latest_code_size() == 1);
+        spawn_and_wait([&]() -> Task<void> {
+            auto batch = new_batch_with_upsert_code(
+                kTestStateVersionId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs, /*unwind=*/false, /*num_changes=*/1);
+            cache.on_new_block(batch);
+            CHECK(cache.latest_data_size() == 1);
+            CHECK(cache.latest_code_size() == 1);
 
-        CHECK(spawn_and_wait(get_upsert(cache, txn, kTestAddress1)) == kTestAccountData);
+            CHECK((co_await get_upsert(cache, txn, kTestAddress1)) == kTestAccountData);
 
-        CHECK(cache.state_hit_count() == 1);
-        CHECK(cache.state_miss_count() == 0);
-        CHECK(cache.state_key_count() == 1);
-        CHECK(cache.state_eviction_count() == 0);
+            CHECK(cache.state_hit_count() == 1);
+            CHECK(cache.state_miss_count() == 0);
+            CHECK(cache.state_key_count() == 1);
+            CHECK(cache.state_eviction_count() == 0);
 
-        CHECK(spawn_and_wait(get_code(cache, txn, kTestCode1)) == kTestCode1);
+            CHECK((co_await get_code(cache, txn, kTestCode1)) == kTestCode1);
 
-        CHECK(cache.code_hit_count() == 1);
-        CHECK(cache.code_miss_count() == 0);
-        CHECK(cache.code_key_count() == 1);
-        CHECK(cache.code_eviction_count() == 0);
+            CHECK(cache.code_hit_count() == 1);
+            CHECK(cache.code_miss_count() == 0);
+            CHECK(cache.code_key_count() == 1);
+            CHECK(cache.code_eviction_count() == 0);
+        }());
     }
 
     SECTION("single delete change batch => search hit") {
-        auto batch = new_batch_with_delete(kTestStateVersionId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
-                                           /*unwind=*/false);
-        cache.on_new_block(batch);
-        CHECK(cache.latest_data_size() == 1);
+        spawn_and_wait([&]() -> Task<void> {
+            auto batch = new_batch_with_delete(
+                kTestStateVersionId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs, /*unwind=*/false);
+            cache.on_new_block(batch);
+            CHECK(cache.latest_data_size() == 1);
 
-        const std::unique_ptr<StateView> view = spawn_and_wait(cache.get_view(txn));
-        REQUIRE(view != nullptr);
-        const Bytes address_key{kTestAddress1.bytes, kAddressLength};
-        const auto value1 = spawn_and_wait(view->get(address_key));
-        CHECK(value1.has_value());
-        if (value1) {
+            std::unique_ptr<StateView> view = co_await cache.get_view(txn);
+            REQUIRE(view);
+            const Bytes address_key{kTestAddress1.bytes, kAddressLength};
+            const auto value1 = co_await view->get(address_key);
+            REQUIRE(value1);
             CHECK(value1->empty());
-        }
-        CHECK(cache.state_hit_count() == 1);
-        CHECK(cache.state_miss_count() == 0);
-        CHECK(cache.state_key_count() == 1);
-        CHECK(cache.state_eviction_count() == 0);
+            CHECK(cache.state_hit_count() == 1);
+            CHECK(cache.state_miss_count() == 0);
+            CHECK(cache.state_key_count() == 1);
+            CHECK(cache.state_eviction_count() == 0);
+        }());
     }
 
     SECTION("single storage change batch => search hit") {
-        auto batch = new_batch_with_storage(kTestStateVersionId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
-                                            /*unwind=*/false, /*num_storage_changes=*/1);
-        cache.on_new_block(batch);
-        CHECK(cache.latest_data_size() == 1);
+        spawn_and_wait([&]() -> Task<void> {
+            auto batch = new_batch_with_storage(
+                kTestStateVersionId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs, /*unwind=*/false, /*num_storage_changes=*/1);
+            cache.on_new_block(batch);
+            CHECK(cache.latest_data_size() == 1);
 
-        const std::unique_ptr<StateView> view = spawn_and_wait(cache.get_view(txn));
-        REQUIRE(view != nullptr);
-        const auto storage_key1 = composite_storage_key(kTestAddress1, kTestIncarnation, kTestHashedLocation1.bytes);
-        const auto value = spawn_and_wait(view->get(storage_key1));
-        CHECK(value.has_value());
-        if (value) {
-            CHECK(*value == kTestStorageData1);
-        }
-        CHECK(cache.state_hit_count() == 1);
-        CHECK(cache.state_miss_count() == 0);
-        CHECK(cache.state_key_count() == 1);
-        CHECK(cache.state_eviction_count() == 0);
+            std::unique_ptr<StateView> view = co_await cache.get_view(txn);
+            REQUIRE(view);
+            const auto storage_key1 = composite_storage_key(kTestAddress1, kTestIncarnation, kTestHashedLocation1.bytes);
+            const auto value = co_await view->get(storage_key1);
+            REQUIRE(value == kTestStorageData1);
+            CHECK(cache.state_hit_count() == 1);
+            CHECK(cache.state_miss_count() == 0);
+            CHECK(cache.state_key_count() == 1);
+            CHECK(cache.state_eviction_count() == 0);
+        }());
     }
 
     SECTION("single storage change batch => search miss") {
-        auto batch = new_batch_with_storage(kTestStateVersionId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
-                                            /*unwind=*/false, /*num_storage_changes=*/1);
-        cache.on_new_block(batch);
-        CHECK(cache.latest_data_size() == 1);
+        spawn_and_wait([&]() -> Task<void> {
+            auto batch = new_batch_with_storage(
+                kTestStateVersionId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs, /*unwind=*/false, /*num_storage_changes=*/1);
+            cache.on_new_block(batch);
+            CHECK(cache.latest_data_size() == 1);
 
-        EXPECT_CALL(txn, get_latest(_))
-            .WillOnce(InvokeWithoutArgs([&]() -> Task<GetLatestResult> {
-                co_return GetLatestResult{.success = true, .value = kTestStorageData2};
-            }));
+            EXPECT_CALL(txn, get_latest(_))
+                .WillOnce(InvokeWithoutArgs([&]() -> Task<GetLatestResult> {
+                    co_return GetLatestResult{.success = true, .value = kTestStorageData2};
+                }));
 
-        const std::unique_ptr<StateView> view = spawn_and_wait(cache.get_view(txn));
-        REQUIRE(view != nullptr);
+            std::unique_ptr<StateView> view = co_await cache.get_view(txn);
+            REQUIRE(view);
 
-        const auto storage_key2 = composite_storage_key(kTestAddress1, kTestIncarnation, kTestHashedLocation2.bytes);
-        const auto value = spawn_and_wait(view->get(storage_key2));
-        CHECK(value.has_value());
-        if (value) {
-            CHECK(*value == kTestStorageData2);
-        }
-        CHECK(cache.state_hit_count() == 0);
-        CHECK(cache.state_miss_count() == 1);
-        CHECK(cache.state_key_count() == 1);
-        CHECK(cache.state_eviction_count() == 0);
+            const auto storage_key2 = composite_storage_key(kTestAddress1, kTestIncarnation, kTestHashedLocation2.bytes);
+            const auto value = co_await view->get(storage_key2);
+            REQUIRE(value == kTestStorageData2);
+            CHECK(cache.state_hit_count() == 0);
+            CHECK(cache.state_miss_count() == 1);
+            CHECK(cache.state_key_count() == 1);
+            CHECK(cache.state_eviction_count() == 0);
+        }());
     }
 
     SECTION("double storage change batch => double search hit") {
-        auto batch = new_batch_with_storage(kTestStateVersionId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
-                                            /*unwind=*/false, /*num_storage_changes=*/2);
-        cache.on_new_block(batch);
-        CHECK(cache.latest_data_size() == 2);
+        spawn_and_wait([&]() -> Task<void> {
+            auto batch = new_batch_with_storage(
+                kTestStateVersionId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs, /*unwind=*/false, /*num_storage_changes=*/2);
+            cache.on_new_block(batch);
+            CHECK(cache.latest_data_size() == 2);
 
-        const std::unique_ptr<StateView> view = spawn_and_wait(cache.get_view(txn));
-        REQUIRE(view != nullptr);
-        const auto storage_key1 = composite_storage_key(kTestAddress1, kTestIncarnation, kTestHashedLocation1.bytes);
-        const auto value1 = spawn_and_wait(view->get(storage_key1));
-        CHECK(value1.has_value());
-        if (value1) {
-            CHECK(*value1 == kTestStorageData1);
-        }
-        const auto storage_key2 = composite_storage_key(kTestAddress1, kTestIncarnation, kTestHashedLocation2.bytes);
-        const auto value2 = spawn_and_wait(view->get(storage_key2));
-        CHECK(value2.has_value());
-        if (value2) {
-            CHECK(*value2 == kTestStorageData2);
-        }
-        CHECK(cache.state_hit_count() == 2);
-        CHECK(cache.state_miss_count() == 0);
-        CHECK(cache.state_key_count() == 2);
-        CHECK(cache.state_eviction_count() == 0);
+            std::unique_ptr<StateView> view = co_await cache.get_view(txn);
+            REQUIRE(view);
+            const auto storage_key1 = composite_storage_key(kTestAddress1, kTestIncarnation, kTestHashedLocation1.bytes);
+            const auto value1 = co_await view->get(storage_key1);
+            REQUIRE(value1 == kTestStorageData1);
+            const auto storage_key2 = composite_storage_key(kTestAddress1, kTestIncarnation, kTestHashedLocation2.bytes);
+            const auto value2 = co_await view->get(storage_key2);
+            REQUIRE(value2 == kTestStorageData2);
+            CHECK(cache.state_hit_count() == 2);
+            CHECK(cache.state_miss_count() == 0);
+            CHECK(cache.state_key_count() == 2);
+            CHECK(cache.state_eviction_count() == 0);
+        }());
     }
 
     SECTION("single code change batch => search hit") {
-        auto batch = new_batch_with_code(kTestStateVersionId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs,
-                                         /*unwind=*/false, /*num_code_changes=*/1);
-        cache.on_new_block(batch);
-        CHECK(cache.latest_code_size() == 1);
+        spawn_and_wait([&]() -> Task<void> {
+            auto batch = new_batch_with_code(
+                kTestStateVersionId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs, /*unwind=*/false, /*num_code_changes=*/1);
+            cache.on_new_block(batch);
+            CHECK(cache.latest_code_size() == 1);
 
-        const std::unique_ptr<StateView> view = spawn_and_wait(cache.get_view(txn));
-        REQUIRE(view != nullptr);
-        const ethash::hash256 code_hash{keccak256(kTestCode1)};
-        const Bytes code_hash_key{code_hash.bytes, kHashLength};
-        const auto value = spawn_and_wait(view->get_code(code_hash_key));
-        CHECK(value.has_value());
-        if (value) {
-            CHECK(*value == kTestCode1);
-        }
-        CHECK(cache.code_hit_count() == 1);
-        CHECK(cache.code_miss_count() == 0);
-        CHECK(cache.code_key_count() == 1);
-        CHECK(cache.code_eviction_count() == 0);
+            std::unique_ptr<StateView> view = co_await cache.get_view(txn);
+            REQUIRE(view);
+            const ethash::hash256 code_hash{keccak256(kTestCode1)};
+            const Bytes code_hash_key{code_hash.bytes, kHashLength};
+            const auto value = co_await view->get_code(code_hash_key);
+            REQUIRE(value == kTestCode1);
+            CHECK(cache.code_hit_count() == 1);
+            CHECK(cache.code_miss_count() == 0);
+            CHECK(cache.code_key_count() == 1);
+            CHECK(cache.code_eviction_count() == 0);
+        }());
     }
 }
 

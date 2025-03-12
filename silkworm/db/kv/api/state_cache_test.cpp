@@ -272,7 +272,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view returns empty vie
     CHECK(spawn_and_wait(cache.get_view(txn))->empty());
 }
 
-TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[db][kv][api][state_cache]") {
+TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[db][kv][api][state_cache][.]") {
     CoherentCacheConfig config{.block_wait_duration{1ms}};  // keep the block waiting as short as possible
     CoherentStateCache cache{config};
 

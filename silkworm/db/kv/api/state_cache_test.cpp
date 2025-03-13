@@ -354,13 +354,13 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[db][
         CHECK(cache.state_eviction_count() == 0);
     }
 
-    /*SECTION("single storage change batch => search miss") {
+    SECTION("single storage change batch => search miss") {
         auto batch = new_batch_with_storage(
-            kTestStateVersionId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs, false, 1);
+            kTestStateVersionId0, kTestBlockNum, kTestBlockHash, kTestZeroTxs, /*unwind=*/false, /*num_storage_changes=*/1);
         cache.on_new_block(batch);
         CHECK(cache.latest_data_size() == 1);
 
-        EXPECT_CALL(txn, get_latest(_))
+        /*EXPECT_CALL(txn, get_latest(_))
             .WillOnce(InvokeWithoutArgs([&]() -> Task<GetLatestResult> {
                 co_return GetLatestResult{.success = true, .value = kTestStorageData2};
             }));
@@ -374,8 +374,8 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[db][
         CHECK(cache.state_hit_count() == 0);
         CHECK(cache.state_miss_count() == 1);
         CHECK(cache.state_key_count() == 1);
-        CHECK(cache.state_eviction_count() == 0);
-    }*/
+        CHECK(cache.state_eviction_count() == 0);*/
+    }
 
     SECTION("double storage change batch => double search hit") {
         auto batch = new_batch_with_storage(

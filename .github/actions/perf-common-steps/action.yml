@@ -227,7 +227,7 @@ runs:
       run: |
         set +e # Disable exit on error
         open_change_points=0
-        python3 $ERIGON_QA_PATH/test_system/qa-tests/change-points/change_point_analysis.py
+        python3 $ERIGON_QA_PATH/test_system/qa-tests/change-points/change_point_analysis.py --repo silkworm
         open_change_points=$?
         cp change_point_analysis.pdf $past_test_dir
         if [ $open_change_points -ne 0 ]; then

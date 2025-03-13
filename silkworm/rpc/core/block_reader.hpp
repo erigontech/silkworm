@@ -24,6 +24,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/types/block.hpp>
@@ -43,8 +44,10 @@ inline constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
 
 class BlockReader {
   public:
-    explicit BlockReader(const db::chain::ChainStorage& chain_storage, db::kv::api::Transaction& transaction)
-        : chain_storage_(chain_storage), transaction_(transaction) {}
+    explicit BlockReader(const db::chain::ChainStorage& chain_storage,
+                         db::kv::api::Transaction& transaction,
+                         db::kv::api::StateCache* state_cache)
+        : chain_storage_(chain_storage), transaction_(transaction), state_cache_(state_cache) {}
 
     BlockReader(const BlockReader&) = delete;
     BlockReader& operator=(const BlockReader&) = delete;
@@ -83,6 +86,7 @@ class BlockReader {
     Task<BlockNum> get_forkchoice_block_num(const char* block_hash_tag) const;
     const db::chain::ChainStorage& chain_storage_;
     db::kv::api::Transaction& transaction_;
+    db::kv::api::StateCache* state_cache_;
 };
 
 }  // namespace silkworm::rpc

@@ -54,18 +54,17 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
 
     try {
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
 
-        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, state_cache_, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, 100, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
         const bool is_latest_block = co_await block_reader.is_latest_block_num(block_with_hash->block.header.number);
-        tx->set_state_cache_enabled(is_latest_block);
 
-        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, is_latest_block ? state_cache_ : nullptr};
         const auto result = co_await executor.trace_call(block_with_hash->block, call, config, is_latest_block);
 
         if (result.pre_check_error) {
@@ -103,18 +102,17 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
 
     try {
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
 
-        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, state_cache_, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, kInvalidParams, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
         const bool is_latest_block = co_await block_reader.is_latest_block_num(block_with_hash->block.header.number);
-        tx->set_state_cache_enabled(is_latest_block);
 
-        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, is_latest_block ? state_cache_ : nullptr};
         const auto result = co_await executor.trace_calls(block_with_hash->block, trace_calls, is_latest_block);
 
         if (result.pre_check_error) {
@@ -192,9 +190,8 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
     auto tx = co_await database_->begin_transaction();
 
     try {
-        tx->set_state_cache_enabled(/*cache_enabled=*/true);
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};  // always at latest block
 
         const auto block_num = co_await block_reader.get_latest_block_num();
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
@@ -204,7 +201,7 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
             co_return;
         }
 
-        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, state_cache_};
         const auto result = co_await executor.trace_transaction(block_with_hash->block, transaction, config);
 
         if (result.pre_check_error) {
@@ -242,13 +239,12 @@ Task<void> TraceRpcApi::handle_trace_replay_block_transactions(const nlohmann::j
 
     try {
         const auto chain_storage = tx->create_storage();
-        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, state_cache_, block_num_or_hash);
         if (block_with_hash) {
-            rpc::BlockReader block_reader{*chain_storage, *tx};
+            rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
             const bool is_latest_block = co_await block_reader.is_latest_block_num(block_with_hash->block.header.number);
-            tx->set_state_cache_enabled(is_latest_block);
 
-            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
+            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, is_latest_block ? state_cache_ : nullptr};
             const auto result = co_await executor.trace_block_transactions(block_with_hash->block, config, is_latest_block);
             reply = make_json_content(request, result);
         } else {
@@ -290,7 +286,7 @@ Task<void> TraceRpcApi::handle_trace_replay_transaction(const nlohmann::json& re
             oss << "transaction " << silkworm::to_hex(transaction_hash, true) << " not found";
             reply = make_json_error(request, kServerError, oss.str());
         } else {
-            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
+            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, state_cache_};
             const auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash->block, tx_with_block->transaction, config);
 
             if (result.pre_check_error) {
@@ -328,17 +324,16 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
 
     try {
         const auto chain_storage = tx->create_storage();
-        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, state_cache_, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, kInvalidParams, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        rpc::BlockReader block_reader{*chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
         const bool is_latest_block = co_await block_reader.is_latest_block_num(block_with_hash->block.header.number);
-        tx->set_state_cache_enabled(is_latest_block);
 
-        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, is_latest_block ? state_cache_ : nullptr};
         trace::Filter filter;
         const auto result = co_await executor.trace_block(*block_with_hash, filter, nullptr /* json::Stream */, is_latest_block);
         reply = make_json_content(request, result);
@@ -378,7 +373,7 @@ Task<void> TraceRpcApi::handle_trace_filter(const nlohmann::json& request, json:
     try {
         const auto chain_storage = tx->create_storage();
 
-        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, state_cache_};
 
         co_await executor.trace_filter(trace_filter, *chain_storage, stream);
     } catch (const std::exception& e) {
@@ -432,7 +427,7 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
         if (!tx_with_block) {
             reply = make_json_content(request);
         } else {
-            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
+            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, state_cache_};
             const auto result = co_await executor.trace_transaction(*(tx_with_block->block_with_hash), tx_with_block->transaction, /* gas_bailout */ false);
 
             uint16_t index = indices[0];
@@ -477,7 +472,7 @@ Task<void> TraceRpcApi::handle_trace_transaction(const nlohmann::json& request, 
         if (!tx_with_block) {
             reply = make_json_content(request);
         } else {
-            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
+            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, state_cache_};
             auto result = co_await executor.trace_transaction(*(tx_with_block->block_with_hash), tx_with_block->transaction, /* gas_bailout */ false);
             reply = make_json_content(request, result);
         }

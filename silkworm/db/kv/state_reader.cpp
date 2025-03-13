@@ -28,13 +28,16 @@
 
 namespace silkworm::db::kv {
 
-StateReader::StateReader(kv::api::Transaction& tx, std::optional<TxnId> txn_id) : tx_(tx), txn_number_(txn_id) {
+StateReader::StateReader(api::Transaction& tx, std::optional<TxnId> txn_id, api::StateCache* state_cache)
+    : tx_(tx), txn_number_(txn_id), state_cache_(state_cache) {
+    ensure(txn_number_ || state_cache_, "StateReader: state_cache must be provided if txn_number is not (latest)");
 }
 
 Task<std::optional<Account>> StateReader::read_account(const evmc::address& address) const {
     api::PointResult result;
 
     if (!txn_number_) {
+        // TODO(canepat) use state_cache
         db::kv::api::GetLatestRequest request{
             .table = table::kAccountDomain,
             .key = db::account_domain_key(address)};
@@ -68,6 +71,7 @@ Task<evmc::bytes32> StateReader::read_storage(const evmc::address& address,
     api::PointResult result;
 
     if (!txn_number_) {
+        // TODO(canepat) use state_cache
         db::kv::api::GetLatestRequest request{
             .table = table::kStorageDomain,
             .key = db::storage_domain_key(address, location_hash)};
@@ -95,6 +99,7 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
     api::PointResult result;
 
     if (!txn_number_) {
+        // TODO(canepat) use state_cache
         db::kv::api::GetLatestRequest request{
             .table = table::kCodeDomain,
             .key = db::code_domain_key(address)};

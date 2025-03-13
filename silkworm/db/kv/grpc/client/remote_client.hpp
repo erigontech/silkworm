@@ -27,7 +27,6 @@
 
 #include "../../api/client.hpp"
 #include "../../api/service.hpp"
-#include "../../api/state_cache.hpp"
 
 namespace silkworm::db::kv::grpc::client {
 
@@ -37,13 +36,11 @@ struct RemoteClient : public api::Client {
     RemoteClient(
         const rpc::ChannelFactory& create_channel,
         agrpc::GrpcContext& grpc_context,
-        api::StateCache* state_cache,
         chain::Providers providers,
         std::function<Task<void>()> on_disconnect = []() -> Task<void> { co_return; });
     RemoteClient(
         std::unique_ptr<::remote::KV::StubInterface> stub,
         agrpc::GrpcContext& grpc_context,
-        api::StateCache* state_cache,
         chain::Providers providers,
         std::function<Task<void>()> on_disconnect = []() -> Task<void> { co_return; });
     ~RemoteClient() override;

@@ -63,7 +63,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
 
     try {
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
 
         const auto block_num = co_await block_reader.get_block_num(block_id);
         SILK_DEBUG << "read account with address: " << address << " block number: " << block_num;
@@ -73,7 +73,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
             txn_number = co_await tx->user_txn_id_at(block_num);
         }
 
-        StateReader state_reader{*tx, txn_number};
+        StateReader state_reader{*tx, txn_number, state_cache_};
         std::optional<Account> account = co_await state_reader.read_account(address);
         if (!account) throw std::domain_error{"account not found"};
 

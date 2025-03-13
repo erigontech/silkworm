@@ -297,17 +297,16 @@ void Daemon::add_shared_services() {
 std::unique_ptr<db::kv::api::Client> Daemon::make_kv_client(rpc::ClientContext& context, bool remote) {
     auto& ioc = *context.ioc();
     auto& grpc_context = *context.grpc_context();
-    auto* state_cache{must_use_shared_service<db::kv::api::StateCache>(ioc)};
     auto* backend{must_use_private_service<rpc::ethbackend::BackEnd>(ioc)};
     if (remote) {
         return std::make_unique<db::kv::grpc::client::RemoteClient>(
-            create_channel_, grpc_context, state_cache, ethdb::kv::make_backend_providers(backend));
+            create_channel_, grpc_context, ethdb::kv::make_backend_providers(backend));
     }
     // TODO(canepat) finish implementation and clean-up composition of objects here
     db::kv::api::StateChangeRunner runner{ioc.get_executor()};
     db::kv::api::ServiceRouter router{runner.state_changes_calls_channel()};
     return std::make_unique<db::kv::api::DirectClient>(
-        std::make_shared<db::kv::api::DirectService>(router, *data_store_, state_cache));
+        std::make_shared<db::kv::api::DirectService>(router, *data_store_));
 }
 
 void Daemon::add_execution_services(const std::vector<std::shared_ptr<engine::ExecutionEngine>>& engines) {

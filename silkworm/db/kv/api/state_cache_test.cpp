@@ -363,12 +363,12 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[db][
         /*EXPECT_CALL(txn, get_latest(_))
             .WillOnce(InvokeWithoutArgs([&]() -> Task<GetLatestResult> {
                 co_return GetLatestResult{.success = true, .value = kTestStorageData2};
-            }));
+            }));*/
 
         std::unique_ptr<StateView> view = spawn_and_wait(cache.get_view(txn));
         REQUIRE(view);
 
-        const auto storage_key2 = composite_storage_key(kTestAddress1, kTestIncarnation, kTestHashedLocation2.bytes);
+        /*const auto storage_key2 = composite_storage_key(kTestAddress1, kTestIncarnation, kTestHashedLocation2.bytes);
         const auto value = spawn_and_wait(view->get(storage_key2));
         REQUIRE(value == kTestStorageData2);
         CHECK(cache.state_hit_count() == 0);

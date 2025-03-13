@@ -301,12 +301,12 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
     const auto result = evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
 
     uint64_t gas_left{result.gas_left};
-    uint64_t gas_used{txn.gas_limit - result.gas_left};
-
     if (refund && !evm().bailout) {
-        gas_used = txn.gas_limit - refund_gas(txn, effective_gas_price, result.gas_left, result.gas_refund);
-        gas_left = txn.gas_limit - gas_used;
+        // Apply the gas refund.
+        gas_left = refund_gas(txn, effective_gas_price, result.gas_left, result.gas_refund);
     }
+
+    const auto gas_used = txn.gas_limit - gas_left;
 
     // Reward the fee recipient
     const intx::uint256 priority_fee_per_gas{txn.max_fee_per_gas >= base_fee_per_gas ? txn.priority_fee_per_gas(base_fee_per_gas)

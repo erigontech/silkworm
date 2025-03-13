@@ -34,6 +34,10 @@ namespace protocol {
     // and EIP-3860 "Limit and meter initcode".
     intx::uint128 intrinsic_gas(const UnsignedTransaction& txn, evmc_revision rev) noexcept;
 
+    // Returns the floor cost (valid since Pectra)
+    // Refer to: EIP-7623: Increase calldata cost
+    uint64_t floor_cost(const UnsignedTransaction& txn) noexcept;
+
 }  // namespace protocol
 
 }  // namespace silkworm

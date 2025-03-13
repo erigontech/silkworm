@@ -31,6 +31,8 @@
 
 namespace silkworm {
 
+constexpr auto kIsCodeDelegation = false;
+
 TEST_CASE("Value transfer", "[core][execution]") {
     Block block{};
     block.header.number = 10336006;
@@ -79,7 +81,7 @@ TEST_CASE("Destruct and recreate", "[core][execution]") {
         state.clear_journal_and_substate();
         REQUIRE(state.get_original_storage(to, {}) == evmc::bytes32{});
         REQUIRE(state.get_current_storage(to, {}) == evmc::bytes32{});
-        state.create_contract(to);
+        state.create_contract(to, kIsCodeDelegation);
         state.set_storage(to, {}, evmc::bytes32{1});
         REQUIRE(state.get_current_storage(to, {}) == evmc::bytes32{1});
         state.finalize_transaction(EVMC_SHANGHAI);
@@ -108,7 +110,7 @@ TEST_CASE("Destruct and recreate", "[core][execution]") {
         state.clear_journal_and_substate();
         CHECK(state.get_original_storage(to, {}) == evmc::bytes32{});
         CHECK(state.get_current_storage(to, {}) == evmc::bytes32{});
-        state.create_contract(to);
+        state.create_contract(to, kIsCodeDelegation);
         CHECK(state.get_current_storage(to, {}) == evmc::bytes32{});
         state.finalize_transaction(EVMC_SHANGHAI);
         state.write_to_db(2);
@@ -143,7 +145,7 @@ TEST_CASE("Destruct and recreate", "[core][execution]") {
             state.clear_journal_and_substate();
             CHECK(state.get_original_storage(to, {}) == evmc::bytes32{});
             CHECK(state.get_current_storage(to, {}) == evmc::bytes32{});
-            state.create_contract(to);
+            state.create_contract(to, kIsCodeDelegation);
             CHECK(state.get_original_storage(to, {}) == evmc::bytes32{});
             CHECK(state.get_current_storage(to, {}) == evmc::bytes32{});
             state.finalize_transaction(EVMC_SHANGHAI);
@@ -169,7 +171,7 @@ TEST_CASE("Create contract, destruct and then recreate", "[core][execution]") {
 
         // First, create an empty contract in one block
         REQUIRE((state.get_nonce(to) == 0 && state.get_code_hash(to) == kEmptyHash));
-        state.create_contract(to);
+        state.create_contract(to, kIsCodeDelegation);
         state.set_code(to, *from_hex("30600155"));
         state.finalize_transaction(EVMC_SHANGHAI);
 
@@ -197,7 +199,7 @@ TEST_CASE("Create contract, destruct and then recreate", "[core][execution]") {
         IntraBlockState state{db};
 
         // Finally, recreate the contract in another block
-        state.create_contract(to);
+        state.create_contract(to, kIsCodeDelegation);
         state.set_code(to, *from_hex("30600255"));
         state.finalize_transaction(EVMC_SHANGHAI);
 
@@ -216,13 +218,13 @@ TEST_CASE("Create empty contract and recreate non-empty in same block", "[core][
 
     // First, create an empty contract in one transaction
     REQUIRE((state.get_nonce(to) == 0 && state.get_code_hash(to) == kEmptyHash));
-    state.create_contract(to);
+    state.create_contract(to, kIsCodeDelegation);
     state.finalize_transaction(EVMC_SHANGHAI);
 
     // Then, recreate it adding some code in another transaction
     state.clear_journal_and_substate();
     REQUIRE((state.get_nonce(to) == 0 && state.get_code_hash(to) == kEmptyHash));
-    state.create_contract(to);
+    state.create_contract(to, kIsCodeDelegation);
     state.set_code(to, *from_hex("30600055"));
     state.finalize_transaction(EVMC_SHANGHAI);
 

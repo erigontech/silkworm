@@ -56,19 +56,21 @@ static intx::uint256 fake_exponential(const intx::uint256& factor,
     return output / denominator;
 }
 
-intx::uint256 calc_blob_gas_price(uint64_t excess_blob_gas) {
+intx::uint256 calc_blob_gas_price(uint64_t excess_blob_gas, evmc_revision revision) {
+    // EIP-7691: Blob throughput increase
+    const auto price_update_fraction = revision >= EVMC_PRAGUE ? protocol::kBlobGasPriceUpdateFractionPrague : protocol::kBlobGasPriceUpdateFraction;
     return fake_exponential(
         protocol::kMinBlobGasPrice,
         excess_blob_gas,
-        protocol::kBlobGasPriceUpdateFraction);
+        price_update_fraction);
 }
 
 std::optional<intx::uint256> BlockHeader::blob_gas_price() const {
     if (!excess_blob_gas) {
         return std::nullopt;
     }
-
-    return calc_blob_gas_price(*excess_blob_gas);
+    const auto revision = requests_hash ? EVMC_PRAGUE : EVMC_CANCUN;
+    return calc_blob_gas_price(*excess_blob_gas, revision);
 }
 
 namespace rlp {

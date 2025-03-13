@@ -74,7 +74,7 @@ bool IntraBlockState::is_dead(const evmc::address& address) const noexcept {
     return obj->current->code_hash == kEmptyHash && obj->current->nonce == 0 && obj->current->balance == 0;
 }
 
-void IntraBlockState::create_contract(const evmc::address& address) noexcept {
+void IntraBlockState::create_contract(const evmc::address& address, bool is_code_delegation) noexcept {
     created_.insert(address);
     state::Object created{};
     created.current = Account{};
@@ -105,8 +105,11 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
         prev_incarnation = prev->current->previous_incarnation;
     }
 
-    created.current->incarnation = *prev_incarnation + 1;
-    created.current->previous_incarnation = *prev_incarnation;
+    // EIP-7702 Reincarnation works for accounts which are not delegated designations
+    if (!is_code_delegation && !delegated_designations_.contains(address)) {
+        created.current->incarnation = *prev_incarnation + 1;
+        created.current->previous_incarnation = *prev_incarnation;
+    }
 
     objects_[address] = created;
 
@@ -115,7 +118,10 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
         journal_.emplace_back(std::make_unique<state::StorageCreateDelta>(address));
     } else {
         journal_.emplace_back(std::make_unique<state::StorageWipeDelta>(address, it->second));
-        storage_.erase(address);
+        // EIP-7702 Storage cannot be cleared for delegated designations
+        if (!is_code_delegation && !delegated_designations_.contains(address)) {
+            storage_.erase(address);
+        }
     }
 }
 
@@ -159,7 +165,10 @@ bool IntraBlockState::is_self_destructed(const evmc::address& address) const noe
 // Doesn't create a delta since it's called at the end of a transaction,
 // when we don't need snapshots anymore.
 void IntraBlockState::destruct(const evmc::address& address) {
-    storage_.erase(address);
+    // EIP-7702 Storage cannot be cleared for delegated designations
+    if (!delegated_designations_.contains(address)) {
+        storage_.erase(address);
+    }
     auto* obj{get_object(address)};
     if (obj) {
         obj->current.reset();
@@ -239,6 +248,9 @@ void IntraBlockState::set_code(const evmc::address& address, ByteView code) noex
     journal_.emplace_back(std::make_unique<state::UpdateDelta>(address, obj));
     obj.current->code_hash = std::bit_cast<evmc_bytes32>(keccak256(code));
 
+    if (eip7702::is_code_delegated(code)) {
+        delegated_designations_.insert(address);
+    }
     // Don't overwrite already existing code so that views of it
     // that were previously returned by get_code() are still valid.
     new_code_.try_emplace(obj.current->code_hash, code.begin(), code.end());
@@ -331,6 +343,7 @@ void IntraBlockState::write_to_db(uint64_t block_num) {
     db_.begin_block(block_num, objects_.size());
 
     for (const auto& [address, storage] : storage_) {
+        // std::cerr << "Writing do db storage: " << hex(address) << std::endl;
         auto it1{objects_.find(address)};
         if (it1 == objects_.end()) {
             continue;
@@ -352,10 +365,17 @@ void IntraBlockState::write_to_db(uint64_t block_num) {
             continue;
         }
         const auto& code_hash{obj.current->code_hash};
+
+        ByteView code_view;
+        if (auto it{new_code_.find(code_hash)}; it != new_code_.end()) {
+            code_view = {it->second.data(), it->second.size()};
+        }
+
+        const auto is_code_delegated = eip7702::is_code_delegated(code_view);
+
         if (code_hash != kEmptyHash &&
-            (!obj.initial || obj.initial->incarnation != obj.current->incarnation)) {
+            (!obj.initial || obj.initial->incarnation != obj.current->incarnation || is_code_delegated)) {
             if (auto it{new_code_.find(code_hash)}; it != new_code_.end()) {
-                ByteView code_view{it->second.data(), it->second.size()};
                 db_.update_account_code(address, obj.current->incarnation, code_hash, code_view);
             }
         }

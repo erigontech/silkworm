@@ -189,6 +189,10 @@ bool ChainConfig::is_london(BlockNum block_num) const noexcept {
     return (london_block && block_num >= london_block);
 }
 
+bool ChainConfig::is_prague(BlockNum block_num, BlockTime block_time) const noexcept {
+    return revision(block_num, block_time) >= EVMC_PRAGUE;
+}
+
 evmc_revision ChainConfig::revision(uint64_t block_num, uint64_t block_time) const noexcept {
     if (prague_time && block_time >= prague_time) return EVMC_PRAGUE;
     if (cancun_time && block_time >= cancun_time) return EVMC_CANCUN;

@@ -19,6 +19,8 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/execution/processor.hpp>
 
+#include "silkworm/core/state/in_memory_state.hpp"
+
 namespace silkworm::protocol {
 
 Blockchain::Blockchain(State& state, const ChainConfig& config, const Block& genesis_block)

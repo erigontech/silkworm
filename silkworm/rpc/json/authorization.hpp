@@ -26,7 +26,7 @@ namespace silkworm::rpc {
 struct GlazeJsonAuthorization {
     char chain_id[kInt256HexSize]{};
     char address[kAddressHexSize]{};
-    char v[kInt256HexSize]{};
+    char y_parity[sizeof(uint8_t)]{};
     char r[kInt256HexSize]{};
     char s[kInt256HexSize]{};
     std::vector<std::string> storage_keys;
@@ -36,7 +36,7 @@ struct GlazeJsonAuthorization {
         static constexpr auto value = glz::object(
             "chainId", &T::chain_id,
             "address", &T::address,
-            "v", &T::v,
+            "yParity", &T::y_parity,
             "r", &T::r,
             "s", &T::s);
     };

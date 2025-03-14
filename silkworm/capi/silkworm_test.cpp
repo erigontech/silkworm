@@ -19,6 +19,7 @@
 #include <cstring>
 
 #include <catch2/catch_test_macros.hpp>
+#include <evmc/evmc.h>
 
 #include <silkworm/core/test_util/sample_blocks.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
@@ -178,11 +179,11 @@ struct SilkwormLibrary {
         return result;
     }
 
-    int execute_txn(MDBX_txn* txn, uint64_t block_num, silkworm::Hash head_hash, uint64_t txn_index, uint64_t txn_id) const {
+    int execute_txn(MDBX_txn* tx, uint64_t block_num, silkworm::Hash head_hash, uint64_t txn_index, uint64_t txn_id) const {
         SilkwormBytes32 head_hash_bytes{};
         std::memcpy(head_hash_bytes.bytes, head_hash.bytes, 32);
 
-        return silkworm_execute_txn(handle_, txn, block_num, head_hash_bytes, txn_index, txn_id, nullptr, nullptr);
+        return silkworm_execute_txn(handle_, tx, block_num, head_hash_bytes, txn_index, txn_id, nullptr, nullptr);
     }
 
     int add_blocks_snapshot_bundle(SilkwormBlocksSnapshotBundle* bundle) const {
@@ -1277,7 +1278,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[capi]") {
     }
 }
 
-TEST_CASE_METHOD(CApiTest, "CAPI silkworm_tx: single", "[silkworm][capi]") {
+TEST_CASE_METHOD(CApiTest, "CAPI silkworm_txn: single", "[silkworm][capi]") {
     // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
     SilkwormLibrary silkworm_lib{env_path()};
 
@@ -1314,5 +1315,32 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_tx: single", "[silkworm][capi]") {
     CHECK(result == SILKWORM_INVALID_BLOCK);
     CHECK_NOTHROW(external_txn.abort());
 }
+
+/*
+    The following test is disabled because it requires a database with a chain of blocks to be executed.
+    It is not possible to create such a database in a test environment, still it is very usefull to run tests locally.
+
+    TODO: Remove the test after CAPI silkworm_txn is fully tested
+*/
+// TEST_CASE("CAPI silkworm_txn: single", "[silkworm][capi]") {
+//     auto data_dir = DataDirectory{"/path/to/data"};
+//     SilkwormLibrary silkworm_lib{data_dir.path()};
+
+//     silkworm::datastore::kvdb::EnvConfig env_config{
+//         .path = data_dir.chaindata().path().string(),
+//         .create = false,
+//         .exclusive = true,
+//         .in_memory = false,
+//         .shared = false,
+//     };
+//     auto env = open_env(env_config);
+
+//     silkworm::datastore::kvdb::RWAccess rwa{env};
+//     auto tx = rwa.start_rw_tx();
+
+//     silkworm_lib.execute_txn(*tx, 7763755, silkworm::Hash{0xa96a1cdc01a6b9f502d0005a60d0c99eaa3b552699f1a71c0112d3f057b874d7_bytes32}, 112, 439062500);
+//     silkworm_lib.execute_txn(*tx, 7763755, silkworm::Hash{0xa96a1cdc01a6b9f502d0005a60d0c99eaa3b552699f1a71c0112d3f057b874d7_bytes32}, 113, 439062501);
+//     tx.abort();
+// }
 
 }  // namespace silkworm

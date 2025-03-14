@@ -32,14 +32,14 @@ using CodeDomainKVSegmentReader = snapshots::segment::KVSegmentReader<AddressSna
 
 struct CodeDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
                                       AddressKVDBEncoder, AddressSnapshotsEncoder,
-                                      datastore::kvdb::RawDecoder<ByteView>, snapshots::RawDecoder<ByteView>> {
+                                      datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>> {
     CodeDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
         : datastore::DomainGetLatestQuery<
               AddressKVDBEncoder, AddressSnapshotsEncoder,
-              datastore::kvdb::RawDecoder<ByteView>, snapshots::RawDecoder<ByteView>>(
+              datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>(
               db::state::kDomainNameCode,
               database.domain(db::state::kDomainNameCode),
               tx,

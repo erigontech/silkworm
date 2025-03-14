@@ -176,25 +176,25 @@ ExecutionResult EVMExecutor::convert_validation_result(const ValidationResult& r
         case ValidationResult::kMaxPriorityFeeGreaterThanMax: {
             std::string error = "tip higher than fee cap: address " + from + ", tip: " + intx::to_string(txn.max_priority_fee_per_gas) + " gasFeeCap: " +
                                 intx::to_string(txn.max_fee_per_gas);
-            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kTipHigherThanFeeCap};
+            return {std::nullopt, txn.gas_limit, std::nullopt, std::nullopt, {}, error, PreCheckErrorCode::kTipHigherThanFeeCap};
         }
         case ValidationResult::kMaxFeeLessThanBase: {
             std::string error = "fee cap less than block base fee: address " + from + ", gasFeeCap: " +
                                 intx::to_string(txn.max_fee_per_gas) + " baseFee: " + intx::to_string(*block.header.base_fee_per_gas);
-            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kFeeCapLessThanBlockFeePerGas};
+            return {std::nullopt, txn.gas_limit, std::nullopt, std::nullopt, {}, error, PreCheckErrorCode::kFeeCapLessThanBlockFeePerGas};
         }
         case ValidationResult::kIntrinsicGas: {
             const intx::uint128 g0{protocol::intrinsic_gas(txn, evm.revision())};
             std::string error = "intrinsic gas too low: have " + std::to_string(txn.gas_limit) + ", want " + intx::to_string(g0);
-            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kIntrinsicGasTooLow};
+            return {std::nullopt, txn.gas_limit, std::nullopt, std::nullopt, {}, error, PreCheckErrorCode::kIntrinsicGasTooLow};
         }
         case ValidationResult::kWrongBlockGas: {
             std::string error = "internal failure: Cancun is active but ExcessBlobGas is nil";
-            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kInternalError};
+            return {std::nullopt, txn.gas_limit, std::nullopt, std::nullopt, {}, error, PreCheckErrorCode::kInternalError};
         }
         case ValidationResult::kUnsupportedTransactionType: {
             std::string error = "eip-1559 transactions require london";
-            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kIsNotLondon};
+            return {std::nullopt, txn.gas_limit, std::nullopt, std::nullopt, {}, error, PreCheckErrorCode::kIsNotLondon};
         }
         case ValidationResult::kInsufficientFunds: {
             auto owned_funds = execution_processor_.intra_block_state().get_balance(*txn.sender());
@@ -208,11 +208,11 @@ ExecutionResult EVMExecutor::convert_validation_result(const ValidationResult& r
                 maximum_cost = txn.maximum_gas_cost();
             }
             std::string error = "insufficient funds for gas * price + value: address " + from + " have " + intx::to_string(owned_funds) + " want " + intx::to_string(maximum_cost + txn.value);
-            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kInsufficientFunds};
+            return {std::nullopt, txn.gas_limit, std::nullopt, std::nullopt, {}, error, PreCheckErrorCode::kInsufficientFunds};
         }
         default: {
             std::string error = "internal failure";
-            return {std::nullopt, txn.gas_limit, {}, error, PreCheckErrorCode::kInternalError};
+            return {std::nullopt, txn.gas_limit, std::nullopt, std::nullopt, {}, error, PreCheckErrorCode::kInternalError};
         }
     }
 }
@@ -232,7 +232,7 @@ ExecutionResult EVMExecutor::call(
     evm.bailout = bailout;
 
     if (!txn.sender()) {
-        return {std::nullopt, txn.gas_limit, Bytes{}, "malformed transaction: cannot recover sender"};
+        return {std::nullopt, txn.gas_limit, std::nullopt, std::nullopt, Bytes{}, "malformed transaction: cannot recover sender"};
     }
 
     const auto result = execution_processor_.call(txn, tracers, refund);
@@ -240,7 +240,7 @@ ExecutionResult EVMExecutor::call(
         return convert_validation_result(result.validation_result, txn);
     }
 
-    ExecutionResult exec_result{result.status, result.gas_left, result.data};
+    ExecutionResult exec_result{result.status, result.gas_left, result.gas_refund, result.gas_used.value_or(0), result.data};
 
     SILK_DEBUG << "EVMExecutor::call call_result: " << exec_result.error_message() << " #data: " << exec_result.data.size() << " end";
 

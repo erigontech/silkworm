@@ -18,8 +18,8 @@
 
 #include <ranges>
 #include <utility>
-#include <variant>
 
+#include "../common/ranges/lazy_view.hpp"
 #include "../common/timestamp.hpp"
 #include "codec.hpp"
 #include "cursor_iterator.hpp"
@@ -83,11 +83,10 @@ struct InvertedIndexRangeByKeyQuery {
     }
 
     auto exec(Key key, TimestampRange ts_range, bool ascending) {
-        auto exec_func = [query = *this, key = std::move(key), ts_range, ascending](std::monostate) mutable {
+        auto exec_func = [query = *this, key = std::move(key), ts_range, ascending]() mutable {
             return query.exec_with_eager_begin(std::move(key), ts_range, ascending);
         };
-        // turn into a lazy view that runs exec_func only when iteration is started using range::begin()
-        return std::views::single(std::monostate{}) | std::views::transform(std::move(exec_func)) | std::views::join;
+        return silkworm::ranges::lazy(std::move(exec_func));
     }
 };
 

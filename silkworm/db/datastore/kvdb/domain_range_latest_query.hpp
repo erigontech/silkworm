@@ -18,12 +18,12 @@
 
 #include <ranges>
 #include <utility>
-#include <variant>
 
 #include <silkworm/core/common/assert.hpp>
 
 #include "../common/pair_get.hpp"
 #include "../common/ranges/caching_view.hpp"
+#include "../common/ranges/lazy_view.hpp"
 #include "../common/ranges/unique_view.hpp"
 #include "cursor_iterator.hpp"
 #include "domain.hpp"
@@ -108,11 +108,10 @@ struct DomainRangeLatestQuery {
         Slice key_end_slice = key_end_encoder.encode();
         Bytes key_end_data = Bytes{from_slice(key_end_slice)};
 
-        auto exec_func = [query = *this, key_start = std::move(key_start_data), key_end = std::move(key_end_data), ascending](std::monostate) mutable {
+        auto exec_func = [query = *this, key_start = std::move(key_start_data), key_end = std::move(key_end_data), ascending]() mutable {
             return query.exec_with_eager_begin(std::move(key_start), std::move(key_end), ascending);
         };
-        // turn into a lazy view that runs exec_func only when iteration is started using range::begin()
-        return std::views::single(std::monostate{}) | std::views::transform(std::move(exec_func)) | std::views::join;
+        return silkworm::ranges::lazy(std::move(exec_func));
     }
 };
 

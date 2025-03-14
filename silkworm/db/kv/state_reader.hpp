@@ -49,6 +49,9 @@ class StateReader {
     Task<std::optional<Bytes>> read_code(const evmc::address& address, const evmc::bytes32& code_hash) const;
 
   private:
+    inline Task<api::PointResult> latest_from_cache(std::string_view table, Bytes key) const;
+    inline Task<api::PointResult> latest_code_from_cache(Bytes key) const;
+
     api::Transaction& tx_;
     std::optional<TxnId> txn_number_;
     api::StateCache* state_cache_;

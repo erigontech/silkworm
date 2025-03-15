@@ -147,7 +147,7 @@ Task<CallManyResult> CallExecutor::execute(
     }
 
     const auto chain_config = co_await chain_storage->read_chain_config();
-    const auto block_with_hash = co_await rpc::core::read_block_by_block_num_or_hash(block_cache_, *chain_storage, transaction_, context.block_num);
+    const auto block_with_hash = co_await rpc::core::read_block_by_block_num_or_hash(block_cache_, *chain_storage, transaction_, state_cache_, context.block_num);
     if (!block_with_hash) {
         throw std::invalid_argument("read_block_by_block_num_or_hash: block not found");
     }
@@ -156,7 +156,7 @@ Task<CallManyResult> CallExecutor::execute(
 
     std::optional<TxnId> txn_id;
 
-    if (co_await block_reader_.is_latest_block_num(block_with_hash->block.header.number) == false) {
+    if (!co_await block_reader_.is_latest_block_num(block_with_hash->block.header.number)) {
         const uint32_t transaction_index =
             context.transaction_index == -1 ? static_cast<uint32_t>(block_with_hash->block.transactions.size()) : static_cast<uint32_t>(context.transaction_index);
         txn_id = co_await transaction_.user_txn_id_at(block_with_hash->block.header.number, transaction_index);

@@ -18,12 +18,10 @@
 
 #include <utility>
 
-#include <silkworm/core/common/decoding_result.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
@@ -46,7 +44,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     DumpAccounts dump_accounts;
     const auto chain_storage = transaction_.create_storage();
 
-    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(cache, *chain_storage, transaction_, block_num_or_hash);
+    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(cache, *chain_storage, transaction_, state_cache_, block_num_or_hash);
     if (!block_with_hash) {
         throw std::invalid_argument("dump_accounts: block not found");
     }

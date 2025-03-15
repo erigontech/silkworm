@@ -41,7 +41,6 @@ class RemoteTransaction : public api::BaseTransaction {
   public:
     RemoteTransaction(::remote::KV::StubInterface& stub,
                       agrpc::GrpcContext& grpc_context,
-                      api::StateCache* state_cache,
                       chain::Providers providers);
     ~RemoteTransaction() override = default;
 

@@ -18,33 +18,19 @@
 
 #include <functional>
 
-#include "state_cache.hpp"
 #include "transaction.hpp"
 
 namespace silkworm::db::kv::api {
 
 class BaseTransaction : public Transaction {
   public:
-    explicit BaseTransaction(StateCache* state_cache) : state_cache_{state_cache} {}
-
     bool is_local() const override { return false; }
-    void set_state_cache_enabled(bool cache_enabled) override;
 
     Task<KeyValue> get(const std::string& table, ByteView key) override;
 
     Task<Bytes> get_one(const std::string& table, ByteView key) override;
 
     Task<std::optional<Bytes>> get_both_range(const std::string& table, ByteView key, ByteView subkey) override;
-
-  private:
-    Task<Bytes> get_one_impl_no_cache(const std::string& table, ByteView key);
-    Task<Bytes> get_one_impl_with_cache(const std::string& table, ByteView key);
-
-    using GetOneImpl = Task<Bytes> (BaseTransaction::*)(const std::string&, ByteView);
-    GetOneImpl get_one_impl_no_cache_{&BaseTransaction::get_one_impl_no_cache};
-    GetOneImpl get_one_impl_with_cache_{&BaseTransaction::get_one_impl_with_cache};
-    GetOneImpl get_one_impl_{get_one_impl_no_cache_};
-    StateCache* state_cache_;
 };
 
 }  // namespace silkworm::db::kv::api

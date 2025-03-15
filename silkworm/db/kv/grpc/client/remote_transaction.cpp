@@ -33,10 +33,8 @@ using Stub = proto::KV::StubInterface;
 RemoteTransaction::RemoteTransaction(
     Stub& stub,
     agrpc::GrpcContext& grpc_context,
-    api::StateCache* state_cache,
     chain::Providers providers)
-    : BaseTransaction(state_cache),
-      providers_{std::move(providers)},
+    : providers_{std::move(providers)},
       stub_{stub},
       grpc_context_{grpc_context},
       tx_rpc_{grpc_context_} {}

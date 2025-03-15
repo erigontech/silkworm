@@ -71,7 +71,7 @@ static const std::string kSafe = kSafeBlockId;
 TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
     MockTransaction transaction;
     MockChainStorage chain_storage;
-    rpc::BlockReader block_reader{chain_storage, transaction};
+    rpc::BlockReader block_reader{chain_storage, transaction, /*state_cache=*/nullptr};
 
     WorkerPool pool{1};
 
@@ -182,7 +182,7 @@ TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
 TEST_CASE("get_block_num ", "[rpc][core][blocks]") {
     MockTransaction transaction;
     MockChainStorage chain_storage;
-    rpc::BlockReader block_reader{chain_storage, transaction};
+    rpc::BlockReader block_reader{chain_storage, transaction, /*state_cache=*/nullptr};
     WorkerPool pool{1};
 
     SECTION("kEarliestBlockId") {
@@ -195,7 +195,7 @@ TEST_CASE("get_block_num ", "[rpc][core][blocks]") {
 TEST_CASE("get_block_num_by_tag", "[rpc][core][blocks]") {
     MockTransaction transaction;
     MockChainStorage chain_storage;
-    rpc::BlockReader block_reader{chain_storage, transaction};
+    rpc::BlockReader block_reader{chain_storage, transaction, /*state_cache=*/nullptr};
     WorkerPool pool{1};
 
     SECTION("kEarliestBlockId") {
@@ -271,7 +271,7 @@ TEST_CASE("get_current_block_num", "[rpc][core][blocks]") {
     static const silkworm::ByteView kFinishStage{stages::kFinish};
     MockTransaction transaction;
     MockChainStorage chain_storage;
-    rpc::BlockReader block_reader{chain_storage, transaction};
+    rpc::BlockReader block_reader{chain_storage, transaction, /*state_cache=*/nullptr};
     WorkerPool pool{1};
 
     EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kFinishStage))
@@ -286,7 +286,7 @@ TEST_CASE("get_max_block_num", "[rpc][core][blocks]") {
     static const silkworm::ByteView kHeadersStage{stages::kHeaders};
     MockTransaction transaction;
     MockChainStorage chain_storage;
-    rpc::BlockReader block_reader{chain_storage, transaction};
+    rpc::BlockReader block_reader{chain_storage, transaction, /*state_cache=*/nullptr};
     WorkerPool pool{1};
 
     EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kHeadersStage))
@@ -300,7 +300,7 @@ TEST_CASE("get_max_block_num", "[rpc][core][blocks]") {
 TEST_CASE("get_latest_block_num", "[rpc][core][blocks]") {
     MockTransaction transaction;
     MockChainStorage chain_storage;
-    rpc::BlockReader block_reader{chain_storage, transaction};
+    rpc::BlockReader block_reader{chain_storage, transaction, /*state_cache=*/nullptr};
     WorkerPool pool{1};
 
     EXPECT_CALL(transaction, get(table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
@@ -317,7 +317,7 @@ TEST_CASE("get_latest_block_num", "[rpc][core][blocks]") {
 TEST_CASE("get_latest_executed_block_num", "[rpc][core][blocks]") {
     MockTransaction transaction;
     MockChainStorage chain_storage;
-    rpc::BlockReader block_reader{chain_storage, transaction};
+    rpc::BlockReader block_reader{chain_storage, transaction, /*state_cache=*/nullptr};
     WorkerPool pool{1};
 
     EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
@@ -330,7 +330,7 @@ TEST_CASE("get_latest_executed_block_num", "[rpc][core][blocks]") {
 TEST_CASE("get_latest_block_num with head forkchoice block_num", "[rpc][core][blocks]") {
     MockTransaction transaction;
     MockChainStorage chain_storage;
-    rpc::BlockReader block_reader{chain_storage, transaction};
+    rpc::BlockReader block_reader{chain_storage, transaction, /*state_cache=*/nullptr};
     WorkerPool pool{1};
 
     EXPECT_CALL(transaction, get(table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
@@ -347,7 +347,7 @@ TEST_CASE("get_latest_block_num with head forkchoice block_num", "[rpc][core][bl
 TEST_CASE("get_forkchoice_finalized_block_num genesis block_num if no finalized block", "[rpc][core][blocks]") {
     MockTransaction transaction;
     MockChainStorage chain_storage;
-    rpc::BlockReader block_reader{chain_storage, transaction};
+    rpc::BlockReader block_reader{chain_storage, transaction, /*state_cache=*/nullptr};
     WorkerPool pool{1};
 
     EXPECT_CALL(transaction, get(table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
@@ -361,7 +361,7 @@ TEST_CASE("get_forkchoice_finalized_block_num genesis block_num if no finalized 
 TEST_CASE("get_forkchoice_safe_block_num genesis block_num if no safe block", "[rpc][core][blocks]") {
     MockTransaction transaction;
     MockChainStorage chain_storage;
-    rpc::BlockReader block_reader{chain_storage, transaction};
+    rpc::BlockReader block_reader{chain_storage, transaction, /*state_cache=*/nullptr};
     WorkerPool pool{1};
 
     EXPECT_CALL(transaction, get(table::kLastForkchoiceName, _)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
@@ -375,7 +375,7 @@ TEST_CASE("get_forkchoice_safe_block_num genesis block_num if no safe block", "[
 TEST_CASE("is_latest_block_num", "[rpc][core][blocks]") {
     MockTransaction transaction;
     MockChainStorage chain_storage;
-    rpc::BlockReader block_reader{chain_storage, transaction};
+    rpc::BlockReader block_reader{chain_storage, transaction, /*state_cache=*/nullptr};
     WorkerPool pool{1};
 
     SECTION("tag: latest") {

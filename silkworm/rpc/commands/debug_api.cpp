@@ -89,7 +89,7 @@ Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request
 
     try {
         auto start = std::chrono::system_clock::now();
-        core::AccountDumper dumper{*tx};
+        core::AccountDumper dumper{*tx, state_cache_};
         DumpAccounts dump_accounts = co_await dumper.dump_accounts(*block_cache_, block_num_or_hash, start_address, max_result, exclude_code, exclude_storage);
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;
@@ -127,7 +127,7 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohm
     const auto chain_storage = tx->create_storage();
 
     try {
-        rpc::BlockReader block_reader{*chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
         const auto start_block_num = co_await block_reader.get_block_num(start_block_id);
         const auto end_block_num = co_await block_reader.get_block_num(end_block_id);
 
@@ -175,7 +175,7 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
 
     try {
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
 
         const auto start_block_num = co_await chain_storage->read_block_num(start_hash);
         if (!start_block_num) {
@@ -402,7 +402,7 @@ Task<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& req
     auto tx = co_await database_->begin_transaction();
 
     try {
-        debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
+        debug::DebugExecutor executor{*block_cache_, workers_, *tx, state_cache_, config};
         const auto chain_storage = tx->create_storage();
         co_await executor.trace_transaction(stream, *chain_storage, transaction_hash);
     } catch (const std::exception& e) {
@@ -446,12 +446,11 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
 
     try {
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
 
         const bool is_latest_block = co_await block_reader.is_latest_block_num(block_num_or_hash);
-        tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
-        debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
+        debug::DebugExecutor executor{*block_cache_, workers_, *tx, is_latest_block ? state_cache_ : nullptr, config};
         co_await executor.trace_call(stream, block_num_or_hash, *chain_storage, call, is_latest_block);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -514,12 +513,11 @@ Task<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& reque
 
     try {
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
 
         const bool is_latest_block = co_await block_reader.is_latest_block_num(simulation_context.block_num);
-        tx->set_state_cache_enabled(/*cache_enabled=*/is_latest_block);
 
-        debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
+        debug::DebugExecutor executor{*block_cache_, workers_, *tx, is_latest_block ? state_cache_ : nullptr, config};
         co_await executor.trace_call_many(stream, *chain_storage, bundles, simulation_context, is_latest_block);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
@@ -547,7 +545,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
     BlockNum block_num{0};
     if (params[0].is_string()) {
         auto chain_storage = tx->create_storage();
-        BlockReader block_reader{*chain_storage, *tx};
+        BlockReader block_reader{*chain_storage, *tx, state_cache_};
 
         const auto value = params[0].get<std::string>();
 
@@ -568,7 +566,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
     try {
         const auto chain_storage = tx->create_storage();
 
-        debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
+        debug::DebugExecutor executor{*block_cache_, workers_, *tx, state_cache_, config};
         co_await executor.trace_block(stream, *chain_storage, block_num);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -617,7 +615,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
     try {
         const auto chain_storage = tx->create_storage();
 
-        debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
+        debug::DebugExecutor executor{*block_cache_, workers_, *tx, state_cache_, config};
         co_await executor.trace_block(stream, *chain_storage, block_hash);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -690,7 +688,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request
 
     try {
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
         const auto block_num = co_await block_reader.get_block_num(block_id);
         silkworm::Block block;
         if (!(co_await chain_storage->read_canonical_block(block_num, block))) {
@@ -727,7 +725,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_receipts(const nlohmann::json& requ
 
     try {
         const auto chain_storage = tx->create_storage();
-        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, state_cache_, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_content(request, nullptr);
             co_await tx->close();  // RAII not (yet) available with coroutines
@@ -788,7 +786,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& reques
 
     try {
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
         const auto block_num = co_await block_reader.get_block_num(block_id);
         const auto block_hash = co_await chain_storage->read_canonical_header_hash(block_num);
         const auto header = co_await chain_storage->read_header(block_num, block_hash->bytes);

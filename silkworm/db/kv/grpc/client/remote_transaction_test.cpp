@@ -38,11 +38,7 @@ class RemoteTransactionTest : public db::test_util::KVTestBase {
   protected:
     RemoteTransaction remote_tx_{*stub_,
                                  grpc_context_,
-                                 &state_cache_,
                                  chain::Providers{}};
-
-  private:
-    api::CoherentStateCache state_cache_;
 };
 
 static remote::Pair make_fake_tx_created_pair() {

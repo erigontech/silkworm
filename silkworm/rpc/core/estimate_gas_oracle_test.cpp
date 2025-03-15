@@ -29,10 +29,8 @@
 
 #include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
-#include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/db/kv/grpc/client/remote_transaction.hpp>
 #include <silkworm/db/test_util/kv_test_base.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
 #include <silkworm/rpc/test_util/mock_estimate_gas_oracle.hpp>
@@ -96,7 +94,6 @@ TEST_CASE("estimate gas") {
     db::chain::Providers providers = ethdb::kv::make_backend_providers(&backend);
     auto tx = std::make_unique<db::kv::grpc::client::RemoteTransaction>(remote_db_test.stub(),
                                                                         remote_db_test.grpc_context(),
-                                                                        &remote_db_test.state_cache,
                                                                         providers);
     const db::chain::RemoteChainStorage storage{*tx, std::move(providers)};
     AccountsOverrides accounts_overrides;

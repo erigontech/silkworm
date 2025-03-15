@@ -33,6 +33,7 @@
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/json/stream.hpp>
@@ -125,8 +126,9 @@ class DebugExecutor {
         BlockCache& block_cache,
         WorkerPool& workers,
         db::kv::api::Transaction& tx,
+        db::kv::api::StateCache* state_cache,
         DebugConfig config = {})
-        : block_cache_(block_cache), workers_{workers}, tx_{tx}, config_{config} {}
+        : block_cache_(block_cache), workers_{workers}, tx_{tx}, state_cache_{state_cache}, config_{config} {}
     virtual ~DebugExecutor() = default;
 
     DebugExecutor(const DebugExecutor&) = delete;
@@ -164,6 +166,7 @@ class DebugExecutor {
     BlockCache& block_cache_;
     WorkerPool& workers_;
     db::kv::api::Transaction& tx_;
+    db::kv::api::StateCache* state_cache_;
     DebugConfig config_;
 };
 

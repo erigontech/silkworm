@@ -34,7 +34,6 @@ class MockTransaction : public kv::api::Transaction {
   public:
     MOCK_METHOD(uint64_t, tx_id, (), (const, override));
     MOCK_METHOD(uint64_t, view_id, (), (const, override));
-    MOCK_METHOD(void, set_state_cache_enabled, (bool), (override));
     MOCK_METHOD((Task<void>), open, (), (override));
     MOCK_METHOD((Task<std::shared_ptr<kv::api::Cursor>>), cursor, (const std::string&), (override));
     MOCK_METHOD((Task<std::shared_ptr<kv::api::CursorDupSort>>), cursor_dup_sort, (const std::string&), (override));

@@ -43,12 +43,17 @@ struct CallManyResult {
 
 class CallExecutor {
   public:
-    explicit CallExecutor(
+    CallExecutor(
         db::kv::api::Transaction& transaction,
+        db::kv::api::StateCache* state_cache,
         BlockCache& block_cache,
         WorkerPool& workers,
         rpc::BlockReader& block_reader)
-        : transaction_(transaction), block_cache_(block_cache), workers_{workers}, block_reader_{block_reader} {}
+        : transaction_(transaction),
+          state_cache_(state_cache),
+          block_cache_(block_cache),
+          workers_{workers},
+          block_reader_{block_reader} {}
     virtual ~CallExecutor() = default;
 
     CallExecutor(const CallExecutor&) = delete;
@@ -71,6 +76,7 @@ class CallExecutor {
 
   private:
     db::kv::api::Transaction& transaction_;
+    db::kv::api::StateCache* state_cache_;
     BlockCache& block_cache_;
     WorkerPool& workers_;
     rpc::BlockReader& block_reader_;

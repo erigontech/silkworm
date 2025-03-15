@@ -44,12 +44,12 @@ bool CoherentStateView::empty() const {
     return root->cache.empty() && root->code_cache.empty();
 }
 
-Task<std::optional<Bytes>> CoherentStateView::get(ByteView key) {
-    co_return co_await cache_->get(version_id_, key, tx_);
+Task<std::optional<Bytes>> CoherentStateView::get(std::string_view table, Bytes key) {
+    co_return co_await cache_->get(version_id_, table, std::move(key), tx_);
 }
 
-Task<std::optional<Bytes>> CoherentStateView::get_code(ByteView key) {
-    co_return co_await cache_->get_code(version_id_, key, tx_);
+Task<std::optional<Bytes>> CoherentStateView::get_code(Bytes key) {
+    co_return co_await cache_->get_code(version_id_, std::move(key), tx_);
 }
 
 CoherentStateCache::CoherentStateCache(CoherentCacheConfig config) : config_(config) {
@@ -229,7 +229,7 @@ bool CoherentStateCache::add_code(KeyValue&& kv, CoherentStateRoot* root, StateV
     return inserted;
 }
 
-Task<std::optional<Bytes>> CoherentStateCache::get(StateVersionId version_id, ByteView key, Transaction& tx) {
+Task<std::optional<Bytes>> CoherentStateCache::get(StateVersionId version_id, std::string_view table, Bytes key, Transaction& tx) {
     std::shared_lock read_lock{rw_mutex_};
 
     const auto root_it = state_view_roots_.find(version_id);
@@ -237,13 +237,13 @@ Task<std::optional<Bytes>> CoherentStateCache::get(StateVersionId version_id, By
         co_return std::nullopt;
     }
 
-    KeyValue kv{Bytes{key}};
+    KeyValue kv{std::move(key)};
     auto& cache = root_it->second->cache;
     const auto kv_it = cache.find(kv);
     if (kv_it != cache.end()) {
         ++state_hit_count_;
 
-        SILK_DEBUG << "Hit in state cache key=" << key << " value=" << kv_it->value;
+        SILK_DEBUG << "Hit in state cache key=" << kv.key << " value=" << kv_it->value;
 
         if (version_id == latest_state_version_id_) {
             state_evictions_.remove(kv);
@@ -255,14 +255,14 @@ Task<std::optional<Bytes>> CoherentStateCache::get(StateVersionId version_id, By
 
     ++state_miss_count_;
 
-    const auto domain = key.size() == kAddressLength ? db::table::kAccountDomain : db::table::kStorageDomain;
-    const GetLatestResult result = co_await tx.get_latest({.table = domain, .key = Bytes{key}});
+    const auto domain = kv.key.size() == kAddressLength ? db::table::kAccountDomain : db::table::kStorageDomain;
+    const GetLatestResult result = co_await tx.get_latest({.table = std::string{table}, .key = kv.key});
     if (!result.success) {
         co_return std::nullopt;
     }
 
     const Bytes value = result.value;
-    SILK_DEBUG << "Miss in state cache: lookup in domain " + std::string{domain} + " key=" << key << " value=" << value;
+    SILK_DEBUG << "Miss in state cache: lookup in domain " << domain << " key=" << kv.key << " value=" << value;
     if (value.empty()) {
         co_return std::nullopt;
     }
@@ -276,7 +276,7 @@ Task<std::optional<Bytes>> CoherentStateCache::get(StateVersionId version_id, By
     co_return value;
 }
 
-Task<std::optional<Bytes>> CoherentStateCache::get_code(StateVersionId version_id, ByteView key, Transaction& tx) {
+Task<std::optional<Bytes>> CoherentStateCache::get_code(StateVersionId version_id, Bytes key, Transaction& tx) {
     std::shared_lock read_lock{rw_mutex_};
 
     const auto root_it = state_view_roots_.find(version_id);
@@ -284,13 +284,13 @@ Task<std::optional<Bytes>> CoherentStateCache::get_code(StateVersionId version_i
         co_return std::nullopt;
     }
 
-    KeyValue kv{Bytes{key}};
+    KeyValue kv{std::move(key)};
     auto& code_cache = root_it->second->code_cache;
     const auto kv_it = code_cache.find(kv);
     if (kv_it != code_cache.end()) {
         ++code_hit_count_;
 
-        SILK_DEBUG << "Hit in code cache key=" << key << " value=" << kv_it->value;
+        SILK_DEBUG << "Hit in code cache key=" << kv.key << " value=" << kv_it->value;
 
         if (version_id == latest_state_version_id_) {
             code_evictions_.remove(kv);
@@ -302,12 +302,12 @@ Task<std::optional<Bytes>> CoherentStateCache::get_code(StateVersionId version_i
 
     ++code_miss_count_;
 
-    const GetLatestResult result = co_await tx.get_latest({.table = db::table::kCodeDomain, .key = Bytes{key}});
+    const GetLatestResult result = co_await tx.get_latest({.table = db::table::kCodeDomain, .key = kv.key});
     if (!result.success) {
         co_return std::nullopt;
     }
     const Bytes value = result.value;
-    SILK_DEBUG << "Miss in code cache: lookup in domain Code key=" << key << " value=" << value;
+    SILK_DEBUG << "Miss in code cache: lookup in domain Code key=" << kv.key << " value=" << value;
     if (value.empty()) {
         co_return std::nullopt;
     }

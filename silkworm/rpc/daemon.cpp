@@ -288,7 +288,7 @@ void Daemon::add_shared_services() {
         auto engine{std::make_shared<engine::RemoteExecutionEngine>(settings_.private_api_addr, *context.grpc_context())};
 
         add_shared_service(ioc, block_cache);
-        add_shared_service<db::kv::api::StateCache>(ioc, std::move(state_cache));
+        add_shared_service<db::kv::api::StateCache>(ioc, state_cache);
         add_shared_service(ioc, filter_storage);
         add_shared_service<engine::ExecutionEngine>(ioc, std::move(engine));
     }

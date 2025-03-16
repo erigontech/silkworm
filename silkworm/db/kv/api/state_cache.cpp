@@ -135,15 +135,15 @@ void CoherentStateCache::on_new_block(const api::StateChangeSet& state_changes_s
 }
 
 Task<StateCache::ValidationResult> CoherentStateCache::validate_current_root(Transaction& tx) {
-    StateCache::ValidationResult result{.enabled = true};
+    StateCache::ValidationResult validation_result{.enabled = true};
 
     const StateVersionId current_state_version_id = co_await get_db_state_version(tx);
-    result.latest_state_version_id = current_state_version_id;
+    validation_result.latest_state_version_id = current_state_version_id;
     // If the latest version id in the cache is not the same as the db or one below it
     // then the cache will be a new one for the next call so return early
     if (current_state_version_id > latest_state_version_id_) {
-        result.latest_state_behind = true;
-        co_return result;
+        validation_result.latest_state_behind = true;
+        co_return validation_result;
     }
     const auto root = co_await wait_for_root_ready(latest_state_version_id_);
 
@@ -178,22 +178,22 @@ Task<StateCache::ValidationResult> CoherentStateCache::validate_current_root(Tra
 
     auto [cancelled_1, keys] = co_await compare_cache(cache, /*is_code=*/false);
     if (cancelled_1) {
-        result.request_canceled = true;
-        co_return result;
+        validation_result.request_canceled = true;
+        co_return validation_result;
     }
-    result.state_keys_out_of_sync = std::move(keys);
+    validation_result.state_keys_out_of_sync = std::move(keys);
     auto [cancelled_2, code_keys] = co_await compare_cache(code_cache, /*is_code=*/true);
     if (cancelled_2) {
-        result.request_canceled = true;
-        co_return result;
+        validation_result.request_canceled = true;
+        co_return validation_result;
     }
-    result.code_keys_out_of_sync = std::move(code_keys);
+    validation_result.code_keys_out_of_sync = std::move(code_keys);
 
     if (clear_cache) {
         clear_caches(root);
     }
-    result.cache_cleared = true;
-    co_return result;
+    validation_result.cache_cleared = true;
+    co_return validation_result;
 }
 
 void CoherentStateCache::process_upsert_change(CoherentStateRoot* root, StateVersionId version_id, const AccountChange& change) {

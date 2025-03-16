@@ -29,6 +29,7 @@
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/logs_walker.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
+#include <silkworm/rpc/json/cache_validation_result.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 
@@ -39,7 +40,8 @@ Task<void> ErigonRpcApi::handle_erigon_cache_check(const nlohmann::json& request
     auto tx = co_await database_->begin_transaction();
 
     try {
-        reply = make_json_content(request, to_quantity(0));
+        const db::kv::api::StateCache::ValidationResult result = co_await state_cache_->validate_current_root(*tx);
+        reply = make_json_content(request, CacheValidationResult{result});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());

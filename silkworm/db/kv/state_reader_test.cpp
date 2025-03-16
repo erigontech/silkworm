@@ -21,6 +21,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/db/test_util/mock_state_cache.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -46,7 +47,8 @@ static const evmc::bytes32 kCodeHash{0xef722d9baf50b9983c2fce6329c5a43a15b8d5ba7
 class StateReaderTest : public silkworm::test_util::ContextTestBase {
   protected:
     db::test_util::MockTransaction transaction_;
-    StateReader state_reader_{transaction_, kEarliestBlockNum, /*state_cache=*/nullptr};
+    db::test_util::MockStateCache state_cache_;
+    StateReader state_reader_{transaction_, &state_cache_, kEarliestBlockNum};
 };
 
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {

@@ -64,7 +64,7 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
         }
         const bool is_latest_block = co_await block_reader.is_latest_block_num(block_with_hash->block.header.number);
 
-        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, is_latest_block ? state_cache_ : nullptr};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, state_cache_};
         const auto result = co_await executor.trace_call(block_with_hash->block, call, config, is_latest_block);
 
         if (result.pre_check_error) {
@@ -112,7 +112,7 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
         }
         const bool is_latest_block = co_await block_reader.is_latest_block_num(block_with_hash->block.header.number);
 
-        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, is_latest_block ? state_cache_ : nullptr};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, state_cache_};
         const auto result = co_await executor.trace_calls(block_with_hash->block, trace_calls, is_latest_block);
 
         if (result.pre_check_error) {
@@ -244,7 +244,7 @@ Task<void> TraceRpcApi::handle_trace_replay_block_transactions(const nlohmann::j
             rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
             const bool is_latest_block = co_await block_reader.is_latest_block_num(block_with_hash->block.header.number);
 
-            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, is_latest_block ? state_cache_ : nullptr};
+            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, state_cache_};
             const auto result = co_await executor.trace_block_transactions(block_with_hash->block, config, is_latest_block);
             reply = make_json_content(request, result);
         } else {
@@ -333,7 +333,7 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
         rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
         const bool is_latest_block = co_await block_reader.is_latest_block_num(block_with_hash->block.header.number);
 
-        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, is_latest_block ? state_cache_ : nullptr};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, state_cache_};
         trace::Filter filter;
         const auto result = co_await executor.trace_block(*block_with_hash, filter, nullptr /* json::Stream */, is_latest_block);
         reply = make_json_content(request, result);

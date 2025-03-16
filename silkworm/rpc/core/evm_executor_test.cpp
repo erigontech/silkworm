@@ -28,11 +28,11 @@
 #include <silkworm/db/chain/remote_chain_storage.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/db/test_util/mock_cursor.hpp>
+#include <silkworm/db/test_util/mock_state_cache.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/execution/remote_state.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
@@ -49,6 +49,7 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     }
 
     db::test_util::MockTransaction transaction;
+    db::test_util::MockStateCache state_cache;
     WorkerPool workers{1};
     ClientContextPool pool{1};
     boost::asio::any_io_executor io_executor{pool.next_ioc().get_executor()};
@@ -57,7 +58,7 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     const uint64_t chain_id{11155111};
     const ChainConfig* chain_config_ptr{lookup_chain_config(chain_id)};
     BlockNum block_num{6'000'000};
-    std::shared_ptr<State> state{std::make_shared<execution::RemoteState>(io_executor, transaction, storage, block_num, /*state_cache=*/nullptr)};
+    std::shared_ptr<State> state{std::make_shared<execution::RemoteState>(io_executor, transaction, &state_cache, storage, block_num)};
 };
 
 #ifndef SILKWORM_SANITIZE

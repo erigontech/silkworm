@@ -450,7 +450,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
 
         const bool is_latest_block = co_await block_reader.is_latest_block_num(block_num_or_hash);
 
-        debug::DebugExecutor executor{*block_cache_, workers_, *tx, is_latest_block ? state_cache_ : nullptr, config};
+        debug::DebugExecutor executor{*block_cache_, workers_, *tx, state_cache_, config};
         co_await executor.trace_call(stream, block_num_or_hash, *chain_storage, call, is_latest_block);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -517,7 +517,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& reque
 
         const bool is_latest_block = co_await block_reader.is_latest_block_num(simulation_context.block_num);
 
-        debug::DebugExecutor executor{*block_cache_, workers_, *tx, is_latest_block ? state_cache_ : nullptr, config};
+        debug::DebugExecutor executor{*block_cache_, workers_, *tx, state_cache_, config};
         co_await executor.trace_call_many(stream, *chain_storage, bundles, simulation_context, is_latest_block);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();

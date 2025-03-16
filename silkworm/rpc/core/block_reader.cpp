@@ -58,12 +58,12 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOr
     const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_num);
     const auto end_txn_number = co_await transaction_.first_txn_num_in_block(block_num + 1);
 
-    auto is_latest = co_await is_latest_block_num(block_num);
+    const bool is_latest = co_await is_latest_block_num(block_num);
     std::optional<TxnId> txn_id;
     if (!is_latest) {
         txn_id = co_await transaction_.user_txn_id_at(block_num + 1);
     }
-    StateReader state_reader{transaction_, txn_id, state_cache_};
+    StateReader state_reader{transaction_, state_cache_, txn_id};
 
     db::kv::api::HistoryRangeRequest query{
         .table = db::table::kAccountDomain,

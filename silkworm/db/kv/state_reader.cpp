@@ -28,10 +28,8 @@
 
 namespace silkworm::db::kv {
 
-StateReader::StateReader(api::Transaction& tx, std::optional<TxnId> txn_id, api::StateCache* state_cache)
-    : tx_(tx), txn_number_(txn_id), state_cache_(state_cache) {
-    ensure(txn_number_ || state_cache_, "StateReader: state_cache must be provided if txn_number is not (latest)");
-}
+StateReader::StateReader(api::Transaction& tx, api::StateCache* state_cache, std::optional<TxnId> txn_id)
+    : tx_(tx), state_cache_(state_cache), txn_number_(txn_id) {}
 
 Task<std::optional<Account>> StateReader::read_account(const evmc::address& address) const {
     api::PointResult result;

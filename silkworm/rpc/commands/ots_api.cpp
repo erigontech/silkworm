@@ -83,10 +83,13 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
         // Check if target block is the latest one: use local state cache (if any) for target transaction
         const bool is_latest_block = co_await block_reader.is_latest_block_num(BlockNumOrHash{block_id});
 
-        const auto block_num = co_await block_reader.get_block_num(block_id);
-        const auto txn_id = co_await tx->user_txn_id_at(block_num + 1);
+        std::optional<TxnId> txn_id;
+        if (!is_latest_block) {
+            const auto block_num = co_await block_reader.get_block_num(block_id);
+            txn_id = co_await tx->user_txn_id_at(block_num + 1);
+        }
 
-        StateReader state_reader{*tx, txn_id, is_latest_block ? state_cache_ : nullptr};
+        StateReader state_reader{*tx, state_cache_, txn_id};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
         if (account) {
             auto code{co_await state_reader.read_code(address, account->code_hash)};
@@ -438,10 +441,10 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
     try {
         const auto chain_storage = tx->create_storage();
         rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
-        auto block_num = co_await block_reader.get_latest_block_num();
+        BlockNum block_num = co_await block_reader.get_latest_block_num();
         const auto txn_number = co_await tx->user_txn_id_at(block_num);
 
-        StateReader state_reader{*tx, txn_number, state_cache_};
+        StateReader state_reader{*tx, state_cache_, txn_number};
         std::optional<silkworm::Account> account_opt{co_await state_reader.read_account(contract_address)};
         if (!account_opt || account_opt.value().code_hash == kEmptyHash) {
             reply = make_json_content(request, nlohmann::detail::value_t::null);

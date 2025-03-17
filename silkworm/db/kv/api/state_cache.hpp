@@ -29,6 +29,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
+#include <silkworm/infra/concurrency/awaitable_condition_variable.hpp>
 
 #include "endpoint/key_value.hpp"
 #include "endpoint/state_change.hpp"
@@ -40,16 +41,20 @@ class StateView {
   public:
     virtual ~StateView() = default;
 
+    virtual bool empty() const = 0;
+
     virtual Task<std::optional<Bytes>> get(ByteView key) = 0;
 
     virtual Task<std::optional<Bytes>> get_code(ByteView key) = 0;
 };
 
+using StateVersionId = uint64_t;
+
 class StateCache {
   public:
     virtual ~StateCache() = default;
 
-    virtual std::unique_ptr<StateView> get_view(Transaction& tx) = 0;
+    virtual Task<std::unique_ptr<StateView>> get_view(Transaction& tx) = 0;
 
     virtual void on_new_block(const api::StateChangeSet& state_changes) = 0;
 
@@ -66,40 +71,47 @@ class StateCache {
     virtual uint64_t code_eviction_count() const = 0;
 };
 
+using KeyValueSet = absl::btree_set<KeyValue>;
+
 struct CoherentStateRoot {
-    absl::btree_set<KeyValue> cache;
-    absl::btree_set<KeyValue> code_cache;
+    KeyValueSet cache;
+    KeyValueSet code_cache;
     bool ready{false};
     bool canonical{false};
+    concurrency::AwaitableConditionVariable ready_cond_var;
 };
-
-using StateViewId = uint64_t;
 
 inline constexpr uint64_t kDefaultMaxViews = 5ul;
 inline constexpr uint32_t kDefaultMaxStateKeys = 1'000'000u;
 inline constexpr uint32_t kDefaultMaxCodeKeys = 10'000u;
+inline constexpr uint32_t kDefaultMaxWaitCount = 100u;
 
 struct CoherentCacheConfig {
     uint64_t max_views{kDefaultMaxViews};
     bool with_storage{true};
+    bool wait_for_new_block{true};
     uint32_t max_state_keys{kDefaultMaxStateKeys};
     uint32_t max_code_keys{kDefaultMaxCodeKeys};
+    std::chrono::milliseconds block_wait_duration{5};
 };
 
 class CoherentStateCache;
 
 class CoherentStateView : public StateView {
   public:
-    explicit CoherentStateView(Transaction& tx, CoherentStateCache* cache);
+    CoherentStateView(StateVersionId version_id, Transaction& tx, CoherentStateCache* cache);
 
     CoherentStateView(const CoherentStateView&) = delete;
     CoherentStateView& operator=(const CoherentStateView&) = delete;
+
+    bool empty() const override;
 
     Task<std::optional<Bytes>> get(ByteView key) override;
 
     Task<std::optional<Bytes>> get_code(ByteView key) override;
 
   private:
+    StateVersionId version_id_;
     Transaction& tx_;
     CoherentStateCache* cache_;
 };
@@ -111,7 +123,7 @@ class CoherentStateCache : public StateCache {
     CoherentStateCache(const CoherentStateCache&) = delete;
     CoherentStateCache& operator=(const CoherentStateCache&) = delete;
 
-    std::unique_ptr<StateView> get_view(Transaction& tx) override;
+    Task<std::unique_ptr<StateView>> get_view(Transaction& tx) override;
 
     void on_new_block(const api::StateChangeSet& state_changes) override;
 
@@ -130,26 +142,29 @@ class CoherentStateCache : public StateCache {
   private:
     friend class CoherentStateView;
 
-    void process_upsert_change(CoherentStateRoot* root, StateViewId view_id, const api::AccountChange& change);
-    void process_code_change(CoherentStateRoot* root, StateViewId view_id, const api::AccountChange& change);
-    void process_delete_change(CoherentStateRoot* root, StateViewId view_id, const api::AccountChange& change);
-    void process_storage_change(CoherentStateRoot* root, StateViewId view_id, const api::AccountChange& change);
-    bool add(KeyValue&& kv, CoherentStateRoot* root, StateViewId view_id);
-    bool add_code(KeyValue&& kv, CoherentStateRoot* root, StateViewId view_id);
-    Task<std::optional<Bytes>> get(ByteView key, Transaction& tx);
-    Task<std::optional<Bytes>> get_code(ByteView key, Transaction& tx);
-    CoherentStateRoot* get_root(StateViewId view_id);
-    CoherentStateRoot* advance_root(StateViewId view_id);
-    void evict_roots(StateViewId next_view_id);
+    void process_upsert_change(CoherentStateRoot* root, StateVersionId version_id, const api::AccountChange& change);
+    void process_code_change(CoherentStateRoot* root, StateVersionId version_id, const api::AccountChange& change);
+    void process_delete_change(CoherentStateRoot* root, StateVersionId version_id, const api::AccountChange& change);
+    void process_storage_change(CoherentStateRoot* root, StateVersionId version_id, const api::AccountChange& change);
+    bool add(KeyValue&& kv, CoherentStateRoot* root, StateVersionId version_id);
+    bool add_code(KeyValue&& kv, CoherentStateRoot* root, StateVersionId version_id);
+    Task<std::optional<Bytes>> get(StateVersionId version_id, ByteView key, Transaction& tx);
+    Task<std::optional<Bytes>> get_code(StateVersionId version_id, ByteView key, Transaction& tx);
+    CoherentStateRoot* get_root(StateVersionId version_id);
+    CoherentStateRoot* advance_root(StateVersionId version_id);
+    void evict_roots(StateVersionId next_version_id);
+    Task<CoherentStateRoot*> wait_for_root_ready(StateVersionId version_id);
+    Task<StateVersionId> get_db_state_version(Transaction& tx) const;
 
     CoherentCacheConfig config_;
 
-    std::map<StateViewId, std::unique_ptr<CoherentStateRoot>> state_view_roots_;
-    StateViewId latest_state_view_id_{0};
+    std::map<StateVersionId, std::unique_ptr<CoherentStateRoot>> state_view_roots_;
+    StateVersionId latest_state_version_id_{0};
     CoherentStateRoot* latest_state_view_{nullptr};
     std::list<KeyValue> state_evictions_;
     std::list<KeyValue> code_evictions_;
     std::shared_mutex rw_mutex_;
+    uint32_t new_block_wait_count_{0};
 
     uint64_t state_hit_count_{0};
     uint64_t state_miss_count_{0};

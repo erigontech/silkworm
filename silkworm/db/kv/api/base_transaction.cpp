@@ -53,13 +53,13 @@ Task<Bytes> BaseTransaction::get_one_impl_with_cache(const std::string& table, B
     if (state_cache_) {
         // Just PlainState and Code tables are present in state cache
         if (table == db::table::kPlainStateName) {
-            std::shared_ptr<StateView> view = state_cache_->get_view(*this);
+            std::shared_ptr<StateView> view = co_await state_cache_->get_view(*this);
             if (view != nullptr) {
                 const auto value = co_await view->get(key);
                 co_return value ? *value : silkworm::Bytes{};
             }
         } else if (table == db::table::kCodeName) {
-            std::shared_ptr<StateView> view = state_cache_->get_view(*this);
+            std::shared_ptr<StateView> view = co_await state_cache_->get_view(*this);
             if (view != nullptr) {
                 const auto value = co_await view->get_code(key);
                 co_return value ? *value : silkworm::Bytes{};

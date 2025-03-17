@@ -40,6 +40,9 @@ namespace fee {
 
     inline constexpr uint64_t kInitCodeWordCost{2};  // EIP-3860
 
+    inline constexpr uint64_t kTotalCostFloorPerToken{10};  // EIP-7623: Increase calldata cost
+    inline constexpr uint64_t kPerEmptyAccountCost{25000};  // EIP-7702 Set EOA account code
+
 }  // namespace fee
 
 inline constexpr uint64_t kMinGasLimit{5000};
@@ -73,6 +76,11 @@ inline constexpr uint64_t kMaxBlobGasPerBlock{6 * kGasPerBlob};
 inline constexpr uint64_t kMinBlobGasPrice{1};
 inline constexpr uint64_t kBlobGasPriceUpdateFraction{3338477};
 
+// EIP-7691: Blob throughput increase
+inline constexpr uint64_t kTargetBlobGasPerBlockPrague{786432};
+inline constexpr uint64_t kMaxBlobGasPerBlockPrague{1179648};
+inline constexpr uint64_t kBlobGasPriceUpdateFractionPrague{5007716};
+
 // EIP-4788: Beacon block root in the EVM
 using namespace evmc::literals;
 inline constexpr uint64_t kSystemCallGasLimit{30'000'000};
@@ -83,13 +91,13 @@ inline constexpr evmc::address kBeaconRootsAddress{0x000F3df6D732807Ef1319fB7B8b
 inline constexpr auto kDepositContractAddress{0x00000000219ab540356cbb839cbe05303d7705fa_address};
 
 // EIP-7002: Execution layer triggerable withdrawals
-inline constexpr auto kWithdrawalRequestAddress{0x09Fc772D0857550724b07B850a4323f39112aAaA_address};
+inline constexpr auto kWithdrawalRequestAddress{0x00000961EF480EB55E80D19AD83579A64C007002_address};
 
 // EIP-7251: Increase the MAX_EFFECTIVE_BALANCE
-inline constexpr auto kConsolidationRequestAddress{0x01aBEa29659e5e97C95107F20bb753cD3e09bBBb_address};
+inline constexpr auto kConsolidationRequestAddress{0x0000BBDDC7CE488642FB579F8B00F3A590007251_address};
 
 // EIP-2935: Serve historical block hashes from state
-inline constexpr evmc::address kHistoryStorageAddress{0x0aae40965e6800cd9b1f4b05ff21581047e3f91e_address};
+inline constexpr evmc::address kHistoryStorageAddress{0x0000F90827F1C53A10CB7A02335B175320002935_address};
 
 // Used in Bor
 inline constexpr size_t kExtraSealSize{65};

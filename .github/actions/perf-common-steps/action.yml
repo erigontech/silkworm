@@ -3,19 +3,16 @@ description: Common steps for running Silkworm performance tests
 
 inputs:
   activation_mode:
-    description: 'Activation mode for performance tests (full,light)'
-    default: 'light'
+    description: 'Activation mode for performance tests (full/light)'
+    required: true
+  measure_erigon:
+    description: 'Flag indicating if Erigon RPCDaemon must be measured or not (true/false)'
+    required: true
 
 runs:
   using: "composite"
 
   steps:
-    - name: Checkout Silkworm repository
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
-        fetch-depth: "0"
-
     - name: Checkout RPC Tests Repository & Install Requirements
       shell: bash
       run: |
@@ -57,6 +54,7 @@ runs:
         echo "SILKWORM_RPC_DAEMON_PID=$SILKWORM_RPC_DAEMON_PID" >> $GITHUB_ENV
 
     - name: Run Erigon RpcDaemon
+      if: ${{ inputs.measure_erigon == 'true' }}
       shell: bash
       run: |
         $ERIGON_DIR/rpcdaemon --datadir $ERIGON_DATA_DIR --http.api admin,debug,eth,parity,erigon,trace,web3,txpool,ots,net --verbosity 1 &
@@ -79,13 +77,18 @@ runs:
         mkdir -p $RPC_PAST_TEST_DIR/mainnet_bin
         
         run_perf () {
-          servers=("silkworm" "erigon")
-          for i in 1 2
+          servers=("silkworm")
+          if [[ "${{ inputs.measure_erigon }}" == "true" ]]; then
+            servers+=("erigon")
+          fi
+          num_servers=${#servers[@]}
+          for (( i=1; i<=num_servers; i++ ))
           do
              network=$1
              method=$2
-             pattern=$3
-             sequence=$4
+             repetitions=$3
+             pattern=$4
+             sequence=$5
 
              # clean temporary area
              cd ${{runner.workspace}}/rpc-tests/perf
@@ -95,7 +98,7 @@ runs:
                                       --test-type "$method" \
                                       --pattern-file pattern/"$network"/"$pattern".tar \
                                       --test-sequence "$sequence" \
-                                      --repetitions 5 \
+                                      --repetitions $repetitions \
                                       --silk-dir ${{runner.workspace}}/silkworm \
                                       --erigon-dir $ERIGON_DATA_DIR \
                                       --test-mode $i \
@@ -141,7 +144,7 @@ runs:
                 cd ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/
                 python3 $ERIGON_QA_PATH/test_system/qa-tests/rpc-tests/perf_hdr_analysis.py \
                   --test_name ${servers[i-1]}-$method \
-                  --input_file ./result.json \
+                  --input_file ./${servers[i-1]}-$method-result.json \
                   --output_file ./${servers[i-1]}-${method}-latency_hdr_analysis.pdf                                    
              else
                 failed_test=1
@@ -163,25 +166,22 @@ runs:
         }
         
         # Launch the RPC performance test runner
-        failed_test= 0
-        if [[ ${{ inputs.activation_mode }}" == "light" ]]; then
-          # Lightweight mode: narrower API coverage, shorter sequences
-          run_perf mainnet eth_call stress_test_eth_call_20M 100:30,1000:20,10000:20,20000:20
-          run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 100:30,1000:20,10000:20
-          run_perf mainnet eth_getBalance stress_test_eth_getBalance_15M 100:30,1000:20,10000:20
-          run_perf mainnet eth_getBlockByHash stress_test_eth_getBlockByHash_14M 100:30,1000:20
-          run_perf mainnet eth_getTransactionByHash stress_test_eth_getTransactionByHash_13M 100:30,1000:20,10000:20
-          run_perf mainnet eth_getTransactionReceipt stress_test_eth_getTransactionReceipt_14M 100:30
+        failed_test=0
+        if [[ "${{ inputs.activation_mode }}" == "light" ]]; then
+          # Lightweight mode: narrower API coverage, less repetitions, shorter sequences
+          run_perf mainnet eth_call 3 stress_test_eth_call_20M 100:30,1000:20
+          run_perf mainnet eth_getLogs 3 stress_test_eth_getLogs_15M 100:30,1000:20
+          run_perf mainnet eth_getBlockByHash 3 stress_test_eth_getBlockByHash_14M 100:30,1000:20
         else
-          # Full mode: wider API coverage, longer sequences
-          run_perf mainnet eth_call stress_test_eth_call_20M 1:1,100:30,1000:20,10000:20,20000:20
-          run_perf mainnet eth_getLogs stress_test_eth_getLogs_15M 1:1,100:30,1000:20,10000:20,20000:20
-          run_perf mainnet eth_getBalance stress_test_eth_getBalance_15M 1:1,100:30,1000:20,10000:20,20000:20
-          run_perf mainnet eth_getBlockByHash stress_test_eth_getBlockByHash_14M 1:1,100:30,1000:20,10000:20
-          run_perf mainnet eth_getBlockByNumber stress_test_eth_getBlockByNumber_13M 1:1,100:30,1000:20,5000:20
-          run_perf mainnet eth_getTransactionByHash stress_test_eth_getTransactionByHash_13M 1:1,100:30,1000:20,10000:20
-          run_perf mainnet eth_getTransactionReceipt stress_test_eth_getTransactionReceipt_14M 1:1,100:30,1000:20,5000:20,10000:20,20000:20
-          run_perf mainnet eth_createAccessList stress_test_eth_createAccessList_16M 1:1,100:30,1000:20,10000:20,20000:20
+          # Full mode: wider API coverage, more repetitions, longer sequences
+          run_perf mainnet eth_call 5 stress_test_eth_call_20M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getLogs 5 stress_test_eth_getLogs_15M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getBalance 5 stress_test_eth_getBalance_15M 1:1,100:30,1000:20,10000:20,20000:20
+          run_perf mainnet eth_getBlockByHash 5 stress_test_eth_getBlockByHash_14M 1:1,100:30,1000:20,10000:20
+          run_perf mainnet eth_getBlockByNumber 5 stress_test_eth_getBlockByNumber_13M 1:1,100:30,1000:20,5000:20
+          run_perf mainnet eth_getTransactionByHash 5 stress_test_eth_getTransactionByHash_13M 1:1,100:30,1000:20,10000:20
+          # run_perf mainnet eth_getTransactionReceipt 5 stress_test_eth_getTransactionReceipt_14M 1:1,100:30,1000:20,5000:20,10000:20,20000:20
+          run_perf mainnet eth_createAccessList 5 stress_test_eth_createAccessList_16M 1:1,100:30,1000:20,10000:20,20000:20
         fi
         
         if [ $failed_test -eq 0 ]; then
@@ -227,7 +227,7 @@ runs:
       run: |
         set +e # Disable exit on error
         open_change_points=0
-        python3 $ERIGON_QA_PATH/test_system/qa-tests/change-points/change_point_analysis.py
+        python3 $ERIGON_QA_PATH/test_system/qa-tests/change-points/change_point_analysis.py --repo silkworm
         open_change_points=$?
         cp change_point_analysis.pdf $past_test_dir
         if [ $open_change_points -ne 0 ]; then

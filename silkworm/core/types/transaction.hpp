@@ -38,17 +38,30 @@ struct AccessListEntry {
     friend bool operator==(const AccessListEntry&, const AccessListEntry&) = default;
 };
 
+class Transaction;
+
 // EIP-7702 Authorization
 struct Authorization {
     intx::uint256 chain_id;
     evmc::address address;
     uint64_t nonce{};
-    intx::uint256 v;
+    uint8_t y_parity{};
     intx::uint256 r;
     intx::uint256 s;
 
     friend bool operator==(const Authorization&, const Authorization&) = default;
+    std::optional<evmc::address> recover_authority(const Transaction& txn) const;
+    intx::uint256 v() const;
 };
+
+namespace eip7702 {
+    // EIP-7702 Set EOA account code
+    constexpr uint8_t kDelegationBytes[] = {0xef, 0x01, 0x00};
+    constexpr ByteView kDelegationPrefix{kDelegationBytes, std::size(kDelegationBytes)};
+    constexpr bool is_code_delegated(ByteView code) noexcept {
+        return code.starts_with(kDelegationPrefix);
+    }
+}  // namespace eip7702
 
 // EIP-2718 transaction type
 // https://github.com/ethereum/eth1.0-specs/tree/master/lists/signature-types
@@ -138,6 +151,7 @@ namespace rlp {
 
     void encode(Bytes& to, const Authorization&);
     size_t length(const Authorization&);
+    void encode_for_signing(Bytes& to, const Authorization&);
 
     // According to EIP-2718, serialized transactions are prepended with 1 byte containing the type
     // (0x02 for EIP-1559 transactions); the same goes for receipts. This is true for signing and

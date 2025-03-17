@@ -16,7 +16,6 @@
 
 #include "btree.hpp"
 
-#include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/ensure.hpp>
@@ -43,7 +42,7 @@ static CompareResult compare_key(
     BTree::DataIndex key_index,
     const BTree::KeyValueIndex& index) {
     auto data_key = index.lookup_key(key_index);
-    ensure(data_key.has_value(), [&]() { return "out-of-bounds data_index=" + std::to_string(key_index); });
+    ensure(data_key.has_value(), [&]() { return "out-of-bounds key=" + to_hex(key) + " data_index=" + std::to_string(key_index); });
     int cmp = data_key->compare(key);
     return {cmp, std::move(*data_key)};
 }
@@ -111,23 +110,17 @@ std::optional<BTree::GetResult> BTree::get(ByteView key, const KeyValueIndex& in
         return GetResult{std::move(kv_pair->second), 0};
     }
     auto [_, left_index, right_index] = binary_search_in_cache(key);  // left_index == right_index when key is found
-    uint64_t median = 0;
     while (left_index < right_index) {
-        median = (left_index + right_index) >> 1;
+        const uint64_t median = (left_index + right_index) >> 1;
         const auto [cmp, k] = compare_key(key, median, index);
-        switch (cmp) {
-            case 0: {
-                auto kv_pair = index.lookup_key_value(median);
-                return GetResult{std::move(kv_pair->second), median};
-            }
-            case 1:
-                right_index = median;
-                break;
-            case -1:
-                left_index = median + 1;
-                break;
-            default:
-                SILKWORM_ASSERT(false);
+        if (cmp == 0) {
+            auto kv_pair = index.lookup_key_value(median);
+            return GetResult{std::move(kv_pair->second), median};
+        }
+        if (cmp > 0) {
+            right_index = median;
+        } else {  // cmp < 0
+            left_index = median + 1;
         }
     }
     const auto [cmp, k] = compare_key(key, left_index, index);

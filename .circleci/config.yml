@@ -179,6 +179,7 @@ commands:
       - run:
           name: "Execution spec tests"
           working_directory: ~/build
+          no_output_timeout: 60m
           command: cmd/test/ethereum --tests $HOME/project/third_party/eest-fixtures
 
   fuzz-test:
@@ -294,6 +295,7 @@ jobs:
           command: LLVM_PROFILE_FILE=ethereum.profraw ~/build/cmd/test/ethereum
       - run:
           name: "Execution spec tests"
+          no_output_timeout: 60m
           command: LLVM_PROFILE_FILE=execution-spec.profraw ~/build/cmd/test/ethereum --tests $HOME/project/third_party/eest-fixtures
       - run:
           name: "Coverage"

@@ -1,2 +1,0 @@
-ref: refs/tags/pectra-devnet-6@v1.0.0
-commit: ca0bdec9427edee31984149e71801debaf464bc3

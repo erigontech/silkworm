@@ -179,6 +179,7 @@ commands:
       - run:
           name: "Execution spec tests"
           working_directory: ~/build
+          no_output_timeout: 30m
           command: cmd/test/ethereum --tests $HOME/project/third_party/eest-fixtures
 
   fuzz-test:

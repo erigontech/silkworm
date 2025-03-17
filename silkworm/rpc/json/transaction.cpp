@@ -130,7 +130,7 @@ void make_glaze_json_transaction(const silkworm::Transaction& tx, GlazeJsonTrans
             GlazeJsonAuthorization authorization_json_tx;
             to_quantity(std::span(authorization_json_tx.chain_id), silkworm::endian::to_big_compact(authorization.chain_id));
             to_hex(std::span(authorization_json_tx.address), authorization.address.bytes);
-            to_quantity(std::span(authorization_json_tx.v), silkworm::endian::to_big_compact(authorization.v));
+            to_quantity(std::span(authorization_json_tx.y_parity), silkworm::endian::to_big_compact(authorization.y_parity));
             to_quantity(std::span(authorization_json_tx.r), silkworm::endian::to_big_compact(authorization.r));
             to_quantity(std::span(authorization_json_tx.s), silkworm::endian::to_big_compact(authorization.s));
 

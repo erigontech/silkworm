@@ -93,6 +93,7 @@ struct ChainConfig {
     // The Shanghai hard fork has withdrawals, but Agra does not
     bool withdrawals_activated(BlockTime block_time) const noexcept;
     bool is_london(BlockNum block_num) const noexcept;
+    bool is_prague(BlockNum block_num, BlockTime block_time) const noexcept;
 
     //! \brief Returns the revision level at given block number
     //! \details In other words, on behalf of Json chain config data

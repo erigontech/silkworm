@@ -41,7 +41,7 @@
 #include <silkworm/infra/common/terminal.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 
-// See EEST: https://ethereum.github.io/execution-spec-tests.
+// See EEST: https://github.com/erigontech/eest-fixtures.
 // See legacy tests: https://ethereum-tests.readthedocs.io.
 
 using namespace silkworm;

@@ -43,9 +43,9 @@ class StateView {
 
     virtual bool empty() const = 0;
 
-    virtual Task<std::optional<Bytes>> get(ByteView key) = 0;
+    virtual Task<std::optional<Bytes>> get(std::string_view table, Bytes key) = 0;
 
-    virtual Task<std::optional<Bytes>> get_code(ByteView key) = 0;
+    virtual Task<std::optional<Bytes>> get_code(Bytes key) = 0;
 };
 
 using StateVersionId = uint64_t;
@@ -106,9 +106,9 @@ class CoherentStateView : public StateView {
 
     bool empty() const override;
 
-    Task<std::optional<Bytes>> get(ByteView key) override;
+    Task<std::optional<Bytes>> get(std::string_view table, Bytes key) override;
 
-    Task<std::optional<Bytes>> get_code(ByteView key) override;
+    Task<std::optional<Bytes>> get_code(Bytes key) override;
 
   private:
     StateVersionId version_id_;
@@ -148,8 +148,8 @@ class CoherentStateCache : public StateCache {
     void process_storage_change(CoherentStateRoot* root, StateVersionId version_id, const api::AccountChange& change);
     bool add(KeyValue&& kv, CoherentStateRoot* root, StateVersionId version_id);
     bool add_code(KeyValue&& kv, CoherentStateRoot* root, StateVersionId version_id);
-    Task<std::optional<Bytes>> get(StateVersionId version_id, ByteView key, Transaction& tx);
-    Task<std::optional<Bytes>> get_code(StateVersionId version_id, ByteView key, Transaction& tx);
+    Task<std::optional<Bytes>> get(StateVersionId version_id, std::string_view table, Bytes key, Transaction& tx);
+    Task<std::optional<Bytes>> get_code(StateVersionId version_id, Bytes key, Transaction& tx);
     CoherentStateRoot* get_root(StateVersionId version_id);
     CoherentStateRoot* advance_root(StateVersionId version_id);
     void evict_roots(StateVersionId next_version_id);

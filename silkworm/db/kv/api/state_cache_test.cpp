@@ -217,7 +217,7 @@ struct StateCacheTest : public silkworm::test_util::ContextTestBase {
         std::unique_ptr<StateView> view = co_await cache.get_view(txn);
         if (!view) co_return std::nullopt;
         const Bytes address_key{address.bytes, kAddressLength};
-        const auto value = co_await view->get(address_key);
+        const auto value = co_await view->get(table::kAccountDomain, address_key);
         if (!value) co_return std::nullopt;
         co_return *value;
     }
@@ -328,7 +328,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[db][
         std::unique_ptr<StateView> view = spawn_and_wait(cache.get_view(txn));
         REQUIRE(view);
         const Bytes address_key{kTestAddress1.bytes, kAddressLength};
-        const auto value1 = spawn_and_wait(view->get(address_key));
+        const auto value1 = spawn_and_wait(view->get(table::kAccountDomain, address_key));
         REQUIRE(value1);
         CHECK(value1->empty());
         CHECK(cache.state_hit_count() == 1);
@@ -346,7 +346,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[db][
         std::unique_ptr<StateView> view = spawn_and_wait(cache.get_view(txn));
         REQUIRE(view);
         const auto storage_key1 = composite_storage_key(kTestAddress1, kTestIncarnation, kTestHashedLocation1.bytes);
-        const auto value = spawn_and_wait(view->get(storage_key1));
+        const auto value = spawn_and_wait(view->get(table::kStorageDomain, storage_key1));
         REQUIRE(value == kTestStorageData1);
         CHECK(cache.state_hit_count() == 1);
         CHECK(cache.state_miss_count() == 0);
@@ -369,7 +369,7 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[db][
         REQUIRE(view);
 
         const auto storage_key2 = composite_storage_key(kTestAddress1, kTestIncarnation, kTestHashedLocation2.bytes);
-        const auto value = spawn_and_wait(view->get(storage_key2));
+        const auto value = spawn_and_wait(view->get(table::kStorageDomain, storage_key2));
         REQUIRE(value == kTestStorageData2);
         CHECK(cache.state_hit_count() == 0);
         CHECK(cache.state_miss_count() == 1);
@@ -386,10 +386,10 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view one view", "[db][
         std::unique_ptr<StateView> view = spawn_and_wait(cache.get_view(txn));
         REQUIRE(view);
         const auto storage_key1 = composite_storage_key(kTestAddress1, kTestIncarnation, kTestHashedLocation1.bytes);
-        const auto value1 = spawn_and_wait(view->get(storage_key1));
+        const auto value1 = spawn_and_wait(view->get(table::kStorageDomain, storage_key1));
         REQUIRE(value1 == kTestStorageData1);
         const auto storage_key2 = composite_storage_key(kTestAddress1, kTestIncarnation, kTestHashedLocation2.bytes);
-        const auto value2 = spawn_and_wait(view->get(storage_key2));
+        const auto value2 = spawn_and_wait(view->get(table::kStorageDomain, storage_key2));
         REQUIRE(value2 == kTestStorageData2);
         CHECK(cache.state_hit_count() == 2);
         CHECK(cache.state_miss_count() == 0);

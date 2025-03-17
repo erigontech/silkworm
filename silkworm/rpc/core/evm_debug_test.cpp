@@ -55,7 +55,7 @@ class TestDebugExecutor : DebugExecutor {
         WorkerPool& workers,
         kv::api::Transaction& tx,
         DebugConfig config = {})
-        : DebugExecutor(block_cache, workers, tx, config) {}
+        : DebugExecutor(block_cache, workers, tx, /*state_cache=*/nullptr, config) {}
     ~TestDebugExecutor() override = default;
 
     TestDebugExecutor(const TestDebugExecutor&) = delete;

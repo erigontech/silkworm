@@ -59,7 +59,7 @@ struct HistoryRangeByKeysQuery {
         };
     }
 
-    auto exec_with_eager_begin(Bytes key_start, Bytes key_end, Timestamp timestamp, bool ascending) {
+    auto exec_with_eager_begin(const Bytes& key_start, Bytes key_end, Timestamp timestamp, bool ascending) {
         SILKWORM_ASSERT(ascending);  // descending is not implemented
 
         CursorMoveIterator begin_it;

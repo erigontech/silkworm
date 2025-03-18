@@ -89,7 +89,9 @@ class EliasFanoList32 {
     uint64_t at(size_t i) const;
     uint64_t operator[](size_t i) const { return at(i); }
 
-    //! Find the first index where at(i) >= value, and return (i, value) or nullopt if not found
+    //! Find the first index where at(i) >= value if reverse = false.
+    //! Find the last index where at(i) <= value if reverse = true.
+    //! \return (i, value) or nullopt if not found
     std::optional<std::pair<size_t, uint64_t>> seek(uint64_t value, bool reverse = false) const;
 
     friend std::ostream& operator<<(std::ostream& os, const EliasFanoList32& ef);

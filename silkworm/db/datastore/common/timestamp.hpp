@@ -32,7 +32,7 @@ struct TimestampRange {
     TimestampRange(Timestamp start1, Timestamp end1) : start(start1), end(end1) {}
     friend bool operator==(const TimestampRange&, const TimestampRange&) = default;
     bool contains(Timestamp value) const { return (start <= value) && (value < end); }
-    auto contains_predicate() {
+    auto contains_predicate() const {
         return [range = *this](Timestamp t) { return range.contains(t); };
     };
     bool contains_range(TimestampRange range) const { return (start <= range.start) && (range.end <= end); }

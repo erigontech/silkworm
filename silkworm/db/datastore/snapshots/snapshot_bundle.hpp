@@ -36,15 +36,15 @@
 namespace silkworm::snapshots {
 
 struct SnapshotBundleEntityData {
-    std::map<datastore::EntityName, segment::SegmentFileReader> segments;
-    std::map<datastore::EntityName, segment::KVSegmentFileReader> kv_segments;
-    std::map<datastore::EntityName, rec_split::AccessorIndex> accessor_indexes;
-    std::map<datastore::EntityName, bloom_filter::BloomFilter> existence_indexes;
-    std::map<datastore::EntityName, btree::BTreeIndex> btree_indexes;
+    datastore::EntityMap<segment::SegmentFileReader> segments;
+    datastore::EntityMap<segment::KVSegmentFileReader> kv_segments;
+    datastore::EntityMap<rec_split::AccessorIndex> accessor_indexes;
+    datastore::EntityMap<bloom_filter::BloomFilter> existence_indexes;
+    datastore::EntityMap<btree::BTreeIndex> btree_indexes;
 };
 
 struct SnapshotBundleData {
-    std::map<datastore::EntityName, SnapshotBundleEntityData> entities;
+    datastore::EntityMap<SnapshotBundleEntityData> entities;
 };
 
 SnapshotBundleData open_bundle_data(
@@ -67,8 +67,8 @@ struct SnapshotBundlePaths {
     StepRange step_range() const { return step_range_; }
 
     std::vector<std::filesystem::path> files() const;
-    std::map<datastore::EntityName, SnapshotPath> segment_paths() const;
-    std::map<datastore::EntityName, SnapshotPath> accessor_index_paths() const;
+    datastore::EntityMap<SnapshotPath> segment_paths() const;
+    datastore::EntityMap<SnapshotPath> accessor_index_paths() const;
 
   private:
     Schema::RepositoryDef schema_;

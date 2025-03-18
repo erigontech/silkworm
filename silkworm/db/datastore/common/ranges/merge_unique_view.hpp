@@ -62,9 +62,8 @@ class MergeUniqueView : public std::ranges::view_interface<MergeUniqueView<Range
               sentinel2_{std::ranges::end(range2)},
               comp_{comp},
               proj1_{std::move(proj1)},
-              proj2_{std::move(proj2)} {
-            selector_ = select(it1_ended(), it2_ended());
-        }
+              proj2_{std::move(proj2)},
+              selector_{select(it1_ended(), it2_ended())} {}
 
         reference operator*() const {
             switch (selector_) {
@@ -138,13 +137,13 @@ class MergeUniqueView : public std::ranges::view_interface<MergeUniqueView<Range
             return 1;
         }
 
-        Range1Iterator it1_;
-        Range1Sentinel sentinel1_;
-        Range2Iterator it2_;
-        Range2Sentinel sentinel2_;
+        Range1Iterator it1_{};
+        Range1Sentinel sentinel1_{};
+        Range2Iterator it2_{};
+        Range2Sentinel sentinel2_{};
         const Comp* comp_{nullptr};
-        Proj1 proj1_;
-        Proj2 proj2_;
+        Proj1 proj1_{};
+        Proj2 proj2_{};
         char selector_{0};
     };
 

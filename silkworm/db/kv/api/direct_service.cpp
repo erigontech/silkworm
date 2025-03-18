@@ -26,7 +26,7 @@ namespace silkworm::db::kv::api {
 DirectService::DirectService(ServiceRouter router, DataStoreRef data_store, StateCache* state_cache)
     : router_{router},
       data_store_{std::move(data_store)},
-      state_cache_{state_cache} {}
+      shared_transaction_cache_{std::make_shared<LocalTransaction::Cache>(state_cache)} {}
 
 // rpc Version(google.protobuf.Empty) returns (types.VersionReply);
 Task<Version> DirectService::version() {
@@ -35,7 +35,7 @@ Task<Version> DirectService::version() {
 
 // rpc Tx(stream Cursor) returns (stream Pair);
 Task<std::unique_ptr<Transaction>> DirectService::begin_transaction() {
-    co_return std::make_unique<LocalTransaction>(data_store_, state_cache_);
+    co_return std::make_unique<LocalTransaction>(data_store_, shared_transaction_cache_);
 }
 
 // rpc StateChanges(StateChangeRequest) returns (stream StateChangeBatch);

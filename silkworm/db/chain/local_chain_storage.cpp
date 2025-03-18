@@ -23,8 +23,18 @@
 
 namespace silkworm::db::chain {
 
+LocalChainStorage::LocalChainStorage(
+    db::DataModel data_model,
+    std::shared_ptr<Cache> cache)
+    : data_model_{data_model},
+      cache_{cache} {
+    std::call_once(cache_->chain_config_once_flag, [this] {
+        cache_->chain_config = data_model_.read_chain_config();
+    });
+}
+
 Task<ChainConfig> LocalChainStorage::read_chain_config() const {
-    const auto chain_config{data_model_.read_chain_config()};
+    const auto chain_config = cache_->chain_config;
     if (!chain_config) {
         throw std::runtime_error{"empty chain config data in storage"};
     }

@@ -29,6 +29,6 @@ struct UniqueViewFactory {
 };
 
 template <class Comp = MergeCompareFunc, class Proj = std::identity>
-inline constexpr UniqueViewFactory<Comp, Proj> unique;
+inline constexpr UniqueViewFactory<Comp, Proj> unique;  // NOLINT(*-identifier-naming)
 
 }  // namespace silkworm::views

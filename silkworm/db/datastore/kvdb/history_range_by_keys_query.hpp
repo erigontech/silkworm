@@ -113,7 +113,7 @@ struct HistoryRangeByKeysQuery {
             } else {
                 begin_it = CursorMoveIterator{std::move(begin_cursor), MoveOperation::multi_nextkey_firstvalue};
 
-                seek_func = [timestamp](std::shared_ptr<ROCursor> base_cursor) -> std::shared_ptr<ROCursor> {
+                seek_func = [timestamp](const std::shared_ptr<ROCursor>& base_cursor) -> std::shared_ptr<ROCursor> {
                     auto cursor = base_cursor->clone();
                     auto result = cursor->current();
                     SILKWORM_ASSERT(result);

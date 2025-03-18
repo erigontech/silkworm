@@ -101,7 +101,7 @@ class EliasFanoList32 {
   private:
     EliasFanoList32() = default;
 
-    uint64_t upper(uint64_t c) const;
+    uint64_t upper(uint64_t i) const;
     uint64_t derive_fields();
 
     static constexpr size_t kCountLength{sizeof(uint64_t)};

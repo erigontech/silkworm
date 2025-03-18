@@ -48,7 +48,7 @@ struct DomainRangeLatestQuery {
         return decode_kv_pair(kv_pair);
     };
 
-    auto exec_with_eager_begin(Bytes key_start, Bytes key_end, bool ascending) {
+    auto exec_with_eager_begin(const Bytes& key_start, Bytes key_end, bool ascending) {
         SILKWORM_ASSERT(ascending);  // descending is not implemented
 
         using CursorKVIteratorRaw = CursorKVIterator<DomainKeyDecoder<RawDecoder<ByteView>>, DomainValueDecoder<RawDecoder<ByteView>>>;
@@ -88,12 +88,12 @@ struct DomainRangeLatestQuery {
         TKeyEncoder key_start_encoder;
         key_start_encoder.value = key_start;
         Slice key_start_slice = key_start_encoder.encode();
-        Bytes key_start_data = Bytes{from_slice(key_start_slice)};
+        Bytes key_start_data = Bytes{from_slice(key_start_slice)};  // TODO(canepat) extract data from encoder instead of copying
 
         TKeyEncoder key_end_encoder;
         key_end_encoder.value = key_end;
         Slice key_end_slice = key_end_encoder.encode();
-        Bytes key_end_data = Bytes{from_slice(key_end_slice)};
+        Bytes key_end_data = Bytes{from_slice(key_end_slice)};  // TODO(canepat) extract data from encoder instead of copying
 
         auto exec_func = [query = *this, key_start = std::move(key_start_data), key_end = std::move(key_end_data), ascending]() mutable {
             return query.exec_with_eager_begin(std::move(key_start), std::move(key_end), ascending);

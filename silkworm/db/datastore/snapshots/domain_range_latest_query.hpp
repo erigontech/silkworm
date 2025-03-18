@@ -33,7 +33,7 @@ struct DomainRangeLatestSegmentQuery {
 
     using ResultItem = btree::BTreeIndex::Cursor::value_type;
 
-    auto exec_with_eager_begin(Bytes key_start, Bytes key_end, bool ascending) {
+    auto exec_with_eager_begin(const Bytes& key_start, Bytes key_end, bool ascending) {
         SILKWORM_ASSERT(ascending);  // descending is not implemented
 
         auto begin_it = entity_.btree_index.seek(key_start, entity_.kv_segment).value_or(btree::BTreeIndex::Cursor{});

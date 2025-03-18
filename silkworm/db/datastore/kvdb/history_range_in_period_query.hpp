@@ -18,11 +18,11 @@
 
 #include <functional>
 #include <ranges>
-#include <variant>
 
 #include <silkworm/core/common/assert.hpp>
 
 #include "../common/ranges/caching_view.hpp"
+#include "../common/ranges/lazy_view.hpp"
 #include "../common/timestamp.hpp"
 #include "cursor_iterator.hpp"
 #include "history.hpp"
@@ -153,11 +153,10 @@ struct HistoryRangeInPeriodQuery {
     }
 
     auto exec(TimestampRange ts_range, bool ascending) {
-        auto exec_func = [query = *this, ts_range, ascending](std::monostate) mutable {
+        auto exec_func = [query = *this, ts_range, ascending]() mutable {
             return query.exec_with_eager_begin(ts_range, ascending);
         };
-        // turn into a lazy view that runs exec_func only when iteration is started using range::begin()
-        return std::views::single(std::monostate{}) | std::views::transform(std::move(exec_func)) | std::views::join;
+        return silkworm::ranges::lazy(std::move(exec_func));
     }
 };
 

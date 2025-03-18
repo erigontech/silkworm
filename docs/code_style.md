@@ -255,6 +255,153 @@ Sometimes we use `std::unique_ptr/smart_ptr` to delay initialization or for opti
 
 Use a default-constructed `std::unique_ptr/smart_ptr` where null is expected.
 
+### P19 name prefix for factory functions
+
+Use `make` name/prefix for factory functions instead of `build` or `create`:
+
+	SentryPtrPair make_sentry(...)
+	std::shared_ptr<TimerImpl> make(...)
+	std::string make_thread_name(...)
+
+`build` prefix can be used for a “builder” pattern, where it might have no parameters, and potential side effects, for example `RecSplit::build()`.
+
+### P20 to_string method naming
+
+Use `to_string()` by default to convert an object to std::string (e.g. for logging purposes). Only provide `operator<<` if needed (implemented on top of `to_string()`).
+
+If a global function is required, `xxx_to_string()` name should be used.
+
+### P21 multiline parameters indentation
+
+Default to 1 parameter per line.
+
+Accepted styles:
+
+	ValidationResult execute_block(
+		const Block& block,
+		State& state,
+		const ChainConfig& chain_config);
+
+	ValidationResult execute_block(const Block& block,
+                                   State& state,
+                                   const ChainConfig& chain_config);
+
+The first style is more friendly to Git.
+The 2nd style in .cpp files clearly splits the function body from parameters.
+
+Bad:
+
+    void start_new_batch(BlockNum block_height, const evmc::bytes32& block_hash,
+                         const std::vector<Bytes>&& tx_rlps, bool unwind);
+
+### P22 trailing comments
+
+Trailing comments are banned.
+
+Good:
+
+	class StateChangeCollection {
+		//! The database transaction ID associated with the state changes.
+		uint64_t tx_id_{0};
+	};
+
+	// Download the torrent files via web seeding from settings.url_seed
+	auto web_seed_torrents = download_web_seed(settings);
+
+Bad:
+
+	struct AppOptions {
+		std::string datadir{};  // Provided database path
+	};
+
+	block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
+
+### P23 string constants
+
+When defining a string constant prefer `string_view`.
+
+Good:
+
+	constexpr std::string_view kDbDataFileName{"mdbx.dat"};
+	constexpr std::string_view kDbDataFileName = "mdbx.dat";
+
+Bad:
+
+	constexpr const char* kPruneModeHistoryKey{"pruneHistory"};
+	constexpr const char* kSafeBlockHash = "safeBlockHash";
+	static const std::string kHeadBlockHash = "headBlockHash";
+	constexpr std::string_view kTorrentExtension{".torrent"sv};
+
+### P24 tmp vs temp naming convention
+
+The word "temporary" should be abbreviated as `tmp`, not `temp`.
+
+Good: 
+
+	TemporaryDirectory tmp_dir;
+
+Bad:
+
+	TempChainData temp_chaindata;
+
+### P25 license boilerplate
+
+Use SPDX short form like in evmone:
+
+	// Copyright 2025 The Silkworm Authors.
+	// SPDX-License-Identifier: Apache-2.0
+
+### P26 filename vs file name
+
+Use `filename` (and `Filename`) everywhere.
+
+Good:
+
+	fs::path entry_filename = entry.path().stem();
+	FilenameFormat format;
+
+Bad:
+
+	std::string get_file_name();
+	const char* kSessionFileName{".session"};
+
+### P27 member init list vs constructor body code
+
+Prefer constructors based on member init list.
+
+Use constructor body code if the member init list approach leads to cluttered dense code.
+It is possible to unclutter the member init list using static helper functions,
+but constructor body code benefit is that it keeps the init sequence in one place.
+
+### P28 Bytes size() vs length()
+
+Prefer `size()` instead of `length()`. The methods are aliases of each other.
+
+### P29 friend vs member comparison operators
+
+Prefer "friend" version of the comparison operators as it is more versatile, and in some cases mandatory (e.g. for using as a key of std::map).
+
+Good:
+
+	friend bool operator==(const Config& lhs, const Config& rhs) = default;
+
+Bad:
+
+	bool operator==(const Config& other) const = default;
+
+### P30 tx vs txn naming
+
+Use "txn", "txns" abbreviations for Ethereum transactions.  
+Use "tx", "txs" abbreviations for database transactions.
+
+Good:
+
+	Stage::Result TxnLookup::forward(RWTx& tx)
+
+Bad:
+
+	Stage::Result TxLookup::forward(RWTxn& txn)
+
 
 [cpp-core-guidelines]: https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines
 [cpp-google-style-guide]: https://google.github.io/styleguide/cppguide.html

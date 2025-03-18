@@ -35,10 +35,10 @@ inline auto timestamp_range_filter(elias_fano::EliasFanoList32 list, datastore::
     size_t start = 0;
     size_t end = list.size();
     if (ascending) {
-        auto start_opt = list.seek(ts_range.start, ascending);
+        auto start_opt = list.seek(ts_range.start, /*reverse=*/false);
         start = start_opt ? start_opt->first : end;
     } else if (ts_range.size() > 0) {
-        auto last_opt = list.seek(ts_range.end - 1, ascending);
+        auto last_opt = list.seek(ts_range.end - 1, /*reverse=*/true);
         end = last_opt ? last_opt->first + 1 : start;
     } else {
         start = end;

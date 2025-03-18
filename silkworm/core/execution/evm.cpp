@@ -327,7 +327,7 @@ void EVM::remove_tracers() noexcept {
 bool EvmHost::account_exists(const evmc::address& address) const noexcept {
     const evmc_revision rev{evm_.revision()};
     if (precompile::is_precompile(address, rev)) {
-        return true;
+        return false;
     }
     if (rev >= EVMC_SPURIOUS_DRAGON) {
         return !evm_.state().is_dead(address);

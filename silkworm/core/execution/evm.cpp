@@ -225,7 +225,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
             // Match geth logic
             // https://github.com/ethereum/go-ethereum/blob/v1.9.25/core/vm/evm.go#L391
             if (!precompile::is_precompile(message.recipient, rev)) {
-               state_.touch(message.recipient);
+                state_.touch(message.recipient);
             }
         } else {
             transfer(state_, message.sender, message.recipient, value, bailout);

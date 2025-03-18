@@ -14,5 +14,8 @@
    limitations under the License.
 ]]
 
-set(SECP256K1_ENABLE_MODULE_RECOVERY ON CACHE BOOL "Enable ECDSA pubkey recovery module." FORCE)
+set(SECP256K1_ENABLE_MODULE_RECOVERY
+    ON
+    CACHE BOOL "Enable ECDSA pubkey recovery module." FORCE
+)
 add_subdirectory(secp256k1)

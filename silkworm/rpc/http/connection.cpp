@@ -21,6 +21,10 @@
 #include <exception>
 #include <string_view>
 
+#include <iostream>
+#include <vector>
+#include <third_party/libdeflate/libdeflate/libdeflate.h>
+
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/use_awaitable.hpp>
@@ -452,11 +456,51 @@ Task<void> Connection::compress(const std::string& clear_data, std::string& comp
     boost::iostreams::filtering_ostream out;
     co_await async_task(workers_.executor(), [&]() -> void {
 #ifndef SILKWORM_SANITIZE
+        //out.push(boost::iostreams::gzip_compressor(boost::iostreams::gzip::best_speed));
+        //out.push(boost::iostreams::gzip_compressor(1));
+        //out.push(boost::iostreams::gzip_compressor(boost::iostreams::gzip::best_compression));
         out.push(boost::iostreams::gzip_compressor());
 #endif
         out.push(boost::iostreams::back_inserter(compressed_data));
         boost::iostreams::copy(boost::make_iterator_range(clear_data), out);
+#ifdef notdef
+        compress_gzip(clear_data, compressed_data); 
+#endif
     });
+}
+
+
+void Connection::compress_gzip(const std::string& clear_data, std::string& compressed_data) {
+    int compression_level = 6;
+    // Alloca il compressore con il livello di compressione specificato
+    struct libdeflate_compressor* compressor = libdeflate_alloc_compressor(compression_level);
+    if (compressor == nullptr) {
+        throw std::runtime_error("Impossibile allocare il compressore");
+    }
+
+    // Stima la dimensione massima del buffer per la compressione
+    size_t maxCompressedSize = libdeflate_gzip_compress_bound(compressor, clear_data.size());
+
+    compressed_data.resize(maxCompressedSize);
+
+    // Comprimi i dati
+    size_t actualCompressedSize = libdeflate_gzip_compress(
+        compressor,
+        clear_data.data(),
+        clear_data.size(),
+        compressed_data.data(),
+        compressed_data.size()
+    );
+
+    // Libera la memoria del compressore
+    libdeflate_free_compressor(compressor);
+
+    if (actualCompressedSize == 0) {
+        throw std::runtime_error("Errore durante la compressione");
+    }
+
+    // Ridimensiona il buffer per includere solo i dati compressi reali
+    compressed_data.resize(actualCompressedSize);
 }
 
 }  // namespace silkworm::rpc::http

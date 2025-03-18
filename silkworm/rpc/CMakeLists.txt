@@ -32,6 +32,7 @@ set(SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES
     asio-grpc::asio-grpc
     cborcpp
     evmone
+    libdeflate
     glaze::glaze
     gRPC::grpc++
     jwt-cpp::jwt-cpp

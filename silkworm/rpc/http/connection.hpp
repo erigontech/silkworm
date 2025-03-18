@@ -100,6 +100,8 @@ class Connection : public StreamWriter {
     static std::string get_date_time();
 
     Task<void> compress(const std::string& clear_data, std::string& compressed_data);
+    void compress_gzip(const std::string& clear_data, std::string& compressed_data);
+
 
     //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;

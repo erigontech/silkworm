@@ -46,3 +46,6 @@
 	path = third_party/execution-apis
 	url = https://github.com/ethereum/execution-apis.git
 	branch = main
+[submodule "third_party/libdeflate/libdeflate"]
+	path = third_party/libdeflate/libdeflate
+	url = https://github.com/ebiggers/libdeflate

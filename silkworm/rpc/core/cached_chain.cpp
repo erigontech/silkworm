@@ -66,13 +66,17 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const
     co_return block_with_hash;
 }
 
-Task<std::shared_ptr<BlockWithHash>> read_block_by_block_num_or_hash(BlockCache& cache, const db::chain::ChainStorage& storage, db::kv::api::Transaction& tx, const BlockNumOrHash& block_num_or_hash) {
+Task<std::shared_ptr<BlockWithHash>> read_block_by_block_num_or_hash(BlockCache& cache,
+                                                                     const db::chain::ChainStorage& storage,
+                                                                     db::kv::api::Transaction& tx,
+                                                                     db::kv::api::StateCache* state_cache,
+                                                                     const BlockNumOrHash& block_num_or_hash) {
     if (block_num_or_hash.is_number()) {  // NOLINT(bugprone-branch-clone)
         co_return co_await read_block_by_number(cache, storage, block_num_or_hash.number());
     } else if (block_num_or_hash.is_hash()) {
         co_return co_await read_block_by_hash(cache, storage, block_num_or_hash.hash());
     } else if (block_num_or_hash.is_tag()) {
-        rpc::BlockReader block_reader{storage, tx};
+        rpc::BlockReader block_reader{storage, tx, state_cache};
         auto [block_num, ignore] = co_await block_reader.get_block_num(block_num_or_hash.tag(), /*latest_required=*/false);
         co_return co_await read_block_by_number(cache, storage, block_num);
     }

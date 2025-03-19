@@ -847,7 +847,7 @@ static void print_txn(const Transaction& txn, const std::string& filename) {
                          rep.append(intx::to_string(authorization.chain_id));
                          rep.append(address_to_hex(authorization.address));
                          rep.append(std::to_string(authorization.nonce));
-                         rep.append(intx::to_string(authorization.v));
+                         rep.append(std::to_string(authorization.y_parity));
                          rep.append(intx::to_string(authorization.r));
                          rep.append(intx::to_string(authorization.s));
                          if (i != txn.authorizations.size() - 1) rep.append("], ");

@@ -16,38 +16,25 @@
 
 #pragma once
 
-#include <silkworm/core/common/base.hpp>
+#include <cstdint>
+#include <limits>
+#include <string>
+
 #include <silkworm/infra/common/ensure.hpp>
 
-#include "timestamp.hpp"
-
 namespace silkworm::datastore {
-
-//! Scale factor to convert from-to block number values in block snapshot file names
-inline constexpr size_t kStepSizeForBlockSnapshots = 1'000;
-
-//! Scale factor to convert from-to txn id values in temporal snapshot file names
-inline constexpr size_t kStepSizeForTemporalSnapshots = 1'562'500;  // = 100M / 64
 
 struct Step {
     size_t value;
 
-    explicit Step(size_t value1) : value(value1) {}
+    constexpr explicit Step(size_t value1) : value(value1) {}
     friend bool operator==(const Step&, const Step&) = default;
     bool operator<(const Step& other) const { return this->value < other.value; }
     bool operator<=(const Step& other) const { return this->value <= other.value; }
     std::string to_string() const { return std::to_string(value) + "st"; }
-
-    BlockNum to_block_num() const { return value * kStepSizeForBlockSnapshots; }
-    static Step from_block_num(BlockNum block_num) {
-        return Step{static_cast<size_t>(block_num / kStepSizeForBlockSnapshots)};
-    }
-
-    TxnId to_txn_id() const { return value * kStepSizeForTemporalSnapshots; }
-    static Step from_txn_id(TxnId txn_id) {
-        return Step{static_cast<size_t>(txn_id / kStepSizeForTemporalSnapshots)};
-    }
 };
+
+inline constexpr Step kMaxStep{std::numeric_limits<size_t>::max()};
 
 struct StepRange {
     Step start;
@@ -61,62 +48,6 @@ struct StepRange {
     bool contains_range(StepRange range) const { return (start <= range.start) && (range.end <= end); }
     size_t size() const { return end.value - start.value; }
     std::string to_string() const { return std::string("[") + start.to_string() + ", " + end.to_string() + ")"; }
-
-    BlockNumRange to_block_num_range() const { return {start.to_block_num(), end.to_block_num()}; }
-    static StepRange from_block_num_range(BlockNumRange range) {
-        return {Step::from_block_num(range.start),
-                Step::from_block_num(range.end >= kMaxBlockNum - kStepSizeForBlockSnapshots + 1 ? kMaxBlockNum
-                                                                                                : range.end + kStepSizeForBlockSnapshots - 1)};
-    }
-
-    TxnIdRange to_txn_id_range() const { return {start.to_txn_id(), end.to_txn_id()}; }
-    static StepRange from_txn_id_range(TxnIdRange range) {
-        return {Step::from_txn_id(range.start),
-                Step::from_txn_id(range.end >= kMaxTxnId - kStepSizeForTemporalSnapshots + 1 ? kMaxTxnId
-                                                                                             : range.end + kStepSizeForTemporalSnapshots - 1)};
-    }
-};
-
-struct StepToTimestampConverter {
-    virtual ~StepToTimestampConverter() = default;
-    virtual Step step_from_timestamp(Timestamp t) const = 0;
-    virtual Timestamp timestamp_from_step(Step s) const = 0;
-    virtual StepRange step_range_from_timestamp_range(TimestampRange range) const = 0;
-    virtual TimestampRange timestamp_range_from_step_range(StepRange range) const = 0;
-};
-
-struct StepToBlockNumConverter : public StepToTimestampConverter {
-    ~StepToBlockNumConverter() override = default;
-    Step step_from_timestamp(Timestamp t) const override {
-        return Step::from_block_num(t);
-    }
-    Timestamp timestamp_from_step(Step s) const override {
-        return s.to_block_num();
-    }
-    StepRange step_range_from_timestamp_range(TimestampRange range) const override {
-        return StepRange::from_block_num_range({range.start, range.end});
-    }
-    TimestampRange timestamp_range_from_step_range(StepRange range) const override {
-        auto r = range.to_block_num_range();
-        return {r.start, r.end};
-    }
-};
-
-struct StepToTxnIdConverter : public StepToTimestampConverter {
-    ~StepToTxnIdConverter() override = default;
-    Step step_from_timestamp(Timestamp t) const override {
-        return Step::from_txn_id(t);
-    }
-    Timestamp timestamp_from_step(Step s) const override {
-        return s.to_txn_id();
-    }
-    StepRange step_range_from_timestamp_range(TimestampRange range) const override {
-        return StepRange::from_txn_id_range({range.start, range.end});
-    }
-    TimestampRange timestamp_range_from_step_range(StepRange range) const override {
-        auto r = range.to_txn_id_range();
-        return {r.start, r.end};
-    }
 };
 
 }  // namespace silkworm::datastore

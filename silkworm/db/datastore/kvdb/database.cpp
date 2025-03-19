@@ -26,9 +26,9 @@ static MapConfig make_table_config(const Schema::TableDef& table) {
     };
 }
 
-static std::map<EntityName, MapConfig> make_table_configs(
+static EntityMap<MapConfig> make_table_configs(
     const Schema::EntityDef& entity) {
-    std::map<datastore::EntityName, MapConfig> results;
+    EntityMap<MapConfig> results;
     for (auto& [name, def] : entity.tables()) {
         results.emplace(name, make_table_config(def));
     }

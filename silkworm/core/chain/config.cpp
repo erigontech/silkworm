@@ -189,6 +189,10 @@ bool ChainConfig::is_london(BlockNum block_num) const noexcept {
     return (london_block && block_num >= london_block);
 }
 
+bool ChainConfig::is_prague(BlockNum block_num, BlockTime block_time) const noexcept {
+    return revision(block_num, block_time) >= EVMC_PRAGUE;
+}
+
 evmc_revision ChainConfig::revision(uint64_t block_num, uint64_t block_time) const noexcept {
     if (prague_time && block_time >= prague_time) return EVMC_PRAGUE;
     if (cancun_time && block_time >= cancun_time) return EVMC_CANCUN;
@@ -298,6 +302,7 @@ constinit const ChainConfig kHoleskyConfig{
     .terminal_total_difficulty = 0,
     .shanghai_time = 1696000704,
     .cancun_time = 1707305664,
+    .prague_time = 1740434112,
     .rule_set_config = protocol::NoPreMergeConfig{},
 };
 
@@ -317,6 +322,7 @@ constinit const ChainConfig kSepoliaConfig{
     .merge_netsplit_block = 1'735'371,
     .shanghai_time = 1677557088,
     .cancun_time = 1706655072,
+    .prague_time = 1741159776,
     .rule_set_config = protocol::EthashConfig{},
 };
 

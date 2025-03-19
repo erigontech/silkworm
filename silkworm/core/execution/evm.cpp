@@ -148,7 +148,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
 
     auto snapshot{state_.take_snapshot()};
 
-    state_.create_contract(contract_addr);
+    state_.create_contract(contract_addr, false);
 
     const evmc_revision rev{revision()};
     if (rev >= EVMC_SPURIOUS_DRAGON) {
@@ -218,17 +218,19 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
 
     const auto snapshot{state_.take_snapshot()};
 
+    const evmc_revision rev{revision()};
+
     if (message.kind == EVMC_CALL) {
         if (message.flags & EVMC_STATIC) {
             // Match geth logic
             // https://github.com/ethereum/go-ethereum/blob/v1.9.25/core/vm/evm.go#L391
-            state_.touch(message.recipient);
+            if (!precompile::is_precompile(message.recipient, rev)) {
+                state_.touch(message.recipient);
+            }
         } else {
             transfer(state_, message.sender, message.recipient, value, bailout);
         }
     }
-
-    const evmc_revision rev{revision()};
 
     if (precompile::is_precompile(message.code_address, rev)) {
         static_assert(std::size(precompile::kContracts) < 256);

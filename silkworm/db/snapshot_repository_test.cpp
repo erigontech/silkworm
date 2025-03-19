@@ -64,7 +64,7 @@ TEST_CASE("SnapshotRepository::reopen_folder.partial_bundle", "[silkworm][node][
     test::TemporarySnapshotFile tmp_snapshot_3{tmp_dir.path(), "v1-015000-015500-transactions.seg"};
     auto repository = make_repository(tmp_dir.path());
     CHECK(repository.bundles_count() == 0);
-    CHECK(repository.max_block_available() == 0);
+    CHECK(repository.max_timestamp_available() == 0);
 }
 
 TEST_CASE("SnapshotRepository::view", "[silkworm][node][snapshot]") {
@@ -202,8 +202,8 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
         CHECK_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'013));
         CHECK_FIRST(repository.find_segment(SnapshotType::transactions, 1'500'014));
     }
-    SECTION("greater than max_block_available") {
-        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, repository.max_block_available() + 1));
+    SECTION("greater than max_timestamp_available") {
+        CHECK_FALSE_FIRST(repository.find_segment(SnapshotType::bodies, repository.max_timestamp_available() + 1));
     }
 }
 

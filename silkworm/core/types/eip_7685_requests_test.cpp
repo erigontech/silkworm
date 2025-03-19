@@ -38,7 +38,8 @@ TEST_CASE("EIP-7585 tests") {
                                        "0000000000000000000000000000000000000000000000000000000000")
                                        .value();
 
-        const std::vector logs = {Log{.address = protocol::kDepositContractAddress, .topics = {}, .data = encoded_event}};
+        // Topics is a single-element vector containing hash of deposit event signature
+        const std::vector logs = {Log{.address = protocol::kDepositContractAddress, .topics = {0x649bbc62d0e31342afea4e5cd82d4049e7e1ee912fc0889aa790803be39038c5_bytes32}, .data = encoded_event}};
 
         FlatRequests requests;
         requests.extract_deposits_from_logs(logs);
@@ -57,6 +58,13 @@ TEST_CASE("EIP-7585 tests") {
 
         const auto hash = requests.calculate_sha256();
         CHECK(hash == Hash{from_hex("fb11d3d094091e34794c99218a862850a4a85dc1e128ce8c85f2a2bcbcc899ef").value()});
+    }
+
+    SECTION("Calculate sha256 of empty requests") {
+        FlatRequests requests;
+
+        const auto hash = requests.calculate_sha256();
+        CHECK(hash == Hash{from_hex("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").value()});
     }
 }
 

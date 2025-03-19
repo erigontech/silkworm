@@ -244,19 +244,13 @@ Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeRequest reques
         datastore::TimestampRange ts_range = as_datastore_ts_range({request.from_timestamp, request.to_timestamp}, !request.ascending_order);
         const size_t limit = (request.limit == kUnlimited) ? std::numeric_limits<size_t>::max() : static_cast<size_t>(request.limit);
 
-        api::PaginatedTimestamps::PageResult result;
         // TODO: support pagination: apply page_size using std::views::chunk, save the range for future requests using page_token and return the first chunk
-        if (request.ascending_order) {
-            auto timestamps = query.exec<true>(request.key, std::move(ts_range)) |
-                              std::views::transform([](datastore::Timestamp ts) { return static_cast<Timestamp>(ts); }) |
-                              std::views::take(limit);
-            result.values = vector_from_range(std::move(timestamps));
-        } else {
-            auto timestamps = query.exec<false>(request.key, std::move(ts_range)) |
-                              std::views::transform([](datastore::Timestamp ts) { return static_cast<Timestamp>(ts); }) |
-                              std::views::take(limit);
-            result.values = vector_from_range(std::move(timestamps));
-        }
+        auto timestamps = query.exec(request.key, std::move(ts_range), request.ascending_order) |
+                          std::views::transform([](datastore::Timestamp ts) { return static_cast<Timestamp>(ts); }) |
+                          std::views::take(limit);
+
+        api::PaginatedTimestamps::PageResult result;
+        result.values = vector_from_range(std::move(timestamps));
 
         co_return result;
     };

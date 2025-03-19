@@ -36,6 +36,7 @@
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
@@ -483,8 +484,9 @@ class TraceCallExecutor {
     explicit TraceCallExecutor(silkworm::BlockCache& block_cache,
                                const ChainStorage& chain_storage,
                                WorkerPool& workers,
-                               db::kv::api::Transaction& tx)
-        : block_cache_(block_cache), chain_storage_{chain_storage}, workers_{workers}, tx_{tx} {}
+                               db::kv::api::Transaction& tx,
+                               db::kv::api::StateCache* state_cache)
+        : block_cache_(block_cache), chain_storage_(chain_storage), workers_(workers), tx_(tx), state_cache_(state_cache) {}
     virtual ~TraceCallExecutor() = default;
 
     TraceCallExecutor(const TraceCallExecutor&) = delete;
@@ -519,6 +521,7 @@ class TraceCallExecutor {
     const ChainStorage& chain_storage_;
     WorkerPool& workers_;
     db::kv::api::Transaction& tx_;
+    db::kv::api::StateCache* state_cache_{nullptr};
 };
 
 }  // namespace silkworm::rpc::trace

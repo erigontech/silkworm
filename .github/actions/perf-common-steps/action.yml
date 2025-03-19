@@ -144,7 +144,7 @@ runs:
                 cd ${{runner.workspace}}/rpc-tests/perf/reports/mainnet/
                 python3 $ERIGON_QA_PATH/test_system/qa-tests/rpc-tests/perf_hdr_analysis.py \
                   --test_name ${servers[i-1]}-$method \
-                  --input_file ./result.json \
+                  --input_file ./${servers[i-1]}-$method-result.json \
                   --output_file ./${servers[i-1]}-${method}-latency_hdr_analysis.pdf                                    
              else
                 failed_test=1
@@ -227,7 +227,7 @@ runs:
       run: |
         set +e # Disable exit on error
         open_change_points=0
-        python3 $ERIGON_QA_PATH/test_system/qa-tests/change-points/change_point_analysis.py
+        python3 $ERIGON_QA_PATH/test_system/qa-tests/change-points/change_point_analysis.py --repo silkworm
         open_change_points=$?
         cp change_point_analysis.pdf $past_test_dir
         if [ $open_change_points -ne 0 ]; then

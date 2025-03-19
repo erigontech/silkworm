@@ -46,8 +46,6 @@ class Transaction {
     virtual uint64_t tx_id() const = 0;
     virtual uint64_t view_id() const = 0;
 
-    virtual void set_state_cache_enabled(bool cache_enabled) = 0;
-
     virtual Task<void> open() = 0;
 
     virtual Task<std::shared_ptr<Cursor>> cursor(const std::string& table) = 0;

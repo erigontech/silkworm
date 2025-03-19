@@ -26,6 +26,7 @@
 
 #include "../common/entity_name.hpp"
 #include "../common/step.hpp"
+#include "../common/timestamp.hpp"
 #include "common/util/iterator/map_values_view.hpp"
 #include "segment_and_accessor_index.hpp"
 
@@ -61,13 +62,11 @@ struct SnapshotRepositoryROAccess {
 
     virtual size_t bundles_count() const = 0;
 
-    //! All types of .seg and .idx files are available up to this block number
-    virtual BlockNum max_block_available() const = 0;
     //! All types of .seg and .idx files are available up to this timestamp
     virtual Timestamp max_timestamp_available() const = 0;
 
-    virtual BundlesView<MapValuesView<Bundles::key_type, Bundles::mapped_type>> view_bundles() const = 0;
-    virtual BundlesView<MapValuesViewReverse<Bundles::key_type, Bundles::mapped_type>> view_bundles_reverse() const = 0;
+    virtual BundlesView<MapValuesView<Bundles::key_type, Bundles::mapped_type, Bundles>> view_bundles() const = 0;
+    virtual BundlesView<MapValuesViewReverse<Bundles::key_type, Bundles::mapped_type, Bundles>> view_bundles_reverse() const = 0;
 
     virtual std::pair<std::optional<SegmentAndAccessorIndex>, std::shared_ptr<SnapshotBundle>> find_segment(
         const SegmentAndAccessorIndexNames& names,

@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -65,10 +64,10 @@ class Schema {
             return *this;
         }
 
-        const std::map<datastore::EntityName, TableDef>& tables() const { return table_defs_; }
+        const EntityMap<TableDef>& tables() const { return table_defs_; }
 
       private:
-        std::map<datastore::EntityName, TableDef> table_defs_;
+        EntityMap<TableDef> table_defs_;
     };
 
     class DomainDef : public EntityDef {
@@ -114,7 +113,7 @@ class Schema {
             return *entity_defs_.at(name);
         }
 
-        const std::map<datastore::EntityName, std::shared_ptr<EntityDef>>& entities() const { return entity_defs_; }
+        const EntityMap<std::shared_ptr<EntityDef>>& entities() const { return entity_defs_; }
 
       private:
         friend DomainDef;
@@ -126,7 +125,7 @@ class Schema {
         static void define_inverted_index_schema(datastore::EntityName name, EntityDef& schema);
         static void undefine_inverted_index_schema(EntityDef& schema);
 
-        std::map<datastore::EntityName, std::shared_ptr<EntityDef>> entity_defs_;
+        EntityMap<std::shared_ptr<EntityDef>> entity_defs_;
     };
 
     DatabaseDef& database(datastore::EntityName name) {
@@ -145,7 +144,7 @@ class Schema {
     static constexpr datastore::EntityName kInvIdxIndexName{"InvIdxIndex"};
 
   private:
-    std::map<datastore::EntityName, DatabaseDef> database_defs_;
+    EntityMap<DatabaseDef> database_defs_;
 };
 
 }  // namespace silkworm::datastore::kvdb

@@ -63,7 +63,7 @@ std::unique_ptr<DataMigrationCommand> SnapshotMerger::next_command() {
     for (auto& bundle_ptr : snapshots_.view_bundles()) {
         auto& bundle = *bundle_ptr;
 
-        auto bundle_block_num_range = bundle.step_range().to_block_num_range();
+        auto bundle_block_num_range = snapshots_.step_converter().timestamp_range_from_step_range(bundle.step_range());
         size_t bundle_block_count = bundle_block_num_range.size();
 
         if (bundle_block_count >= kMaxSnapshotSize) {
@@ -86,14 +86,14 @@ std::unique_ptr<DataMigrationCommand> SnapshotMerger::next_command() {
 std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<DataMigrationCommand> command) {
     auto& merger_command = dynamic_cast<SnapshotMergerCommand&>(*command);
     auto range = merger_command.range;
-    auto step_range = StepRange::from_block_num_range(range);
+    StepRange step_range = snapshots_.step_converter().step_range_from_timestamp_range({range.start, range.end});
 
     SnapshotBundlePaths new_bundle{snapshots_.schema(), tmp_dir_path_, step_range};
     for (const auto& [name, path] : new_bundle.segment_paths()) {
         SILK_DEBUG_M("SnapshotMerger") << "merging " << name.to_string() << " range " << range.to_string();
         seg::Compressor compressor{path.path(), tmp_dir_path_};
 
-        for (auto& bundle_ptr : snapshots_.bundles_in_range(StepRange::from_block_num_range(range))) {
+        for (auto& bundle_ptr : snapshots_.bundles_in_range(step_range)) {
             auto& bundle = *bundle_ptr;
             segment::SegmentReader<RawDecoder<Bytes>> reader{bundle.segment(Schema::kDefaultEntityName, name)};
             std::copy(reader.begin(), reader.end(), compressor.add_word_iterator());

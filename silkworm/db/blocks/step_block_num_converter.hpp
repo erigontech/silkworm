@@ -1,5 +1,5 @@
-#[[
-   Copyright 2024 The Silkworm Authors
+/*
+   Copyright 2025 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,14 +12,17 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
+#pragma once
 
-find_package(absl REQUIRED COMPONENTS flat_hash_map)
+#include <silkworm/db/datastore/common/step_timestamp_converter.hpp>
 
-silkworm_library(
-  silkworm_datastore_common
-  PUBLIC silkworm_core absl::flat_hash_map
-  PRIVATE ""
-)
+namespace silkworm::db::blocks {
+
+//! Scale factor to convert from-to block number values in block snapshot file names
+inline constexpr size_t kStepSizeForBlockSnapshots = 1'000;
+
+inline constexpr datastore::StepToTimestampConverter kStepToBlockNumConverter{kStepSizeForBlockSnapshots};
+
+}  // namespace silkworm::db::blocks

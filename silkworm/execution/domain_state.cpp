@@ -20,6 +20,7 @@
 #include <silkworm/db/state/accounts_domain.hpp>
 #include <silkworm/db/state/code_domain.hpp>
 #include <silkworm/db/state/schema_config.hpp>
+#include <silkworm/db/state/step_txn_id_converter.hpp>
 #include <silkworm/db/state/storage_domain.hpp>
 
 namespace silkworm::execution {
@@ -107,6 +108,10 @@ void DomainState::insert_receipts(BlockNum block_num, const std::vector<Receipt>
     db::write_receipts(tx_, receipts, block_num);
 }
 
+datastore::Step DomainState::current_step() const {
+    return kStepToTxnIdConverter.step_from_timestamp(txn_id_);
+}
+
 void DomainState::update_account(
     const evmc::address& address,
     std::optional<Account> original,
@@ -122,11 +127,11 @@ void DomainState::update_account(
     if (current) {
         if (!original || current->rlp({}) != original->rlp({})) {
             AccountsDomainPutQuery query{database_, tx_};
-            query.exec(address, *current, txn_id_, original, Step::from_txn_id(txn_id_));
+            query.exec(address, *current, txn_id_, original, current_step());
         }
     } else {
         AccountsDomainDeleteQuery query{database_, tx_};
-        query.exec(address, txn_id_, original, Step::from_txn_id(txn_id_));
+        query.exec(address, txn_id_, original, current_step());
     }
 }
 
@@ -144,7 +149,7 @@ void DomainState::update_account_code(
     }
 
     CodeDomainPutQuery query{database_, tx_};
-    query.exec(address, code, txn_id_, original_code, Step::from_txn_id(txn_id_));
+    query.exec(address, code, txn_id_, original_code, current_step());
     code_.insert_or_assign(address, code);
 }
 
@@ -167,7 +172,7 @@ void DomainState::update_storage(
     }
 
     StorageDomainPutQuery query{database_, tx_};
-    query.exec({address, location}, current, txn_id_, original_value, Step::from_txn_id(txn_id_));
+    query.exec({address, location}, current, txn_id_, original_value, current_step());
 }
 
 }  // namespace silkworm::execution

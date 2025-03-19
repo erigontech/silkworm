@@ -1064,12 +1064,12 @@ BlockNum DataModel::max_block_num() const {
     }
 
     // If none is found on db, then ask the snapshot repository (if any) for max block
-    return repository_.max_block_available();
+    return repository_.max_timestamp_available();
 }
 
 BlockNum DataModel::max_frozen_block_num() const {
     // Ask the snapshot repository (if any) for max block
-    return repository_.max_block_available();
+    return repository_.max_timestamp_available();
 }
 
 std::optional<BlockHeader> DataModel::read_header(BlockNum block_num, HashAsArray hash) const {
@@ -1077,7 +1077,7 @@ std::optional<BlockHeader> DataModel::read_header(BlockNum block_num, HashAsArra
 }
 
 std::optional<BlockHeader> DataModel::read_header(BlockNum block_num, const Hash& hash) const {
-    BlockNum repository_max_block_num = repository_.max_block_available();
+    BlockNum repository_max_block_num = repository_.max_timestamp_available();
     if ((repository_max_block_num > 0) && (block_num <= repository_max_block_num)) {
         auto header = read_header_from_snapshot(block_num);
         if (header && header->hash() == hash) {  // reading using hash avoid this heavy hash calculation
@@ -1089,7 +1089,7 @@ std::optional<BlockHeader> DataModel::read_header(BlockNum block_num, const Hash
 }
 
 std::optional<BlockHeader> DataModel::read_header(BlockNum block_num) const {
-    BlockNum repository_max_block_num = repository_.max_block_available();
+    BlockNum repository_max_block_num = repository_.max_timestamp_available();
     if ((repository_max_block_num > 0) && (block_num <= repository_max_block_num)) {
         return read_header_from_snapshot(block_num);
     }
@@ -1256,7 +1256,7 @@ void DataModel::for_last_n_headers(size_t n, absl::FunctionRef<void(BlockHeader)
         return;
     }
 
-    auto block_num_in_snapshots = repository_.max_block_available();
+    BlockNum block_num_in_snapshots = repository_.max_timestamp_available();
 
     // We've reached the first header in db but still need to read more from snapshots
     if (last_read_block_num_from_db > 0) {

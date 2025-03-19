@@ -1,5 +1,5 @@
-#[[
-   Copyright 2024 The Silkworm Authors
+/*
+   Copyright 2025 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,14 +12,19 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
+#pragma once
 
-find_package(absl REQUIRED COMPONENTS flat_hash_map)
+#include <string>
+#include <vector>
 
-silkworm_library(
-  silkworm_datastore_common
-  PUBLIC silkworm_core absl::flat_hash_map
-  PRIVATE ""
-)
+#include <silkworm/db/kv/api/state_cache.hpp>
+
+namespace silkworm::rpc {
+
+struct CacheValidationResult {
+    const db::kv::api::StateCache::ValidationResult& ref;
+};
+
+}  // namespace silkworm::rpc

@@ -69,6 +69,17 @@ class StateCache {
     virtual uint64_t code_miss_count() const = 0;
     virtual uint64_t code_key_count() const = 0;
     virtual uint64_t code_eviction_count() const = 0;
+
+    struct ValidationResult {
+        bool request_canceled{false};
+        bool enabled{false};
+        bool latest_state_behind{false};
+        bool cache_cleared{false};
+        StateVersionId latest_state_version_id{0};
+        std::vector<Bytes> state_keys_out_of_sync;
+        std::vector<Bytes> code_keys_out_of_sync;
+    };
+    virtual Task<ValidationResult> validate_current_root(Transaction& tx) = 0;
 };
 
 using KeyValueSet = absl::btree_set<KeyValue>;
@@ -139,6 +150,8 @@ class CoherentStateCache : public StateCache {
     uint64_t code_key_count() const override { return code_key_count_; }
     uint64_t code_eviction_count() const override { return code_eviction_count_; }
 
+    Task<ValidationResult> validate_current_root(Transaction& tx) override;
+
   private:
     friend class CoherentStateView;
 
@@ -155,6 +168,8 @@ class CoherentStateCache : public StateCache {
     void evict_roots(StateVersionId next_version_id);
     Task<CoherentStateRoot*> wait_for_root_ready(StateVersionId version_id);
     Task<StateVersionId> get_db_state_version(Transaction& tx) const;
+    std::pair<KeyValueSet, KeyValueSet> clone_caches(CoherentStateRoot* root);
+    void clear_caches(CoherentStateRoot* root);
 
     CoherentCacheConfig config_;
 

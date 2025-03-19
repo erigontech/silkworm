@@ -152,7 +152,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | erigon_watchTheBurn                        |     Yes      |                                           |     Yes     |             |
 | erigon_nodeInfo                            |     Yes      |                                           |     Yes     |             |
 | erigon_blockNumber                         |     Yes      |                                           |     Yes     |             |
-| erigon_cacheCheck                          |      -       |            not yet implemented            |             |             |
+| erigon_cacheCheck                          |     Yes      |                                           |     Yes     |             |
 | erigon_getLatestLogs                       |     Yes      |                                           |     Yes     |             |
 |                                            |              |                                           |             |             |
 | bor_getSnapshot                            |      -       |            not yet implemented            |             |             |

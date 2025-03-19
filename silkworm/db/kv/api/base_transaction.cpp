@@ -21,10 +21,6 @@
 
 namespace silkworm::db::kv::api {
 
-void BaseTransaction::set_state_cache_enabled(bool cache_enabled) {
-    get_one_impl_ = cache_enabled ? get_one_impl_with_cache_ : get_one_impl_no_cache_;
-}
-
 Task<KeyValue> BaseTransaction::get(const std::string& table, ByteView key) {
     const auto new_cursor = co_await cursor(table);
     SILK_TRACE << "BaseTransaction::get cursor_id: " << new_cursor->cursor_id();
@@ -34,7 +30,11 @@ Task<KeyValue> BaseTransaction::get(const std::string& table, ByteView key) {
 }
 
 Task<silkworm::Bytes> BaseTransaction::get_one(const std::string& table, ByteView key) {
-    co_return co_await std::invoke(get_one_impl_, *this, table, key);
+    const auto new_cursor = co_await cursor(table);
+    SILK_TRACE << "BaseTransaction::get_one cursor_id: " << new_cursor->cursor_id();
+    const auto kv_pair = co_await new_cursor->seek_exact(key);
+    SILK_TRACE << "BaseTransaction::get_one key: " << kv_pair.key << " value: " << kv_pair.value;
+    co_return kv_pair.value;
 }
 
 Task<std::optional<Bytes>> BaseTransaction::get_both_range(const std::string& table, ByteView key, ByteView subkey) {
@@ -47,35 +47,6 @@ Task<std::optional<Bytes>> BaseTransaction::get_both_range(const std::string& ta
         co_return std::nullopt;
     }
     co_return value.substr(subkey.length());
-}
-
-Task<Bytes> BaseTransaction::get_one_impl_with_cache(const std::string& table, ByteView key) {
-    if (state_cache_) {
-        // Just PlainState and Code tables are present in state cache
-        if (table == db::table::kPlainStateName) {
-            std::shared_ptr<StateView> view = state_cache_->get_view(*this);
-            if (view != nullptr) {
-                const auto value = co_await view->get(key);
-                co_return value ? *value : silkworm::Bytes{};
-            }
-        } else if (table == db::table::kCodeName) {
-            std::shared_ptr<StateView> view = state_cache_->get_view(*this);
-            if (view != nullptr) {
-                const auto value = co_await view->get_code(key);
-                co_return value ? *value : silkworm::Bytes{};
-            }
-        }
-    }
-
-    co_return co_await get_one_impl_no_cache(table, key);
-}
-
-Task<Bytes> BaseTransaction::get_one_impl_no_cache(const std::string& table, ByteView key) {
-    const auto new_cursor = co_await cursor(table);
-    SILK_TRACE << "BaseTransaction::get_one cursor_id: " << new_cursor->cursor_id();
-    const auto kv_pair = co_await new_cursor->seek_exact(key);
-    SILK_TRACE << "BaseTransaction::get_one key: " << kv_pair.key << " value: " << kv_pair.value;
-    co_return kv_pair.value;
 }
 
 }  // namespace silkworm::db::kv::api

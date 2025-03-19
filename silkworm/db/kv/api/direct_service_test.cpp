@@ -38,8 +38,7 @@ struct DirectServiceTest : public test_util::KVTestBase {
 
     StateChangeChannelPtr channel{std::make_shared<StateChangeChannel>(ioc_.get_executor())};
     concurrency::Channel<StateChangesCall> state_changes_calls_channel{ioc_.get_executor()};
-    std::unique_ptr<StateCache> state_cache{std::make_unique<CoherentStateCache>()};
-    DirectService service{ServiceRouter{state_changes_calls_channel}, data_store->ref(), state_cache.get()};
+    DirectService service{ServiceRouter{state_changes_calls_channel}, data_store->ref()};
     std::vector<StateChangeSet> change_set_vector;
 };
 

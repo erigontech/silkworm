@@ -41,7 +41,7 @@ Task<void> StorageWalker::storage_range_at(
     auto to = db::code_domain_key(address);
     increment(to);
 
-    db::kv::api::DomainRangeQuery query{
+    db::kv::api::DomainRangeRequest query{
         .table = db::table::kStorageDomain,
         .from_key = from,
         .to_key = to,

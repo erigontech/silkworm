@@ -18,12 +18,10 @@
 
 #include <utility>
 
-#include <silkworm/core/common/decoding_result.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
-#include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
@@ -46,7 +44,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     DumpAccounts dump_accounts;
     const auto chain_storage = transaction_.create_storage();
 
-    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(cache, *chain_storage, transaction_, block_num_or_hash);
+    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(cache, *chain_storage, transaction_, state_cache_, block_num_or_hash);
     if (!block_with_hash) {
         throw std::invalid_argument("dump_accounts: block not found");
     }
@@ -57,7 +55,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     const auto block_num = block_with_hash->block.header.number + 1;
     const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_num);
 
-    db::kv::api::DomainRangeQuery query{
+    db::kv::api::DomainRangeRequest query{
         .table = db::table::kAccountDomain,
         .from_key = key,
         .timestamp = start_txn_number,
@@ -89,7 +87,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
         dump_account.root = kZeroHash;
 
         if (account->code_hash != kZeroHash && !exclude_code) {
-            db::kv::api::GetLatestQuery query_code{
+            db::kv::api::GetLatestRequest query_code{
                 .table = db::table::kCodeDomain,
                 .key = db::account_domain_key(address)};
 
@@ -116,7 +114,7 @@ Task<void> AccountDumper::load_storage(BlockNum block_num, DumpAccounts& dump_ac
         auto to = db::code_domain_key(address);
         increment(to);
 
-        db::kv::api::DomainRangeQuery query{
+        db::kv::api::DomainRangeRequest query{
             .table = db::table::kStorageDomain,
             .from_key = db::code_domain_key(address),
             .to_key = to,

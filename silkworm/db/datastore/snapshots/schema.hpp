@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <map>
 #include <optional>
 #include <vector>
 
@@ -142,12 +141,12 @@ class Schema {
 
         EntityDef& tag_override(std::string_view tag);
 
-        const std::map<datastore::EntityName, std::shared_ptr<SnapshotFileDef>>& files() const { return file_defs_; }
+        const datastore::EntityMap<std::shared_ptr<SnapshotFileDef>>& files() const { return file_defs_; }
         std::vector<std::string> file_extensions() const;
         std::optional<datastore::EntityName> entity_name_by_path(const SnapshotPath& path) const;
 
       private:
-        std::map<datastore::EntityName, std::shared_ptr<SnapshotFileDef>> file_defs_;
+        datastore::EntityMap<std::shared_ptr<SnapshotFileDef>> file_defs_;
     };
 
     class DomainDef : public EntityDef {
@@ -201,7 +200,7 @@ class Schema {
             return *this;
         }
 
-        const std::map<datastore::EntityName, std::shared_ptr<EntityDef>>& entities() const { return entity_defs_; }
+        const datastore::EntityMap<std::shared_ptr<EntityDef>>& entities() const { return entity_defs_; }
         std::vector<std::string> file_extensions() const;
         std::optional<std::pair<datastore::EntityName, datastore::EntityName>> entity_name_by_path(const SnapshotPath& path) const;
         const std::string& index_salt_file_name() const { return index_salt_file_name_.value(); }
@@ -216,7 +215,7 @@ class Schema {
         static void define_inverted_index_schema(datastore::EntityName name, EntityDef& schema);
         static void undefine_inverted_index_schema(EntityDef& schema);
 
-        std::map<datastore::EntityName, std::shared_ptr<EntityDef>> entity_defs_;
+        datastore::EntityMap<std::shared_ptr<EntityDef>> entity_defs_;
         std::optional<std::string> index_salt_file_name_;
     };
 
@@ -254,7 +253,7 @@ class Schema {
     static constexpr std::string_view kInvIdxAccessorIndexFileExt{".efi"};
 
   private:
-    std::map<datastore::EntityName, RepositoryDef> repository_defs_;
+    datastore::EntityMap<RepositoryDef> repository_defs_;
 };
 
 }  // namespace silkworm::snapshots

@@ -849,12 +849,12 @@ int kv_seek() {
 }
 
 Task<void> kv_get_latest_query(const std::shared_ptr<Service>& kv_service,
-                               GetLatestQuery&& query,
+                               GetLatestRequest request,
                                const bool /*verbose*/) {
     try {
         auto tx = co_await kv_service->begin_transaction();
-        std::cout << "KV GetLatest -> " << query.table << " key=" << to_hex(query.key) << " latest=true\n";
-        const auto result = co_await tx->get_latest(std::move(query));
+        std::cout << "KV GetLatest -> " << request.table << " key=" << to_hex(request.key) << " latest=true\n";
+        const auto result = co_await tx->get_latest(std::move(request));
         std::cout << "KV GetLatest <- success: " << result.success << " value=" << to_hex(result.value) << "\n";
         co_await tx->close();
     } catch (const std::exception& e) {
@@ -863,13 +863,13 @@ Task<void> kv_get_latest_query(const std::shared_ptr<Service>& kv_service,
 }
 
 Task<void> kv_get_as_of_query(const std::shared_ptr<Service>& kv_service,
-                              GetAsOfQuery&& query,
+                              GetAsOfRequest request,
                               const bool /*verbose*/) {
     try {
         auto tx = co_await kv_service->begin_transaction();
-        std::cout << "KV GetLatest -> " << query.table << " key=" << to_hex(query.key)
-                  << " ts=" << query.timestamp << " latest=false\n";
-        const auto result = co_await tx->get_as_of(std::move(query));
+        std::cout << "KV GetLatest -> " << request.table << " key=" << to_hex(request.key)
+                  << " ts=" << request.timestamp << " latest=false\n";
+        const auto result = co_await tx->get_as_of(std::move(request));
         std::cout << "KV GetLatest <- success: " << result.success << " value=" << to_hex(result.value) << "\n";
         co_await tx->close();
     } catch (const std::exception& e) {
@@ -878,12 +878,12 @@ Task<void> kv_get_as_of_query(const std::shared_ptr<Service>& kv_service,
 }
 
 Task<void> kv_history_seek_query(const std::shared_ptr<Service>& kv_service,
-                                 HistoryPointQuery&& query,
+                                 HistoryPointRequest request,
                                  const bool /*verbose*/) {
     try {
         auto tx = co_await kv_service->begin_transaction();
-        std::cout << "KV HistorySeek -> " << query.table << " key=" << to_hex(query.key) << " ts=" << query.timestamp << "\n";
-        const auto result = co_await tx->history_seek(std::move(query));
+        std::cout << "KV HistorySeek -> " << request.table << " key=" << to_hex(request.key) << " ts=" << request.timestamp << "\n";
+        const auto result = co_await tx->history_seek(std::move(request));
         std::cout << "KV HistorySeek <- success: " << result.success << " value=" << to_hex(result.value) << "\n";
         co_await tx->close();
     } catch (const std::exception& e) {
@@ -892,12 +892,12 @@ Task<void> kv_history_seek_query(const std::shared_ptr<Service>& kv_service,
 }
 
 Task<void> kv_index_range_query(const std::shared_ptr<Service>& kv_service,
-                                IndexRangeQuery&& query,
+                                IndexRangeRequest request,
                                 const bool verbose) {
     try {
         auto tx = co_await kv_service->begin_transaction();
-        std::cout << "KV IndexRange -> " << query.table << "\n";
-        auto paginated_result = co_await tx->index_range(std::move(query));
+        std::cout << "KV IndexRange -> " << request.table << "\n";
+        auto paginated_result = co_await tx->index_range(std::move(request));
         auto it = co_await paginated_result.begin();
         std::cout << "KV IndexRange <- #timestamps: ";
         int count{0};
@@ -919,12 +919,12 @@ Task<void> kv_index_range_query(const std::shared_ptr<Service>& kv_service,
 }
 
 Task<void> kv_history_range_query(const std::shared_ptr<Service>& kv_service,
-                                  HistoryRangeQuery&& query,
+                                  HistoryRangeRequest request,
                                   const bool verbose) {
     try {
         auto tx = co_await kv_service->begin_transaction();
-        std::cout << "KV HistoryRange -> " << query.table << " limit=" << query.limit << "\n";
-        auto paginated_result = co_await tx->history_range(std::move(query));
+        std::cout << "KV HistoryRange -> " << request.table << " limit=" << request.limit << "\n";
+        auto paginated_result = co_await tx->history_range(std::move(request));
         auto it = co_await paginated_result.begin();
         std::cout << "KV HistoryRange <- #keys and #values: ";
         int count{0};
@@ -946,12 +946,12 @@ Task<void> kv_history_range_query(const std::shared_ptr<Service>& kv_service,
 }
 
 Task<void> kv_range_as_of_query(const std::shared_ptr<Service>& kv_service,
-                                DomainRangeQuery&& query,
+                                DomainRangeRequest request,
                                 const bool verbose) {
     try {
         auto tx = co_await kv_service->begin_transaction();
-        std::cout << "KV RangeAsOf -> " << query.table << " limit=" << query.limit << "\n";
-        auto paginated_result = co_await tx->range_as_of(std::move(query));
+        std::cout << "KV RangeAsOf -> " << request.table << " limit=" << request.limit << "\n";
+        auto paginated_result = co_await tx->range_as_of(std::move(request));
         auto it = co_await paginated_result.begin();
         std::cout << "KV RangeAsOf <- #keys and #values: ";
         int count{0};
@@ -973,7 +973,7 @@ Task<void> kv_range_as_of_query(const std::shared_ptr<Service>& kv_service,
 }
 
 template <typename Q>
-using KVQueryFunc = Task<void> (*)(const std::shared_ptr<Service>&, Q&&, bool);
+using KVQueryFunc = Task<void> (*)(const std::shared_ptr<Service>&, Q, bool);
 
 template <typename Q>
 int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_func, Q&& query, const bool verbose) {
@@ -1000,7 +1000,6 @@ int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_fu
         CoherentStateCache state_cache;
         db::kv::grpc::client::RemoteClient client{channel_factory,
                                                   *grpc_context,
-                                                  &state_cache,
                                                   ethdb::kv::make_backend_providers(&eth_backend)};
         auto kv_service = client.service();
 
@@ -1050,14 +1049,14 @@ int kv_get_latest() {
     const auto verbose{absl::GetFlag(FLAGS_verbose)};
 
     if (timestamp > -1) {
-        GetAsOfQuery query{
+        GetAsOfRequest query{
             .table = table_name,
             .key = *key_bytes,
             .timestamp = timestamp,
         };
         return execute_temporal_kv_query(target, kv_get_as_of_query, std::move(query), verbose);
     }
-    GetLatestQuery query{
+    GetLatestRequest query{
         .table = table_name,
         .key = *key_bytes,
     };
@@ -1096,7 +1095,7 @@ int kv_history_seek() {
 
     const auto verbose{absl::GetFlag(FLAGS_verbose)};
 
-    HistoryPointQuery query{
+    HistoryPointRequest query{
         .table = table_name,
         .key = *key_bytes,
         .timestamp = timestamp,
@@ -1136,7 +1135,7 @@ int kv_index_range() {
 
     const auto verbose{absl::GetFlag(FLAGS_verbose)};
 
-    IndexRangeQuery query{
+    IndexRangeRequest query{
         .table = table_name,
         .key = *key_bytes,
         .from_timestamp = 0,
@@ -1171,7 +1170,7 @@ int kv_history_range() {
 
     const auto verbose{absl::GetFlag(FLAGS_verbose)};
 
-    HistoryRangeQuery query{
+    HistoryRangeRequest query{
         .table = table_name,
         .from_timestamp = 0,
         .to_timestamp = -1,
@@ -1228,7 +1227,7 @@ int kv_get_as_of() {
 
     const auto verbose{absl::GetFlag(FLAGS_verbose)};
 
-    DomainRangeQuery query{
+    DomainRangeRequest query{
         .table = table_name,
         .from_key = *from_key_bytes,
         .to_key = *to_key_bytes,

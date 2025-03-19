@@ -371,10 +371,10 @@ void debug_unwind(datastore::kvdb::EnvConfig& config, BlockNum height, uint32_t 
     // Unwind has just set progress for pre-Execution stages back to unwind_point even if it is within the snapshots
     // We need to reset progress for such stages to the max block in snapshots to avoid database update on next start
     auto& blocks_repository = data_store.blocks_repository();
-    db::stages::write_stage_progress(txn, db::stages::kHeadersKey, blocks_repository.max_block_available());
-    db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, blocks_repository.max_block_available());
-    db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, blocks_repository.max_block_available());
-    db::stages::write_stage_progress(txn, db::stages::kSendersKey, blocks_repository.max_block_available());
+    db::stages::write_stage_progress(txn, db::stages::kHeadersKey, blocks_repository.max_timestamp_available());
+    db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, blocks_repository.max_timestamp_available());
+    db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, blocks_repository.max_timestamp_available());
+    db::stages::write_stage_progress(txn, db::stages::kSendersKey, blocks_repository.max_timestamp_available());
 
     txn.commit_and_stop();
 }

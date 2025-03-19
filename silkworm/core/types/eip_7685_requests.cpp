@@ -55,8 +55,11 @@ Bytes extract_deposit(const Bytes& data) {
 }
 
 void FlatRequests::extract_deposits_from_logs(const std::vector<Log>& logs) {
+    // See EIP-6110: Supply validator deposits on chain
+    static constexpr evmc::bytes32 kDepositEventSignatureHash = 0x649bbc62d0e31342afea4e5cd82d4049e7e1ee912fc0889aa790803be39038c5_bytes32;
     for (const auto& log : logs) {
-        if (log.address == protocol::kDepositContractAddress) {
+        const auto is_deposit_event = std::size(log.topics) > 0 && log.topics[0] == kDepositEventSignatureHash;
+        if (log.address == protocol::kDepositContractAddress && is_deposit_event) {
             auto bytes = extract_deposit(log.data);
             requests_[magic_enum::enum_integer(FlatRequestType::kDepositRequest)] += bytes;
         }
@@ -77,10 +80,13 @@ Hash FlatRequests::calculate_sha256() const {
 
     for (const auto enum_type : magic_enum::enum_values<FlatRequestType>()) {
         const auto request_type = magic_enum::enum_integer(enum_type);
-        Bytes to_sha;
-        to_sha.push_back(request_type);
-        to_sha.append(requests_[request_type]);
-        intermediate.append(precompile::sha256_run(ByteView{to_sha}).value());
+        // Include intermediate hashes of non-empty requests only
+        if (!std::empty(requests_[request_type])) {
+            Bytes to_sha;
+            to_sha.push_back(request_type);
+            to_sha.append(requests_[request_type]);
+            intermediate.append(precompile::sha256_run(ByteView{to_sha}).value());
+        }
     }
     const auto final_bytes = precompile::sha256_run(intermediate).value();
     return Hash{final_bytes};

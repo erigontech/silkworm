@@ -33,10 +33,8 @@ using Stub = proto::KV::StubInterface;
 RemoteTransaction::RemoteTransaction(
     Stub& stub,
     agrpc::GrpcContext& grpc_context,
-    api::StateCache* state_cache,
     chain::Providers providers)
-    : BaseTransaction(state_cache),
-      providers_{std::move(providers)},
+    : providers_{std::move(providers)},
       stub_{stub},
       grpc_context_{grpc_context},
       tx_rpc_{grpc_context_} {}
@@ -117,11 +115,11 @@ Task<TxnId> RemoteTransaction::first_txn_num_in_block(BlockNum block_num) {
     co_return min_txn_num + /*txn_index*/ 0;
 }
 
-Task<api::GetLatestResult> RemoteTransaction::get_latest(api::GetLatestQuery query) {
+Task<api::GetLatestResult> RemoteTransaction::get_latest(api::GetLatestRequest request) {
     try {
-        query.tx_id = tx_id_;
-        auto request = get_latest_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetLatest, stub_, std::move(request), grpc_context_);
+        request.tx_id = tx_id_;
+        auto req = make_get_latest_req(request);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetLatest, stub_, std::move(req), grpc_context_);
         auto result = get_latest_result_from_response(reply);
         co_return result;
     } catch (rpc::GrpcStatusError& gse) {
@@ -130,11 +128,11 @@ Task<api::GetLatestResult> RemoteTransaction::get_latest(api::GetLatestQuery que
     }
 }
 
-Task<api::GetAsOfResult> RemoteTransaction::get_as_of(api::GetAsOfQuery query) {
+Task<api::GetAsOfResult> RemoteTransaction::get_as_of(api::GetAsOfRequest request) {
     try {
-        query.tx_id = tx_id_;
-        auto request = get_as_of_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetLatest, stub_, std::move(request), grpc_context_);
+        request.tx_id = tx_id_;
+        auto req = make_get_as_of_req(request);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncGetLatest, stub_, std::move(req), grpc_context_);
         auto result = get_as_of_result_from_response(reply);
         co_return result;
     } catch (rpc::GrpcStatusError& gse) {
@@ -143,11 +141,11 @@ Task<api::GetAsOfResult> RemoteTransaction::get_as_of(api::GetAsOfQuery query) {
     }
 }
 
-Task<api::HistoryPointResult> RemoteTransaction::history_seek(api::HistoryPointQuery query) {
+Task<api::HistoryPointResult> RemoteTransaction::history_seek(api::HistoryPointRequest request) {
     try {
-        query.tx_id = tx_id_;
-        auto request = history_seek_request_from_query(query);
-        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistorySeek, stub_, std::move(request), grpc_context_);
+        request.tx_id = tx_id_;
+        auto req = make_history_seek_req(request);
+        const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistorySeek, stub_, std::move(req), grpc_context_);
         auto result = history_seek_result_from_response(reply);
         co_return result;
     } catch (rpc::GrpcStatusError& gse) {
@@ -156,13 +154,13 @@ Task<api::HistoryPointResult> RemoteTransaction::history_seek(api::HistoryPointQ
     }
 }
 
-Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeQuery query) {
-    auto paginator = [&, query = std::move(query)](api::PaginatedTimestamps::PageToken page_token) mutable -> Task<api::PaginatedTimestamps::PageResult> {
-        query.tx_id = tx_id_;
-        query.page_token = std::move(page_token);
-        auto request = index_range_request_from_query(query);
+Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeRequest request) {
+    auto paginator = [&, request = std::move(request)](api::PaginatedTimestamps::PageToken page_token) mutable -> Task<api::PaginatedTimestamps::PageResult> {
+        request.tx_id = tx_id_;
+        request.page_token = std::move(page_token);
+        auto req = make_index_range_req(request);
         try {
-            const auto reply = co_await rpc::unary_rpc(&Stub::AsyncIndexRange, stub_, std::move(request), grpc_context_);
+            const auto reply = co_await rpc::unary_rpc(&Stub::AsyncIndexRange, stub_, std::move(req), grpc_context_);
             auto result = index_range_result_from_response(reply);
 
             co_return api::PaginatedTimestamps::PageResult{std::move(result.timestamps), std::move(result.next_page_token)};
@@ -174,13 +172,13 @@ Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeQue
     co_return api::PaginatedTimestamps{std::move(paginator)};
 }
 
-Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRangeQuery query) {
-    auto paginator = [&, query = std::move(query)](api::PaginatedKeysValues::PageToken page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
-        query.tx_id = tx_id_;
-        query.page_token = std::move(page_token);
-        auto request = history_range_request_from_query(query);
+Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRangeRequest request) {
+    auto paginator = [&, request = std::move(request)](api::PaginatedKeysValues::PageToken page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
+        request.tx_id = tx_id_;
+        request.page_token = std::move(page_token);
+        auto req = make_history_range_req(request);
         try {
-            const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistoryRange, stub_, std::move(request), grpc_context_);
+            const auto reply = co_await rpc::unary_rpc(&Stub::AsyncHistoryRange, stub_, std::move(req), grpc_context_);
             auto result = history_range_result_from_response(reply);
 
             co_return api::PaginatedKeysValues::PageResult{std::move(result.keys), std::move(result.values), std::move(result.next_page_token)};
@@ -192,13 +190,13 @@ Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRang
     co_return api::PaginatedKeysValues{std::move(paginator)};
 }
 
-Task<api::PaginatedKeysValues> RemoteTransaction::range_as_of(api::DomainRangeQuery query) {
-    auto paginator = [&, query = std::move(query)](api::PaginatedKeysValues::PageToken page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
-        query.tx_id = tx_id_;
-        query.page_token = std::move(page_token);
-        auto request = domain_range_request_from_query(query);
+Task<api::PaginatedKeysValues> RemoteTransaction::range_as_of(api::DomainRangeRequest request) {
+    auto paginator = [&, request = std::move(request)](api::PaginatedKeysValues::PageToken page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
+        request.tx_id = tx_id_;
+        request.page_token = std::move(page_token);
+        auto req = make_domain_range_req(request);
         try {
-            const auto reply = co_await rpc::unary_rpc(&Stub::AsyncRangeAsOf, stub_, std::move(request), grpc_context_);
+            const auto reply = co_await rpc::unary_rpc(&Stub::AsyncRangeAsOf, stub_, std::move(req), grpc_context_);
             auto result = history_range_result_from_response(reply);
 
             co_return api::PaginatedKeysValues::PageResult{std::move(result.keys), std::move(result.values), std::move(result.next_page_token)};

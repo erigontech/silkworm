@@ -16,18 +16,14 @@
 
 #include "domain_range_latest_query.hpp"
 
-#include <functional>
 #include <utility>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <silkworm/infra/common/directories.hpp>
-
-#include "../common/ranges/vector_from_range.hpp"
 #include "big_endian_codec.hpp"
-#include "database.hpp"
 #include "domain_put_latest_query.hpp"
+#include "query_test.hpp"
 
 namespace silkworm::datastore::kvdb {
 
@@ -40,44 +36,11 @@ struct DomainPutEntry {
 using DomainRangeQuery = DomainRangeLatestQuery<BigEndianU64Codec, BigEndianU64Codec, BigEndianU64Codec>;
 using Result = std::vector<std::pair<uint64_t, uint64_t>>;
 
-// by default has_large_values = false, is_multi_value = true
-using DomainDefault = std::identity;
-
-struct DomainWithLargeValues {
-    Schema::DomainDef& operator()(Schema::DomainDef& domain) const {
-        domain.enable_large_values().values_disable_multi_value();
-        return domain;
-    }
-};
-
 TEMPLATE_TEST_CASE("DomainRangeLatestQuery", "", DomainDefault, DomainWithLargeValues) {
-    const TemporaryDirectory tmp_dir;
-    ::mdbx::env_managed env = open_env(EnvConfig{.path = tmp_dir.path().string(), .create = true, .in_memory = true});
+    QueryTest test = QueryTest::make<TestType>();
 
-    EntityName name{"Test"};
-    Schema::DatabaseDef schema;
-    TestType domain_config;
-    [[maybe_unused]] auto _ = domain_config(schema.domain(name));
-
-    Database db{std::move(env), schema};
-    db.create_tables();
-    Domain entity = db.domain(name);
-    RWAccess db_access = db.access_rw();
-
-    auto find_in = [&db_access, &entity](const std::vector<DomainPutEntry>& data, uint64_t key_start, uint64_t key_end) -> Result {
-        {
-            RWTxnManaged tx = db_access.start_rw_tx();
-            DomainPutLatestQuery<BigEndianU64Codec, BigEndianU64Codec> query{tx, entity};
-            for (auto& entry : data) {
-                query.exec(entry.key, entry.value, entry.step);
-            }
-            tx.commit_and_stop();
-        }
-
-        ROTxnManaged tx = db_access.start_ro_tx();
-        DomainRangeQuery query{tx, entity};
-        auto results = vector_from_range(query.exec(key_start, key_end, /* ascending = */ true));
-        return results;
+    auto find_in = [&test](const std::vector<DomainPutEntry>& data, uint64_t key_start, uint64_t key_end) -> Result {
+        return test.find_in<EntityKind::kDomain, DomainPutEntry, DomainPutLatestQuery<BigEndianU64Codec, BigEndianU64Codec>, DomainRangeQuery>(data, key_start, key_end, /* ascending = */ true);
     };
 
     SECTION("single entry - correct key") {

@@ -132,8 +132,8 @@ TEST_CASE("SnapshotSync::update_block_headers", "[db][snapshot][sync]") {
     REQUIRE_NOTHROW(TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment_file.block_num_range().start).build());
 
     // Add a sample Snapshot bundle to the repository
-    auto step_range = datastore::StepRange::from_block_num_range(snapshots::test_util::kSampleSnapshotBlockRange);
     auto& repository = snapshot_sync.blocks_repository();
+    auto step_range = repository.step_converter().step_range_from_timestamp_range({snapshots::test_util::kSampleSnapshotBlockRange.start, snapshots::test_util::kSampleSnapshotBlockRange.end});
     SnapshotBundle bundle = repository.open_bundle(step_range);
     repository.add_snapshot_bundle(std::move(bundle));
 

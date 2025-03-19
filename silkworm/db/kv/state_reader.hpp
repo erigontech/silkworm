@@ -26,6 +26,7 @@
 #include <silkworm/core/common/bytes.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/db/chain/providers.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 
 #include "version.hpp"
@@ -34,7 +35,7 @@ namespace silkworm::db::kv {
 
 class StateReader {
   public:
-    StateReader(kv::api::Transaction& tx, std::optional<TxnId> txn_id);
+    StateReader(api::Transaction& tx, api::StateCache* state_cache, std::optional<TxnId> txn_id);
 
     StateReader(const StateReader&) = delete;
     StateReader& operator=(const StateReader&) = delete;
@@ -48,7 +49,11 @@ class StateReader {
     Task<std::optional<Bytes>> read_code(const evmc::address& address, const evmc::bytes32& code_hash) const;
 
   private:
-    kv::api::Transaction& tx_;
+    inline Task<api::PointResult> latest_from_cache(std::string_view table, Bytes key) const;
+    inline Task<api::PointResult> latest_code_from_cache(Bytes key) const;
+
+    api::Transaction& tx_;
+    api::StateCache* state_cache_;
     std::optional<TxnId> txn_number_;
 };
 

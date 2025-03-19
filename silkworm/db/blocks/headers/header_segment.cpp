@@ -19,6 +19,8 @@
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 
+#include "../step_block_num_converter.hpp"
+
 namespace silkworm::snapshots {
 
 void encode_word_from_header(Bytes& word, const BlockHeader& header) {
@@ -39,7 +41,8 @@ void decode_word_into_header(ByteView word, BlockHeader& header) {
     success_or_throw(decode_result, "decode_word_into_header: rlp::decode error");
 }
 
-void check_sanity_of_header_with_metadata(const BlockHeader& header, BlockNumRange block_num_range) {
+void check_sanity_of_header_with_metadata(const BlockHeader& header, datastore::StepRange step_range) {
+    auto block_num_range = db::blocks::kStepToBlockNumConverter.timestamp_range_from_step_range(step_range);
     BlockNum block_from = block_num_range.start;
     BlockNum block_to = block_num_range.end;
     ensure((header.number >= block_from) && (header.number < block_to), [&]() {

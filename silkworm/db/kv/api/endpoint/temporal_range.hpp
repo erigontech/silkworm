@@ -32,7 +32,7 @@ inline constexpr int64_t kUnlimited{-1};
 //! Infinite timestamp value in range queries
 inline constexpr Timestamp kInfinite{-1};
 
-struct IndexRangeQuery {
+struct IndexRangeRequest {
     TxId tx_id{0};
     std::string table;
     Bytes key;
@@ -55,7 +55,7 @@ struct RangeResult {
     std::string next_page_token;
 };
 
-struct HistoryRangeQuery {
+struct HistoryRangeRequest {
     TxId tx_id{0};
     std::string table;
     Timestamp from_timestamp;
@@ -66,10 +66,10 @@ struct HistoryRangeQuery {
     std::string page_token;
 
     // TODO(canepat) we need clang >= 17 to use spaceship operator instead of hand-made operator== below
-    // auto operator<=>(const HistoryRangeQuery&) const = default;
+    // auto operator<=>(const HistoryRangeRequest&) const = default;
 };
 
-inline bool operator==(const HistoryRangeQuery& lhs, const HistoryRangeQuery& rhs) {
+inline bool operator==(const HistoryRangeRequest& lhs, const HistoryRangeRequest& rhs) {
     return (lhs.tx_id == rhs.tx_id) &&
            (lhs.table == rhs.table) &&
            (lhs.from_timestamp == rhs.from_timestamp) &&
@@ -82,7 +82,7 @@ inline bool operator==(const HistoryRangeQuery& lhs, const HistoryRangeQuery& rh
 
 using HistoryRangeResult = RangeResult;
 
-struct DomainRangeQuery {
+struct DomainRangeRequest {
     TxId tx_id{0};
     std::string table;
     Bytes from_key;

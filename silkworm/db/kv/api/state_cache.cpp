@@ -26,18 +26,30 @@
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/concurrency/timeout.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 
 namespace silkworm::db::kv::api {
 
-CoherentStateView::CoherentStateView(Transaction& tx, CoherentStateCache* cache) : tx_(tx), cache_(cache) {}
+CoherentStateView::CoherentStateView(StateVersionId version_id, Transaction& tx, CoherentStateCache* cache)
+    : version_id_(version_id), tx_(tx), cache_(cache) {}
 
-Task<std::optional<Bytes>> CoherentStateView::get(ByteView key) {
-    co_return co_await cache_->get(key, tx_);
+bool CoherentStateView::empty() const {
+    const auto root_it = cache_->state_view_roots_.find(version_id_);
+    if (root_it == cache_->state_view_roots_.end()) {
+        return true;
+    }
+    const auto& root = root_it->second;
+    return root->cache.empty() && root->code_cache.empty();
 }
 
-Task<std::optional<Bytes>> CoherentStateView::get_code(ByteView key) {
-    co_return co_await cache_->get_code(key, tx_);
+Task<std::optional<Bytes>> CoherentStateView::get(std::string_view table, Bytes key) {
+    co_return co_await cache_->get(version_id_, table, std::move(key), tx_);
+}
+
+Task<std::optional<Bytes>> CoherentStateView::get_code(Bytes key) {
+    co_return co_await cache_->get_code(version_id_, std::move(key), tx_);
 }
 
 CoherentStateCache::CoherentStateCache(CoherentCacheConfig config) : config_(config) {
@@ -46,11 +58,12 @@ CoherentStateCache::CoherentStateCache(CoherentCacheConfig config) : config_(con
     }
 }
 
-std::unique_ptr<StateView> CoherentStateCache::get_view(Transaction& tx) {
-    const auto view_id = tx.view_id();
-    std::scoped_lock write_lock{rw_mutex_};
-    CoherentStateRoot* root = get_root(view_id);
-    return root->ready ? std::make_unique<CoherentStateView>(tx, this) : nullptr;
+Task<std::unique_ptr<StateView>> CoherentStateCache::get_view(Transaction& tx) {
+    const auto version_id = co_await get_db_state_version(tx);
+    if (config_.wait_for_new_block) {
+        co_await wait_for_root_ready(version_id);
+    }
+    co_return std::make_unique<CoherentStateView>(version_id, tx, this);
 }
 
 size_t CoherentStateCache::latest_data_size() {
@@ -77,33 +90,34 @@ void CoherentStateCache::on_new_block(const api::StateChangeSet& state_changes_s
     }
 
     std::scoped_lock write_lock{rw_mutex_};
+    new_block_wait_count_ = 0;
 
-    const auto view_id = state_changes_set.state_version_id;
-    CoherentStateRoot* root = advance_root(view_id);
+    const auto version_id = state_changes_set.state_version_id;
+    CoherentStateRoot* root = advance_root(version_id);
     for (const auto& state_change : state_changes) {
         for (const auto& account_change : state_change.account_changes) {
             switch (account_change.change_type) {
                 case Action::kUpsert: {
-                    process_upsert_change(root, view_id, account_change);
+                    process_upsert_change(root, version_id, account_change);
                     break;
                 }
                 case Action::kUpsertCode: {
-                    process_upsert_change(root, view_id, account_change);
-                    process_code_change(root, view_id, account_change);
+                    process_upsert_change(root, version_id, account_change);
+                    process_code_change(root, version_id, account_change);
                     break;
                 }
                 case Action::kRemove: {
-                    process_delete_change(root, view_id, account_change);
+                    process_delete_change(root, version_id, account_change);
                     break;
                 }
                 case Action::kStorage: {
                     if (config_.with_storage && !account_change.storage_changes.empty()) {
-                        process_storage_change(root, view_id, account_change);
+                        process_storage_change(root, version_id, account_change);
                     }
                     break;
                 }
                 case Action::kCode: {
-                    process_code_change(root, view_id, account_change);
+                    process_code_change(root, version_id, account_change);
                     break;
                 }
                 default: {
@@ -117,32 +131,95 @@ void CoherentStateCache::on_new_block(const api::StateChangeSet& state_changes_s
     code_key_count_ = static_cast<size_t>(latest_state_view_->code_cache.size());
 
     root->ready = true;
+    root->ready_cond_var.notify_all();
 }
 
-void CoherentStateCache::process_upsert_change(CoherentStateRoot* root, StateViewId view_id, const AccountChange& change) {
+Task<StateCache::ValidationResult> CoherentStateCache::validate_current_root(Transaction& tx) {
+    StateCache::ValidationResult validation_result{.enabled = true};
+
+    const StateVersionId current_state_version_id = co_await get_db_state_version(tx);
+    validation_result.latest_state_version_id = current_state_version_id;
+    // If the latest version id in the cache is not the same as the db or one below it
+    // then the cache will be a new one for the next call so return early
+    if (current_state_version_id > latest_state_version_id_) {
+        validation_result.latest_state_behind = true;
+        co_return validation_result;
+    }
+    const auto root = co_await wait_for_root_ready(latest_state_version_id_);
+
+    bool clear_cache{false};
+    const auto get_address_domain = [](const auto& key) {
+        return key.size() == kAddressLength ? db::table::kAccountDomain : db::table::kStorageDomain;
+    };
+    const auto compare_cache = [&](auto& cache, bool is_code) -> Task<std::pair<bool, std::vector<Bytes>>> {
+        bool cancelled{false};
+        std::vector<Bytes> keys;
+        if (cache.empty()) {
+            co_return std::make_pair(cancelled, keys);
+        }
+        auto kv_node = cache.extract(cache.begin());
+        if (!kv_node.empty()) {
+            co_return std::make_pair(cancelled, keys);
+        }
+        KeyValue kv{kv_node.value()};
+        const auto domain = is_code ? db::table::kCodeDomain : get_address_domain(kv.key);
+        const GetLatestResult result = co_await tx.get_latest({.table = std::string{domain}, .key = kv.key});
+        if (!result.success) {
+            co_return std::make_pair(cancelled, keys);
+        }
+        if (result.value != kv.key) {
+            keys.push_back(kv.key);
+            clear_cache = true;
+        }
+        co_return std::make_pair(cancelled, keys);
+    };
+
+    auto [cache, code_cache] = clone_caches(root);
+
+    auto [cancelled_1, keys] = co_await compare_cache(cache, /*is_code=*/false);
+    if (cancelled_1) {
+        validation_result.request_canceled = true;
+        co_return validation_result;
+    }
+    validation_result.state_keys_out_of_sync = std::move(keys);
+    auto [cancelled_2, code_keys] = co_await compare_cache(code_cache, /*is_code=*/true);
+    if (cancelled_2) {
+        validation_result.request_canceled = true;
+        co_return validation_result;
+    }
+    validation_result.code_keys_out_of_sync = std::move(code_keys);
+
+    if (clear_cache) {
+        clear_caches(root);
+    }
+    validation_result.cache_cleared = true;
+    co_return validation_result;
+}
+
+void CoherentStateCache::process_upsert_change(CoherentStateRoot* root, StateVersionId version_id, const AccountChange& change) {
     const auto& address = change.address;
     const auto& data_bytes = change.data;
     SILK_DEBUG << "CoherentStateCache::process_upsert_change address: " << address << " data: " << data_bytes;
     const Bytes address_key{address.bytes, kAddressLength};
-    add({address_key, data_bytes}, root, view_id);
+    add({address_key, data_bytes}, root, version_id);
 }
 
-void CoherentStateCache::process_code_change(CoherentStateRoot* root, StateViewId view_id, const AccountChange& change) {
+void CoherentStateCache::process_code_change(CoherentStateRoot* root, StateVersionId version_id, const AccountChange& change) {
     const auto& code_bytes = change.code;
     const ethash::hash256 code_hash{keccak256(code_bytes)};
     const Bytes code_hash_key{code_hash.bytes, kHashLength};
     SILK_DEBUG << "CoherentStateCache::process_code_change code_hash_key: " << code_hash_key;
-    add_code({code_hash_key, code_bytes}, root, view_id);
+    add_code({code_hash_key, code_bytes}, root, version_id);
 }
 
-void CoherentStateCache::process_delete_change(CoherentStateRoot* root, StateViewId view_id, const AccountChange& change) {
+void CoherentStateCache::process_delete_change(CoherentStateRoot* root, StateVersionId version_id, const AccountChange& change) {
     const auto& address = change.address;
     SILK_DEBUG << "CoherentStateCache::process_delete_change address: " << address;
     const Bytes address_key{address.bytes, kAddressLength};
-    add({address_key, {}}, root, view_id);
+    add({address_key, {}}, root, version_id);
 }
 
-void CoherentStateCache::process_storage_change(CoherentStateRoot* root, StateViewId view_id, const AccountChange& change) {
+void CoherentStateCache::process_storage_change(CoherentStateRoot* root, StateVersionId version_id, const AccountChange& change) {
     const auto& address = change.address;
     SILK_DEBUG << "CoherentStateCache::process_storage_change address=" << address;
     for (const auto& storage_change : change.storage_changes) {
@@ -150,13 +227,13 @@ void CoherentStateCache::process_storage_change(CoherentStateRoot* root, StateVi
         const auto storage_key = composite_storage_key(address, change.incarnation, location_hash.bytes);
         const auto& value = storage_change.data;
         SILK_DEBUG << "CoherentStateCache::process_storage_change key=" << storage_key << " value=" << value;
-        add({storage_key, value}, root, view_id);
+        add({storage_key, value}, root, version_id);
     }
 }
 
-bool CoherentStateCache::add(KeyValue&& kv, CoherentStateRoot* root, StateViewId view_id) {
+bool CoherentStateCache::add(KeyValue&& kv, CoherentStateRoot* root, StateVersionId version_id) {
     auto [it, inserted] = root->cache.insert(kv);
-    SILK_DEBUG << "Data cache kv.key=" << to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id;
+    SILK_DEBUG << "Data cache kv.key=" << to_hex(kv.key) << " inserted=" << inserted << " version_id=" << version_id;
     std::optional<KeyValue> replaced;
     if (!inserted) {
         replaced = *it;
@@ -164,7 +241,7 @@ bool CoherentStateCache::add(KeyValue&& kv, CoherentStateRoot* root, StateViewId
         std::tie(it, inserted) = root->cache.insert(kv);
         SILKWORM_ASSERT(inserted);
     }
-    if (latest_state_view_id_ != view_id) {
+    if (latest_state_version_id_ != version_id) {
         return inserted;
     }
     if (replaced) {
@@ -184,9 +261,9 @@ bool CoherentStateCache::add(KeyValue&& kv, CoherentStateRoot* root, StateViewId
     return inserted;
 }
 
-bool CoherentStateCache::add_code(KeyValue&& kv, CoherentStateRoot* root, StateViewId view_id) {
+bool CoherentStateCache::add_code(KeyValue&& kv, CoherentStateRoot* root, StateVersionId version_id) {
     auto [it, inserted] = root->code_cache.insert(kv);
-    SILK_DEBUG << "Code cache kv.key=" << to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id;
+    SILK_DEBUG << "Code cache kv.key=" << to_hex(kv.key) << " inserted=" << inserted << " version_id=" << version_id;
     std::optional<KeyValue> replaced;
     if (!inserted) {
         replaced = *it;
@@ -194,7 +271,7 @@ bool CoherentStateCache::add_code(KeyValue&& kv, CoherentStateRoot* root, StateV
         std::tie(it, inserted) = root->code_cache.insert(kv);
         SILKWORM_ASSERT(inserted);
     }
-    if (latest_state_view_id_ != view_id) {
+    if (latest_state_version_id_ != version_id) {
         return inserted;
     }
     if (replaced) {
@@ -214,24 +291,23 @@ bool CoherentStateCache::add_code(KeyValue&& kv, CoherentStateRoot* root, StateV
     return inserted;
 }
 
-Task<std::optional<Bytes>> CoherentStateCache::get(ByteView key, Transaction& tx) {
+Task<std::optional<Bytes>> CoherentStateCache::get(StateVersionId version_id, std::string_view table, Bytes key, Transaction& tx) {
     std::shared_lock read_lock{rw_mutex_};
 
-    const auto view_id = tx.view_id();
-    const auto root_it = state_view_roots_.find(view_id);
+    const auto root_it = state_view_roots_.find(version_id);
     if (root_it == state_view_roots_.end()) {
         co_return std::nullopt;
     }
 
-    KeyValue kv{Bytes{key}};
+    KeyValue kv{std::move(key)};
     auto& cache = root_it->second->cache;
     const auto kv_it = cache.find(kv);
     if (kv_it != cache.end()) {
         ++state_hit_count_;
 
-        SILK_DEBUG << "Hit in state cache key=" << key << " value=" << kv_it->value;
+        SILK_DEBUG << "Hit in state cache key=" << kv.key << " value=" << kv_it->value;
 
-        if (view_id == latest_state_view_id_) {
+        if (version_id == latest_state_version_id_) {
             state_evictions_.remove(kv);
             state_evictions_.push_front(kv);
         }
@@ -241,8 +317,14 @@ Task<std::optional<Bytes>> CoherentStateCache::get(ByteView key, Transaction& tx
 
     ++state_miss_count_;
 
-    const auto value = co_await tx.get_one(db::table::kPlainStateName, key);
-    SILK_DEBUG << "Miss in state cache: lookup in PlainState key=" << key << " value=" << value;
+    const auto domain = kv.key.size() == kAddressLength ? db::table::kAccountDomain : db::table::kStorageDomain;
+    const GetLatestResult result = co_await tx.get_latest({.table = std::string{table}, .key = kv.key});
+    if (!result.success) {
+        co_return std::nullopt;
+    }
+
+    const Bytes value = result.value;
+    SILK_DEBUG << "Miss in state cache: lookup in domain " << domain << " key=" << kv.key << " value=" << value;
     if (value.empty()) {
         co_return std::nullopt;
     }
@@ -251,29 +333,28 @@ Task<std::optional<Bytes>> CoherentStateCache::get(ByteView key, Transaction& tx
     std::scoped_lock write_lock{rw_mutex_};
 
     kv.value = value;
-    add(std::move(kv), root_it->second.get(), view_id);
+    add(std::move(kv), root_it->second.get(), version_id);
 
     co_return value;
 }
 
-Task<std::optional<Bytes>> CoherentStateCache::get_code(ByteView key, Transaction& tx) {
+Task<std::optional<Bytes>> CoherentStateCache::get_code(StateVersionId version_id, Bytes key, Transaction& tx) {
     std::shared_lock read_lock{rw_mutex_};
 
-    const auto view_id = tx.view_id();
-    const auto root_it = state_view_roots_.find(view_id);
+    const auto root_it = state_view_roots_.find(version_id);
     if (root_it == state_view_roots_.end()) {
         co_return std::nullopt;
     }
 
-    KeyValue kv{Bytes{key}};
+    KeyValue kv{std::move(key)};
     auto& code_cache = root_it->second->code_cache;
     const auto kv_it = code_cache.find(kv);
     if (kv_it != code_cache.end()) {
         ++code_hit_count_;
 
-        SILK_DEBUG << "Hit in code cache key=" << key << " value=" << kv_it->value;
+        SILK_DEBUG << "Hit in code cache key=" << kv.key << " value=" << kv_it->value;
 
-        if (view_id == latest_state_view_id_) {
+        if (version_id == latest_state_version_id_) {
             code_evictions_.remove(kv);
             code_evictions_.push_front(kv);
         }
@@ -283,8 +364,12 @@ Task<std::optional<Bytes>> CoherentStateCache::get_code(ByteView key, Transactio
 
     ++code_miss_count_;
 
-    const auto value = co_await tx.get_one(db::table::kCodeName, key);
-    SILK_DEBUG << "Miss in code cache: lookup in Code key=" << key << " value=" << value;
+    const GetLatestResult result = co_await tx.get_latest({.table = db::table::kCodeDomain, .key = kv.key});
+    if (!result.success) {
+        co_return std::nullopt;
+    }
+    const Bytes value = result.value;
+    SILK_DEBUG << "Miss in code cache: lookup in domain Code key=" << kv.key << " value=" << value;
     if (value.empty()) {
         co_return std::nullopt;
     }
@@ -293,32 +378,32 @@ Task<std::optional<Bytes>> CoherentStateCache::get_code(ByteView key, Transactio
     std::scoped_lock write_lock{rw_mutex_};
 
     kv.value = value;
-    add_code(std::move(kv), root_it->second.get(), view_id);
+    add_code(std::move(kv), root_it->second.get(), version_id);
 
     co_return value;
 }
 
-CoherentStateRoot* CoherentStateCache::get_root(StateViewId view_id) {
-    const auto root_it = state_view_roots_.find(view_id);
+CoherentStateRoot* CoherentStateCache::get_root(StateVersionId version_id) {
+    const auto root_it = state_view_roots_.find(version_id);
     if (root_it != state_view_roots_.end()) {
-        SILK_DEBUG << "CoherentStateCache::get_root view_id=" << view_id << " root=" << root_it->second.get() << " found";
+        SILK_DEBUG << "CoherentStateCache::get_root version_id=" << version_id << " root=" << root_it->second.get() << " found";
         return root_it->second.get();
     }
-    const auto [new_root_it, _] = state_view_roots_.emplace(view_id, std::make_unique<CoherentStateRoot>());
-    SILK_DEBUG << "CoherentStateCache::get_root view_id=" << view_id << " root=" << root_it->second.get() << " created";
+    const auto [new_root_it, _] = state_view_roots_.emplace(version_id, std::make_unique<CoherentStateRoot>());
+    SILK_DEBUG << "CoherentStateCache::get_root version_id=" << version_id << " root=" << root_it->second.get() << " created";
     return new_root_it->second.get();
 }
 
-CoherentStateRoot* CoherentStateCache::advance_root(StateViewId view_id) {
-    CoherentStateRoot* root = get_root(view_id);
+CoherentStateRoot* CoherentStateCache::advance_root(StateVersionId version_id) {
+    CoherentStateRoot* root = get_root(version_id);
 
-    const auto previous_root_it = state_view_roots_.find(view_id - 1);
+    const auto previous_root_it = state_view_roots_.find(version_id - 1);
     if (previous_root_it != state_view_roots_.end() && previous_root_it->second->canonical) {
-        SILK_DEBUG << "CoherentStateCache::advance_root canonical view_id-1=" << (view_id - 1) << " found";
+        SILK_DEBUG << "CoherentStateCache::advance_root canonical view_id-1=" << (version_id - 1) << " found";
         root->cache = previous_root_it->second->cache;
         root->code_cache = previous_root_it->second->code_cache;
     } else {
-        SILK_DEBUG << "CoherentStateCache::advance_root canonical view_id-1=" << (view_id - 1) << " not found";
+        SILK_DEBUG << "CoherentStateCache::advance_root canonical view_id-1=" << (version_id - 1) << " not found";
         state_evictions_.clear();
         for (const auto& kv : root->cache) {
             state_evictions_.push_front(kv);
@@ -330,9 +415,9 @@ CoherentStateRoot* CoherentStateCache::advance_root(StateViewId view_id) {
     }
     root->canonical = true;
 
-    evict_roots(view_id);
+    evict_roots(version_id);
 
-    latest_state_view_id_ = view_id;
+    latest_state_version_id_ = version_id;
     latest_state_view_ = root;
 
     state_eviction_count_ = state_evictions_.size();
@@ -341,26 +426,66 @@ CoherentStateRoot* CoherentStateCache::advance_root(StateViewId view_id) {
     return root;
 }
 
-void CoherentStateCache::evict_roots(StateViewId next_view_id) {
+void CoherentStateCache::evict_roots(StateVersionId next_version_id) {
     SILK_DEBUG << "CoherentStateCache::evict_roots state_view_roots_.size()=" << state_view_roots_.size();
     if (state_view_roots_.size() <= config_.max_views) {
         return;
     }
-    if (next_view_id == 0) {
-        // Next view ID is zero with cache not empty => view ID wrapping => clear the cache except for new latest view
+    if (next_version_id == 0) {
+        // Next version ID is zero with cache not empty => version ID wrapping => clear the cache except for new latest view
         std::erase_if(state_view_roots_, [&](const auto& item) {
-            auto const& [view_id, _] = item;
-            return view_id != next_view_id;
+            auto const& [version_id, _] = item;
+            return version_id != next_version_id;
         });
         return;
     }
     // Erase older state views in order not to exceed max_views
-    const auto max_view_id_to_delete = latest_state_view_id_ - config_.max_views + 1;
-    SILK_DEBUG << "CoherentStateCache::evict_roots max_view_id_to_delete=" << max_view_id_to_delete;
+    const auto max_version_id_to_delete = latest_state_version_id_ - config_.max_views + 1;
+    SILK_DEBUG << "CoherentStateCache::evict_roots max_version_id_to_delete=" << max_version_id_to_delete;
     std::erase_if(state_view_roots_, [&](const auto& item) {
-        auto const& [view_id, _] = item;
-        return view_id <= max_view_id_to_delete;
+        auto const& [version_id, _] = item;
+        return version_id <= max_version_id_to_delete;
     });
+}
+
+Task<CoherentStateRoot*> CoherentStateCache::wait_for_root_ready(StateVersionId version_id) {
+    using namespace concurrency::awaitable_wait_for_one;
+    CoherentStateRoot* root = get_root(version_id);
+    while (new_block_wait_count_ <= kDefaultMaxWaitCount) {
+        std::unique_lock write_lock{rw_mutex_};
+        if (root->ready) co_return root;
+        auto ready_waiter = root->ready_cond_var.waiter();
+        write_lock.unlock();
+        try {
+            co_await (ready_waiter() || concurrency::timeout(config_.block_wait_duration));
+        } catch (const concurrency::TimeoutExpiredError&) {
+            write_lock.lock();
+            ++new_block_wait_count_;
+            write_lock.unlock();
+        }
+    }
+    co_return root;
+}
+
+Task<StateVersionId> CoherentStateCache::get_db_state_version(Transaction& tx) const {
+    const Bytes version = co_await tx.get_one(db::table::kSequenceName, string_view_to_byte_view(kPlainStateVersionKey));
+    if (version.empty()) {
+        co_return 0;
+    }
+    co_return endian::load_big_u64(version.data());
+}
+
+std::pair<KeyValueSet, KeyValueSet> CoherentStateCache::clone_caches(CoherentStateRoot* root) {
+    std::scoped_lock write_lock{rw_mutex_};
+    KeyValueSet cache = root->cache;
+    KeyValueSet code_cache = root->code_cache;
+    return {cache, code_cache};
+}
+
+void CoherentStateCache::clear_caches(CoherentStateRoot* root) {
+    std::scoped_lock write_lock{rw_mutex_};
+    root->cache.clear();
+    root->code_cache.clear();
 }
 
 }  // namespace silkworm::db::kv::api

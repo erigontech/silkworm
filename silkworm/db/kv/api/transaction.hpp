@@ -46,8 +46,6 @@ class Transaction {
     virtual uint64_t tx_id() const = 0;
     virtual uint64_t view_id() const = 0;
 
-    virtual void set_state_cache_enabled(bool cache_enabled) = 0;
-
     virtual Task<void> open() = 0;
 
     virtual Task<std::shared_ptr<Cursor>> cursor(const std::string& table) = 0;
@@ -77,24 +75,24 @@ class Transaction {
     /** Temporal Point Queries **/
 
     // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=true (ts ignored)
-    virtual Task<GetLatestResult> get_latest(GetLatestQuery query) = 0;
+    virtual Task<GetLatestResult> get_latest(GetLatestRequest request) = 0;
 
     // rpc GetLatest(GetLatestReq) returns (GetLatestReply); w/ latest=false (ts used)
-    virtual Task<GetAsOfResult> get_as_of(GetAsOfQuery query) = 0;
+    virtual Task<GetAsOfResult> get_as_of(GetAsOfRequest request) = 0;
 
     // rpc HistorySeek(HistorySeekReq) returns (HistorySeekReply);
-    virtual Task<HistoryPointResult> history_seek(HistoryPointQuery query) = 0;
+    virtual Task<HistoryPointResult> history_seek(HistoryPointRequest request) = 0;
 
     /** Temporal Range Queries **/
 
     // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
-    virtual Task<PaginatedTimestamps> index_range(IndexRangeQuery query) = 0;
+    virtual Task<PaginatedTimestamps> index_range(IndexRangeRequest request) = 0;
 
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-    virtual Task<PaginatedKeysValues> history_range(HistoryRangeQuery query) = 0;
+    virtual Task<PaginatedKeysValues> history_range(HistoryRangeRequest request) = 0;
 
     // rpc RangeAsOf(RangeAsOfReq) returns (Pairs);
-    virtual Task<PaginatedKeysValues> range_as_of(DomainRangeQuery query) = 0;
+    virtual Task<PaginatedKeysValues> range_as_of(DomainRangeRequest request) = 0;
 };
 
 }  // namespace silkworm::db::kv::api

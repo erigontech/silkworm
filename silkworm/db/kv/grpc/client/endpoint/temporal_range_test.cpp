@@ -29,24 +29,24 @@ using namespace silkworm::db::kv::test_util;
 using namespace silkworm::test_util;
 namespace proto = ::remote;
 
-TEST_CASE("index_range_request_from_query", "[node][remote][kv][grpc]") {
-    const Fixtures<api::IndexRangeQuery, proto::IndexRangeReq> fixtures{
+TEST_CASE("make_index_range_req", "[node][remote][kv][grpc]") {
+    const Fixtures<api::IndexRangeRequest, proto::IndexRangeReq> fixtures{
         {{}, default_proto_index_range_request()},
-        {sample_index_range_query(), sample_proto_index_range_request()},
+        {sample_index_range_request(), sample_proto_index_range_request()},
     };
-    for (const auto& [query, expected_range_request] : fixtures) {
-        SECTION("query: " + std::to_string(query.tx_id)) {
-            const auto& range_request{index_range_request_from_query(query)};
+    for (const auto& [request, expected_req] : fixtures) {
+        SECTION("request: " + std::to_string(request.tx_id)) {
+            const auto& range_request{make_index_range_req(request)};
             // CHECK(range_request == expected_range_request);  // requires operator== in gRPC
-            CHECK(range_request.tx_id() == expected_range_request.tx_id());
-            CHECK(range_request.table() == expected_range_request.table());
-            CHECK(range_request.k() == expected_range_request.k());
-            CHECK(range_request.from_ts() == expected_range_request.from_ts());
-            CHECK(range_request.to_ts() == expected_range_request.to_ts());
-            CHECK(range_request.order_ascend() == expected_range_request.order_ascend());
-            CHECK(range_request.limit() == expected_range_request.limit());
-            CHECK(range_request.page_size() == expected_range_request.page_size());
-            CHECK(range_request.page_token() == expected_range_request.page_token());
+            CHECK(range_request.tx_id() == expected_req.tx_id());
+            CHECK(range_request.table() == expected_req.table());
+            CHECK(range_request.k() == expected_req.k());
+            CHECK(range_request.from_ts() == expected_req.from_ts());
+            CHECK(range_request.to_ts() == expected_req.to_ts());
+            CHECK(range_request.order_ascend() == expected_req.order_ascend());
+            CHECK(range_request.limit() == expected_req.limit());
+            CHECK(range_request.page_size() == expected_req.page_size());
+            CHECK(range_request.page_token() == expected_req.page_token());
         }
     }
 }
@@ -57,7 +57,7 @@ TEST_CASE("index_range_result_from_response", "[node][remote][kv][grpc]") {
         {sample_proto_index_range_response(), sample_index_range_result()},
     };
     for (const auto& [response, expected_range_result] : fixtures) {
-        SECTION("query: " + response.next_page_token()) {
+        SECTION("response: " + response.next_page_token()) {
             const auto& range_result{index_range_result_from_response(response)};
             // CHECK(range_result == expected_range_result);  // requires operator== in gRPC
             CHECK(range_result.timestamps == expected_range_result.timestamps);
@@ -66,23 +66,23 @@ TEST_CASE("index_range_result_from_response", "[node][remote][kv][grpc]") {
     }
 }
 
-TEST_CASE("history_range_request_from_query", "[node][remote][kv][grpc]") {
-    const Fixtures<api::HistoryRangeQuery, proto::HistoryRangeReq> fixtures{
+TEST_CASE("make_history_range_req", "[node][remote][kv][grpc]") {
+    const Fixtures<api::HistoryRangeRequest, proto::HistoryRangeReq> fixtures{
         {{}, default_proto_history_range_request()},
-        {sample_history_range_query(), sample_proto_history_range_request()},
+        {sample_history_range_request(), sample_proto_history_range_request()},
     };
-    for (const auto& [query, expected_range_request] : fixtures) {
-        SECTION("query: " + std::to_string(query.tx_id)) {
-            const auto& range_request{history_range_request_from_query(query)};
+    for (const auto& [request, expected_req] : fixtures) {
+        SECTION("request: " + std::to_string(request.tx_id)) {
+            const auto& range_request{make_history_range_req(request)};
             // CHECK(range_request == expected_range_request);  // requires operator== in gRPC
-            CHECK(range_request.tx_id() == expected_range_request.tx_id());
-            CHECK(range_request.table() == expected_range_request.table());
-            CHECK(range_request.from_ts() == expected_range_request.from_ts());
-            CHECK(range_request.to_ts() == expected_range_request.to_ts());
-            CHECK(range_request.order_ascend() == expected_range_request.order_ascend());
-            CHECK(range_request.limit() == expected_range_request.limit());
-            CHECK(range_request.page_size() == expected_range_request.page_size());
-            CHECK(range_request.page_token() == expected_range_request.page_token());
+            CHECK(range_request.tx_id() == expected_req.tx_id());
+            CHECK(range_request.table() == expected_req.table());
+            CHECK(range_request.from_ts() == expected_req.from_ts());
+            CHECK(range_request.to_ts() == expected_req.to_ts());
+            CHECK(range_request.order_ascend() == expected_req.order_ascend());
+            CHECK(range_request.limit() == expected_req.limit());
+            CHECK(range_request.page_size() == expected_req.page_size());
+            CHECK(range_request.page_token() == expected_req.page_token());
         }
     }
 }
@@ -93,7 +93,7 @@ TEST_CASE("history_range_result_from_response", "[node][remote][kv][grpc]") {
         {sample_proto_history_range_response(), sample_history_range_result()},
     };
     for (const auto& [response, expected_range_result] : fixtures) {
-        SECTION("query: " + response.next_page_token()) {
+        SECTION("response: " + response.next_page_token()) {
             const auto& range_result{history_range_result_from_response(response)};
             // CHECK(range_result == expected_range_result);  // requires operator== in gRPC
             CHECK(range_result.keys == expected_range_result.keys);
@@ -103,24 +103,24 @@ TEST_CASE("history_range_result_from_response", "[node][remote][kv][grpc]") {
     }
 }
 
-TEST_CASE("domain_range_request_from_query", "[node][remote][kv][grpc]") {
-    const Fixtures<api::DomainRangeQuery, proto::RangeAsOfReq> fixtures{
+TEST_CASE("make_domain_range_req", "[node][remote][kv][grpc]") {
+    const Fixtures<api::DomainRangeRequest, proto::RangeAsOfReq> fixtures{
         {{}, default_proto_domain_range_request()},
-        {sample_domain_range_query(), sample_proto_domain_range_request()},
+        {sample_domain_range_request(), sample_proto_domain_range_request()},
     };
-    for (const auto& [query, expected_range_request] : fixtures) {
-        SECTION("query: " + std::to_string(query.tx_id)) {
-            const auto& range_request{domain_range_request_from_query(query)};
+    for (const auto& [request, expected_req] : fixtures) {
+        SECTION("request: " + std::to_string(request.tx_id)) {
+            const auto& range_request{make_domain_range_req(request)};
             // CHECK(range_request == expected_range_request);  // requires operator== in gRPC
-            CHECK(range_request.tx_id() == expected_range_request.tx_id());
-            CHECK(range_request.table() == expected_range_request.table());
-            CHECK(range_request.from_key() == expected_range_request.from_key());
-            CHECK(range_request.to_key() == expected_range_request.to_key());
-            CHECK(range_request.ts() == expected_range_request.ts());
-            CHECK(range_request.order_ascend() == expected_range_request.order_ascend());
-            CHECK(range_request.limit() == expected_range_request.limit());
-            CHECK(range_request.page_size() == expected_range_request.page_size());
-            CHECK(range_request.page_token() == expected_range_request.page_token());
+            CHECK(range_request.tx_id() == expected_req.tx_id());
+            CHECK(range_request.table() == expected_req.table());
+            CHECK(range_request.from_key() == expected_req.from_key());
+            CHECK(range_request.to_key() == expected_req.to_key());
+            CHECK(range_request.ts() == expected_req.ts());
+            CHECK(range_request.order_ascend() == expected_req.order_ascend());
+            CHECK(range_request.limit() == expected_req.limit());
+            CHECK(range_request.page_size() == expected_req.page_size());
+            CHECK(range_request.page_token() == expected_req.page_token());
         }
     }
 }
@@ -131,7 +131,7 @@ TEST_CASE("domain_range_result_from_response", "[node][remote][kv][grpc]") {
         {sample_proto_domain_range_response(), sample_domain_range_result()},
     };
     for (const auto& [response, expected_range_result] : fixtures) {
-        SECTION("query: " + response.next_page_token()) {
+        SECTION("response: " + response.next_page_token()) {
             const auto& range_result{domain_range_result_from_response(response)};
             // CHECK(range_result == expected_range_result);  // requires operator== in gRPC
             CHECK(range_result.keys == expected_range_result.keys);

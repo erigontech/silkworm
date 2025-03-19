@@ -29,6 +29,7 @@
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/logs_walker.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
+#include <silkworm/rpc/json/cache_validation_result.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
 
@@ -39,7 +40,8 @@ Task<void> ErigonRpcApi::handle_erigon_cache_check(const nlohmann::json& request
     auto tx = co_await database_->begin_transaction();
 
     try {
-        reply = make_json_content(request, to_quantity(0));
+        const db::kv::api::StateCache::ValidationResult result = co_await state_cache_->validate_current_root(*tx);
+        reply = make_json_content(request, CacheValidationResult{result});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request, kInternalError, e.what());
@@ -72,7 +74,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohma
 
         auto start = std::chrono::system_clock::now();
 
-        rpc::BlockReader block_reader{*chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
         rpc::BalanceChanges balance_changes;
         co_await block_reader.read_balance_changes(*block_cache_, block_num_or_hash, balance_changes);
 
@@ -285,7 +287,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json
 
     try {
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
 
         const auto block_num = co_await block_reader.get_block_num(block_id);
         const auto header{co_await chain_storage->read_canonical_header(block_num)};
@@ -355,7 +357,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_latest_logs(const nlohmann::json& req
 
     try {
         auto storage = tx->create_storage();
-        LogsWalker logs_walker(*block_cache_, *tx, *storage, workers_);
+        LogsWalker logs_walker(*block_cache_, *tx, state_cache_, *storage, workers_);
 
         const auto [start, end] = co_await logs_walker.get_block_nums(filter);
         if (start == end && start == std::numeric_limits<std::uint64_t>::max()) {
@@ -478,7 +480,7 @@ Task<void> ErigonRpcApi::handle_erigon_block_num(const nlohmann::json& request, 
 
     try {
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx};
+        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
         const auto block_num{co_await block_reader.get_block_num_by_tag(block_id)};
         reply = make_json_content(request, to_quantity(block_num));
     } catch (const std::exception& e) {

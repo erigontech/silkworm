@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "../common/entity_name.hpp"
+#include "../common/step_timestamp_converter.hpp"
 #include "common/snapshot_path.hpp"
 #include "segment_and_accessor_index.hpp"
 #include "snapshot_bundle.hpp"
@@ -55,7 +56,7 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
         std::filesystem::path dir_path,
         bool open,
         Schema::RepositoryDef schema,
-        std::unique_ptr<datastore::StepToTimestampConverter> step_converter,
+        datastore::StepToTimestampConverter step_converter,
         std::optional<uint32_t> index_salt,
         std::unique_ptr<IndexBuildersFactory> index_builders_factory);
 
@@ -65,7 +66,8 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
     ~SnapshotRepository() override = default;
 
     const std::filesystem::path& path() const { return dir_path_; }
-    const Schema::RepositoryDef& schema() const { return schema_; };
+    const Schema::RepositoryDef& schema() const { return schema_; }
+    const datastore::StepToTimestampConverter& step_converter() const { return step_converter_; }
 
     void reopen_folder();
 
@@ -79,7 +81,6 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
 
     size_t bundles_count() const override;
 
-    BlockNum max_block_available() const override;
     Timestamp max_timestamp_available() const override;
 
     std::vector<std::shared_ptr<IndexBuilder>> missing_indexes() const;
@@ -87,11 +88,11 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
     const std::optional<uint32_t>& index_salt() const { return index_salt_; }
     void build_indexes(const SnapshotBundlePaths& bundle) const;
 
-    BundlesView<MapValuesView<Bundles::key_type, Bundles::mapped_type>> view_bundles() const override {
+    BundlesView<MapValuesView<Bundles::key_type, Bundles::mapped_type, Bundles>> view_bundles() const override {
         std::scoped_lock lock(*bundles_mutex_);
         return BundlesView{make_map_values_view(*bundles_), bundles_};
     }
-    BundlesView<MapValuesViewReverse<Bundles::key_type, Bundles::mapped_type>> view_bundles_reverse() const override {
+    BundlesView<MapValuesViewReverse<Bundles::key_type, Bundles::mapped_type, Bundles>> view_bundles_reverse() const override {
         std::scoped_lock lock(*bundles_mutex_);
         return BundlesView{std::ranges::reverse_view(make_map_values_view(*bundles_)), bundles_};
     }
@@ -131,7 +132,7 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
     Schema::RepositoryDef schema_;
 
     //! Converts timestamp units to steps
-    std::unique_ptr<datastore::StepToTimestampConverter> step_converter_;
+    datastore::StepToTimestampConverter step_converter_;
 
     //! Index salt
     std::optional<uint32_t> index_salt_;

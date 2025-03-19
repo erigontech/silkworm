@@ -78,7 +78,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
 
     auto this_executor = co_await boost::asio::this_coro::executor;
 
-    execution::StateFactory state_factory{transaction_};
+    execution::StateFactory state_factory{transaction_, /*state_cache=*/nullptr};
 
     auto exec_result = co_await async_task(workers_.executor(), [&]() -> ExecutionResult {
         auto state = state_factory.create_state(this_executor, storage_, txn_id);

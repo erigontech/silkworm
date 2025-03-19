@@ -29,19 +29,19 @@ using namespace silkworm::db::kv::test_util;
 using namespace silkworm::test_util;
 namespace proto = ::remote;
 
-TEST_CASE("history_get_request_from_query", "[node][remote][kv][grpc]") {
-    const Fixtures<api::HistoryPointQuery, proto::HistorySeekReq> fixtures{
+TEST_CASE("make_history_seek_req", "[node][remote][kv][grpc]") {
+    const Fixtures<api::HistoryPointRequest, proto::HistorySeekReq> fixtures{
         {{}, {}},
-        {sample_history_point_query(), sample_proto_history_seek_request()},
+        {sample_history_point_request(), sample_proto_history_seek_request()},
     };
-    for (const auto& [query, expected_point_request] : fixtures) {
-        SECTION("query: " + std::to_string(query.tx_id)) {
-            const auto& point_request{history_seek_request_from_query(query)};
+    for (const auto& [request, expected_req] : fixtures) {
+        SECTION("request: " + std::to_string(request.tx_id)) {
+            const auto& point_request{make_history_seek_req(request)};
             // CHECK(point_request == expected_point_request);  // requires operator== in gRPC
-            CHECK(point_request.tx_id() == expected_point_request.tx_id());
-            CHECK(point_request.table() == expected_point_request.table());
-            CHECK(point_request.k() == expected_point_request.k());
-            CHECK(point_request.ts() == expected_point_request.ts());
+            CHECK(point_request.tx_id() == expected_req.tx_id());
+            CHECK(point_request.table() == expected_req.table());
+            CHECK(point_request.k() == expected_req.k());
+            CHECK(point_request.ts() == expected_req.ts());
         }
     }
 }
@@ -61,20 +61,20 @@ TEST_CASE("history_get_result_from_response", "[node][remote][kv][grpc]") {
     }
 }
 
-TEST_CASE("get_as_of_request_from_query", "[node][remote][kv][grpc]") {
-    const Fixtures<api::GetAsOfQuery, proto::GetLatestReq> fixtures{
-        {sample_get_as_of_query(), sample_proto_get_as_of_request()},
+TEST_CASE("make_get_as_of_req", "[node][remote][kv][grpc]") {
+    const Fixtures<api::GetAsOfRequest, proto::GetLatestReq> fixtures{
+        {sample_get_as_of_request(), sample_proto_get_as_of_request()},
     };
-    for (const auto& [query, expected_point_request] : fixtures) {
-        SECTION("query: " + std::to_string(query.tx_id)) {
-            const auto& point_request{get_as_of_request_from_query(query)};
+    for (const auto& [request, expected_req] : fixtures) {
+        SECTION("request: " + std::to_string(request.tx_id)) {
+            const auto& point_request{make_get_as_of_req(request)};
             // CHECK(point_request == expected_point_request);  // requires operator== in gRPC
-            CHECK(point_request.tx_id() == expected_point_request.tx_id());
-            CHECK(point_request.table() == expected_point_request.table());
-            CHECK(point_request.k() == expected_point_request.k());
-            CHECK(point_request.ts() == expected_point_request.ts());
-            CHECK(point_request.latest() == expected_point_request.latest());
-            CHECK(point_request.k2() == expected_point_request.k2());
+            CHECK(point_request.tx_id() == expected_req.tx_id());
+            CHECK(point_request.table() == expected_req.table());
+            CHECK(point_request.k() == expected_req.k());
+            CHECK(point_request.ts() == expected_req.ts());
+            CHECK(point_request.latest() == expected_req.latest());
+            CHECK(point_request.k2() == expected_req.k2());
         }
     }
 }

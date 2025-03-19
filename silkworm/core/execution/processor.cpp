@@ -156,6 +156,15 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         evm1_txn.access_list.emplace_back(account, storage_keys);
     for (const evmc::bytes32& h : txn.blob_versioned_hashes)
         evm1_txn.blob_hashes.emplace_back(h);
+    for (const auto& authorization : txn.authorizations) {
+        evm1_txn.authorization_list.push_back({.chain_id = authorization.chain_id,
+                                               .addr = authorization.address,
+                                               .nonce = authorization.nonce,
+                                               .signer = authorization.recover_authority(txn),
+                                               .r = authorization.r,
+                                               .s = authorization.s,
+                                               .v = authorization.v()});
+    }
 
     const auto rev = evm_.revision();
     const auto g0 = protocol::intrinsic_gas(txn, rev);
@@ -166,10 +175,13 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     // This must be done before the Silkworm execution so that the state is unmodified.
     // evmone will not modify the state itself: state is read-only and the state modifications
     // are provided as the state diff in the returned receipt.
-    auto evm1_receipt = evmone::state::transition(
-        evm1_state_view, evm1_block_, evm1_block_hashes, evm1_txn, rev, evm_.vm(), {.execution_gas_limit = static_cast<int64_t>(execution_gas_limit)});
 
-    const auto gas_used = static_cast<uint64_t>(evm1_receipt.gas_used);
+    // EIP-7623: Increase calldata cost
+    const int64_t floor_cost = rev >= EVMC_PRAGUE ? static_cast<int64_t>(protocol::floor_cost(txn)) : 0;
+    auto evm1_receipt = evmone::state::transition(
+        evm1_state_view, evm1_block_, evm1_block_hashes, evm1_txn, rev, evm_.vm(), {.execution_gas_limit = static_cast<int64_t>(execution_gas_limit), .min_gas_cost = floor_cost});
+
+    auto gas_used = static_cast<uint64_t>(evm1_receipt.gas_used);
     cumulative_gas_used_ += gas_used;
 
     // Prepare the receipt using the result from evmone.
@@ -187,7 +199,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         const auto& state_diff = evm1_receipt.state_diff;
         for (const auto& m : state_diff.modified_accounts) {
             if (m.code) {
-                state_.create_contract(m.addr);
+                state_.create_contract(m.addr, eip7702::is_code_delegated(*m.code));
                 state_.set_code(m.addr, *m.code);
             }
 
@@ -200,7 +212,6 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
                 storage.committed[k].original = v;
             }
         }
-
         for (const auto& a : state_diff.deleted_accounts) {
             state_.destruct(a);
         }
@@ -237,7 +248,18 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     SILKWORM_ASSERT((vm_res.status == EVMC_SUCCESS) == receipt.success);
     SILKWORM_ASSERT(state_.logs().size() == receipt.logs.size());
 
-    refund_gas(txn, effective_gas_price, vm_res.gas_left, vm_res.gas_refund);
+    auto gas_left = calculate_refund_gas(txn, vm_res.gas_left, vm_res.gas_refund);
+
+    gas_used = txn.gas_limit - gas_left;
+
+    //  EIP-7623: Increase calldata cost
+    if (evm().revision() >= EVMC_PRAGUE) {
+        gas_used = std::max(gas_used, protocol::floor_cost(txn));
+        SILKWORM_ASSERT(gas_used <= txn.gas_limit);
+    }
+
+    gas_left = txn.gas_limit - gas_used;
+    state_.add_to_balance(*txn.sender(), gas_left * effective_gas_price);
 
     // award the fee recipient
     const intx::uint256 amount{txn.priority_fee_per_gas(base_fee_per_gas) * gas_used};
@@ -305,9 +327,16 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
 
     uint64_t gas_refund = 0;
     if (refund && !evm().bailout) {
-        gas_refund = refund_gas(txn, effective_gas_price, result.gas_left, result.gas_refund) - result.gas_left;
-        gas_used = txn.gas_limit - (result.gas_left + gas_refund);
+        const uint64_t gas_left_plus_refund = calculate_refund_gas(txn, result.gas_left, result.gas_refund);
+        gas_refund = gas_left_plus_refund - result.gas_left;
+        gas_used = txn.gas_limit - gas_left_plus_refund;
+        //  EIP-7623: Increase calldata cost
+        if (evm().revision() >= EVMC_PRAGUE) {
+            gas_used = std::max(gas_used, protocol::floor_cost(txn));
+            SILKWORM_ASSERT(gas_used <= txn.gas_limit);
+        }
         gas_left = txn.gas_limit - gas_used;
+        state_.add_to_balance(*txn.sender(), gas_left * effective_gas_price);
     }
 
     // Reward the fee recipient
@@ -354,7 +383,7 @@ void ExecutionProcessor::update_access_lists(const evmc::address& sender, const 
     }
 }
 
-uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, const intx::uint256& effective_gas_price, uint64_t gas_left, uint64_t gas_refund) noexcept {
+uint64_t ExecutionProcessor::calculate_refund_gas(const Transaction& txn, uint64_t gas_left, uint64_t gas_refund) const noexcept {
     const evmc_revision rev{evm_.revision()};
 
     const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? protocol::kMaxRefundQuotientLondon
@@ -362,8 +391,6 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, const intx::uint
     const uint64_t max_refund{(txn.gas_limit - gas_left) / max_refund_quotient};
     uint64_t refund = std::min(gas_refund, max_refund);
     gas_left += refund;
-
-    state_.add_to_balance(*txn.sender(), gas_left * effective_gas_price);
 
     return gas_left;
 }

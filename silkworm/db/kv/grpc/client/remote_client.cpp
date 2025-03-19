@@ -40,23 +40,19 @@ class RemoteClientImpl final : public api::Service {
   public:
     RemoteClientImpl(const rpc::ChannelFactory& create_channel,
                      agrpc::GrpcContext& grpc_context,
-                     api::StateCache* state_cache,
                      chain::Providers providers,
                      rpc::DisconnectHook on_disconnect)
         : channel_{create_channel()},
           stub_{proto::KV::NewStub(channel_)},
           grpc_context_{grpc_context},
-          state_cache_{state_cache},
           providers_{std::move(providers)},
           on_disconnect_{std::move(on_disconnect)} {}
     RemoteClientImpl(std::unique_ptr<Stub> stub,
                      agrpc::GrpcContext& grpc_context,
-                     api::StateCache* state_cache,
                      chain::Providers providers,
                      rpc::DisconnectHook on_disconnect)
         : stub_{std::move(stub)},
           grpc_context_{grpc_context},
-          state_cache_{state_cache},
           providers_{std::move(providers)},
           on_disconnect_{std::move(on_disconnect)} {}
 
@@ -72,10 +68,7 @@ class RemoteClientImpl final : public api::Service {
 
     // rpc Tx(stream Cursor) returns (stream Pair);
     Task<std::unique_ptr<api::Transaction>> begin_transaction() override {
-        auto tx = std::make_unique<RemoteTransaction>(*stub_,
-                                                      grpc_context_,
-                                                      state_cache_,
-                                                      providers_);
+        auto tx = std::make_unique<RemoteTransaction>(*stub_, grpc_context_, providers_);
         co_await tx->open();
         co_return tx;
     }
@@ -143,7 +136,6 @@ class RemoteClientImpl final : public api::Service {
     std::shared_ptr<::grpc::Channel> channel_;
     std::unique_ptr<Stub> stub_;
     agrpc::GrpcContext& grpc_context_;
-    api::StateCache* state_cache_;
     chain::Providers providers_;
     rpc::DisconnectHook on_disconnect_;
     std::chrono::milliseconds min_backoff_timeout_{rpc::kDefaultMinBackoffReconnectTimeout};
@@ -152,23 +144,19 @@ class RemoteClientImpl final : public api::Service {
 
 RemoteClient::RemoteClient(const rpc::ChannelFactory& create_channel,
                            agrpc::GrpcContext& grpc_context,
-                           api::StateCache* state_cache,
                            chain::Providers providers,
                            rpc::DisconnectHook on_disconnect)
     : p_impl_{std::make_shared<RemoteClientImpl>(create_channel,
                                                  grpc_context,
-                                                 state_cache,
                                                  std::move(providers),
                                                  std::move(on_disconnect))} {}
 
 RemoteClient::RemoteClient(std::unique_ptr<Stub> stub,
                            agrpc::GrpcContext& grpc_context,
-                           api::StateCache* state_cache,
                            chain::Providers providers,
                            rpc::DisconnectHook on_disconnect)
     : p_impl_{std::make_shared<RemoteClientImpl>(std::move(stub),
                                                  grpc_context,
-                                                 state_cache,
                                                  std::move(providers),
                                                  std::move(on_disconnect))} {}
 

@@ -38,11 +38,7 @@ class RemoteTransactionTest : public db::test_util::KVTestBase {
   protected:
     RemoteTransaction remote_tx_{*stub_,
                                  grpc_context_,
-                                 &state_cache_,
                                  chain::Providers{}};
-
-  private:
-    api::CoherentStateCache state_cache_;
 };
 
 static remote::Pair make_fake_tx_created_pair() {
@@ -433,13 +429,13 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::get_latest", "[db][k
 
     auto get_latest = [&]() -> Task<api::GetLatestResult> {
 #if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
-        // Before GCC 13, we must avoid passing api::GetLatestQuery as temporary because co_await-ing expressions
+        // Before GCC 13, we must avoid passing api::GetLatestRequest as temporary because co_await-ing expressions
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
-        api::GetLatestQuery query;
-        const api::GetLatestResult result = co_await remote_tx_.get_latest(std::move(query));
+        api::GetLatestRequest request;
+        const api::GetLatestResult result = co_await remote_tx_.get_latest(std::move(request));
 #else
-        const api::GetLatestResult result = co_await remote_tx_.get_latest(api::GetLatestQuery{});
+        const api::GetLatestResult result = co_await remote_tx_.get_latest(api::GetLatestRequest{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return result;
     };
@@ -476,13 +472,13 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::get_as_of", "[db][kv
 
     auto get_as_of = [&]() -> Task<api::GetAsOfResult> {
 #if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
-        // Before GCC 13, we must avoid passing api::GetLatestQuery as temporary because co_await-ing expressions
+        // Before GCC 13, we must avoid passing api::GetAsOfRequest as temporary because co_await-ing expressions
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
-        api::GetAsOfQuery query;
-        const api::GetAsOfResult result = co_await remote_tx_.get_as_of(std::move(query));
+        api::GetAsOfRequest request;
+        const api::GetAsOfResult result = co_await remote_tx_.get_as_of(std::move(request));
 #else
-        const api::GetAsOfResult result = co_await remote_tx_.get_as_of(api::GetAsOfQuery{});
+        const api::GetAsOfResult result = co_await remote_tx_.get_as_of(api::GetAsOfRequest{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return result;
     };
@@ -519,13 +515,13 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_seek", "[db]
 
     auto history_seek = [&]() -> Task<api::HistoryPointResult> {
 #if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
-        // Before GCC 13, we must avoid passing api::HistoryPointQuery as temporary because co_await-ing expressions
+        // Before GCC 13, we must avoid passing api::HistoryPointRequest as temporary because co_await-ing expressions
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
-        api::HistoryPointQuery query;
-        const api::HistoryPointResult result = co_await remote_tx_.history_seek(std::move(query));
+        api::HistoryPointRequest request;
+        const api::HistoryPointResult result = co_await remote_tx_.history_seek(std::move(request));
 #else
-        const api::HistoryPointResult result = co_await remote_tx_.history_seek(api::HistoryPointQuery{});
+        const api::HistoryPointResult result = co_await remote_tx_.history_seek(api::HistoryPointRequest{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return result;
     };
@@ -569,13 +565,13 @@ static ::remote::IndexRangeReply make_index_range_reply(const api::ListOfTimesta
 TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[db][kv][grpc][client][remote_transaction]") {
     auto flatten_index_range = [&]() -> Task<api::ListOfTimestamp> {
 #if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
-        // Before GCC 13, we must avoid passing api::IndexRangeQuery as temporary because co_await-ing expressions
+        // Before GCC 13, we must avoid passing api::IndexRangeRequest as temporary because co_await-ing expressions
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
-        api::IndexRangeQuery query;
-        auto paginated_timestamps = co_await remote_tx_.index_range(std::move(query));
+        api::IndexRangeRequest request;
+        auto paginated_timestamps = co_await remote_tx_.index_range(std::move(request));
 #else
-        auto paginated_timestamps = co_await remote_tx_.index_range(api::IndexRangeQuery{});
+        auto paginated_timestamps = co_await remote_tx_.index_range(api::IndexRangeRequest{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return co_await paginated_to_vector(paginated_timestamps);
     };
@@ -663,13 +659,13 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[db
 
     auto flatten_history_range = [&]() -> Task<std::vector<api::KeyValue>> {
 #if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
-        // Before GCC 13, we must avoid passing api::HistoryRangeQuery as temporary because co_await-ing expressions
+        // Before GCC 13, we must avoid passing api::HistoryRangeRequest as temporary because co_await-ing expressions
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
-        api::HistoryRangeQuery query;
-        auto paginated_keys_and_values = co_await remote_tx_.history_range(std::move(query));
+        api::HistoryRangeRequest request;
+        auto paginated_keys_and_values = co_await remote_tx_.history_range(std::move(request));
 #else
-        auto paginated_keys_and_values = co_await remote_tx_.history_range(api::HistoryRangeQuery{});
+        auto paginated_keys_and_values = co_await remote_tx_.history_range(api::HistoryRangeRequest{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return co_await paginated_to_vector(paginated_keys_and_values);
     };
@@ -747,13 +743,13 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::range_as_of", "[db][
 
     auto flatten_domain_range = [&]() -> Task<std::vector<api::KeyValue>> {
 #if __GNUC__ < 13 && !defined(__clang__)  // Clang compiler defines __GNUC__ as well
-        // Before GCC 13, we must avoid passing api::DomainRangeQuery as temporary because co_await-ing expressions
+        // Before GCC 13, we must avoid passing api::DomainRangeRequest as temporary because co_await-ing expressions
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
-        api::DomainRangeQuery query;
-        auto paginated_keys_and_values = co_await remote_tx_.range_as_of(std::move(query));
+        api::DomainRangeRequest request;
+        auto paginated_keys_and_values = co_await remote_tx_.range_as_of(std::move(request));
 #else
-        auto paginated_keys_and_values = co_await remote_tx_.range_as_of(api::DomainRangeQuery{});
+        auto paginated_keys_and_values = co_await remote_tx_.range_as_of(api::DomainRangeRequest{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
         co_return co_await paginated_to_vector(paginated_keys_and_values);
     };

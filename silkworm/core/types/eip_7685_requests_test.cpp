@@ -38,7 +38,8 @@ TEST_CASE("EIP-7585 tests") {
                                        "0000000000000000000000000000000000000000000000000000000000")
                                        .value();
 
-        const std::vector logs = {Log{.address = protocol::kDepositContractAddress, .topics = {}, .data = encoded_event}};
+        // Topics is a single-element vector containing hash of deposit event signature
+        const std::vector logs = {Log{.address = protocol::kDepositContractAddress, .topics = {0x649bbc62d0e31342afea4e5cd82d4049e7e1ee912fc0889aa790803be39038c5_bytes32}, .data = encoded_event}};
 
         FlatRequests requests;
         requests.extract_deposits_from_logs(logs);

@@ -39,12 +39,12 @@ class DomainState : public State {
         TxnId txn_id,
         datastore::kvdb::RWTxn& tx,
         datastore::kvdb::DatabaseRef& database,
-        snapshots::SnapshotRepository& blocks_repository,
-        snapshots::SnapshotRepositoryROAccess& state_repository)
+        snapshots::SnapshotRepositoryROAccess& blocks_repository,
+        snapshots::SnapshotRepositoryROAccess& latest_state_repository)
         : txn_id_{txn_id},
           tx_{tx},
           database_{database},
-          state_repository_{state_repository},
+          latest_state_repository_{latest_state_repository},
           data_model_{db::DataModel{tx_, blocks_repository}} {}
 
     explicit DomainState(
@@ -57,7 +57,7 @@ class DomainState : public State {
         : txn_id_{txn_id},
           tx_{tx},
           database_{database},
-          state_repository_{state_repository},
+          latest_state_repository_{state_repository},
           data_model_{data_model} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
@@ -118,8 +118,9 @@ class DomainState : public State {
     TxnId txn_id_;
     datastore::kvdb::RWTxn& tx_;
     datastore::kvdb::DatabaseRef& database_;
-    snapshots::SnapshotRepositoryROAccess& state_repository_;
+    snapshots::SnapshotRepositoryROAccess& latest_state_repository_;
     db::DataModel data_model_;
+    mutable std::unordered_map<evmc::address, Bytes> code_;
 };
 
 }  // namespace silkworm::execution

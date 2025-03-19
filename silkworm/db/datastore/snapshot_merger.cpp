@@ -95,7 +95,7 @@ std::shared_ptr<DataMigrationResult> SnapshotMerger::migrate(std::unique_ptr<Dat
 
         for (auto& bundle_ptr : snapshots_.bundles_in_range(step_range)) {
             auto& bundle = *bundle_ptr;
-            segment::SegmentReader<RawDecoder<ByteView>> reader{bundle.segment(Schema::kDefaultEntityName, name)};
+            segment::SegmentReader<RawDecoder<Bytes>> reader{bundle.segment(Schema::kDefaultEntityName, name)};
             std::copy(reader.begin(), reader.end(), compressor.add_word_iterator());
         }
 

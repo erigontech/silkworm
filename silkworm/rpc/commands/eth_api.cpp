@@ -885,11 +885,12 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
     const auto chain_storage{tx->create_storage()};
     rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
 
-    std::optional<BlockNum> block_num_for_gas_limit;
+    std::string block_id;
     if (params.size() >= 2) {
-        const auto block_id = params[1].get<std::string>();
+        block_id = params[1].get<std::string>();
         SILK_DEBUG << "block_id: " << block_id;
-        block_num_for_gas_limit = co_await block_reader.get_block_num(block_id);
+    } else {
+        block_id = kLatestBlockId;
     }
 
     AccountsOverrides accounts_overrides;
@@ -899,19 +900,18 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
     }
 
     try {
-        const BlockNumOrHash block_num_or_hash{kLatestBlockId};
-
         const auto chain_config = co_await chain_storage->read_chain_config();
-        const auto latest_block_num = co_await block_reader.get_block_num(kLatestBlockId);
-        SILK_DEBUG << "chain_id: " << chain_config.chain_id << ", latest_block_num: " << latest_block_num;
+        const auto req_block_num = co_await block_reader.get_block_num(block_id);
+        SILK_DEBUG << "chain_id: " << chain_config.chain_id << ", block_num: " << req_block_num;
 
-        const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, latest_block_num);
-        if (!latest_block_with_hash) {
-            reply = make_json_error(request, 100, "block not found");
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, req_block_num);
+        if (!block_with_hash) {
+            std::string error_msg = "could not find the block " + std::to_string(req_block_num) + " in cache or db";
+            reply = make_json_error(request, -32000, error_msg);
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        const auto latest_block = latest_block_with_hash->block;
+        const auto block = block_with_hash->block;
 
         rpc::BlockHeaderProvider block_header_provider = [&chain_storage](BlockNum block_num) {
             return chain_storage->read_canonical_header(block_num);
@@ -923,7 +923,7 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
         };
 
         rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, chain_config, workers_, *tx, *chain_storage, accounts_overrides};
-        const auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block, /*txn_id=*/std::nullopt, block_num_for_gas_limit);
+        const auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, block, /*txn_id=*/std::nullopt);
 
         reply = make_json_content(request, to_quantity(estimated_gas));
     } catch (const std::invalid_argument&) {

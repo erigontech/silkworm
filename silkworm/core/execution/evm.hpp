@@ -44,6 +44,7 @@ struct CallResult {
     evmc_status_code status{EVMC_SUCCESS};
     uint64_t gas_left{0};
     uint64_t gas_refund{0};
+    std::optional<uint64_t> gas_used{0};
     Bytes data;
     std::string error_message;
 };

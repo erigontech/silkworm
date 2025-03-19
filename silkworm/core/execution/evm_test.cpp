@@ -571,7 +571,7 @@ class TestTracer : public EvmTracer {
         execution_end_called_ = true;
         const auto gas_left = static_cast<uint64_t>(res.gas_left);
         const auto gas_refund = static_cast<uint64_t>(res.gas_refund);
-        result_ = {ValidationResult::kOk, res.status_code, gas_left, gas_refund, {res.output_data, res.output_size}};
+        result_ = {ValidationResult::kOk, res.status_code, gas_left, gas_refund, std::nullopt, {res.output_data, res.output_size}};
         if (contract_address_ && !pc_stack_.empty()) {
             const auto pc = pc_stack_.back();
             storage_stack_[pc] =

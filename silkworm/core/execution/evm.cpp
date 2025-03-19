@@ -98,7 +98,7 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
 
     const auto gas_left = static_cast<uint64_t>(res.gas_left);
     const auto gas_refund = static_cast<uint64_t>(res.gas_refund);
-    return {ValidationResult::kOk, res.status_code, gas_left, gas_refund, {res.output_data, res.output_size}};
+    return {ValidationResult::kOk, res.status_code, gas_left, gas_refund, std::nullopt, {res.output_data, res.output_size}};
 }
 
 evmc::Result EVM::create(const evmc_message& message) noexcept {

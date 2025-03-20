@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <agrpc/client_rpc.hpp>
+#include <asio-grpc-wrap/client_rpc.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>

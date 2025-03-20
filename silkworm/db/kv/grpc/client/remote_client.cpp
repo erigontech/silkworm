@@ -3,7 +3,7 @@
 
 #include "remote_client.hpp"
 
-#include <agrpc/client_rpc.hpp>
+#include <asio-grpc-wrap/client_rpc.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <grpcpp/grpcpp.h>

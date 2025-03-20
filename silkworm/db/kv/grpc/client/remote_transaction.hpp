@@ -10,8 +10,8 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <agrpc/client_rpc.hpp>
-#include <agrpc/grpc_context.hpp>
+#include <asio-grpc-wrap/client_rpc.hpp>
+#include <asio-grpc-wrap/grpc_context.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/db/chain/providers.hpp>

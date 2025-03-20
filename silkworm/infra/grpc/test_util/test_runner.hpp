@@ -5,7 +5,7 @@
 
 #include <memory>
 
-#include <agrpc/asio_grpc.hpp>
+#include <asio-grpc-wrap/asio_grpc.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 
 #include "../../test_util/task_runner.hpp"

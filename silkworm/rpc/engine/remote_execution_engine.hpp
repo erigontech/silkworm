@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <agrpc/asio_grpc.hpp>
+#include <asio-grpc-wrap/asio_grpc.hpp>
 
 #include <silkworm/execution/grpc/client/remote_client.hpp>
 

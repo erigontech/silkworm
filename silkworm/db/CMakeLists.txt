@@ -6,7 +6,6 @@ include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 add_subdirectory(datastore)
 
 find_package(absl REQUIRED)
-find_package(asio-grpc REQUIRED)
 find_package(Boost REQUIRED COMPONENTS headers)
 find_package(gRPC REQUIRED)
 find_package(magic_enum REQUIRED)

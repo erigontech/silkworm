@@ -113,7 +113,8 @@ struct HistoryRangeInPeriodQuery {
                         if (key_decoder.value.timestamp.value < ts_range.start) {
                             *skip_current_key = false;
                             return {};
-                        } else if (key_decoder.value.timestamp.value < ts_range.end) {
+                        }
+                        if (key_decoder.value.timestamp.value < ts_range.end) {
                             *skip_current_key = true;
                             return cursor;
                         }
@@ -125,7 +126,7 @@ struct HistoryRangeInPeriodQuery {
             } else {
                 begin_it = CursorMoveIterator{std::move(begin_cursor), MoveOperation::multi_nextkey_firstvalue};
 
-                seek_func = [ts_range, has_large_values = entity.has_large_values](std::shared_ptr<ROCursor> base_cursor) -> std::shared_ptr<ROCursor> {
+                seek_func = [ts_range, has_large_values = entity.has_large_values](const std::shared_ptr<ROCursor>& base_cursor) -> std::shared_ptr<ROCursor> {
                     auto cursor = base_cursor->clone();
                     auto result = cursor->current();
                     SILKWORM_ASSERT(result);

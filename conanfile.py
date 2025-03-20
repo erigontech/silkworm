@@ -35,24 +35,18 @@ class SilkwormRecipe(ConanFile):
         self.requires('boost/1.83.0', override=True)
         self.requires('cli11/2.2.0')
         self.requires('gmp/6.2.1')
-        self.requires('grpc/1.67.1' + self.grpc_revision(), override=True)
+        self.requires('grpc/1.67.1', override=True)
         self.requires('gtest/1.12.1')
         self.requires('jwt-cpp/0.6.0')
         self.requires('libtorrent/2.0.10')
         self.requires('mimalloc/2.1.2')
         self.requires('openssl/3.4.1', override=True)
-        self.requires('protobuf/5.27.0' + self.protobuf_revision(), override=True)
+        self.requires('protobuf/5.27.0', override=True)
         self.requires('roaring/1.1.2')
         self.requires('snappy/1.1.7')
         self.requires('spdlog/1.12.0')
         self.requires('sqlitecpp/3.3.0')
         self.requires('tomlplusplus/3.3.0')
-
-    # Hard-coded recipe revisions prevent issues in Windows build after publication of a new revision
-    def grpc_revision(self):
-        return "#eae57ed8067bb53c6b0441a563b56d59" if self.settings.os == 'Windows' else ""
-    def protobuf_revision(self):
-        return "#fe72d115daa683469cd940f0407ce55e" if self.settings.os == 'Windows' else ""
 
     def configure(self):
         self.options['asio-grpc'].local_allocator = 'boost_container'

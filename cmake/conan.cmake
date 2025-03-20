@@ -140,6 +140,7 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   set(CONAN_VERBOSITY "verbose")
   # make sure to not rebuild anything from source unless required
   set(CONAN_BUILD "missing:libtorrent/*")
+  list(APPEND CONAN_BUILD "missing:protobuf/*")
   # HACK: MSVC is "multi config" and conan_provider.cmake runs 2 conan install commands for both Release and Debug
   # despite CMAKE_BUILD_TYPE. This adds an extra build_type setting to both commands to override and force the desired
   # build type. It still runs 2 commands, but the 2nd one has no effect.

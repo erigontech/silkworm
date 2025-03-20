@@ -27,11 +27,14 @@
 #include <silkworm/db/chain/chain_storage.hpp>
 #include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
+#include <silkworm/db/test_util/mock_state_cache.hpp>
 
 namespace silkworm::db::test_util {
 
 class MockTransaction : public kv::api::Transaction {
   public:
+    kv::api::StateCache* state_cache() override { return &state_cache_; }
+
     MOCK_METHOD(uint64_t, tx_id, (), (const, override));
     MOCK_METHOD(uint64_t, view_id, (), (const, override));
     MOCK_METHOD((Task<void>), open, (), (override));
@@ -51,6 +54,9 @@ class MockTransaction : public kv::api::Transaction {
     MOCK_METHOD((Task<kv::api::PaginatedTimestamps>), index_range, (kv::api::IndexRangeRequest), (override));
     MOCK_METHOD((Task<kv::api::PaginatedKeysValues>), history_range, (kv::api::HistoryRangeRequest), (override));
     MOCK_METHOD((Task<kv::api::PaginatedKeysValues>), range_as_of, (kv::api::DomainRangeRequest), (override));
+
+  private:
+    MockStateCache state_cache_;
 };
 
 }  // namespace silkworm::db::test_util

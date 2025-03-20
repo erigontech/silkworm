@@ -44,10 +44,9 @@ inline constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
 
 class BlockReader {
   public:
-    explicit BlockReader(const db::chain::ChainStorage& chain_storage,
-                         db::kv::api::Transaction& transaction,
-                         db::kv::api::StateCache* state_cache)
-        : chain_storage_(chain_storage), transaction_(transaction), state_cache_(state_cache) {}
+    BlockReader(const db::chain::ChainStorage& chain_storage,
+                db::kv::api::Transaction& transaction)
+        : chain_storage_(chain_storage), transaction_(transaction) {}
 
     BlockReader(const BlockReader&) = delete;
     BlockReader& operator=(const BlockReader&) = delete;
@@ -86,7 +85,6 @@ class BlockReader {
     Task<BlockNum> get_forkchoice_block_num(const char* block_hash_tag) const;
     const db::chain::ChainStorage& chain_storage_;
     db::kv::api::Transaction& transaction_;
-    db::kv::api::StateCache* state_cache_;
 };
 
 }  // namespace silkworm::rpc

@@ -30,12 +30,11 @@ namespace silkworm::execution {
 
 struct StateFactory {
     db::kv::api::Transaction& tx;
-    db::kv::api::StateCache* state_cache;
 
     std::shared_ptr<State> create_state(
         boost::asio::any_io_executor& executor,
         const db::chain::ChainStorage& storage,
-        std::optional<TxnId> txn_id);
+        std::optional<TxnId> txn_id) const;
 };
 
 }  // namespace silkworm::execution

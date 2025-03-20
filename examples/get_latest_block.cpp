@@ -51,7 +51,7 @@ Task<std::optional<uint64_t>> latest_block(db::kv::api::Service& service) {
     try {
         const auto chain_storage{db_transaction->create_storage()};
         db::kv::api::CoherentStateCache state_cache;
-        rpc::BlockReader block_reader{*chain_storage, *db_transaction, &state_cache};
+        const BlockReader block_reader{*chain_storage, *db_transaction};
         block_num = co_await block_reader.get_latest_block_num();
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what();
@@ -99,10 +99,11 @@ int main(int argc, char* argv[]) {
         auto* ioc = context.ioc();
         auto& grpc_context = *context.grpc_context();
 
+        kv::api::CoherentStateCache state_cache;
         auto channel = ::grpc::CreateChannel(target, ::grpc::InsecureChannelCredentials());
         auto backend = std::make_unique<rpc::ethbackend::RemoteBackEnd>(channel, grpc_context);
         auto database = std::make_unique<db::kv::grpc::client::RemoteClient>(
-            create_channel, grpc_context, ethdb::kv::make_backend_providers(backend.get()));
+            create_channel, grpc_context, &state_cache, ethdb::kv::make_backend_providers(backend.get()));
 
         auto context_pool_thread = std::thread([&]() { context_pool.run(); });
 

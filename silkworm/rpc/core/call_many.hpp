@@ -45,12 +45,10 @@ class CallExecutor {
   public:
     CallExecutor(
         db::kv::api::Transaction& transaction,
-        db::kv::api::StateCache* state_cache,
         BlockCache& block_cache,
         WorkerPool& workers,
-        rpc::BlockReader& block_reader)
+        const BlockReader& block_reader)
         : transaction_(transaction),
-          state_cache_(state_cache),
           block_cache_(block_cache),
           workers_{workers},
           block_reader_{block_reader} {}
@@ -76,9 +74,9 @@ class CallExecutor {
 
   private:
     db::kv::api::Transaction& transaction_;
-    db::kv::api::StateCache* state_cache_;
     BlockCache& block_cache_;
     WorkerPool& workers_;
-    rpc::BlockReader& block_reader_;
+    const BlockReader& block_reader_;
 };
+
 }  // namespace silkworm::rpc::call

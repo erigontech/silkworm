@@ -22,6 +22,7 @@
 #include <catch2/matchers/catch_matchers_predicate.hpp>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/test_util/kv_test_base.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_matcher.hpp>
@@ -38,7 +39,11 @@ class RemoteTransactionTest : public db::test_util::KVTestBase {
   protected:
     RemoteTransaction remote_tx_{*stub_,
                                  grpc_context_,
+                                 &state_cache_,
                                  chain::Providers{}};
+
+  private:
+    api::CoherentStateCache state_cache_;
 };
 
 static remote::Pair make_fake_tx_created_pair() {

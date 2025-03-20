@@ -49,12 +49,17 @@ inline db::kv::api::PaginatedKeysValues empty_paginated_keys_and_values() {
 //! This dummy transaction just gives you the same cursor over and over again.
 class DummyTransaction : public db::kv::api::BaseTransaction {
   public:
-    explicit DummyTransaction(uint64_t tx_id,
-                              uint64_t view_id,
-                              std::shared_ptr<db::kv::api::Cursor> cursor,
-                              std::shared_ptr<db::kv::api::CursorDupSort> cursor_dup_sort,
-                              test::BackEndMock* backend)
-        : tx_id_(tx_id), view_id_(view_id), cursor_(std::move(cursor)), cursor_dup_sort_(std::move(cursor_dup_sort)), backend_(backend) {}
+    DummyTransaction(uint64_t tx_id,
+                     uint64_t view_id,
+                     std::shared_ptr<db::kv::api::Cursor> cursor,
+                     std::shared_ptr<db::kv::api::CursorDupSort> cursor_dup_sort,
+                     test::BackEndMock* backend)
+        : BaseTransaction{nullptr},
+          tx_id_(tx_id),
+          view_id_(view_id),
+          cursor_(std::move(cursor)),
+          cursor_dup_sort_(std::move(cursor_dup_sort)),
+          backend_(backend) {}
 
     uint64_t tx_id() const override { return tx_id_; }
     uint64_t view_id() const override { return view_id_; }

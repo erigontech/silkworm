@@ -78,7 +78,7 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
 
     try {
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
+        const BlockReader block_reader{*chain_storage, *tx};
 
         // Check if target block is the latest one: use local state cache (if any) for target transaction
         const bool is_latest_block = co_await block_reader.is_latest_block_num(BlockNumOrHash{block_id});
@@ -89,7 +89,7 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
             txn_id = co_await tx->user_txn_id_at(block_num + 1);
         }
 
-        StateReader state_reader{*tx, state_cache_, txn_id};
+        StateReader state_reader{*tx, txn_id};
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address)};
         if (account) {
             auto code{co_await state_reader.read_code(address, account->code_hash)};
@@ -124,7 +124,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
 
     try {
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
+        const BlockReader block_reader{*chain_storage, *tx};
 
         const auto block_num = co_await block_reader.get_block_num(block_id);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
@@ -222,7 +222,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
 
     try {
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
+        const BlockReader block_reader{*chain_storage, *tx};
 
         const auto block_num = co_await block_reader.get_block_num(block_id);
 
@@ -440,11 +440,11 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
 
     try {
         const auto chain_storage = tx->create_storage();
-        rpc::BlockReader block_reader{*chain_storage, *tx, state_cache_};
+        const BlockReader block_reader{*chain_storage, *tx};
         BlockNum block_num = co_await block_reader.get_latest_block_num();
         const auto txn_number = co_await tx->user_txn_id_at(block_num);
 
-        StateReader state_reader{*tx, state_cache_, txn_number};
+        StateReader state_reader{*tx, txn_number};
         std::optional<silkworm::Account> account_opt{co_await state_reader.read_account(contract_address)};
         if (!account_opt || account_opt.value().code_hash == kEmptyHash) {
             reply = make_json_content(request, nlohmann::detail::value_t::null);
@@ -558,7 +558,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
 
             if (block_with_hash) {
-                trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, state_cache_};
+                trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
                 const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
                 reply = make_json_content(request, result);
             } else {
@@ -599,7 +599,7 @@ Task<void> OtsRpcApi::handle_ots_trace_transaction(const nlohmann::json& request
 
     try {
         const auto chain_storage{tx->create_storage()};
-        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, state_cache_};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
 
@@ -645,7 +645,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& req
 
     try {
         const auto chain_storage{tx->create_storage()};
-        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, state_cache_};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
 
@@ -691,7 +691,7 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
 
     try {
         const auto chain_storage{tx->create_storage()};
-        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx, state_cache_};
+        trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
 

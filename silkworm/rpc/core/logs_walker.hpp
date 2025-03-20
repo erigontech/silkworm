@@ -22,7 +22,6 @@
 
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/db/chain/providers.hpp>
-#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/core/block_reader.hpp>
@@ -37,13 +36,12 @@ class LogsWalker {
   public:
     LogsWalker(BlockCache& block_cache,
                db::kv::api::Transaction& tx,
-               db::kv::api::StateCache* state_cache,
                const db::chain::ChainStorage& chain_storage,
                WorkerPool& workers)
         : block_cache_(block_cache),
           tx_(tx),
           canonical_body_for_storage_provider_(db::chain::canonical_body_provider_from_chain_storage(chain_storage)),
-          block_reader_(chain_storage, tx, state_cache),
+          block_reader_(chain_storage, tx),
           workers_(workers) {}
 
     LogsWalker(const LogsWalker&) = delete;
@@ -71,7 +69,7 @@ class LogsWalker {
     BlockCache& block_cache_;
     db::kv::api::Transaction& tx_;
     db::chain::CanonicalBodyForStorageProvider canonical_body_for_storage_provider_;
-    rpc::BlockReader block_reader_;
+    BlockReader block_reader_;
     WorkerPool& workers_;
 };
 

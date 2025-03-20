@@ -78,12 +78,12 @@ class TestDataStoreBase {
 
 class LocalContextTestBase : public ServiceContextTestBase {
   public:
-    explicit LocalContextTestBase(db::DataStoreRef data_store) {
+    explicit LocalContextTestBase(db::DataStoreRef data_store, db::kv::api::StateCache* state_cache) {
         db::kv::api::StateChangeRunner runner{ioc_.get_executor()};
         db::kv::api::ServiceRouter router{runner.state_changes_calls_channel()};
         add_private_service<db::kv::api::Client>(ioc_,
                                                  std::make_unique<db::kv::api::DirectClient>(
-                                                     std::make_shared<db::kv::api::DirectService>(router, std::move(data_store))));
+                                                     std::make_shared<db::kv::api::DirectService>(router, std::move(data_store), state_cache)));
     }
 };
 
@@ -91,7 +91,7 @@ template <typename TestRequestHandler>
 class RpcApiTestBase : public LocalContextTestBase {
   public:
     explicit RpcApiTestBase(db::DataStoreRef data_store)
-        : LocalContextTestBase{std::move(data_store)},
+        : LocalContextTestBase{std::move(data_store), &state_cache_},
           workers_{1},
           socket_{ioc_},
           rpc_api_{ioc_, workers_},
@@ -110,6 +110,7 @@ class RpcApiTestBase : public LocalContextTestBase {
     boost::asio::ip::tcp::socket socket_;
     commands::RpcApi rpc_api_;
     commands::RpcApiTable rpc_api_table_;
+    db::kv::api::CoherentStateCache state_cache_;
 };
 
 class RpcApiE2ETest : public TestDataStoreBase, RpcApiTestBase<RequestHandlerForTest> {

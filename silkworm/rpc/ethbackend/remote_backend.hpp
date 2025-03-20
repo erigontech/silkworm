@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include <agrpc/grpc_context.hpp>
+#include <asio-grpc-wrap/grpc_context.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>

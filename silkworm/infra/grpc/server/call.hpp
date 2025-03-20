@@ -22,7 +22,7 @@
 #include <stdexcept>
 #include <utility>
 
-#include <agrpc/repeatedly_request.hpp>
+#include <asio-grpc-wrap/repeatedly_request.hpp>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/impl/codegen/async_stream.h>
 #include <grpcpp/impl/codegen/async_unary_call.h>

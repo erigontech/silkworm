@@ -20,7 +20,7 @@
 #include <functional>
 #include <memory>
 
-#include <agrpc/asio_grpc.hpp>
+#include <asio-grpc-wrap/asio_grpc.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/infra/concurrency/context_pool.hpp>

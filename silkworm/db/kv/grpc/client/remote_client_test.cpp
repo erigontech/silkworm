@@ -19,6 +19,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/infra/grpc/test_util/interfaces/kv_mock_fix24351.grpc.pb.h>
 #include <silkworm/infra/grpc/test_util/test_runner.hpp>
 
@@ -33,6 +34,7 @@ namespace proto = ::remote;
 using StrictMockKVStub = testing::StrictMock<proto::FixIssue24351_MockKVStub>;
 
 struct RemoteClientTestRunner : public TestRunner<RemoteClient, StrictMockKVStub> {
+    std::unique_ptr<api::StateCache> state_cache{std::make_unique<api::CoherentStateCache>()};
     // We're not testing blocks here, so we don't care about proper block provider
     chain::BlockProvider block_provider{
         [](BlockNum, HashAsSpan, bool, Block&) -> Task<bool> { co_return false; }};
@@ -48,6 +50,7 @@ struct RemoteClientTestRunner : public TestRunner<RemoteClient, StrictMockKVStub
     RemoteClient make_api_client() override {
         return RemoteClient{std::move(stub_),
                             grpc_context_,
+                            state_cache.get(),
                             {block_provider,
                              block_num_from_txn_hash_provider,
                              block_num_from_block_hash_provider,

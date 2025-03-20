@@ -18,6 +18,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/test_util/kv_test_base.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/test_util/fixture.hpp>
@@ -38,7 +39,8 @@ struct DirectServiceTest : public test_util::KVTestBase {
 
     StateChangeChannelPtr channel{std::make_shared<StateChangeChannel>(ioc_.get_executor())};
     concurrency::Channel<StateChangesCall> state_changes_calls_channel{ioc_.get_executor()};
-    DirectService service{ServiceRouter{state_changes_calls_channel}, data_store->ref()};
+    std::unique_ptr<StateCache> state_cache{std::make_unique<CoherentStateCache>()};
+    DirectService service{ServiceRouter{state_changes_calls_channel}, data_store->ref(), state_cache.get()};
     std::vector<StateChangeSet> change_set_vector;
 };
 

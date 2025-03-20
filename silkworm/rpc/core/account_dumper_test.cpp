@@ -171,7 +171,7 @@ class DummyCursor : public CursorDupSort {
 
 class DummyTransaction : public BaseTransaction {
   public:
-    explicit DummyTransaction(const nlohmann::json& json) : json_{json} {}
+    DummyTransaction(const nlohmann::json& json) : BaseTransaction{nullptr}, json_{json} {}
 
     uint64_t tx_id() const override { return 0; }
     uint64_t view_id() const override { return 0; }

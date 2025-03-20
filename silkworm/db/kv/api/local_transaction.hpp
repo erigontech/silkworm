@@ -34,8 +34,9 @@ namespace silkworm::db::kv::api {
 
 class LocalTransaction : public BaseTransaction {
   public:
-    explicit LocalTransaction(DataStoreRef data_store)
-        : data_store_{std::move(data_store)},
+    LocalTransaction(DataStoreRef data_store, StateCache* state_cache)
+        : BaseTransaction(state_cache),
+          data_store_{std::move(data_store)},
           tx_{data_store_.chaindata.access_ro().start_ro_tx()} {}
 
     ~LocalTransaction() override = default;

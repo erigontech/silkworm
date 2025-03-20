@@ -28,8 +28,8 @@
 
 namespace silkworm::db::kv {
 
-StateReader::StateReader(api::Transaction& tx, api::StateCache* state_cache, std::optional<TxnId> txn_id)
-    : tx_(tx), state_cache_(state_cache), txn_number_(txn_id) {}
+StateReader::StateReader(api::Transaction& tx, std::optional<TxnId> txn_id)
+    : tx_(tx), txn_number_(txn_id) {}
 
 Task<std::optional<Account>> StateReader::read_account(const evmc::address& address) const {
     api::PointResult result;
@@ -106,7 +106,7 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
 }
 
 Task<api::PointResult> StateReader::latest_from_cache(std::string_view table, Bytes key) const {
-    const auto state_view = co_await state_cache_->get_view(tx_);
+    const auto state_view = co_await tx_.state_cache()->get_view(tx_);
     auto value = co_await state_view->get(table, std::move(key));
     api::PointResult result{.success = value.has_value()};
     if (value) {
@@ -116,7 +116,7 @@ Task<api::PointResult> StateReader::latest_from_cache(std::string_view table, By
 }
 
 Task<api::PointResult> StateReader::latest_code_from_cache(Bytes key) const {
-    const auto state_view = co_await state_cache_->get_view(tx_);
+    const auto state_view = co_await tx_.state_cache()->get_view(tx_);
     auto value = co_await state_view->get_code(std::move(key));
     api::PointResult result{.success = value.has_value()};
     if (value) {

@@ -22,7 +22,6 @@
 
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/db/chain/chain_storage.hpp>
-#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
@@ -40,7 +39,6 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache,
 Task<std::shared_ptr<BlockWithHash>> read_block_by_block_num_or_hash(BlockCache& cache,
                                                                      const db::chain::ChainStorage& storage,
                                                                      db::kv::api::Transaction& tx,
-                                                                     db::kv::api::StateCache* state_cache,
                                                                      const BlockNumOrHash& block_num_or_hash);
 Task<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& cache,
                                                                     const db::chain::ChainStorage& storage,

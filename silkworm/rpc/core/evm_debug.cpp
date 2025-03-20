@@ -386,7 +386,7 @@ Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& 
 }
 
 Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash& block_num_or_hash, const ChainStorage& storage, const Call& call, bool is_latest_block) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, state_cache_, block_num_or_hash);
+    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, block_num_or_hash);
     if (!block_with_hash) {
         co_return;
     }
@@ -434,7 +434,7 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
 }
 
 Task<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context, bool is_latest_block) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, state_cache_, context.block_num);
+    const auto block_with_hash = co_await rpc::core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, context.block_num);
     if (!block_with_hash) {
         co_return;
     }

@@ -28,6 +28,7 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/db/kv/api/direct_client.hpp>
+#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/kv/grpc/client/remote_client.hpp>
 #include <silkworm/db/test_util/kv_test_base.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
@@ -68,12 +69,13 @@ struct StateChangesStreamTest : public StateCacheTestBase {
     api::StateChangeChannelPtr channel{std::make_shared<api::StateChangeChannel>(ioc_.get_executor())};
     concurrency::Channel<api::StateChangesCall> state_changes_calls_channel{ioc_.get_executor()};
     api::ServiceRouter router{state_changes_calls_channel};
+    std::unique_ptr<api::StateCache> state_cache{std::make_unique<api::CoherentStateCache>()};
 };
 
 struct DirectStateChangesStreamTest : public StateChangesStreamTest {
     TemporaryDirectory tmp_dir;
     test_util::TestDataStore data_store{tmp_dir};
-    std::shared_ptr<api::DirectService> direct_service{std::make_shared<api::DirectService>(router, data_store->ref())};
+    std::shared_ptr<api::DirectService> direct_service{std::make_shared<api::DirectService>(router, data_store->ref(), state_cache.get())};
     api::DirectClient direct_client{direct_service};
     StateChangesStream stream{context_, direct_client};
 };
@@ -96,6 +98,7 @@ struct RemoteStateChangesStreamTest : public StateChangesStreamTest {
         return {
             std::forward<decltype(channel_or_stub)>(channel_or_stub),
             grpc_context_,
+            state_cache.get(),
             {block_provider,
              block_num_from_txn_hash_provider,
              block_num_from_block_hash_provider,

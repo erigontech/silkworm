@@ -1000,6 +1000,7 @@ int execute_temporal_kv_query(const std::string& target, KVQueryFunc<Q> query_fu
         CoherentStateCache state_cache;
         db::kv::grpc::client::RemoteClient client{channel_factory,
                                                   *grpc_context,
+                                                  &state_cache,
                                                   ethdb::kv::make_backend_providers(&eth_backend)};
         auto kv_service = client.service();
 

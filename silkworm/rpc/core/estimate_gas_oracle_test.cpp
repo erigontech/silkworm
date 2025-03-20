@@ -94,6 +94,7 @@ TEST_CASE("estimate gas") {
     db::chain::Providers providers = ethdb::kv::make_backend_providers(&backend);
     auto tx = std::make_unique<db::kv::grpc::client::RemoteTransaction>(remote_db_test.stub(),
                                                                         remote_db_test.grpc_context(),
+                                                                        &remote_db_test.state_cache,
                                                                         providers);
     const db::chain::RemoteChainStorage storage{*tx, std::move(providers)};
     AccountsOverrides accounts_overrides;

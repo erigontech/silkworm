@@ -27,12 +27,12 @@ namespace silkworm::execution {
 std::shared_ptr<State> StateFactory::create_state(
     boost::asio::any_io_executor& executor,
     const db::chain::ChainStorage& storage,
-    std::optional<TxnId> txn_id) {
+    std::optional<TxnId> txn_id) const {
     if (tx.is_local()) {
-        auto& local_tx = dynamic_cast<db::kv::api::LocalTransaction&>(tx);
+        const auto& local_tx = dynamic_cast<db::kv::api::LocalTransaction&>(tx);
         return std::make_shared<LocalState>(txn_id, local_tx.data_store());
     } else {  // NOLINT(readability-else-after-return)
-        return std::make_shared<RemoteState>(executor, tx, state_cache, storage, txn_id);
+        return std::make_shared<RemoteState>(executor, tx, storage, txn_id);
     }
 }
 

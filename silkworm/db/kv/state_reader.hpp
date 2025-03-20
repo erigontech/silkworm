@@ -35,7 +35,7 @@ namespace silkworm::db::kv {
 
 class StateReader {
   public:
-    StateReader(api::Transaction& tx, api::StateCache* state_cache, std::optional<TxnId> txn_id);
+    StateReader(api::Transaction& tx, std::optional<TxnId> txn_id);
 
     StateReader(const StateReader&) = delete;
     StateReader& operator=(const StateReader&) = delete;
@@ -53,7 +53,6 @@ class StateReader {
     inline Task<api::PointResult> latest_code_from_cache(Bytes key) const;
 
     api::Transaction& tx_;
-    api::StateCache* state_cache_;
     std::optional<TxnId> txn_number_;
 };
 

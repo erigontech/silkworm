@@ -26,7 +26,7 @@
 
 namespace silkworm::db::blocks {
 
-inline constexpr datastore::EntityName kBlocksRepositoryName{"Blocks"};
+inline const datastore::EntityName kBlocksRepositoryName{"Blocks"};
 
 inline constexpr std::string_view kSegmentExtension{".seg"};
 inline constexpr std::string_view kIdxExtension{".idx"};
@@ -40,40 +40,40 @@ snapshots::SnapshotRepository make_blocks_repository(
     bool open = true,
     std::optional<uint32_t> index_salt = std::nullopt);
 
-inline constexpr datastore::EntityName kHeaderSegmentName{"headers"};
-inline constexpr std::string_view kHeaderSegmentTag = kHeaderSegmentName.name;
+inline const datastore::EntityName kHeaderSegmentName{"headers"};
+inline constexpr std::string_view kHeaderSegmentTag{"headers"};
 //! Index header_hash -> block_num -> headers_segment_offset
-inline constexpr datastore::EntityName kIdxHeaderHashName{"headers.idx"};
+inline const datastore::EntityName kIdxHeaderHashName{"headers.idx"};
 inline constexpr std::string_view kIdxHeaderHashTag = kHeaderSegmentTag;
-inline constexpr snapshots::SegmentAndAccessorIndexNames kHeaderSegmentAndIdxNames{
+inline const snapshots::SegmentAndAccessorIndexNames kHeaderSegmentAndIdxNames{
     snapshots::Schema::kDefaultEntityName,
     kHeaderSegmentName,
     kIdxHeaderHashName,
 };
 
-inline constexpr datastore::EntityName kBodySegmentName{"bodies"};
-inline constexpr std::string_view kBodySegmentTag = kBodySegmentName.name;
+inline const datastore::EntityName kBodySegmentName{"bodies"};
+inline constexpr std::string_view kBodySegmentTag{"bodies"};
 //! Index block_num -> bodies_segment_offset
-inline constexpr datastore::EntityName kIdxBodyNumberName{"bodies.idx"};
+inline const datastore::EntityName kIdxBodyNumberName{"bodies.idx"};
 inline constexpr std::string_view kIdxBodyNumberTag = kBodySegmentTag;
-inline constexpr snapshots::SegmentAndAccessorIndexNames kBodySegmentAndIdxNames{
+inline const snapshots::SegmentAndAccessorIndexNames kBodySegmentAndIdxNames{
     snapshots::Schema::kDefaultEntityName,
     kBodySegmentName,
     kIdxBodyNumberName,
 };
 
-inline constexpr datastore::EntityName kTxnSegmentName{"transactions"};
-inline constexpr std::string_view kTxnSegmentTag = kTxnSegmentName.name;
+inline const datastore::EntityName kTxnSegmentName{"transactions"};
+inline constexpr std::string_view kTxnSegmentTag{"transactions"};
 //! Index transaction_hash -> txn_id -> transactions_segment_offset
-inline constexpr datastore::EntityName kIdxTxnHashName{"transactions.idx"};
+inline const datastore::EntityName kIdxTxnHashName{"transactions.idx"};
 inline constexpr std::string_view kIdxTxnHashTag = kTxnSegmentTag;
-inline constexpr snapshots::SegmentAndAccessorIndexNames kTxnSegmentAndIdxNames{
+inline const snapshots::SegmentAndAccessorIndexNames kTxnSegmentAndIdxNames{
     snapshots::Schema::kDefaultEntityName,
     kTxnSegmentName,
     kIdxTxnHashName,
 };
 //! Index transaction_hash -> block_num
-inline constexpr datastore::EntityName kIdxTxnHash2BlockName{"transactions-to-block.idx"};
+inline const datastore::EntityName kIdxTxnHash2BlockName{"transactions-to-block.idx"};
 inline constexpr std::string_view kIdxTxnHash2BlockTag{"transactions-to-block"};
 
 struct BundleDataRef {

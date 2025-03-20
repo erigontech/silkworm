@@ -62,7 +62,7 @@ struct HistoryRangeByKeysSegmentQuery {
         datastore::Timestamp ts = ts_opt->second;
 
         // query history value using the timestamp and key_data
-        static constexpr SegmentAndAccessorIndexNames kDummySegmentNames;
+        static const SegmentAndAccessorIndexNames kDummySegmentNames{datastore::EntityName{{}}, datastore::EntityName{{}}, datastore::EntityName{{}}};
         FindByKeySegmentQuery<AccessorIndexKeyEncoder, RawDecoder<Bytes>, kDummySegmentNames> value_query{entity_.segment_and_index()};
         auto value_opt = value_query.exec(AccessorIndexKeyEncoder::Value{ts, key_data});
         if (!value_opt) return std::nullopt;

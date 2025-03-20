@@ -7,7 +7,10 @@
 #include <string>
 #include <vector>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <agrpc/grpc_context.hpp>
+#pragma GCC diagnostic pop
 #include <evmc/evmc.hpp>
 
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>

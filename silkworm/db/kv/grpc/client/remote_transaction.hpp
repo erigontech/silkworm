@@ -10,8 +10,11 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <agrpc/client_rpc.hpp>
 #include <agrpc/grpc_context.hpp>
+#pragma GCC diagnostic pop
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/db/chain/providers.hpp>

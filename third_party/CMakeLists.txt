@@ -13,6 +13,7 @@ add_subdirectory(evmone) # depends on ethash, intx
 
 # please keep the list sorted
 if(NOT SILKWORM_CORE_ONLY)
+  add_subdirectory(asio-grpc)
   add_subdirectory(cbor-cpp)
   add_subdirectory(cpp-base64)
   add_subdirectory(erigon-mdbx-go)

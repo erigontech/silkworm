@@ -18,6 +18,7 @@
 
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <absl/container/flat_hash_map.h>
 
@@ -25,6 +26,8 @@ namespace silkworm::datastore {
 
 struct EntityName {
     const std::string_view name;
+
+    explicit EntityName(std::string_view name1) : name{intern(name1)} {}
 
     friend bool operator==(const EntityName& lhs, const EntityName& rhs) {
         return lhs.name.data() == rhs.name.data();
@@ -34,6 +37,10 @@ struct EntityName {
     }
 
     std::string to_string() const { return std::string{name}; }
+
+  private:
+    static std::string_view intern(std::string_view name);
+    static std::vector<std::string> pool_;
 };
 
 template <typename TValue>

@@ -29,8 +29,8 @@
 
 namespace silkworm::db::state {
 
-inline constexpr datastore::EntityName kStateRepositoryNameLatest{"StateLatest"};
-inline constexpr datastore::EntityName kStateRepositoryNameHistorical{"StateHistorical"};
+inline const datastore::EntityName kStateRepositoryNameLatest{"StateLatest"};
+inline const datastore::EntityName kStateRepositoryNameHistorical{"StateHistorical"};
 
 snapshots::Schema::RepositoryDef make_state_repository_schema_latest();
 snapshots::Schema::RepositoryDef make_state_repository_schema_historical();
@@ -46,16 +46,16 @@ snapshots::SnapshotRepository make_state_repository_historical(
     bool open = true,
     std::optional<uint32_t> index_salt = std::nullopt);
 
-inline constexpr datastore::EntityName kDomainNameAccounts{"Account"};
-inline constexpr datastore::EntityName kDomainNameStorage{"Storage"};
-inline constexpr datastore::EntityName kDomainNameCode{"Code"};
-inline constexpr datastore::EntityName kDomainNameCommitment{"Commitment"};
-inline constexpr datastore::EntityName kDomainNameReceipts{"Receipt"};
+inline const datastore::EntityName kDomainNameAccounts{"Account"};
+inline const datastore::EntityName kDomainNameStorage{"Storage"};
+inline const datastore::EntityName kDomainNameCode{"Code"};
+inline const datastore::EntityName kDomainNameCommitment{"Commitment"};
+inline const datastore::EntityName kDomainNameReceipts{"Receipt"};
 
-inline constexpr datastore::EntityName kInvIdxNameLogAddress{"LogAddress"};
-inline constexpr datastore::EntityName kInvIdxNameLogTopics{"LogTopics"};
-inline constexpr datastore::EntityName kInvIdxNameTracesFrom{"TracesFrom"};
-inline constexpr datastore::EntityName kInvIdxNameTracesTo{"TracesTo"};
+inline const datastore::EntityName kInvIdxNameLogAddress{"LogAddress"};
+inline const datastore::EntityName kInvIdxNameLogTopics{"LogTopics"};
+inline const datastore::EntityName kInvIdxNameTracesFrom{"TracesFrom"};
+inline const datastore::EntityName kInvIdxNameTracesTo{"TracesTo"};
 
 inline constexpr std::string_view kDomainAccountsTag{"accounts"};
 inline constexpr std::string_view kInvIdxLogAddressTag{"logaddrs"};
@@ -90,27 +90,27 @@ struct StateDatabaseRef {
     datastore::kvdb::InvertedIndex traces_to_inverted_index() const { return {database.inverted_index(kInvIdxNameTracesTo)}; }
 };
 
-inline constexpr snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesAccounts{
+inline const snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesAccounts{
     kDomainNameAccounts,
     snapshots::Schema::kHistorySegmentName,
     snapshots::Schema::kHistoryAccessorIndexName,
 };
-inline constexpr snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesStorage{
+inline const snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesStorage{
     kDomainNameStorage,
     snapshots::Schema::kHistorySegmentName,
     snapshots::Schema::kHistoryAccessorIndexName,
 };
-inline constexpr snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesCode{
+inline const snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesCode{
     kDomainNameCode,
     snapshots::Schema::kHistorySegmentName,
     snapshots::Schema::kHistoryAccessorIndexName,
 };
-inline constexpr snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesCommitment{
+inline const snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesCommitment{
     kDomainNameCommitment,
     snapshots::Schema::kHistorySegmentName,
     snapshots::Schema::kHistoryAccessorIndexName,
 };
-inline constexpr snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesReceipts{
+inline const snapshots::SegmentAndAccessorIndexNames kHistorySegmentAndIdxNamesReceipts{
     kDomainNameReceipts,
     snapshots::Schema::kHistorySegmentName,
     snapshots::Schema::kHistoryAccessorIndexName,

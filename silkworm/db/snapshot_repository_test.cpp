@@ -45,9 +45,9 @@ static SnapshotRepository make_repository(std::filesystem::path dir_path) {
 
 // NOLINTBEGIN(readability-identifier-naming)
 struct SnapshotType {
-    static constexpr auto headers{db::blocks::kHeaderSegmentAndIdxNames};
-    static constexpr auto bodies{db::blocks::kBodySegmentAndIdxNames};
-    static constexpr auto transactions{db::blocks::kTxnSegmentAndIdxNames};
+    static inline const SegmentAndAccessorIndexNames headers{db::blocks::kHeaderSegmentAndIdxNames};
+    static inline const SegmentAndAccessorIndexNames bodies{db::blocks::kBodySegmentAndIdxNames};
+    static inline const SegmentAndAccessorIndexNames transactions{db::blocks::kTxnSegmentAndIdxNames};
 };
 // NOLINTEND(readability-identifier-naming)
 

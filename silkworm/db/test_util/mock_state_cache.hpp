@@ -52,6 +52,8 @@ class MockStateCache : public kv::api::StateCache {
     MOCK_METHOD(uint64_t, code_miss_count, (), (const, override));
     MOCK_METHOD(uint64_t, code_key_count, (), (const, override));
     MOCK_METHOD(uint64_t, code_eviction_count, (), (const, override));
+
+    MOCK_METHOD(Task<ValidationResult>, validate_current_root, (kv::api::Transaction&), (override));
 };
 
 }  // namespace silkworm::db::test_util

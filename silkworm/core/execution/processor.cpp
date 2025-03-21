@@ -325,8 +325,11 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
     uint64_t gas_left{result.gas_left};
     uint64_t gas_used{txn.gas_limit - result.gas_left};
 
+    uint64_t gas_refund = 0;
     if (refund && !evm().bailout) {
-        gas_used = txn.gas_limit - calculate_refund_gas(txn, result.gas_left, result.gas_refund);
+        const uint64_t gas_left_plus_refund = calculate_refund_gas(txn, result.gas_left, result.gas_refund);
+        gas_refund = gas_left_plus_refund - result.gas_left;
+        gas_used = txn.gas_limit - gas_left_plus_refund;
         //  EIP-7623: Increase calldata cost
         if (evm().revision() >= EVMC_PRAGUE) {
             gas_used = std::max(gas_used, protocol::floor_cost(txn));
@@ -349,7 +352,7 @@ CallResult ExecutionProcessor::call(const Transaction& txn, const std::vector<st
 
     evm_.remove_tracers();
 
-    return {ValidationResult::kOk, result.status, gas_left, gas_used, result.data, result.error_message};
+    return {ValidationResult::kOk, result.status, gas_left, gas_refund, gas_used, result.data, result.error_message};
 }
 
 void ExecutionProcessor::reset() {

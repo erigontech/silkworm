@@ -21,7 +21,6 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/db/test_util/mock_state_cache.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/test_util/context_test_base.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -48,7 +47,7 @@ class StateReaderTest : public silkworm::test_util::ContextTestBase {
   protected:
     db::test_util::MockTransaction transaction_;
     db::test_util::MockStateCache state_cache_;
-    StateReader state_reader_{transaction_, &state_cache_, kEarliestBlockNum};
+    StateReader state_reader_{transaction_, kEarliestBlockNum};
 };
 
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {

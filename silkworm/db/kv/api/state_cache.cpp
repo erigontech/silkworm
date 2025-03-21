@@ -134,6 +134,68 @@ void CoherentStateCache::on_new_block(const api::StateChangeSet& state_changes_s
     root->ready_cond_var.notify_all();
 }
 
+Task<StateCache::ValidationResult> CoherentStateCache::validate_current_root(Transaction& tx) {
+    StateCache::ValidationResult validation_result{.enabled = true};
+
+    const StateVersionId current_state_version_id = co_await get_db_state_version(tx);
+    validation_result.latest_state_version_id = current_state_version_id;
+    // If the latest version id in the cache is not the same as the db or one below it
+    // then the cache will be a new one for the next call so return early
+    if (current_state_version_id > latest_state_version_id_) {
+        validation_result.latest_state_behind = true;
+        co_return validation_result;
+    }
+    const auto root = co_await wait_for_root_ready(latest_state_version_id_);
+
+    bool clear_cache{false};
+    const auto get_address_domain = [](const auto& key) {
+        return key.size() == kAddressLength ? db::table::kAccountDomain : db::table::kStorageDomain;
+    };
+    const auto compare_cache = [&](auto& cache, bool is_code) -> Task<std::pair<bool, std::vector<Bytes>>> {
+        bool cancelled{false};
+        std::vector<Bytes> keys;
+        if (cache.empty()) {
+            co_return std::make_pair(cancelled, keys);
+        }
+        auto kv_node = cache.extract(cache.begin());
+        if (!kv_node.empty()) {
+            co_return std::make_pair(cancelled, keys);
+        }
+        KeyValue kv{kv_node.value()};
+        const auto domain = is_code ? db::table::kCodeDomain : get_address_domain(kv.key);
+        const GetLatestResult result = co_await tx.get_latest({.table = std::string{domain}, .key = kv.key});
+        if (!result.success) {
+            co_return std::make_pair(cancelled, keys);
+        }
+        if (result.value != kv.key) {
+            keys.push_back(kv.key);
+            clear_cache = true;
+        }
+        co_return std::make_pair(cancelled, keys);
+    };
+
+    auto [cache, code_cache] = clone_caches(root);
+
+    auto [cancelled_1, keys] = co_await compare_cache(cache, /*is_code=*/false);
+    if (cancelled_1) {
+        validation_result.request_canceled = true;
+        co_return validation_result;
+    }
+    validation_result.state_keys_out_of_sync = std::move(keys);
+    auto [cancelled_2, code_keys] = co_await compare_cache(code_cache, /*is_code=*/true);
+    if (cancelled_2) {
+        validation_result.request_canceled = true;
+        co_return validation_result;
+    }
+    validation_result.code_keys_out_of_sync = std::move(code_keys);
+
+    if (clear_cache) {
+        clear_caches(root);
+    }
+    validation_result.cache_cleared = true;
+    co_return validation_result;
+}
+
 void CoherentStateCache::process_upsert_change(CoherentStateRoot* root, StateVersionId version_id, const AccountChange& change) {
     const auto& address = change.address;
     const auto& data_bytes = change.data;
@@ -411,6 +473,19 @@ Task<StateVersionId> CoherentStateCache::get_db_state_version(Transaction& tx) c
         co_return 0;
     }
     co_return endian::load_big_u64(version.data());
+}
+
+std::pair<KeyValueSet, KeyValueSet> CoherentStateCache::clone_caches(CoherentStateRoot* root) {
+    std::scoped_lock write_lock{rw_mutex_};
+    KeyValueSet cache = root->cache;
+    KeyValueSet code_cache = root->code_cache;
+    return {cache, code_cache};
+}
+
+void CoherentStateCache::clear_caches(CoherentStateRoot* root) {
+    std::scoped_lock write_lock{rw_mutex_};
+    root->cache.clear();
+    root->code_cache.clear();
 }
 
 }  // namespace silkworm::db::kv::api

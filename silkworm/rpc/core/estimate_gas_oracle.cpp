@@ -26,24 +26,29 @@
 
 namespace silkworm::rpc {
 
-Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block, std::optional<TxnId> txn_id, std::optional<BlockNum> block_num_for_gas_limit) {
+Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block, std::optional<TxnId> txn_id) {
     SILK_DEBUG << "EstimateGasOracle::estimate_gas called";
 
     const auto block_num = block.header.number;
 
     uint64_t hi = 0;
-    uint64_t lo = kTxGas - 1;
+    uint64_t lo;
 
     if (call.gas.value_or(0) >= kTxGas) {
         SILK_DEBUG << "Set gas limit using call args: " << call.gas.value_or(0);
         hi = call.gas.value();
     } else {
-        const auto header = co_await block_header_provider_(block_num_for_gas_limit.value_or(block_num));
+        const auto header = co_await block_header_provider_(block_num);
         if (!header) {
             co_return 0;
         }
         hi = header->gas_limit;
         SILK_DEBUG << "Set gas limit using block: " << header->gas_limit;
+    }
+
+    if (hi > kGasCap) {
+        SILK_WARN << "caller gas above allowance, capping: requested " << hi << ", cap " << kGasCap;
+        hi = kGasCap;
     }
 
     std::optional<intx::uint256> gas_price = call.gas_price;
@@ -71,50 +76,49 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         }
     }
 
-    if (hi > kGasCap) {
-        SILK_WARN << "caller gas above allowance, capping: requested " << hi << ", cap " << kGasCap;
-        hi = kGasCap;
-    }
-    auto cap = hi;
-
-    SILK_DEBUG << "hi: " << hi << ", lo: " << lo << ", cap: " << cap;
-
     auto this_executor = co_await boost::asio::this_coro::executor;
 
-    execution::StateFactory state_factory{transaction_, /*state_cache=*/nullptr};
+    execution::StateFactory state_factory{transaction_};
 
     auto exec_result = co_await async_task(workers_.executor(), [&]() -> ExecutionResult {
         auto state = state_factory.create_state(this_executor, storage_, txn_id);
 
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
         silkworm::Transaction transaction{call.to_transaction()};
-        while (lo + 1 < hi) {
-            auto state_overrides = std::make_shared<state::OverrideState>(*state, accounts_overrides_);
-            EVMExecutor executor{block, config_, workers_, state_overrides};
-            auto mid = (hi + lo) / 2;
-            transaction.gas_limit = mid;
-            result = try_execution(executor, transaction);
-            if (result.success()) {
-                hi = mid;
-            } else {
-                if (result.pre_check_error_code && result.pre_check_error_code != PreCheckErrorCode::kIntrinsicGasTooLow) {
-                    result.status_code = evmc_status_code::EVMC_SUCCESS;
-                    return result;
-                }
-                lo = mid;
-            }
+
+        auto state_overrides = std::make_shared<state::OverrideState>(*state, accounts_overrides_);
+        EVMExecutor executor{block, config_, workers_, state_overrides};
+        transaction.gas_limit = hi;
+        result = try_execution(executor, transaction);
+        if (!result.success()) {
+            return result;
         }
 
-        if (hi == cap) {
-            auto state_overrides = std::make_shared<state::OverrideState>(*state, accounts_overrides_);
-            EVMExecutor executor{block, config_, workers_, state_overrides};
-            transaction.gas_limit = hi;
-            result = try_execution(executor, transaction);
-            SILK_DEBUG << "HI == cap tested again with " << (result.status_code == evmc_status_code::EVMC_SUCCESS ? "succeed" : "failed");
-        } else if (!result.pre_check_error_code || result.pre_check_error_code == PreCheckErrorCode::kIntrinsicGasTooLow) {
-            result.pre_check_error = std::nullopt;
-            result.status_code = evmc_status_code::EVMC_SUCCESS;
+        // Assuming a contract can freely run all the instructions, we have
+        // the true amount of gas it wants to consume to execute fully.
+        // We want to ensure that the gas used doesn't fall below this
+        auto true_gas = result.gas_used.value_or(0);
+        uint64_t refund = result.gas_refund.value_or(0);
+        lo = std::min(true_gas + refund - 1, kTxGas - 1);
+
+        SILK_DEBUG << "hi: " << hi << ", lo: " << lo;
+
+        while (lo + 1 < hi) {
+            state_overrides = std::make_shared<state::OverrideState>(*state, accounts_overrides_);
+            EVMExecutor curr_executor{block, config_, workers_, state_overrides};
+            auto mid = (hi + lo) / 2;
+            transaction.gas_limit = mid;
+            result = try_execution(curr_executor, transaction);
+            if (result.pre_check_error_code) {
+                break;
+            }
+            if (!result.success() || result.gas_used.value_or(0) < true_gas) {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
         }
+        result.status_code = evmc_status_code::EVMC_SUCCESS;
 
         SILK_DEBUG << "EstimateGasOracle::estimate_gas returns " << hi;
 

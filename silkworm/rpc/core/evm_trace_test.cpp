@@ -125,7 +125,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
         block.header.number = 10'336'006;
 
         TraceConfig config{true, true, true};
-        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(!result.pre_check_error);
@@ -199,7 +199,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         block.header.number = block_num;
 
         TraceConfig config{false, false, false};
-        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == true);
@@ -264,7 +264,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         block.header.number = block_num;
 
         TraceConfig config{true, true, true};
-        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -453,7 +453,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         block.header.number = block_num;
 
         TraceConfig config{false, true, true};
-        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -579,7 +579,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         block.header.number = block_num;
 
         TraceConfig config{true, false, true};
-        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -751,7 +751,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         block.header.number = block_num;
 
         TraceConfig config{true, true, false};
-        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -901,7 +901,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         block.header.number = block_num;
 
         TraceConfig config{false, false, false};
-        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -982,7 +982,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
         block.header.number = block_num;
 
         TraceConfig config{true, true, true};
-        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
 
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
@@ -1130,7 +1130,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
     block.header.number = block_num;
 
     TraceConfig config{true, true, true};
-    TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+    TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
     const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
     CHECK(result.pre_check_error.has_value() == false);
@@ -1248,7 +1248,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
         silkworm::Block block{};
         block.header.number = block_num;
 
-        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
         const auto result = spawn_and_wait(executor.trace_calls(block, calls));
 
         CHECK(result.pre_check_error.has_value() == true);
@@ -1315,7 +1315,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
         silkworm::Block block{};
         block.header.number = block_num;
 
-        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
         const auto result = spawn_and_wait(executor.trace_calls(block, calls));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -1527,7 +1527,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
     block.transactions.push_back(txn);
 
     TraceConfig config{true, true, true};
-    TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+    TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
     const auto result = spawn_and_wait(executor.trace_block_transactions(block, config));
 
     CHECK(nlohmann::json(result) == R"([
@@ -1978,7 +1978,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
 
     block_with_hash.block.transactions.push_back(txn);
 
-    TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+    TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
 
     Filter filter;
     const auto result = spawn_and_wait(executor.trace_block(block_with_hash, filter));
@@ -2089,7 +2089,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
             co_return response;
         }));
 
-        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
         TraceConfig config{.vm_trace = true, .trace = false, .state_diff = false};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, txn, config));
 
@@ -2427,7 +2427,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
             co_return response;
         }));
 
-        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
         TraceConfig config{.vm_trace = false, .trace = true, .state_diff = false};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, txn, config));
 
@@ -2479,7 +2479,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
             co_return response;
         }));
 
-        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
         TraceConfig config{.vm_trace = false, .trace = false, .state_diff = true};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, txn, config));
 
@@ -2554,7 +2554,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
             co_return response;
         }));
 
-        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+        TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
         TraceConfig config{.vm_trace = true, .trace = true, .state_diff = true};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, txn, config));
 
@@ -3007,7 +3007,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
 
     block_with_hash.block.transactions.push_back(txn);
 
-    TraceCallExecutor executor{block_cache, chain_storage, workers, transaction, /*state_cache=*/nullptr};
+    TraceCallExecutor executor{block_cache, chain_storage, workers, transaction};
     const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash, txn, true));
 
     CHECK(nlohmann::json(result) == R"([

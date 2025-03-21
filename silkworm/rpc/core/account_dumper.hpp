@@ -20,7 +20,6 @@
 
 #include <evmc/evmc.hpp>
 
-#include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
 #include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/types/block.hpp>
@@ -32,8 +31,7 @@ using db::kv::api::KeyValue;
 
 class AccountDumper {
   public:
-    AccountDumper(db::kv::api::Transaction& transaction, db::kv::api::StateCache* state_cache)
-        : transaction_(transaction), state_cache_(state_cache) {}
+    AccountDumper(db::kv::api::Transaction& transaction) : transaction_(transaction) {}
 
     AccountDumper(const AccountDumper&) = delete;
     AccountDumper& operator=(const AccountDumper&) = delete;
@@ -50,7 +48,6 @@ class AccountDumper {
     Task<void> load_storage(BlockNum block_num, DumpAccounts& dump_accounts);
 
     db::kv::api::Transaction& transaction_;
-    db::kv::api::StateCache* state_cache_;
 };
 
 }  // namespace silkworm::rpc::core

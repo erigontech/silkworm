@@ -1774,7 +1774,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     filter.count = trace_filter.count;
 
     auto block_num = trace_filter.from_block.number();
-    auto block_with_hash = co_await core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, state_cache_, trace_filter.from_block);
+    auto block_with_hash = co_await core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, trace_filter.from_block);
 
     while (block_num <= trace_filter.to_block.number()) {
         if (!block_with_hash) {

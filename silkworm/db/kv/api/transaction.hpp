@@ -32,6 +32,8 @@
 
 namespace silkworm::db::kv::api {
 
+class StateCache;
+
 class Transaction {
   public:
     using Walker = std::function<bool(Bytes&, Bytes&)>;
@@ -42,6 +44,8 @@ class Transaction {
     Transaction& operator=(const Transaction&) = delete;
 
     virtual ~Transaction() = default;
+
+    virtual StateCache* state_cache() = 0;
 
     virtual uint64_t tx_id() const = 0;
     virtual uint64_t view_id() const = 0;

@@ -44,7 +44,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     DumpAccounts dump_accounts;
     const auto chain_storage = transaction_.create_storage();
 
-    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(cache, *chain_storage, transaction_, state_cache_, block_num_or_hash);
+    const auto block_with_hash = co_await read_block_by_block_num_or_hash(cache, *chain_storage, transaction_, block_num_or_hash);
     if (!block_with_hash) {
         throw std::invalid_argument("dump_accounts: block not found");
     }

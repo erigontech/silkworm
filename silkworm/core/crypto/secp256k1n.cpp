@@ -22,7 +22,7 @@ bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool hom
     if (!r || !s) {
         return false;
     }
-    if (r >= kSecp256k1n && s >= kSecp256k1n) {
+    if (r >= kSecp256k1n || s >= kSecp256k1n) {
         return false;
     }
     // https://eips.ethereum.org/EIPS/eip-2

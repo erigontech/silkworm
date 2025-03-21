@@ -147,7 +147,7 @@ Task<CallManyResult> CallExecutor::execute(
     }
 
     const auto chain_config = co_await chain_storage->read_chain_config();
-    const auto block_with_hash = co_await rpc::core::read_block_by_block_num_or_hash(block_cache_, *chain_storage, transaction_, state_cache_, context.block_num);
+    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(block_cache_, *chain_storage, transaction_, context.block_num);
     if (!block_with_hash) {
         throw std::invalid_argument("read_block_by_block_num_or_hash: block not found");
     }

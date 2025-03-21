@@ -126,9 +126,8 @@ class DebugExecutor {
         BlockCache& block_cache,
         WorkerPool& workers,
         db::kv::api::Transaction& tx,
-        db::kv::api::StateCache* state_cache,
         DebugConfig config = {})
-        : block_cache_(block_cache), workers_{workers}, tx_{tx}, state_cache_{state_cache}, config_{config} {}
+        : block_cache_(block_cache), workers_{workers}, tx_{tx}, config_{config} {}
     virtual ~DebugExecutor() = default;
 
     DebugExecutor(const DebugExecutor&) = delete;
@@ -166,7 +165,6 @@ class DebugExecutor {
     BlockCache& block_cache_;
     WorkerPool& workers_;
     db::kv::api::Transaction& tx_;
-    db::kv::api::StateCache* state_cache_;
     DebugConfig config_;
 };
 

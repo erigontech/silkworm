@@ -31,14 +31,14 @@ using StorageDomainKVSegmentReader = snapshots::segment::KVSegmentReader<Storage
 
 struct StorageDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
                                          StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
-                                         PackedBytes32KVDBCodec, Bytes32SnapshotsCodec> {
+                                         PackedBytes32KVDBCodec, PackedBytes32SnapshotsCodec> {
     StorageDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository)
         : datastore::DomainGetLatestQuery<
               StorageAddressAndLocationKVDBEncoder, StorageAddressAndLocationSnapshotsCodec,
-              PackedBytes32KVDBCodec, Bytes32SnapshotsCodec>(
+              PackedBytes32KVDBCodec, PackedBytes32SnapshotsCodec>(
               db::state::kDomainNameStorage,
               database.domain(db::state::kDomainNameStorage),
               tx,

@@ -101,8 +101,11 @@ TEST_CASE("ForkId.forks.sepolia") {
         {1735372, ForkId{0xb96cbd13, 1677557088}},     // Last MergeNetsplit block
         {1677557088, ForkId{0xf7f9bc08, 1706655072}},  // First Shanghai block
         {1706655060, ForkId{0xf7f9bc08, 1706655072}},  // Last Shanghai block
-        {1706655072, ForkId{0x88cf81d9, 0}},           // First Cancun block
-        {1800000000, ForkId{0x88cf81d9, 0}},           // Future Cancun block
+        {1706655072, ForkId{0x88cf81d9, 1741159776}},  // First Cancun block
+        {1741159764, ForkId{0x88cf81d9, 1741159776}},  // Last Cancun block
+        {1741159776, ForkId{0xed88b5fd, 0}},           // First Prague block
+        {1800000000, ForkId{0xed88b5fd, 0}},           // Future Prague block
+
     };
 
     auto chain_config{kSepoliaConfig};

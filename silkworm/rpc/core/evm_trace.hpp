@@ -481,12 +481,11 @@ struct Filter {
 
 class TraceCallExecutor {
   public:
-    explicit TraceCallExecutor(silkworm::BlockCache& block_cache,
+    explicit TraceCallExecutor(BlockCache& block_cache,
                                const ChainStorage& chain_storage,
                                WorkerPool& workers,
-                               db::kv::api::Transaction& tx,
-                               db::kv::api::StateCache* state_cache)
-        : block_cache_(block_cache), chain_storage_(chain_storage), workers_(workers), tx_(tx), state_cache_(state_cache) {}
+                               db::kv::api::Transaction& tx)
+        : block_cache_(block_cache), chain_storage_(chain_storage), workers_(workers), tx_(tx) {}
     virtual ~TraceCallExecutor() = default;
 
     TraceCallExecutor(const TraceCallExecutor&) = delete;
@@ -517,11 +516,10 @@ class TraceCallExecutor {
         bool gas_bailout,
         bool is_latest_block);
 
-    silkworm::BlockCache& block_cache_;
+    BlockCache& block_cache_;
     const ChainStorage& chain_storage_;
     WorkerPool& workers_;
     db::kv::api::Transaction& tx_;
-    db::kv::api::StateCache* state_cache_{nullptr};
 };
 
 }  // namespace silkworm::rpc::trace

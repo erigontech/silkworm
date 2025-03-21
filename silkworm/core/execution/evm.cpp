@@ -98,7 +98,7 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
 
     const auto gas_left = static_cast<uint64_t>(res.gas_left);
     const auto gas_refund = static_cast<uint64_t>(res.gas_refund);
-    return {ValidationResult::kOk, res.status_code, gas_left, gas_refund, {res.output_data, res.output_size}};
+    return {ValidationResult::kOk, res.status_code, gas_left, gas_refund, std::nullopt, {res.output_data, res.output_size}};
 }
 
 evmc::Result EVM::create(const evmc_message& message) noexcept {
@@ -218,17 +218,19 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
 
     const auto snapshot{state_.take_snapshot()};
 
+    const evmc_revision rev{revision()};
+
     if (message.kind == EVMC_CALL) {
         if (message.flags & EVMC_STATIC) {
             // Match geth logic
             // https://github.com/ethereum/go-ethereum/blob/v1.9.25/core/vm/evm.go#L391
-            state_.touch(message.recipient);
+            if (!precompile::is_precompile(message.recipient, rev)) {
+                state_.touch(message.recipient);
+            }
         } else {
             transfer(state_, message.sender, message.recipient, value, bailout);
         }
     }
-
-    const evmc_revision rev{revision()};
 
     if (precompile::is_precompile(message.code_address, rev)) {
         static_assert(std::size(precompile::kContracts) < 256);

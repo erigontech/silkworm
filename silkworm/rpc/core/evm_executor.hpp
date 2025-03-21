@@ -52,6 +52,8 @@ enum class PreCheckErrorCode {
 struct ExecutionResult {
     std::optional<evmc_status_code> status_code;
     uint64_t gas_left{0};
+    std::optional<uint64_t> gas_refund;
+    std::optional<uint64_t> gas_used;
     Bytes data;
     std::optional<std::string> pre_check_error{std::nullopt};
     std::optional<PreCheckErrorCode> pre_check_error_code{std::nullopt};

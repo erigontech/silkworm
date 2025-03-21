@@ -136,12 +136,12 @@ class Schema {
         return database(kDefaultEntityName);
     }
 
-    static constexpr datastore::EntityName kDefaultEntityName{"_"};
+    static inline const datastore::EntityName kDefaultEntityName{"_"};
 
-    static constexpr datastore::EntityName kDomainValuesName{"DomainValues"};
-    static constexpr datastore::EntityName kHistoryValuesName{"HistoryValues"};
-    static constexpr datastore::EntityName kInvIdxKeysName{"InvIdxKeys"};
-    static constexpr datastore::EntityName kInvIdxIndexName{"InvIdxIndex"};
+    static inline const datastore::EntityName kDomainValuesName{"DomainValues"};
+    static inline const datastore::EntityName kHistoryValuesName{"HistoryValues"};
+    static inline const datastore::EntityName kInvIdxKeysName{"InvIdxKeys"};
+    static inline const datastore::EntityName kInvIdxIndexName{"InvIdxIndex"};
 
   private:
     EntityMap<DatabaseDef> database_defs_;

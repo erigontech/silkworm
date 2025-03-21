@@ -1,3 +1,6 @@
+[submodule "asio-grpc"]
+	path = third_party/asio-grpc/asio-grpc
+	url = https://github.com/Tradias/asio-grpc.git
 [submodule "evmone"]
 	path = third_party/evmone/evmone
 	url = https://github.com/erigontech/evmone.git
@@ -46,6 +49,6 @@
 	path = third_party/execution-apis
 	url = https://github.com/ethereum/execution-apis.git
 	branch = main
-[submodule "third_party/eest-fixtures/BlockchainTests"]
+[submodule "BlockchainTests"]
 	path = third_party/eest-fixtures/BlockchainTests
 	url = https://github.com/erigontech/eest-fixtures

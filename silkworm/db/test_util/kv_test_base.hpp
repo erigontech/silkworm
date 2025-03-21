@@ -18,7 +18,7 @@
 
 #include <memory>
 
-#include <agrpc/test.hpp>
+#include <asio-grpc-wrap/test.hpp>
 #include <gmock/gmock.h>
 
 #include <silkworm/infra/grpc/test_util/grpc_responder.hpp>

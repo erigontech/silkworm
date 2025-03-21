@@ -1,5 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
+#[[
+   Copyright 2025 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,17 +12,10 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-*/
+]]
 
-#pragma once
+set(ASIO_GRPC_USE_BOOST_CONTAINER YES)
 
-#include <asio-grpc-wrap/client_rpc.hpp>
-#include <boost/asio/use_awaitable.hpp>
+add_subdirectory(asio-grpc)
 
-#include <silkworm/interfaces/remote/kv.grpc.pb.h>
-
-namespace silkworm::db::kv::grpc::client {
-
-using TxRpc = boost::asio::use_awaitable_t<>::as_default_on_t<agrpc::ClientRPC<&::remote::KV::StubInterface::PrepareAsyncTx>>;
-
-}  // namespace silkworm::db::kv::grpc::client
+target_include_directories(asio-grpc INTERFACE "${CMAKE_CURRENT_LIST_DIR}")

@@ -18,7 +18,7 @@
 
 #include <utility>
 
-#include <agrpc/grpc_context.hpp>
+#include <asio-grpc-wrap/grpc_context.hpp>
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/server/call.hpp>

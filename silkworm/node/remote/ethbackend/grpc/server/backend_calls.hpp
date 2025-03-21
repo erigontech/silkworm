@@ -23,7 +23,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <agrpc/asio_grpc.hpp>
+#include <asio-grpc-wrap/asio_grpc.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/chain/config.hpp>

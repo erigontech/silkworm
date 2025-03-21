@@ -18,6 +18,7 @@
 
 #include <silkworm/db/data_store.hpp>
 
+#include "local_transaction.hpp"
 #include "service.hpp"
 #include "service_router.hpp"
 
@@ -52,8 +53,7 @@ class DirectService : public Service {
     //! The data store
     DataStoreRef data_store_;
 
-    //! The local state cache built upon incoming state changes
-    StateCache* state_cache_;
+    std::shared_ptr<LocalTransaction::Cache> shared_transaction_cache_;
 };
 
 }  // namespace silkworm::db::kv::api

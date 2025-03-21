@@ -107,7 +107,7 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
 endif()
 
 if(OS_VERSION_MIN_CXXFLAG AND NOT SILKWORM_SANITIZE_COMPILER_OPTIONS)
-  list(APPEND CONAN_CONF "libtorrent/*:tools.build:cxxflags=[\"${OS_VERSION_MIN_CXXFLAG}\"]")
+  list(APPEND CONAN_CONF "tools.build:cxxflags=[\"${OS_VERSION_MIN_CXXFLAG}\"]")
 endif()
 
 if(SILKWORM_SANITIZE_COMPILER_OPTIONS)
@@ -140,6 +140,7 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   set(CONAN_VERBOSITY "verbose")
   # make sure to not rebuild anything from source unless required
   set(CONAN_BUILD "missing:libtorrent/*")
+  list(APPEND CONAN_BUILD "missing:protobuf/*")
   # HACK: MSVC is "multi config" and conan_provider.cmake runs 2 conan install commands for both Release and Debug
   # despite CMAKE_BUILD_TYPE. This adds an extra build_type setting to both commands to override and force the desired
   # build type. It still runs 2 commands, but the 2nd one has no effect.

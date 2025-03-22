@@ -141,4 +141,44 @@ KVSegmentFileReader::Iterator KVSegmentFileReader::seek(
     return KVSegmentFileReader::Iterator{std::move(it), std::move(key_decoder), std::move(value_decoder), path()};
 }
 
+KVSegmentFileReader::Iterator KVSegmentFileReader::seek_both_if(
+    uint64_t offset,
+    std::optional<ByteView> check_prefix,
+    const std::function<bool(ByteView)>& key_predicate,
+    std::shared_ptr<Decoder> key_decoder,
+    std::shared_ptr<Decoder> value_decoder) const {
+    SILKWORM_ASSERT(key_decoder && value_decoder);
+    auto it = decompressor_.seek(offset, check_prefix.value_or(ByteView{}));
+    if (it == decompressor_.end()) {
+        return end();
+    }
+    if (!it.has_next()) {
+        return end();
+    }
+
+    Decoder::Word& key_word = *it;
+    const bool key_predicate_satisfied = key_predicate(key_word);
+
+    try {
+        key_decoder->decode_word(key_word);
+    } catch (...) {
+        return end();
+    }
+    key_decoder->check_sanity_with_metadata(path_);
+
+    if (!key_predicate_satisfied) {
+        return Iterator{std::move(it), std::move(key_decoder), std::move(value_decoder), path()};
+    }
+
+    if (value_decoder) {
+        ++it;
+        value_decoder->decode_word(*it);
+        value_decoder->check_sanity_with_metadata(path_);
+    } else {
+        it.skip();
+    }
+
+    return Iterator{std::move(it), std::move(key_decoder), std::move(value_decoder), path()};
+}
+
 }  // namespace silkworm::snapshots::segment

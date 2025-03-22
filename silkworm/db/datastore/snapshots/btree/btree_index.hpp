@@ -146,6 +146,7 @@ class BTreeIndex {
 
         std::optional<BTree::KeyValue> lookup_key_value(DataIndex data_index) const override;
         std::optional<Bytes> lookup_key(DataIndex data_index) const override;
+        LookupResult lookup_key_value(DataIndex, ByteView) const override;
 
       private:
         const KVSegmentReader& kv_segment_;

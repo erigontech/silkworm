@@ -33,6 +33,13 @@ class BTree {
         virtual ~KeyValueIndex() = default;
         virtual std::optional<KeyValue> lookup_key_value(DataIndex) const = 0;
         virtual std::optional<Bytes> lookup_key(DataIndex) const = 0;
+
+        struct LookupResult {
+            int key_compare{0};
+            std::optional<Bytes> key;
+            std::optional<Bytes> value;
+        };
+        virtual LookupResult lookup_key_value(DataIndex, ByteView) const = 0;
     };
 
     struct SeekResult {

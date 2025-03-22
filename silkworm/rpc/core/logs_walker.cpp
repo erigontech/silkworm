@@ -146,7 +146,8 @@ Task<void> LogsWalker::get_logs(BlockNum start,
     Logs filtered_chunk_logs;
 
     uint64_t block_timestamp{0};
-    std::shared_ptr<BlockWithHash> block_with_hash;
+    silkworm::Block block;
+    std::optional<BlockHeader> header_optional;
     auto itr = db::txn::make_txn_nums_stream(std::move(paginated_stream), ascending_order, tx_, canonical_body_for_storage_provider_);
     while (const auto tnx_nums = co_await itr->next()) {
         SILK_DEBUG << " blockNum: " << tnx_nums->block_num << " txn_id: " << tnx_nums->txn_id << " txn_index: " << (tnx_nums->txn_index ? std::to_string(*(tnx_nums->txn_index)) : "nullopt");
@@ -154,19 +155,20 @@ Task<void> LogsWalker::get_logs(BlockNum start,
         if (tnx_nums->block_changed) {
             receipts.clear();
 
-            block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, *chain_storage, tnx_nums->block_num);
-            if (!block_with_hash) {
-                SILK_DEBUG << "Not found block no.  " << tnx_nums->block_num;
+            header_optional = co_await chain_storage->read_canonical_header(tnx_nums->block_num);
+            if (!header_optional) {
+                SILK_DEBUG << "Not found header no.  " << tnx_nums->block_num;
                 break;
             }
-            block_timestamp = block_with_hash->block.header.timestamp;
+            block_timestamp = header_optional->timestamp;
+            block.header = std::move(*header_optional);
         }
 
         if (!tnx_nums->txn_index) {
             continue;
         }
 
-        SILKWORM_ASSERT(block_with_hash);
+        SILKWORM_ASSERT(header_optional);
 
         const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index.value());
         if (!transaction) {
@@ -174,7 +176,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
             continue;
         }
 
-        auto receipt = co_await core::get_receipt(tx_, block_with_hash->block, tnx_nums->txn_id, tnx_nums->txn_index.value(), *transaction, *chain_storage, workers_);
+        auto receipt = co_await core::get_receipt(tx_, block, tnx_nums->txn_id, tnx_nums->txn_index.value(), *transaction, *chain_storage, workers_);
         if (!receipt) {
             SILK_DEBUG << "No receipt found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index.value();
             continue;

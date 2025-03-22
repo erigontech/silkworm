@@ -109,6 +109,13 @@ class KVSegmentFileReader {
         std::shared_ptr<Decoder> key_decoder,
         std::shared_ptr<Decoder> value_decoder) const;
 
+    Iterator seek_both_if(
+        uint64_t offset,
+        std::optional<ByteView> check_prefix,
+        const std::function<bool(ByteView)>& key_predicate,
+        std::shared_ptr<Decoder> key_decoder,
+        std::shared_ptr<Decoder> value_decoder) const;
+
   private:
     //! The path of the segment file for this snapshot
     SnapshotPath path_;

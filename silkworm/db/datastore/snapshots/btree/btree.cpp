@@ -47,6 +47,15 @@ static CompareResult compare_key(
     return {cmp, std::move(*data_key)};
 }
 
+static BTree::KeyValueIndex::LookupResult lookup_key_value(
+    ByteView key,
+    BTree::DataIndex key_index,
+    const BTree::KeyValueIndex& index) {
+    BTree::KeyValueIndex::LookupResult result = index.lookup_key_value(key_index, key);
+    ensure(result.key.has_value(), [&]() { return "out-of-bounds key=" + to_hex(key) + " data_index=" + std::to_string(key_index); });
+    return result;
+}
+
 BTree::SeekResult BTree::seek(ByteView seek_key, const KeyValueIndex& index) {
     if (seek_key.empty() && num_nodes_ > 0) {
         auto kv_pair = index.lookup_key_value(0);
@@ -112,10 +121,10 @@ std::optional<BTree::GetResult> BTree::get(ByteView key, const KeyValueIndex& in
     auto [_, left_index, right_index] = binary_search_in_cache(key);  // left_index == right_index when key is found
     while (left_index < right_index) {
         const uint64_t median = (left_index + right_index) >> 1;
-        const auto [cmp, k] = compare_key(key, median, index);
+        auto [cmp, k, optional_v] = lookup_key_value(key, median, index);
         if (cmp == 0) {
-            auto kv_pair = index.lookup_key_value(median);
-            return GetResult{std::move(kv_pair->second), median};
+            SILKWORM_ASSERT(optional_v);
+            return GetResult{std::move(*optional_v), median};
         }
         if (cmp > 0) {
             right_index = median;
@@ -123,12 +132,12 @@ std::optional<BTree::GetResult> BTree::get(ByteView key, const KeyValueIndex& in
             left_index = median + 1;
         }
     }
-    const auto [cmp, k] = compare_key(key, left_index, index);
+    auto [cmp, k, optional_v] = lookup_key_value(key, left_index, index);
     if (cmp != 0) {
         return std::nullopt;
     }
-    auto kv_pair = index.lookup_key_value(left_index);
-    return GetResult{std::move(kv_pair->second), left_index};
+    SILKWORM_ASSERT(optional_v);
+    return GetResult{std::move(*optional_v), left_index};
 }
 
 std::pair<BTree::Node, size_t> BTree::Node::from_encoded_data(std::span<uint8_t> encoded_node) {

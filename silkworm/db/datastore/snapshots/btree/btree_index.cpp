@@ -130,6 +130,25 @@ std::optional<Bytes> BTreeIndex::KeyValueIndex::lookup_key(DataIndex data_index)
     return key;
 }
 
+BTreeIndex::KeyValueIndex::LookupResult BTreeIndex::KeyValueIndex::lookup_key_value(DataIndex data_index, ByteView k) const {
+    if (data_index >= data_offsets_->size()) {
+        return {0, std::nullopt, std::nullopt};
+    }
+    const auto data_offset = data_offsets_->at(data_index);
+    const auto key_raw_decoder = std::make_shared<RawDecoder<Bytes>>();    // TODO(canepat) ByteView? stack allocation?
+    const auto value_raw_decoder = std::make_shared<RawDecoder<Bytes>>();  // TODO(canepat) ByteView? stack allocation?
+    int key_compare = 0;
+    const auto key_matches = [&](ByteView key) {
+        key_compare = key.compare(k);
+        return key_compare == 0;
+    };
+    auto data_it = kv_segment_.seek_both_if(data_offset, std::nullopt, key_matches, key_raw_decoder, value_raw_decoder);
+    if (data_it == kv_segment_.end()) {
+        throw std::runtime_error{"key not found data_index=" + std::to_string(data_index) + " for " + file_path_.string()};
+    }
+    return {key_compare, key_raw_decoder->value, key_compare == 0 ? std::make_optional(value_raw_decoder->value) : std::nullopt};
+}
+
 bool BTreeIndex::Cursor::next() {
     if (data_index_ + 1 >= index_->data_offsets_->size()) {
         return false;

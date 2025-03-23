@@ -1216,12 +1216,18 @@ std::optional<Transaction> DataModel::read_transaction_by_txn_id(BlockNum block_
     auto body_opt = read_body_for_storage(txn_, key);
     if (body_opt) {
         BlockBodyForStorage& body = *body_opt;
+        if (2 + txn_id >= body_opt->txn_count) {
+            return std::nullopt;
+        }
         read_transactions(txn_, body.base_txn_id + 1 + txn_id, 1, transactions);
         return transactions[0];
     }
 
     auto stored_body = read_body_for_storage_from_snapshot(block_num);
     if (!stored_body) return std::nullopt;
+    if (2 + txn_id >= stored_body->txn_count) {
+        return std::nullopt;
+    }
 
     const auto start_txn_id{stored_body->base_txn_id + 1 + txn_id};
 

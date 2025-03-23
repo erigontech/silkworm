@@ -1206,6 +1206,19 @@ bool DataModel::read_canonical_block(BlockNum block_num, Block& block) const {
     return read_block_from_snapshot(block_num, block);
 }
 
+std::optional<Transaction> DataModel::read_transaction_by_txn_id(BlockNum block_num, uint64_t txn_id) const {
+    auto stored_body = read_body_for_storage_from_snapshot(block_num);
+    if (!stored_body) return std::nullopt;
+
+    const auto base_txn_id{stored_body->base_txn_id + 1 + txn_id};
+
+    std::vector<Transaction> transactions;
+    const auto read_ok{read_transactions_from_snapshot(block_num, base_txn_id, 1 /* txn_count */, transactions)};
+    if (!read_ok) return std::nullopt;
+
+    return transactions[0];
+}
+
 bool DataModel::has_body(BlockNum block_num, HashAsArray hash) const {
     const bool found = db::has_body(txn_, block_num, hash);
     if (found) return found;

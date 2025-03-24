@@ -150,7 +150,7 @@ Task<std::optional<BlockNum>> LocalChainStorage::read_block_num_by_transaction_h
 }
 
 Task<std::optional<Transaction>> LocalChainStorage::read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_idx) const {
-    co_return data_model_.read_transaction_by_txn_id(block_num, txn_idx);
+    co_return data_model_.read_transaction_by_txn_idx(block_num, txn_idx);
 }
 
 Task<std::pair<std::optional<BlockHeader>, std::optional<Hash>>> LocalChainStorage::read_head_header_and_hash() const {

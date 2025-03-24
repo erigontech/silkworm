@@ -1206,30 +1206,32 @@ bool DataModel::read_canonical_block(BlockNum block_num, Block& block) const {
     return read_block_from_snapshot(block_num, block);
 }
 
-std::optional<Transaction> DataModel::read_transaction_by_txn_id(BlockNum block_num, uint64_t txn_id) const {
+std::optional<Transaction> DataModel::read_transaction_by_txn_idx(BlockNum block_num, uint64_t txn_idx) const {
     std::vector<Transaction> transactions;
 
     // Assume recent blocks are more probable: first lookup the block body in the db
-    auto hash = read_canonical_header_hash(block_num);
-    if (!hash) return std::nullopt;
-    const Bytes key{block_key(block_num, hash->bytes)};
-    auto body_opt = read_body_for_storage(txn_, key);
-    if (body_opt) {
-        BlockBodyForStorage& body = *body_opt;
-        if (2 + txn_id >= body_opt->txn_count) {
-            return std::nullopt;
+    if (block_num > max_frozen_block_num() || max_frozen_block_num() == 0) {
+        auto hash = read_canonical_header_hash(block_num);
+        if (!hash) return std::nullopt;
+        const Bytes key{block_key(block_num, hash->bytes)};
+        auto body_opt = read_body_for_storage(txn_, key);
+        if (body_opt) {
+            BlockBodyForStorage& body = *body_opt;
+            if (2 + txn_idx >= body_opt->txn_count) {
+                return std::nullopt;
+            }
+            read_transactions(txn_, body.base_txn_id + 1 + txn_idx, 1, transactions);
+            return transactions[0];
         }
-        read_transactions(txn_, body.base_txn_id + 1 + txn_id, 1, transactions);
-        return transactions[0];
     }
 
     auto stored_body = read_body_for_storage_from_snapshot(block_num);
     if (!stored_body) return std::nullopt;
-    if (2 + txn_id >= stored_body->txn_count) {
+    if (2 + txn_idx >= stored_body->txn_count) {
         return std::nullopt;
     }
 
-    const auto start_txn_id{stored_body->base_txn_id + 1 + txn_id};
+    const auto start_txn_id{stored_body->base_txn_id + 1 + txn_idx};
 
     const auto read_ok{read_transactions_from_snapshot(block_num, start_txn_id, 1 /* txn_count */, transactions)};
     if (!read_ok) return std::nullopt;

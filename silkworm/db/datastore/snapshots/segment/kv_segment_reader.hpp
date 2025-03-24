@@ -111,6 +111,13 @@ class KVSegmentFileReader {
 
     const seg::Decompressor& decompressor() const { return decompressor_; }
 
+    Iterator advance_both_if(
+        uint64_t offset,
+        ByteView search_key,
+        size_t skip_max_count,
+        std::shared_ptr<Decoder> key_decoder,
+        std::shared_ptr<Decoder> value_decoder) const;
+
   private:
     //! The path of the segment file for this snapshot
     SnapshotPath path_;

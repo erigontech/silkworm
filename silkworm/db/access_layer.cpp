@@ -1220,7 +1220,8 @@ std::optional<Transaction> DataModel::read_transaction_by_txn_idx(BlockNum block
             if (2 + txn_idx >= body_opt->txn_count) {
                 return std::nullopt;
             }
-            read_transactions(txn_, body.base_txn_id + 1 + txn_idx, 1, transactions);
+            read_transactions(txn_, body.base_txn_id + 1 + txn_idx, /*count=*/1, transactions);
+            SILKWORM_ASSERT(!transactions.empty());
             return transactions[0];
         }
     }
@@ -1233,9 +1234,10 @@ std::optional<Transaction> DataModel::read_transaction_by_txn_idx(BlockNum block
 
     const auto start_txn_id{stored_body->base_txn_id + 1 + txn_idx};
 
-    const auto read_ok{read_transactions_from_snapshot(block_num, start_txn_id, 1 /* txn_count */, transactions)};
+    const auto read_ok{read_transactions_from_snapshot(block_num, start_txn_id, /*txn_count=*/1, transactions)};
     if (!read_ok) return std::nullopt;
 
+    SILKWORM_ASSERT(!transactions.empty());
     return transactions[0];
 }
 

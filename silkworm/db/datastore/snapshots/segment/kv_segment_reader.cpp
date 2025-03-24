@@ -17,10 +17,8 @@
 #include "kv_segment_reader.hpp"
 
 #include <array>
-#include <stdexcept>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/util.hpp>
 
 namespace silkworm::snapshots::segment {
 
@@ -170,6 +168,62 @@ KVSegmentFileReader::Iterator KVSegmentFileReader::seek_both_if(
 
     if (!key_predicate_satisfied) {
         return Iterator{std::move(it), std::move(key_decoder), std::move(value_decoder), path()};
+    }
+
+    if (value_decoder) {
+        ++it;
+        value_decoder->decode_word(*it);
+        value_decoder->check_sanity_with_metadata(path_);
+    } else {
+        it.skip();
+    }
+
+    return Iterator{std::move(it), std::move(key_decoder), std::move(value_decoder), path()};
+}
+
+KVSegmentFileReader::Iterator KVSegmentFileReader::advance_both_if(
+    uint64_t offset,
+    ByteView search_key,
+    size_t skip_max_count,
+    std::shared_ptr<Decoder> key_decoder,
+    std::shared_ptr<Decoder> value_decoder) const {
+    SILKWORM_ASSERT(key_decoder || value_decoder);
+    auto it = decompressor_.seek(offset, {});
+    if (it == decompressor_.end()) {
+        return end();
+    }
+    if (!it.has_next()) {
+        return end();
+    }
+
+    Decoder::Word key_word = std::move(*it);
+    size_t skip_count{0};
+    int cmp = 0;
+    while ((cmp = ByteView{key_word}.compare(search_key)) < 0) {
+        // Skip the value if key is still lower than the target one
+        it.skip();
+        if (++skip_count == skip_max_count) {
+            return end();
+        }
+        // Go to the next key w/ bound check
+        ++it;
+        if (!it.has_next()) {
+            return end();
+        }
+        key_word = std::move(*it);
+    }
+    if (cmp > 0) {  // Target key not found
+        return end();
+    }
+
+    // Key matches: decode key and/or value as required and check sanity
+    if (key_decoder) {
+        try {
+            key_decoder->decode_word(key_word);
+        } catch (...) {
+            return end();
+        }
+        key_decoder->check_sanity_with_metadata(path_);
     }
 
     if (value_decoder) {

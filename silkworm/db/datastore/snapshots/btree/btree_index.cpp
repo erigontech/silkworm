@@ -21,7 +21,6 @@
 
 #include <gsl/util>
 
-#include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/environment.hpp>
 
@@ -147,6 +146,19 @@ BTreeIndex::KeyValueIndex::LookupResult BTreeIndex::KeyValueIndex::lookup_key_va
         throw std::runtime_error{"key not found data_index=" + std::to_string(data_index) + " for " + file_path_.string()};
     }
     return {key_compare, key_raw_decoder->value, key_compare == 0 ? std::make_optional(value_raw_decoder->value) : std::nullopt};
+}
+
+std::optional<Bytes> BTreeIndex::KeyValueIndex::advance_key_value(const DataIndex data_index, const ByteView k, const size_t skip_max_count) const {
+    if (data_index >= data_offsets_->size()) {
+        return std::nullopt;
+    }
+    const auto data_offset = data_offsets_->at(data_index);
+    const auto value_raw_decoder = std::make_shared<RawDecoder<Bytes>>();  // TODO(canepat) ByteView? stack allocation?
+    const auto data_it = kv_segment_.advance_both_if(data_offset, k, skip_max_count, nullptr, value_raw_decoder);
+    if (data_it == kv_segment_.end()) {
+        return std::nullopt;
+    }
+    return std::move(value_raw_decoder->value);
 }
 
 bool BTreeIndex::Cursor::next() {

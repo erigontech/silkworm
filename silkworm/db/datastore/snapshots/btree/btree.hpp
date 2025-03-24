@@ -40,6 +40,7 @@ class BTree {
             std::optional<Bytes> value;
         };
         virtual LookupResult lookup_key_value(DataIndex, ByteView) const = 0;
+        virtual std::optional<Bytes> advance_key_value(DataIndex, ByteView, size_t skip_max_count) const = 0;
     };
 
     struct SeekResult {

@@ -120,6 +120,14 @@ std::optional<BTree::GetResult> BTree::get(ByteView key, const KeyValueIndex& in
     }
     auto [_, left_index, right_index] = binary_search_in_cache(key);  // left_index == right_index when key is found
     while (left_index < right_index) {
+        if (right_index - left_index <= kDefaultBtreeStartSkip) {  // found small range, faster to scan now
+            auto value = index.advance_key_value(left_index, key, right_index - left_index);
+            if (!value) {
+                left_index = right_index;
+                break;
+            }
+            return GetResult{std::move(*value), 0};  // TODO(canepat) GetResult -> Bytes
+        }
         const uint64_t median = (left_index + right_index) >> 1;
         auto [cmp, k, optional_v] = lookup_key_value(key, median, index);
         if (cmp == 0) {

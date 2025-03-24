@@ -147,7 +147,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
 
     uint64_t block_timestamp{0};
     silkworm::Block block;
-    std::optional<BlockHeader> header_optional;
+    std::optional<BlockHeader> header;
     auto itr = db::txn::make_txn_nums_stream(std::move(paginated_stream), ascending_order, tx_, canonical_body_for_storage_provider_);
     while (const auto tnx_nums = co_await itr->next()) {
         SILK_DEBUG << " blockNum: " << tnx_nums->block_num << " txn_id: " << tnx_nums->txn_id << " txn_index: " << (tnx_nums->txn_index ? std::to_string(*(tnx_nums->txn_index)) : "nullopt");
@@ -155,20 +155,20 @@ Task<void> LogsWalker::get_logs(BlockNum start,
         if (tnx_nums->block_changed) {
             receipts.clear();
 
-            header_optional = co_await chain_storage->read_canonical_header(tnx_nums->block_num);
-            if (!header_optional) {
+            header = co_await chain_storage->read_canonical_header(tnx_nums->block_num);
+            if (!header) {
                 SILK_DEBUG << "Not found header no.  " << tnx_nums->block_num;
                 break;
             }
-            block_timestamp = header_optional->timestamp;
-            block.header = std::move(*header_optional);
+            block_timestamp = header->timestamp;
+            block.header = std::move(*header);
         }
 
         if (!tnx_nums->txn_index) {
             continue;
         }
 
-        SILKWORM_ASSERT(header_optional);
+        SILKWORM_ASSERT(header);
 
         const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index.value());
         if (!transaction) {

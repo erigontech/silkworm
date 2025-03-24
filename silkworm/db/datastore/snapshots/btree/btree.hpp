@@ -34,23 +34,14 @@ class BTree {
         virtual std::optional<KeyValue> lookup_key_value(DataIndex) const = 0;
         virtual std::optional<Bytes> lookup_key(DataIndex) const = 0;
 
-        struct LookupResult {
-            int key_compare{0};
-            std::optional<Bytes> key;
-            std::optional<Bytes> value;
-        };
-        virtual LookupResult lookup_key_value(DataIndex, ByteView) const = 0;
+        using LookupResult = std::pair<int, std::optional<Bytes>>;
+        virtual std::optional<LookupResult> lookup_key_value(DataIndex, ByteView) const = 0;
         virtual std::optional<Bytes> advance_key_value(DataIndex, ByteView, size_t skip_max_count) const = 0;
     };
 
     struct SeekResult {
         bool found;
         Bytes key;
-        Bytes value;
-        DataIndex key_index;
-    };
-
-    struct GetResult {
         Bytes value;
         DataIndex key_index;
     };
@@ -77,7 +68,7 @@ class BTree {
     //! \brief Search and return key equal to the given \p key
     //! \param key the key to look for
     //! \param index the key-value data sequence
-    std::optional<GetResult> get(ByteView key, const KeyValueIndex& index);
+    std::optional<Bytes> get(ByteView key, const KeyValueIndex& index);
 
     void check_against_data_keys(const KeyValueIndex& index);
 

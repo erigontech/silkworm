@@ -54,10 +54,7 @@ BTreeIndex::BTreeIndex(
 
     const auto encoded_nodes = memory_mapped_range.subspan(data_offsets_->encoded_data_size());
 
-    btree_ = std::make_unique<BTree>(
-        data_offsets_->size(),
-        btree_fanout,
-        encoded_nodes);
+    btree_ = std::make_unique<BTree>(data_offsets_->size(), btree_fanout, encoded_nodes);
 }
 
 void BTreeIndex::warmup_if_empty_or_check(const KVSegmentReader& kv_segment) {
@@ -89,12 +86,8 @@ std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, const KVSe
 }
 
 std::optional<Bytes> BTreeIndex::get(ByteView key, const KVSegmentReader& kv_segment) const {
-    KeyValueIndex index{kv_segment, data_offsets_, file_path_};
-    auto result = btree_->get(key, index);
-    if (!result) {
-        return std::nullopt;
-    }
-    return std::move(result->value);
+    const KeyValueIndex index{kv_segment, data_offsets_, file_path_};
+    return btree_->get(key, index);
 }
 
 std::optional<BTree::KeyValue> BTreeIndex::KeyValueIndex::lookup_key_value(DataIndex data_index) const {
@@ -129,9 +122,9 @@ std::optional<Bytes> BTreeIndex::KeyValueIndex::lookup_key(DataIndex data_index)
     return key;
 }
 
-BTreeIndex::KeyValueIndex::LookupResult BTreeIndex::KeyValueIndex::lookup_key_value(DataIndex data_index, ByteView k) const {
+std::optional<BTreeIndex::KeyValueIndex::LookupResult> BTreeIndex::KeyValueIndex::lookup_key_value(DataIndex data_index, ByteView k) const {
     if (data_index >= data_offsets_->size()) {
-        return {0, std::nullopt, std::nullopt};
+        return std::nullopt;
     }
     const auto data_offset = data_offsets_->at(data_index);
     const auto key_raw_decoder = std::make_shared<RawDecoder<Bytes>>();    // TODO(canepat) ByteView? stack allocation?
@@ -145,7 +138,7 @@ BTreeIndex::KeyValueIndex::LookupResult BTreeIndex::KeyValueIndex::lookup_key_va
     if (data_it == kv_segment_.end()) {
         throw std::runtime_error{"key not found data_index=" + std::to_string(data_index) + " for " + file_path_.string()};
     }
-    return {key_compare, key_raw_decoder->value, key_compare == 0 ? std::make_optional(value_raw_decoder->value) : std::nullopt};
+    return LookupResult{key_compare, key_compare == 0 ? std::make_optional(value_raw_decoder->value) : std::nullopt};
 }
 
 std::optional<Bytes> BTreeIndex::KeyValueIndex::advance_key_value(const DataIndex data_index, const ByteView k, const size_t skip_max_count) const {

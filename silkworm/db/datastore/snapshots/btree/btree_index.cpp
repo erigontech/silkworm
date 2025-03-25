@@ -113,7 +113,7 @@ std::optional<BytesOrByteView> BTreeIndex::KeyValueIndex::lookup_key(DataIndex d
     const auto data_offset = data_offsets_->at(data_index);
 
     segment::KVSegmentKeysReader<RawDecoder<BytesOrByteView>> reader{kv_segment_};
-    auto data_it = reader.seek(data_offset);
+    const auto data_it = reader.seek(data_offset);
     if (data_it == reader.end()) {
         throw std::runtime_error{"key not found data_index=" + std::to_string(data_index) + " for " + file_path_.string()};
     }
@@ -129,15 +129,15 @@ std::optional<BTreeIndex::KeyValueIndex::LookupResult> BTreeIndex::KeyValueIndex
 
     const auto& decompressor = kv_segment_.decompressor();
     auto it = decompressor.seek(data_offset);
-    if ((it == decompressor.end()) || !it.has_next()) {
+    if (it == decompressor.end() || !it.has_next()) {
         throw std::runtime_error{"key not found data_index=" + std::to_string(data_index) + " for " + file_path_.string()};
     }
 
-    const int key_compare = ByteView{*it}.compare(k);
-    if (key_compare != 0) {
+    if (const int key_compare = ByteView{*it}.compare(k); key_compare != 0) {
         return LookupResult{key_compare, std::nullopt};
     }
 
+    // Key matches: advance and read value
     ++it;
     return LookupResult{0, std::move(*it)};
 }
@@ -177,7 +177,7 @@ static seg::Decompressor::Iterator kv_decompressor_seek_to_key(
     return it;
 }
 
-std::optional<Bytes> BTreeIndex::KeyValueIndex::advance_key_value(const DataIndex data_index, const ByteView k, const size_t skip_max_count) const {
+std::optional<BytesOrByteView> BTreeIndex::KeyValueIndex::advance_key_value(const DataIndex data_index, const ByteView k, const size_t skip_max_count) const {
     if (data_index >= data_offsets_->size()) {
         return std::nullopt;
     }
@@ -190,20 +190,7 @@ std::optional<Bytes> BTreeIndex::KeyValueIndex::advance_key_value(const DataInde
     }
 
     ++it;
-    return std::optional<Bytes>{std::move(*it)};
-}
-
-std::optional<BytesOrByteView> BTreeIndex::KeyValueIndex::advance_key_value(const DataIndex data_index, const ByteView k, const size_t skip_max_count) const {
-    if (data_index >= data_offsets_->size()) {
-        return std::nullopt;
-    }
-    const auto data_offset = data_offsets_->at(data_index);
-    const auto value_raw_decoder = std::make_shared<RawDecoder<BytesOrByteView>>();  // TODO(canepat) stack allocation
-    const auto data_it = kv_segment_.advance_both_if(data_offset, k, skip_max_count, nullptr, value_raw_decoder);
-    if (data_it == kv_segment_.end()) {
-        return std::nullopt;
-    }
-    return value_raw_decoder->value;
+    return std::move(*it);
 }
 
 bool BTreeIndex::Cursor::next() {

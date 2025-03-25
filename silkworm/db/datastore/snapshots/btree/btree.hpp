@@ -43,7 +43,7 @@ class BTree {
         bool found{false};
         BytesOrByteView key;
         BytesOrByteView value;
-        DataIndex key_index;
+        DataIndex key_index{0};
     };
 
     BTree(

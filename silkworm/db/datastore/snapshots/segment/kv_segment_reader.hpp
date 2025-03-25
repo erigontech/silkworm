@@ -33,7 +33,6 @@
 
 #include "../common/codec.hpp"
 #include "../common/snapshot_path.hpp"
-#include "../common/util/iterator/iterator_read_into_vector.hpp"
 #include "seg/decompressor.hpp"
 
 namespace silkworm::snapshots::segment {
@@ -110,13 +109,6 @@ class KVSegmentFileReader {
         std::shared_ptr<Decoder> value_decoder) const;
 
     const seg::Decompressor& decompressor() const { return decompressor_; }
-
-    Iterator advance_both_if(
-        uint64_t offset,
-        ByteView search_key,
-        size_t skip_max_count,
-        std::shared_ptr<Decoder> key_decoder,
-        std::shared_ptr<Decoder> value_decoder) const;
 
   private:
     //! The path of the segment file for this snapshot

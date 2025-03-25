@@ -21,7 +21,6 @@
 
 #include <gsl/util>
 
-#include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/environment.hpp>
 
@@ -55,10 +54,7 @@ BTreeIndex::BTreeIndex(
 
     const auto encoded_nodes = memory_mapped_range.subspan(data_offsets_->encoded_data_size());
 
-    btree_ = std::make_unique<BTree>(
-        data_offsets_->size(),
-        btree_fanout,
-        encoded_nodes);
+    btree_ = std::make_unique<BTree>(data_offsets_->size(), btree_fanout, encoded_nodes);
 }
 
 void BTreeIndex::warmup_if_empty_or_check(const KVSegmentReader& kv_segment) {
@@ -90,12 +86,8 @@ std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, const KVSe
 }
 
 std::optional<Bytes> BTreeIndex::get(ByteView key, const KVSegmentReader& kv_segment) const {
-    KeyValueIndex index{kv_segment, data_offsets_, file_path_};
-    auto result = btree_->get(key, index);
-    if (!result) {
-        return std::nullopt;
-    }
-    return std::move(result->value);
+    const KeyValueIndex index{kv_segment, data_offsets_, file_path_};
+    return btree_->get(key, index);
 }
 
 std::optional<BTree::KeyValue> BTreeIndex::KeyValueIndex::lookup_key_value(DataIndex data_index) const {
@@ -128,6 +120,78 @@ std::optional<Bytes> BTreeIndex::KeyValueIndex::lookup_key(DataIndex data_index)
     Bytes key = std::move(*data_it);
 
     return key;
+}
+
+std::optional<BTreeIndex::KeyValueIndex::LookupResult> BTreeIndex::KeyValueIndex::lookup_key_value(DataIndex data_index, ByteView k) const {
+    if (data_index >= data_offsets_->size()) {
+        return std::nullopt;
+    }
+    const auto data_offset = data_offsets_->at(data_index);
+
+    const auto& decompressor = kv_segment_.decompressor();
+    auto it = decompressor.seek(data_offset);
+    if ((it == decompressor.end()) || !it.has_next()) {
+        throw std::runtime_error{"key not found data_index=" + std::to_string(data_index) + " for " + file_path_.string()};
+    }
+
+    const int key_compare = ByteView{*it}.compare(k);
+    if (key_compare != 0) {
+        return LookupResult{key_compare, std::nullopt};
+    }
+
+    ++it;
+    return LookupResult{0, std::move(*it)};
+}
+
+static seg::Decompressor::Iterator kv_decompressor_seek_to_key(
+    const seg::Decompressor& decompressor,
+    uint64_t offset,
+    ByteView search_key,
+    size_t skip_max_count) {
+    auto it = decompressor.seek(offset, {});
+    if (it == decompressor.end()) {
+        return it;
+    }
+    if (!it.has_next()) {
+        return decompressor.end();
+    }
+
+    Decoder::Word key_word = std::move(*it);
+    size_t skip_count{0};
+    int cmp = 0;
+    while ((cmp = ByteView{key_word}.compare(search_key)) < 0) {
+        // Skip the value if key is still lower than the target one
+        it.skip();
+        if (++skip_count == skip_max_count) {
+            return decompressor.end();
+        }
+        // Go to the next key w/ bound check
+        ++it;
+        if (!it.has_next()) {
+            return decompressor.end();
+        }
+        key_word = std::move(*it);
+    }
+    if (cmp > 0) {  // Target key not found
+        return decompressor.end();
+    }
+    return it;
+}
+
+std::optional<Bytes> BTreeIndex::KeyValueIndex::advance_key_value(const DataIndex data_index, const ByteView k, const size_t skip_max_count) const {
+    if (data_index >= data_offsets_->size()) {
+        return std::nullopt;
+    }
+    const auto data_offset = data_offsets_->at(data_index);
+
+    const auto& decompressor = kv_segment_.decompressor();
+    auto it = kv_decompressor_seek_to_key(decompressor, data_offset, k, skip_max_count);
+    if ((it == decompressor.end()) || !it.has_next()) {
+        return std::nullopt;
+    }
+
+    ++it;
+    return std::optional<Bytes>{std::move(*it)};
 }
 
 bool BTreeIndex::Cursor::next() {

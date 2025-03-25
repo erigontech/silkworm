@@ -109,6 +109,8 @@ class KVSegmentFileReader {
         std::shared_ptr<Decoder> key_decoder,
         std::shared_ptr<Decoder> value_decoder) const;
 
+    const seg::Decompressor& decompressor() const { return decompressor_; }
+
   private:
     //! The path of the segment file for this snapshot
     SnapshotPath path_;

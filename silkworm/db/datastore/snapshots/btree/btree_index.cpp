@@ -198,7 +198,7 @@ std::optional<BytesOrByteView> BTreeIndex::KeyValueIndex::advance_key_value(cons
         return std::nullopt;
     }
     const auto data_offset = data_offsets_->at(data_index);
-    const auto value_raw_decoder = std::make_shared<RawDecoder<BytesOrByteView>>();  // TODO(canepat) ByteView? stack allocation?
+    const auto value_raw_decoder = std::make_shared<RawDecoder<BytesOrByteView>>();  // TODO(canepat) stack allocation
     const auto data_it = kv_segment_.advance_both_if(data_offset, k, skip_max_count, nullptr, value_raw_decoder);
     if (data_it == kv_segment_.end()) {
         return std::nullopt;

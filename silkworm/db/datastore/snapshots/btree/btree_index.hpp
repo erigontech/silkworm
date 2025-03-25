@@ -42,7 +42,7 @@ class BTreeIndex {
 
     class Cursor {
       public:
-        using value_type = std::pair<Bytes, Bytes>;
+        using value_type = std::pair<BytesOrByteView, BytesOrByteView>;
         using iterator_category [[maybe_unused]] = std::input_iterator_tag;
         using difference_type = std::ptrdiff_t;
         using pointer = value_type*;
@@ -86,8 +86,8 @@ class BTreeIndex {
 
         Cursor(
             const BTreeIndex* index,
-            Bytes key,
-            Bytes value,
+            BytesOrByteView key,
+            BytesOrByteView value,
             DataIndex data_index,
             const KVSegmentReader* kv_segment)
             : index_{index},
@@ -130,7 +130,7 @@ class BTreeIndex {
     //! \param key the data key to match exactly
     //! \param kv_segment reader of the key-value data sequence
     //! \return the value associated at \p key or std::nullopt if not found
-    std::optional<Bytes> get(ByteView key, const KVSegmentReader& kv_segment) const;
+    std::optional<BytesOrByteView> get(ByteView key, const KVSegmentReader& kv_segment) const;
 
   private:
     class KeyValueIndex : public BTree::KeyValueIndex {
@@ -145,9 +145,9 @@ class BTreeIndex {
         ~KeyValueIndex() override = default;
 
         std::optional<BTree::KeyValue> lookup_key_value(DataIndex data_index) const override;
-        std::optional<Bytes> lookup_key(DataIndex data_index) const override;
+        std::optional<BytesOrByteView> lookup_key(DataIndex data_index) const override;
         std::optional<LookupResult> lookup_key_value(DataIndex, ByteView) const override;
-        std::optional<Bytes> advance_key_value(DataIndex, ByteView, size_t skip_max_count) const override;
+        std::optional<BytesOrByteView> advance_key_value(DataIndex, ByteView, size_t skip_max_count) const override;
 
       private:
         const KVSegmentReader& kv_segment_;

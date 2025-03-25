@@ -109,19 +109,7 @@ class KVSegmentFileReader {
         std::shared_ptr<Decoder> key_decoder,
         std::shared_ptr<Decoder> value_decoder) const;
 
-    Iterator seek_both_if(
-        uint64_t offset,
-        std::optional<ByteView> check_prefix,
-        const std::function<bool(ByteView)>& key_predicate,
-        std::shared_ptr<Decoder> key_decoder,
-        std::shared_ptr<Decoder> value_decoder) const;
-
-    Iterator advance_both_if(
-        uint64_t offset,
-        ByteView search_key,
-        size_t skip_max_count,
-        std::shared_ptr<Decoder> key_decoder,
-        std::shared_ptr<Decoder> value_decoder) const;
+    const seg::Decompressor& decompressor() const { return decompressor_; }
 
   private:
     //! The path of the segment file for this snapshot

@@ -127,18 +127,55 @@ std::optional<BTreeIndex::KeyValueIndex::LookupResult> BTreeIndex::KeyValueIndex
         return std::nullopt;
     }
     const auto data_offset = data_offsets_->at(data_index);
-    const auto key_raw_decoder = std::make_shared<RawDecoder<Bytes>>();    // TODO(canepat) ByteView? stack allocation?
-    const auto value_raw_decoder = std::make_shared<RawDecoder<Bytes>>();  // TODO(canepat) ByteView? stack allocation?
-    int key_compare = 0;
-    const auto key_matches = [&](ByteView key) {
-        key_compare = key.compare(k);
-        return key_compare == 0;
-    };
-    auto data_it = kv_segment_.seek_both_if(data_offset, std::nullopt, key_matches, key_raw_decoder, value_raw_decoder);
-    if (data_it == kv_segment_.end()) {
+
+    const auto& decompressor = kv_segment_.decompressor();
+    auto it = decompressor.seek(data_offset);
+    if ((it == decompressor.end()) || !it.has_next()) {
         throw std::runtime_error{"key not found data_index=" + std::to_string(data_index) + " for " + file_path_.string()};
     }
-    return LookupResult{key_compare, key_compare == 0 ? std::make_optional(value_raw_decoder->value) : std::nullopt};
+
+    const int key_compare = ByteView{*it}.compare(k);
+    if (key_compare != 0) {
+        return LookupResult{key_compare, std::nullopt};
+    }
+
+    ++it;
+    return LookupResult{0, std::move(*it)};
+}
+
+static seg::Decompressor::Iterator kv_decompressor_seek_to_key(
+    const seg::Decompressor& decompressor,
+    uint64_t offset,
+    ByteView search_key,
+    size_t skip_max_count) {
+    auto it = decompressor.seek(offset, {});
+    if (it == decompressor.end()) {
+        return it;
+    }
+    if (!it.has_next()) {
+        return decompressor.end();
+    }
+
+    Decoder::Word key_word = std::move(*it);
+    size_t skip_count{0};
+    int cmp = 0;
+    while ((cmp = ByteView{key_word}.compare(search_key)) < 0) {
+        // Skip the value if key is still lower than the target one
+        it.skip();
+        if (++skip_count == skip_max_count) {
+            return decompressor.end();
+        }
+        // Go to the next key w/ bound check
+        ++it;
+        if (!it.has_next()) {
+            return decompressor.end();
+        }
+        key_word = std::move(*it);
+    }
+    if (cmp > 0) {  // Target key not found
+        return decompressor.end();
+    }
+    return it;
 }
 
 std::optional<Bytes> BTreeIndex::KeyValueIndex::advance_key_value(const DataIndex data_index, const ByteView k, const size_t skip_max_count) const {
@@ -146,12 +183,15 @@ std::optional<Bytes> BTreeIndex::KeyValueIndex::advance_key_value(const DataInde
         return std::nullopt;
     }
     const auto data_offset = data_offsets_->at(data_index);
-    const auto value_raw_decoder = std::make_shared<RawDecoder<Bytes>>();  // TODO(canepat) ByteView? stack allocation?
-    const auto data_it = kv_segment_.advance_both_if(data_offset, k, skip_max_count, nullptr, value_raw_decoder);
-    if (data_it == kv_segment_.end()) {
+
+    const auto& decompressor = kv_segment_.decompressor();
+    auto it = kv_decompressor_seek_to_key(decompressor, data_offset, k, skip_max_count);
+    if ((it == decompressor.end()) || !it.has_next()) {
         return std::nullopt;
     }
-    return std::move(value_raw_decoder->value);
+
+    ++it;
+    return std::optional<Bytes>{std::move(*it)};
 }
 
 bool BTreeIndex::Cursor::next() {

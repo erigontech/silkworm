@@ -123,6 +123,7 @@ struct TransactionsWithReceipts {
     std::vector<silkworm::rpc::Receipt> receipts;
     std::vector<silkworm::Transaction> transactions;
     std::vector<BlockDetails> blocks;
+    std::vector<BlockHeader> headers;
 };
 
 }  // namespace silkworm::rpc

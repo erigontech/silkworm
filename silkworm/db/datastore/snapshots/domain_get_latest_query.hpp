@@ -48,14 +48,13 @@ struct DomainGetLatestSegmentQuery {
             return std::nullopt;
         }
 
-        std::optional<Bytes> value_data = entity_.btree_index.get(key_data, entity_.kv_segment);
+        std::optional<Word> value_data = entity_.btree_index.get(key_data, entity_.kv_segment);
         if (!value_data) {
             return std::nullopt;
         }
 
         TValueDecoder value_decoder;
-        Word value{std::move(*value_data)};
-        value_decoder.decode_word(value);
+        value_decoder.decode_word(*value_data);
         return std::move(value_decoder.value);
     }
 

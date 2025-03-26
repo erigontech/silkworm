@@ -64,6 +64,8 @@ class State : public BlockState {
 
     virtual void insert_receipts(BlockNum block_num, const std::vector<Receipt>& receipts) = 0;
 
+    virtual void insert_receipt([[maybe_unused]] const Receipt& receipt, [[maybe_unused]] uint64_t blob_gas_used){};
+
     virtual void insert_call_traces(BlockNum block_num, const CallTraces& traces) = 0;
 
     /** @name State changes

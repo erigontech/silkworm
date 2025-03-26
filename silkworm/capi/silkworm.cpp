@@ -620,7 +620,7 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
         return SILKWORM_INVALID_HANDLE;
     }
 
-    SILK_DEBUG << "silkworm_execute_txn block_num: " << std::to_string(block_num) << " txn_index: " << std::to_string(txn_index) << " txn_num: " << std::to_string(txn_num);
+    std::cerr << "silkworm_execute_txn block_num: " << std::to_string(block_num) << " txn_index: " << std::to_string(txn_index) << " txn_num: " << std::to_string(txn_num) << '\n';
 
     silkworm::Hash block_header_hash{};
     memcpy(block_header_hash.bytes, block_hash.bytes, sizeof(block_hash.bytes));
@@ -697,7 +697,7 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
 
     try {
         processor.flush_state();
-        state.insert_receipts(block_number, std::vector<silkworm::Receipt>{receipt});
+        state.insert_receipt(receipt, transaction.total_blob_gas());
     } catch (const std::exception& ex) {
         SILK_ERROR << "transaction post-processing failed: " << ex.what();
         return SILKWORM_INTERNAL_ERROR;

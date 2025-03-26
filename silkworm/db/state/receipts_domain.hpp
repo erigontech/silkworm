@@ -62,6 +62,18 @@ struct VarintSnapshotsDecoder : public snapshots::Decoder {
 
 static_assert(snapshots::DecoderConcept<VarintSnapshotsDecoder>);
 
+struct VarintSnapshotEncoder : public snapshots::Encoder {
+    Bytes& output_buffer;
+    uint64_t value{};
+    VarintSnapshotEncoder(Bytes& output, uint64_t val) : output_buffer(output), value{val} {}
+    ~VarintSnapshotEncoder() override = default;
+    ByteView encode_word() override {
+        return snapshots::seg::varint::encode(output_buffer, value);
+    }
+};
+
+static_assert(snapshots::EncoderConcept<VarintSnapshotEncoder>);
+
 using ReceiptsDomainKVSegmentReader = snapshots::segment::KVSegmentReader<ReceiptsDomainKeySnapshotsDecoder, VarintSnapshotsDecoder>;
 
 struct ReceiptsDomainGetLatestQuery : public datastore::DomainGetLatestQuery<

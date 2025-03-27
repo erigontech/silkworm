@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <functional>
 #include <iterator>
+#include <optional>
 #include <ranges>
 #include <type_traits>
 #include <utility>
@@ -72,26 +73,36 @@ class MergeManyView : public std::ranges::view_interface<MergeManyView<Range, Ra
                 }
             }
             std::ranges::make_heap(order_, order_compare_func());
+
+            advance();
         }
 
         reference operator*() const {
-            if (order_.empty()) {
-                SILKWORM_ASSERT(false);
-                std::abort();
-            }
-            auto& it = iterators_[order_.front()];
-            return *it;
+            SILKWORM_ASSERT(current_value_);
+            return *current_value_;
         }
 
         Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
         Iterator& operator++() {
-            if constexpr (!kUnique) {
-                next();
-                return *this;
+            advance();
+            return *this;
+        }
+
+        void advance() {
+            if (order_.empty()) {
+                current_value_.reset();
+                return;
             }
 
-            // backup the current key for duplicate detection
-            auto current_key = std::invoke(proj_, **this);
+            current_value_.emplace(move_it_value(order_.front()));
+
+            if constexpr (!kUnique) {
+                next();
+                return;
+            }
+
+            // grab the current key for duplicate detection
+            const auto& current_key = std::invoke(proj_, *current_value_);
 
             // first iteration: increment the current iterator once and restore the order
             // next iterations: skip duplicate keys and restore the order
@@ -100,15 +111,13 @@ class MergeManyView : public std::ranges::view_interface<MergeManyView<Range, Ra
             } while (
                 !order_.empty() &&
                 std::is_eq(std::invoke(*comp_, std::invoke(proj_, *iterators_[order_.front()]), current_key)));
-
-            return *this;
         }
 
         friend bool operator==(const Iterator& it, const std::default_sentinel_t&) {
-            return it.order_.empty();
+            return !it.current_value_.has_value();
         }
         friend bool operator!=(const Iterator& it, const std::default_sentinel_t&) {
-            return !it.order_.empty();
+            return it.current_value_.has_value();
         }
         friend bool operator==(const std::default_sentinel_t& s, const Iterator& it) {
             return it == s;
@@ -156,12 +165,17 @@ class MergeManyView : public std::ranges::view_interface<MergeManyView<Range, Ra
             };
         }
 
+        value_type move_it_value(size_t i) {
+            return std::ranges::iter_move(iterators_[i]);
+        }
+
         std::vector<Range> ranges_;
         std::vector<RangeIterator> iterators_;
         std::vector<RangeSentinel> sentinels_;
         const Comp* comp_{nullptr};
         Proj proj_;
         std::vector<size_t> order_;
+        mutable std::optional<value_type> current_value_;
     };
 
     static_assert(std::input_iterator<Iterator>);

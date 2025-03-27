@@ -27,24 +27,23 @@ namespace silkworm::snapshots::btree {
 class BTree {
   public:
     using DataIndex = uint64_t;
-    using KeyValue = std::pair<Bytes, Bytes>;
+    using KeyValue = std::pair<BytesOrByteView, BytesOrByteView>;
 
     struct KeyValueIndex {
         virtual ~KeyValueIndex() = default;
         virtual std::optional<KeyValue> lookup_key_value(DataIndex) const = 0;
-        virtual std::optional<Bytes> lookup_key(DataIndex) const = 0;
+        virtual std::optional<BytesOrByteView> lookup_key(DataIndex) const = 0;
+
+        using LookupResult = std::pair<int, std::optional<BytesOrByteView>>;
+        virtual std::optional<LookupResult> lookup_key_value(DataIndex, ByteView) const = 0;
+        virtual std::optional<BytesOrByteView> advance_key_value(DataIndex, ByteView, size_t skip_max_count) const = 0;
     };
 
     struct SeekResult {
-        bool found;
-        Bytes key;
-        Bytes value;
-        DataIndex key_index;
-    };
-
-    struct GetResult {
-        Bytes value;
-        DataIndex key_index;
+        bool found{false};
+        BytesOrByteView key;
+        BytesOrByteView value;
+        DataIndex key_index{0};
     };
 
     BTree(
@@ -69,7 +68,7 @@ class BTree {
     //! \brief Search and return key equal to the given \p key
     //! \param key the key to look for
     //! \param index the key-value data sequence
-    std::optional<GetResult> get(ByteView key, const KeyValueIndex& index);
+    std::optional<BytesOrByteView> get(ByteView key, const KeyValueIndex& index);
 
     void check_against_data_keys(const KeyValueIndex& index);
 

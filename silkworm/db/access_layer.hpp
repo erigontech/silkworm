@@ -348,6 +348,9 @@ class DataModel {
     //! Read the canonical block body at specified block_num
     [[nodiscard]] bool read_canonical_body(BlockNum block_num, BlockBody& body) const;
 
+    //! Read the transaction at index txn_idx within the specified block
+    [[nodiscard]] std::optional<Transaction> read_transaction_by_txn_idx(BlockNum block_num, uint64_t txn_idx) const;
+
     //! Read the canonical block at specified block_num
     [[nodiscard]] bool read_canonical_block(BlockNum block_num, Block& block) const;
 

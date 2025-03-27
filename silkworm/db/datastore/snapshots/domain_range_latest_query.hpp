@@ -52,7 +52,7 @@ struct DomainRangeLatestSegmentQuery {
         auto begin_it = entity_.btree_index.seek(key_start, entity_.kv_segment).value_or(btree::BTreeIndex::Cursor{});
 
         return std::ranges::subrange{std::move(begin_it), std::default_sentinel} |
-               std::views::take_while([key_end = std::move(key_end)](const auto& kv_pair) { return kv_pair.first < key_end; });
+               std::views::take_while([key_end = std::move(key_end)](const auto& kv_pair) { return ByteView{kv_pair.first} < key_end; });
     }
 
     auto exec(Bytes key_start, Bytes key_end, bool ascending) {
@@ -77,27 +77,25 @@ struct DomainRangeLatestQuery {
     using ResultItemKey = decltype(TKeyDecoder::value);
     using ResultItemValue = decltype(TValueDecoder::value);
     using ResultItem = std::pair<ResultItemKey, ResultItemValue>;
-    using Word = snapshots::Decoder::Word;
+    using Word = Decoder::Word;
 
-    static ResultItem decode_kv_pair(std::pair<Bytes, Bytes>&& kv_pair) {
-        if constexpr (std::same_as<ResultItem, std::pair<Bytes, Bytes>>) {
+    static ResultItem decode_kv_pair(std::pair<Word, Word>&& kv_pair) {
+        if constexpr (std::same_as<ResultItem, std::pair<Word, Word>>) {
             return std::move(kv_pair);
         }
 
         TKeyDecoder key_decoder;
-        Word key_byte_word{std::move(kv_pair.first)};
-        key_decoder.decode_word(key_byte_word);
+        key_decoder.decode_word(kv_pair.first);
         ResultItemKey& key = key_decoder.value;
 
         TValueDecoder value_decoder;
-        Word value_byte_word{std::move(kv_pair.second)};
-        value_decoder.decode_word(value_byte_word);
+        value_decoder.decode_word(kv_pair.second);
         ResultItemValue& value = value_decoder.value;
 
         return ResultItem{std::move(key), std::move(value)};
     }
 
-    static constexpr auto kDecodeKVPairFunc = [](std::pair<Bytes, Bytes>& kv_pair) -> ResultItem {
+    static constexpr auto kDecodeKVPairFunc = [](std::pair<Word, Word>& kv_pair) -> ResultItem {
         return decode_kv_pair(std::move(kv_pair));
     };
 

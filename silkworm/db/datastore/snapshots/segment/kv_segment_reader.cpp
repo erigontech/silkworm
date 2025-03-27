@@ -17,10 +17,8 @@
 #include "kv_segment_reader.hpp"
 
 #include <array>
-#include <stdexcept>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/util.hpp>
 
 namespace silkworm::snapshots::segment {
 

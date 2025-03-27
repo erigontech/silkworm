@@ -122,10 +122,8 @@ TEST_CASE("BTreeIndex", "[snapshots][btree]") {
     SECTION("BTreeIndex::get") {
         // Check that all values retrieved through BT index match
         size_t key_count{0};
-        segment::KVSegmentReader<RawDecoder<Bytes>, RawDecoder<Bytes>> reader{kv_segment};
-        for (auto kv_pair : reader) {
-            ByteView key = kv_pair.first;
-            ByteView value = kv_pair.second;
+        segment::KVSegmentReader<RawDecoder<ByteView>, RawDecoder<ByteView>> reader{kv_segment};
+        for (const auto [key, value] : reader) {
             const auto v = bt_index.get(key, kv_segment);
             CHECK(v == value);
             ++key_count;

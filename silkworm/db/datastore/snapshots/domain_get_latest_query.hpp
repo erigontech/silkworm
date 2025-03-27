@@ -20,6 +20,7 @@
 #include "common/codec.hpp"
 #include "common/raw_codec.hpp"
 #include "domain.hpp"
+#include "domain_cache.hpp"
 #include "segment/kv_segment_reader.hpp"
 #include "snapshot_bundle.hpp"
 #include "snapshot_repository_ro_access.hpp"
@@ -28,12 +29,13 @@ namespace silkworm::snapshots {
 
 template <EncoderConcept TKeyEncoder, DecoderConcept TValueDecoder>
 struct DomainGetLatestSegmentQuery {
-    explicit DomainGetLatestSegmentQuery(Domain entity)
-        : entity_{std::move(entity)} {}
-    explicit DomainGetLatestSegmentQuery(
+    explicit DomainGetLatestSegmentQuery(Domain entity, DomainCache* cache)
+        : entity_{std::move(entity)}, cache_{cache} {}
+    DomainGetLatestSegmentQuery(
         const SnapshotBundle& bundle,
-        datastore::EntityName entity_name)
-        : entity_{bundle.domain(entity_name)} {}
+        datastore::EntityName entity_name,
+        DomainCache* cache)
+        : DomainGetLatestSegmentQuery(bundle.domain(entity_name), cache) {}
 
     using Key = decltype(TKeyEncoder::value);
     using Value = decltype(TValueDecoder::value);
@@ -44,11 +46,7 @@ struct DomainGetLatestSegmentQuery {
         key_encoder.value = key;
         ByteView key_data = key_encoder.encode_word();
 
-        if (!entity_.existence_index.contains(key_data)) {
-            return std::nullopt;
-        }
-
-        std::optional<Word> value_data = entity_.btree_index.get(key_data, entity_.kv_segment);
+        std::optional<Word> value_data = exec_raw(key_data);
         if (!value_data) {
             return std::nullopt;
         }
@@ -58,8 +56,31 @@ struct DomainGetLatestSegmentQuery {
         return std::move(value_decoder.value);
     }
 
+    std::optional<Word> exec_raw(const ByteView key) {
+        std::optional<Word> value_data;
+        uint64_t key_hash_hi{0};
+
+        if (cache_) {
+            if (std::tie(value_data, key_hash_hi) = cache_->get(key); value_data) {
+                return value_data;
+            }
+        }
+
+        if (!entity_.existence_index.contains(key)) {
+            return std::nullopt;
+        }
+
+        value_data = entity_.btree_index.get(key, entity_.kv_segment);
+        if (cache_ && value_data) {
+            cache_->put(key_hash_hi, *value_data);
+        }
+
+        return value_data;
+    }
+
   private:
     Domain entity_;
+    DomainCache* cache_;
 };
 
 template <EncoderConcept TKeyEncoder, DecoderConcept TValueDecoder>
@@ -76,9 +97,10 @@ struct DomainGetLatestQuery {
     };
 
     std::optional<Result> exec(const Key& key) {
+        DomainCache* cache = repository.domain_cache(entity_name);
         for (auto& bundle_ptr : repository.view_bundles_reverse()) {
             const SnapshotBundle& bundle = *bundle_ptr;
-            DomainGetLatestSegmentQuery<TKeyEncoder, TValueDecoder> query{bundle, entity_name};
+            DomainGetLatestSegmentQuery<TKeyEncoder, TValueDecoder> query{bundle, entity_name, cache};
             auto value = query.exec(key);
             if (value) {
                 return Result{std::move(*value), bundle.step_range().end};

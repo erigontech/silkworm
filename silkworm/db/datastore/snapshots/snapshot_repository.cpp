@@ -40,7 +40,8 @@ SnapshotRepository::SnapshotRepository(
     Schema::RepositoryDef schema,
     StepToTimestampConverter step_converter,
     std::optional<uint32_t> index_salt,
-    std::unique_ptr<IndexBuildersFactory> index_builders_factory)
+    std::unique_ptr<IndexBuildersFactory> index_builders_factory,
+    std::optional<DomainCaches> domain_caches)
     : name_(std::move(name)),
       dir_path_(std::move(dir_path)),
       schema_(std::move(schema)),
@@ -48,7 +49,8 @@ SnapshotRepository::SnapshotRepository(
       index_salt_(index_salt),
       index_builders_factory_(std::move(index_builders_factory)),
       bundles_(std::make_shared<Bundles>()),
-      bundles_mutex_(std::make_unique<std::mutex>()) {
+      bundles_mutex_(std::make_unique<std::mutex>()),
+      domain_caches_{std::move(domain_caches)} {
     if (open) reopen_folder();
 }
 
@@ -70,6 +72,12 @@ void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
     bundles->insert_or_assign(key, std::make_shared<SnapshotBundle>(std::move(bundle)));
 
     bundles_ = bundles;
+}
+
+DomainCache* SnapshotRepository::domain_cache(const datastore::EntityName& name) const {
+    if (!domain_caches_) return nullptr;
+    if (!domain_caches_->contains(name)) return nullptr;
+    return domain_caches_->at(name).get();
 }
 
 size_t SnapshotRepository::bundles_count() const {

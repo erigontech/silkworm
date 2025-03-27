@@ -16,6 +16,8 @@
 
 #include "schema_config.hpp"
 
+#include <silkworm/infra/common/environment.hpp>
+
 #include "state_index_builders_factory.hpp"
 #include "step_txn_id_converter.hpp"
 
@@ -80,6 +82,26 @@ datastore::kvdb::Schema::DatabaseDef make_state_database_schema() {
     return schema;
 }
 
+static constexpr size_t kDefaultDomainCacheSize = 10'000;
+
+static size_t domain_cache_size() {
+    const auto domain_cache_size_var = Environment::get("D_LRU_CACHE_SIZE");
+    return domain_cache_size_var.empty() ? kDefaultDomainCacheSize : std::stoul(domain_cache_size_var);
+}
+
+static std::unique_ptr<snapshots::DomainCache> make_domain_cache(std::optional<uint32_t> salt) {
+    const size_t size = domain_cache_size();
+    return size > 0 ? std::make_unique<snapshots::DomainCache>(size, salt.value_or(0)) : nullptr;
+}
+
+static snapshots::DomainCaches make_domain_caches(std::optional<uint32_t> salt) {
+    snapshots::DomainCaches caches;
+    for (const auto& entity_name : {kDomainNameAccounts, kDomainNameStorage, kDomainNameCode, kDomainNameReceipts}) {
+        caches.emplace(entity_name, make_domain_cache(salt));
+    }
+    return caches;
+}
+
 static snapshots::SnapshotRepository make_state_repository(
     datastore::EntityName name,
     std::filesystem::path dir_path,
@@ -94,6 +116,7 @@ static snapshots::SnapshotRepository make_state_repository(
         kStepToTxnIdConverter,
         index_salt,
         std::make_unique<StateIndexBuildersFactory>(schema),
+        make_domain_caches(index_salt),
     };
 }
 

@@ -58,7 +58,8 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
         Schema::RepositoryDef schema,
         datastore::StepToTimestampConverter step_converter,
         std::optional<uint32_t> index_salt,
-        std::unique_ptr<IndexBuildersFactory> index_builders_factory);
+        std::unique_ptr<IndexBuildersFactory> index_builders_factory,
+        std::optional<DomainCaches> domain_caches);
 
     SnapshotRepository(SnapshotRepository&&) = default;
     SnapshotRepository& operator=(SnapshotRepository&&) noexcept = delete;
@@ -78,6 +79,8 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
 
     //! Replace bundles whose ranges are contained within the given bundle
     void replace_snapshot_bundles(SnapshotBundle bundle);
+
+    DomainCache* domain_cache(const datastore::EntityName& name) const override;
 
     size_t bundles_count() const override;
 
@@ -143,6 +146,9 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
     //! Full snapshot bundles ordered by block_from
     std::shared_ptr<Bundles> bundles_;
     std::unique_ptr<std::mutex> bundles_mutex_;
+
+    //! Cache for domain values across all bundles
+    std::optional<DomainCaches> domain_caches_;
 };
 
 }  // namespace silkworm::snapshots

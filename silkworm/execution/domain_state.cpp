@@ -120,7 +120,6 @@ void DomainState::insert_receipt(const Receipt& receipt, uint64_t cumulative_blo
 
     // Encode cumulative gas used in block - receipt should already contain txn gas used + block gas used so far
     {
-        std::cerr << "Saving Cumulative gas used in receipts: " << '\n';
         const Bytes gas_used_key{static_cast<uint8_t>(ReceiptsDomainKey::kCumulativeGasUsedInBlockKey)};
         Bytes encoded_value;
         VarintSnapshotEncoder encoder{encoded_value, receipt.cumulative_gas_used};
@@ -130,7 +129,6 @@ void DomainState::insert_receipt(const Receipt& receipt, uint64_t cumulative_blo
 
     // Encode cumulative blob gas used - requires interface extension to include list of executed transactions
     {
-        std::cerr << "Saving blog gas used in receipts: " << '\n';
         const Bytes gas_used_key{static_cast<uint8_t>(ReceiptsDomainKey::kCumulativeBlobGasUsedInBlockKey)};
         Bytes encoded_value;
         VarintSnapshotEncoder encoder{encoded_value, cumulative_blob_gas_used};
@@ -140,7 +138,6 @@ void DomainState::insert_receipt(const Receipt& receipt, uint64_t cumulative_blo
 
     // Log index - this should correspond to actual log index in a block (0 for now)
     {
-        std::cerr << "Saving log index in receipts: " << '\n';
         const Bytes gas_used_key{static_cast<uint8_t>(ReceiptsDomainKey::kFirstLogIndexKey)};
         Bytes encoded_value;
         VarintSnapshotEncoder encoder{encoded_value, 0};

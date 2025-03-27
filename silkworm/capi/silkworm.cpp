@@ -620,7 +620,7 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
         return SILKWORM_INVALID_HANDLE;
     }
 
-    std::cerr << "silkworm_execute_txn block_num: " << std::to_string(block_num) << " txn_index: " << std::to_string(txn_index) << " txn_num: " << std::to_string(txn_num) << '\n';
+    SILK_DEBUG << "silkworm_execute_txn block_num: " << std::to_string(block_num) << " txn_index: " << std::to_string(txn_index) << " txn_num: " << std::to_string(txn_num);
 
     silkworm::Hash block_header_hash{};
     memcpy(block_header_hash.bytes, block_hash.bytes, sizeof(block_hash.bytes));

@@ -18,15 +18,15 @@
 
 #include <silkworm/core/common/bytes.hpp>
 
-namespace silkworm::snapshots::bloom_filter {
+namespace silkworm::snapshots {
 
-class BloomFilterKeyHasher {
+class KeyHasher {
   public:
-    explicit BloomFilterKeyHasher(uint32_t salt) : salt_{salt} {}
+    explicit KeyHasher(uint32_t salt) : salt_{salt} {}
     uint64_t hash(ByteView key) const;
 
   private:
     uint32_t salt_;
 };
 
-}  // namespace silkworm::snapshots::bloom_filter
+}  // namespace silkworm::snapshots

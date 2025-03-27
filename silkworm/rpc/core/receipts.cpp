@@ -34,7 +34,7 @@ namespace silkworm::rpc::core {
 using ethdb::walk;
 
 static constexpr int kGasPerBlob = 0x20000;
-const Bytes kCumulativeGasUsedKey{static_cast<uint8_t>(db::state::ReceiptsDomainKey::kCumulativeBlobGasUsedInBlockKey)};
+const Bytes kCumulativeGasUsedKey{static_cast<uint8_t>(db::state::ReceiptsDomainKey::kCumulativeGasUsedInBlockKey)};
 const Bytes kFirstLogIndexKey{static_cast<uint8_t>(db::state::ReceiptsDomainKey::kFirstLogIndexKey)};
 
 Task<Receipts> get_receipts(db::kv::api::Transaction& tx,

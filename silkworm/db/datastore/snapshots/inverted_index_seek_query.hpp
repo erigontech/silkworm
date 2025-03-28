@@ -49,8 +49,11 @@ struct InvertedIndexSeekSegmentQuery {
         if (cache_) {
             if (std::tie(ts_pair, key_hash_hi) = cache_->get(key); ts_pair) {
                 if (ts_pair->requested <= timestamp) {
-                    if (timestamp <= ts_pair->found || ts_pair->found == 0) {
+                    if (timestamp <= ts_pair->found) {
                         return ts_pair->found;
+                    }
+                    if (ts_pair->found == 0) {
+                        return std::nullopt;
                     }
                 }
             }
@@ -68,7 +71,7 @@ struct InvertedIndexSeekSegmentQuery {
         }
         const auto [_, higher_or_equal_ts] = *seek_result;
 
-        if (cache_) {
+        if (cache_ && higher_or_equal_ts > timestamp) {
             cache_->put(key_hash_hi, InvertedIndexTimestamps{.requested = timestamp, .found = higher_or_equal_ts});
         }
 
@@ -93,14 +96,23 @@ struct InvertedIndexSeekQuery {
     using Key = decltype(TKeyEncoder::value);
 
     std::optional<datastore::Timestamp> exec(Key key, datastore::Timestamp timestamp) {
+        InvertedIndexCache* cache = cache_provider_();
+
+        TKeyEncoder key_encoder;
+        key_encoder.value = std::move(key);
+        ByteView key_data = key_encoder.encode_word();
+
         datastore::TimestampRange ts_range{timestamp, repository_.max_timestamp_available() + 1};
         for (auto& bundle_ptr : repository_.bundles_intersecting_range(ts_range, /*ascending=*/true)) {
             const SnapshotBundle& bundle = *bundle_ptr;
-            InvertedIndexSeekSegmentQuery<TKeyEncoder> query{entity_provider_(bundle), cache_provider_()};
-            auto result = query.exec(key, timestamp);
+            InvertedIndexSeekSegmentQuery<TKeyEncoder> query{entity_provider_(bundle), cache};
+            auto result = query.exec_raw(key_data, timestamp);
             if (result) {
                 return result;
             }
+        }
+        if (cache) {
+            cache->put(key_data, InvertedIndexTimestamps{.requested = timestamp, .found = 0});
         }
         return std::nullopt;
     }

@@ -697,7 +697,7 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
 
     try {
         processor.flush_state();
-        state.insert_receipts(block_number, std::vector<silkworm::Receipt>{receipt});
+        state.insert_receipt(receipt, transaction.total_blob_gas());
     } catch (const std::exception& ex) {
         SILK_ERROR << "transaction post-processing failed: " << ex.what();
         return SILKWORM_INTERNAL_ERROR;

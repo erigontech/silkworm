@@ -88,6 +88,8 @@ class DomainState : public State {
 
     void insert_receipts(BlockNum block_num, const std::vector<Receipt>& receipts) override;
 
+    void insert_receipt(const Receipt& receipt, uint64_t cumulative_blob_gas_used) override;
+
     void insert_call_traces(BlockNum /*block_num*/, const CallTraces& /*traces*/) override {}
 
     void begin_block(BlockNum /*block_num*/, size_t /*updated_accounts_count*/) override {}

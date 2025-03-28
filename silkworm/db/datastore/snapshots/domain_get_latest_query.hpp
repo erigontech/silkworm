@@ -98,12 +98,19 @@ struct DomainGetLatestQuery {
 
     std::optional<Result> exec(const Key& key) {
         DomainCache* cache = repository.domain_cache(entity_name);
+
+        TKeyEncoder key_encoder;
+        key_encoder.value = key;
+        ByteView key_data = key_encoder.encode_word();
+
         for (auto& bundle_ptr : repository.view_bundles_reverse()) {
             const SnapshotBundle& bundle = *bundle_ptr;
             DomainGetLatestSegmentQuery<TKeyEncoder, TValueDecoder> query{bundle, entity_name, cache};
-            auto value = query.exec(key);
+            auto value = query.exec_raw(key_data);
             if (value) {
-                return Result{std::move(*value), bundle.step_range().end};
+                TValueDecoder value_decoder;
+                value_decoder.decode_word(*value);
+                return Result{std::move(value_decoder.value), bundle.step_range().end};
             }
         }
         return std::nullopt;

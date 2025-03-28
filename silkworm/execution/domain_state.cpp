@@ -105,17 +105,30 @@ std::optional<evmc::bytes32> DomainState::canonical_hash(BlockNum block_num) con
     return data_model_.read_canonical_header_hash(block_num);
 }
 
-void DomainState::insert_receipts([[maybe_unused]] BlockNum block_num, const std::vector<Receipt>& receipts) {
-    // This has to be changed when block execution is fully supported
-    for ([[maybe_unused]] const auto& receipt : receipts) {
-        // Insert individual receipt, taking into account:
-        // 1. blob_gas_used() provided by a transaction (requires passing vector<Transactions>)
-        // 2. log index within block (bump log indexes with every receipt)
-        // 3. Cumulative gas used - accumulate while iterating over receipts
+void DomainState::insert_txn_receipts(std::vector<Receipt>& receipts, const std::vector<std::pair<TxnId, Transaction>>& transactions) {
+    uint64_t log_index = 0;
+    uint64_t blob_gas_used = 0;
+    uint64_t gas_used = 0;
+
+    for (size_t i = 0; i < std::size(receipts); i++) {
+        auto& receipt = receipts[i];
+        const auto& [txn_id, transaction] = transactions[i];
+        gas_used += receipt.cumulative_gas_used;
+
+        // Receipt contains gas used within a block + gas used by itself
+        receipt.cumulative_gas_used = gas_used;
+
+        // Update blob gas used by transaction
+        blob_gas_used += transaction.total_blob_gas();
+
+        insert_receipt(receipt, log_index, blob_gas_used);
+
+        // Update log index for the next receipt
+        log_index += std::size(receipt.logs);
     }
 }
 
-void DomainState::insert_receipt(const Receipt& receipt, uint64_t cumulative_blob_gas_used) {
+void DomainState::insert_receipt(const Receipt& receipt, uint64_t current_log_index, uint64_t cumulative_blob_gas_used) {
     ReceiptsDomainPutQuery query{database_, tx_};
 
     // Encode cumulative gas used in block - receipt should already contain txn gas used + block gas used so far
@@ -140,7 +153,7 @@ void DomainState::insert_receipt(const Receipt& receipt, uint64_t cumulative_blo
     {
         const Bytes gas_used_key{static_cast<uint8_t>(ReceiptsDomainKey::kFirstLogIndexKey)};
         Bytes encoded_value;
-        VarintSnapshotEncoder encoder{encoded_value, 0};
+        VarintSnapshotEncoder encoder{encoded_value, current_log_index};
         const auto encoded_view = encoder.encode_word();
         query.exec(gas_used_key, encoded_view, txn_id_, std::nullopt, current_step());
     }

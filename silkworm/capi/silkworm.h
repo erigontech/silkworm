@@ -431,6 +431,25 @@ SILKWORM_EXPORT int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDB
  */
 SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_tx, uint64_t block_num, struct SilkwormBytes32 block_hash, uint64_t txn_index, uint64_t txn_num, uint64_t* gas_used, uint64_t* blob_gas_used) SILKWORM_NOEXCEPT;
 
+ /**
+ * \brief Signals starting block execution
+ * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
+ * \param[in] mdbx_tx A valid external read-write MDBX transaction.
+ * \param[in] block_num The number of the block containing the transaction.
+ * \param[in] block_hash The hash of the block.
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
+ */
+ SILKWORM_EXPORT int silkworm_block_exec_start(SilkwormHandle handle, MDBX_txn* mdbx_tx, uint64_t block_num, struct SilkwormBytes32 block_hash) SILKWORM_NOEXCEPT;
+
+/**
+ * \brief Signals completing block execution
+ * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
+ * \param[in] mdbx_tx A valid external read-write MDBX transaction.
+ * \param[in] mdbx_in_mem_temp_tx A valid in memory MDBX transaction for silkworm->erigon communication
+ * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
+ */
+ SILKWORM_EXPORT int silkworm_block_exec_end(SilkwormHandle handle, MDBX_txn* mdbx_tx, MDBX_txn* mdbx_in_mem_temp_tx) SILKWORM_NOEXCEPT;
+
 /**
  * \brief Finalize the Silkworm C API library.
  * \param[in] handle A valid Silkworm instance handle got with silkworm_init.

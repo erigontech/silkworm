@@ -697,7 +697,8 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
 
     try {
         processor.flush_state();
-        state.insert_receipt(receipt, transaction.total_blob_gas());
+        handle->transactions_in_current_block.push_back({txn_id_, transaction});
+        handle->receipts_in_current_block.push_back(receipt);
     } catch (const std::exception& ex) {
         SILK_ERROR << "transaction post-processing failed: " << ex.what();
         return SILKWORM_INTERNAL_ERROR;
@@ -711,6 +712,45 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
     if (blob_gas_used) {
         *blob_gas_used = transaction.total_blob_gas();
     }
+
+    return SILKWORM_OK;
+}
+
+SILKWORM_EXPORT int silkworm_block_exec_start(SilkwormHandle handle, MDBX_txn* mdbx_tx, [[maybe_unused]] uint64_t block_num, [[maybe_unused]] struct SilkwormBytes32 block_hash) SILKWORM_NOEXCEPT {
+    if (!handle) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+
+    if (!mdbx_tx) {
+        return SILKWORM_INVALID_MDBX_TXN;
+    }
+
+    // TODO: cache block here for future reuse with transactions within same (block_exec_start, block_exec_end) range
+
+    // Clear any receipts created in previous blocks
+    handle->receipts_in_current_block.clear();
+
+    // Clear any transactions executed in previous blocks
+    handle->transactions_in_current_block.clear();
+
+    return SILKWORM_OK;
+}
+
+SILKWORM_EXPORT int silkworm_block_exec_end(SilkwormHandle handle, MDBX_txn* mdbx_tx, MDBX_txn* mdbx_in_mem_temp_tx) SILKWORM_NOEXCEPT {
+    if (!handle) {
+        return SILKWORM_INVALID_HANDLE;
+    }
+
+    if (!mdbx_tx || !mdbx_in_mem_temp_tx) {
+        return SILKWORM_INVALID_MDBX_TXN;
+    }
+
+    auto unmanaged_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_tx};
+    auto unmanaged_env = silkworm::datastore::kvdb::EnvUnmanaged{::mdbx_txn_env(mdbx_tx)};
+    auto chain_db = db::DataStore::make_chaindata_database(std::move(unmanaged_env));
+    auto db_ref = chain_db.ref();
+
+    SILKWORM_ASSERT(std::size(handle->receipts_in_current_block) == std::size(handle->transactions_in_current_block));
 
     return SILKWORM_OK;
 }

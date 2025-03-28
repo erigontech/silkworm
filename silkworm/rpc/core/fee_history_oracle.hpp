@@ -53,7 +53,6 @@ struct BlockRange {
     uint64_t num_blocks{0};
     BlockNum last_block_num{0};
     std::shared_ptr<BlockWithHash> last_block;
-    rpc::Receipts receipts;
 };
 
 struct BlockFees {

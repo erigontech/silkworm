@@ -141,9 +141,7 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
                     continue;
                 }
                 block_fees.block = block_with_hash;
-                if (!reward_percentiles.empty()) {
-                    block_fees.receipts = co_await receipts_provider_(*block_fees.block);
-                }
+                block_fees.receipts = co_await receipts_provider_(*block_fees.block);
             }
             block_fees.block_header = block_fees.block->block.header;
         } else {
@@ -210,9 +208,7 @@ Task<BlockRange> FeeHistoryOracle::resolve_block_range(BlockNum newest_block, ui
     // Ensure not trying to retrieve before genesis
     block_count = std::min(block_count, newest_block + 1);
 
-    const auto receipts = co_await receipts_provider_(*block_with_hash);
-
-    co_return BlockRange{block_count, newest_block, block_with_hash, receipts};
+    co_return BlockRange{block_count, newest_block, block_with_hash};
 }
 
 bool sort_by_reward(std::pair<intx::uint256, uint64_t>& p1, const std::pair<intx::uint256, uint64_t>& p2) {

@@ -260,6 +260,13 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     new_receipt.from = transaction.sender();
     new_receipt.to = transaction.to;
     new_receipt.type = transaction.type;
+    new_receipt.tx_index = tx_index;
+    new_receipt.block_num = block.header.number;
+
+    // When tx receiver is not set, create a contract with address depending on tx sender and its nonce
+    if (!transaction.to.has_value()) {
+        new_receipt.contract_address = create_address(*(transaction.sender()), transaction.nonce);
+    }
 
     for (auto& curr_log : new_receipt.logs) {
         curr_log.block_num = block.header.number;

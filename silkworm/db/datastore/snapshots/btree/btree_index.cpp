@@ -73,7 +73,7 @@ MemoryMappedRegion BTreeIndex::memory_file_region() const {
 std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, const KVSegmentReader& kv_segment) const {
     KeyValueIndex index{kv_segment, data_offsets_, file_path_};
     auto [found, key, value, data_index] = btree_->seek(seek_key, index);
-    if (key.compare(seek_key) >= 0) {
+    if (ByteView{key}.compare(seek_key) >= 0) {
         return BTreeIndex::Cursor{
             this,
             std::move(key),
@@ -85,7 +85,7 @@ std::optional<BTreeIndex::Cursor> BTreeIndex::seek(ByteView seek_key, const KVSe
     return std::nullopt;
 }
 
-std::optional<Bytes> BTreeIndex::get(ByteView key, const KVSegmentReader& kv_segment) const {
+std::optional<BytesOrByteView> BTreeIndex::get(ByteView key, const KVSegmentReader& kv_segment) const {
     const KeyValueIndex index{kv_segment, data_offsets_, file_path_};
     return btree_->get(key, index);
 }
@@ -96,30 +96,29 @@ std::optional<BTree::KeyValue> BTreeIndex::KeyValueIndex::lookup_key_value(DataI
     }
     const auto data_offset = data_offsets_->at(data_index);
 
-    segment::KVSegmentReader<RawDecoder<Bytes>, RawDecoder<Bytes>> reader{kv_segment_};
+    segment::KVSegmentReader<RawDecoder<BytesOrByteView>, RawDecoder<BytesOrByteView>> reader{kv_segment_};
     auto data_it = reader.seek(data_offset);
     if (data_it == reader.end()) {
         throw std::runtime_error{"key/value not found data_index=" + std::to_string(data_index) + " for " + file_path_.string()};
     }
     auto kv_pair = *data_it;
 
-    return BTree::KeyValue{std::move(kv_pair.first), std::move(kv_pair.second)};
+    return BTree::KeyValue{kv_pair.first, kv_pair.second};
 }
 
-std::optional<Bytes> BTreeIndex::KeyValueIndex::lookup_key(DataIndex data_index) const {
+std::optional<BytesOrByteView> BTreeIndex::KeyValueIndex::lookup_key(DataIndex data_index) const {
     if (data_index >= data_offsets_->size()) {
         return std::nullopt;
     }
     const auto data_offset = data_offsets_->at(data_index);
 
-    segment::KVSegmentKeysReader<RawDecoder<Bytes>> reader{kv_segment_};
-    auto data_it = reader.seek(data_offset);
+    segment::KVSegmentKeysReader<RawDecoder<BytesOrByteView>> reader{kv_segment_};
+    const auto data_it = reader.seek(data_offset);
     if (data_it == reader.end()) {
         throw std::runtime_error{"key not found data_index=" + std::to_string(data_index) + " for " + file_path_.string()};
     }
-    Bytes key = std::move(*data_it);
 
-    return key;
+    return *data_it;
 }
 
 std::optional<BTreeIndex::KeyValueIndex::LookupResult> BTreeIndex::KeyValueIndex::lookup_key_value(DataIndex data_index, ByteView k) const {
@@ -130,15 +129,15 @@ std::optional<BTreeIndex::KeyValueIndex::LookupResult> BTreeIndex::KeyValueIndex
 
     const auto& decompressor = kv_segment_.decompressor();
     auto it = decompressor.seek(data_offset);
-    if ((it == decompressor.end()) || !it.has_next()) {
+    if (it == decompressor.end() || !it.has_next()) {
         throw std::runtime_error{"key not found data_index=" + std::to_string(data_index) + " for " + file_path_.string()};
     }
 
-    const int key_compare = ByteView{*it}.compare(k);
-    if (key_compare != 0) {
+    if (const int key_compare = ByteView{*it}.compare(k); key_compare != 0) {
         return LookupResult{key_compare, std::nullopt};
     }
 
+    // Key matches: advance and read value
     ++it;
     return LookupResult{0, std::move(*it)};
 }
@@ -178,7 +177,7 @@ static seg::Decompressor::Iterator kv_decompressor_seek_to_key(
     return it;
 }
 
-std::optional<Bytes> BTreeIndex::KeyValueIndex::advance_key_value(const DataIndex data_index, const ByteView k, const size_t skip_max_count) const {
+std::optional<BytesOrByteView> BTreeIndex::KeyValueIndex::advance_key_value(const DataIndex data_index, const ByteView k, const size_t skip_max_count) const {
     if (data_index >= data_offsets_->size()) {
         return std::nullopt;
     }
@@ -191,7 +190,7 @@ std::optional<Bytes> BTreeIndex::KeyValueIndex::advance_key_value(const DataInde
     }
 
     ++it;
-    return std::optional<Bytes>{std::move(*it)};
+    return std::move(*it);
 }
 
 bool BTreeIndex::Cursor::next() {

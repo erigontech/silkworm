@@ -35,7 +35,7 @@ BTree::BTree(
       cache_{decode_nodes(encoded_nodes)} {
 }
 
-using CompareResult = std::pair<int, Bytes>;
+using CompareResult = std::pair<int, BytesOrByteView>;
 
 static CompareResult compare_key(
     ByteView key,
@@ -43,7 +43,7 @@ static CompareResult compare_key(
     const BTree::KeyValueIndex& index) {
     auto data_key = index.lookup_key(key_index);
     ensure(data_key.has_value(), [&] { return "out-of-bounds key=" + to_hex(key) + " data_index=" + std::to_string(key_index); });
-    int cmp = data_key->compare(key);
+    int cmp = ByteView{*data_key}.compare(key);
     return {cmp, std::move(*data_key)};
 }
 
@@ -106,7 +106,7 @@ BTree::SeekResult BTree::seek(ByteView seek_key, const KeyValueIndex& index) {
     return {found, std::move(kv_pair->first), std::move(kv_pair->second), left_index};
 }
 
-std::optional<Bytes> BTree::get(ByteView key, const KeyValueIndex& index) {
+std::optional<BytesOrByteView> BTree::get(ByteView key, const KeyValueIndex& index) {
     if (key.empty() && num_nodes_ > 0) {
         auto kv_pair = index.lookup_key_value(0);
         if (!kv_pair) {
@@ -172,7 +172,7 @@ void BTree::warmup(const KeyValueIndex& index) {
         const size_t data_index = i - 1;
         auto [_, key] = compare_key({}, data_index, index);
         cache_.emplace_back(Node{data_index, Bytes{key}});
-        cached_bytes += sizeof(Node) + key.length();
+        cached_bytes += sizeof(Node) + ByteView{key}.length();
     }
     SILK_DEBUG << "BTree::warmup finished M=" << fanout_ << " N=" << num_nodes_ << " cache_size=" << cached_bytes;
 }

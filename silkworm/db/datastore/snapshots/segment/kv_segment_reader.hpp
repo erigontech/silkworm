@@ -33,7 +33,6 @@
 
 #include "../common/codec.hpp"
 #include "../common/snapshot_path.hpp"
-#include "../common/util/iterator/iterator_read_into_vector.hpp"
 #include "seg/decompressor.hpp"
 
 namespace silkworm::snapshots::segment {

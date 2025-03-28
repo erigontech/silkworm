@@ -41,7 +41,8 @@ SnapshotRepository::SnapshotRepository(
     StepToTimestampConverter step_converter,
     std::optional<uint32_t> index_salt,
     std::unique_ptr<IndexBuildersFactory> index_builders_factory,
-    std::optional<DomainCaches> domain_caches)
+    std::optional<DomainCaches> domain_caches,
+    std::optional<InvertedIndexCaches> inverted_index_caches)
     : name_(std::move(name)),
       dir_path_(std::move(dir_path)),
       schema_(std::move(schema)),
@@ -50,7 +51,8 @@ SnapshotRepository::SnapshotRepository(
       index_builders_factory_(std::move(index_builders_factory)),
       bundles_(std::make_shared<Bundles>()),
       bundles_mutex_(std::make_unique<std::mutex>()),
-      domain_caches_{std::move(domain_caches)} {
+      domain_caches_{std::move(domain_caches)},
+      inverted_index_caches_{std::move(inverted_index_caches)} {
     if (open) reopen_folder();
 }
 
@@ -78,6 +80,12 @@ DomainCache* SnapshotRepository::domain_cache(const datastore::EntityName& name)
     if (!domain_caches_) return nullptr;
     if (!domain_caches_->contains(name)) return nullptr;
     return domain_caches_->at(name).get();
+}
+
+InvertedIndexCache* SnapshotRepository::inverted_index_cache(const datastore::EntityName& name) const {
+    if (!inverted_index_caches_) return nullptr;
+    if (!inverted_index_caches_->contains(name)) return nullptr;
+    return inverted_index_caches_->at(name).get();
 }
 
 size_t SnapshotRepository::bundles_count() const {

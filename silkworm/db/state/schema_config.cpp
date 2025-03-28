@@ -83,23 +83,38 @@ datastore::kvdb::Schema::DatabaseDef make_state_database_schema() {
 }
 
 static constexpr size_t kDefaultDomainCacheSize = 10'000;
+static constexpr size_t kDefaultInvertedIndexCacheSize = 4'096;
 
-static size_t domain_cache_size() {
-    const auto domain_cache_size_var = Environment::get("D_LRU_CACHE_SIZE");
-    return domain_cache_size_var.empty() ? kDefaultDomainCacheSize : std::stoul(domain_cache_size_var);
+static constexpr const char* kDomainCacheEnvVar = "D_LRU_CACHE_SIZE";
+static constexpr const char* kInvertedIndexCacheEnvVar = "II_LRU_CACHE_SIZE";
+
+template <typename Cache, const auto& env_var_name, size_t default_size>
+static size_t cache_size() {
+    const auto cache_size_var = Environment::get(env_var_name);
+    return cache_size_var.empty() ? default_size : std::stoul(cache_size_var);
 }
 
-static std::unique_ptr<snapshots::DomainCache> make_domain_cache(std::optional<uint32_t> salt) {
-    const size_t size = domain_cache_size();
-    return size > 0 ? std::make_unique<snapshots::DomainCache>(size, salt.value_or(0)) : nullptr;
+template <typename Cache, const auto& env_var_name, size_t default_size>
+static std::unique_ptr<Cache> make_cache(std::optional<uint32_t> salt) {
+    const size_t size = cache_size<Cache, env_var_name, default_size>();
+    return size > 0 ? std::make_unique<Cache>(size, salt.value_or(0)) : nullptr;
+}
+
+template <typename Cache, const auto& env_var_name, size_t default_size>
+static auto make_caches(std::optional<uint32_t> salt) {
+    std::map<datastore::EntityName, std::unique_ptr<Cache>> caches;
+    for (const auto& entity_name : {kDomainNameAccounts, kDomainNameStorage, kDomainNameCode, kDomainNameReceipts}) {
+        caches.emplace(entity_name, make_cache<Cache, env_var_name, default_size>(salt));
+    }
+    return caches;
 }
 
 static snapshots::DomainCaches make_domain_caches(std::optional<uint32_t> salt) {
-    snapshots::DomainCaches caches;
-    for (const auto& entity_name : {kDomainNameAccounts, kDomainNameStorage, kDomainNameCode, kDomainNameReceipts}) {
-        caches.emplace(entity_name, make_domain_cache(salt));
-    }
-    return caches;
+    return make_caches<snapshots::DomainCache, kDomainCacheEnvVar, kDefaultDomainCacheSize>(salt);
+}
+
+static snapshots::InvertedIndexCaches make_inverted_index_caches(std::optional<uint32_t> salt) {
+    return make_caches<snapshots::InvertedIndexCache, kInvertedIndexCacheEnvVar, kDefaultInvertedIndexCacheSize>(salt);
 }
 
 static snapshots::SnapshotRepository make_state_repository(
@@ -117,6 +132,7 @@ static snapshots::SnapshotRepository make_state_repository(
         index_salt,
         std::make_unique<StateIndexBuildersFactory>(schema),
         make_domain_caches(index_salt),
+        make_inverted_index_caches(index_salt),
     };
 }
 

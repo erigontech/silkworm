@@ -69,7 +69,8 @@ snapshots::SnapshotRepository make_blocks_repository(
         kStepToBlockNumConverter,
         index_salt,
         make_blocks_index_builders_factory(),
-        std::nullopt,
+        std::nullopt,  // no domain caches
+        std::nullopt,  // no inverted index caches
     };
 }
 

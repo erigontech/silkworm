@@ -18,15 +18,20 @@
 
 #include <map>
 #include <memory>
+#include <utility>
 
-#include <silkworm/core/common/bytes.hpp>
+#include <silkworm/db/datastore/common/timestamp.hpp>
 
 #include "../common/entity_name.hpp"
 #include "common/cache.hpp"
 
 namespace silkworm::snapshots {
 
-using DomainCache = Cache<BytesOrByteView>;
-using DomainCaches = std::map<datastore::EntityName, std::unique_ptr<DomainCache>>;
+struct InvertedIndexTimestamps {
+    datastore::Timestamp requested;
+    datastore::Timestamp found;
+};
+using InvertedIndexCache = Cache<InvertedIndexTimestamps>;
+using InvertedIndexCaches = std::map<datastore::EntityName, std::unique_ptr<InvertedIndexCache>>;
 
 }  // namespace silkworm::snapshots

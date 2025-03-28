@@ -22,6 +22,8 @@
 
 #include <boost/asio/cancellation_signal.hpp>
 
+#include <silkworm/core/types/receipt.hpp>
+#include <silkworm/core/types/transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/node/common/node_settings.hpp>
@@ -59,4 +61,10 @@ struct SilkwormInstance {
     // sentry
     std::unique_ptr<std::thread> sentry_thread;
     boost::asio::cancellation_signal sentry_stop_signal;
+
+    // TODO: This has to be changed and encapsulated by a proper block caching state
+    // Keeps all the receipts created in the current block
+    std::vector<silkworm::Receipt> receipts_in_current_block;
+    // Keeps all transactions executed in current block
+    std::vector<std::pair<silkworm::TxnId, silkworm::Transaction>> transactions_in_current_block;
 };

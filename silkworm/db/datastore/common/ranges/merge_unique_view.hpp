@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <functional>
 #include <iterator>
+#include <optional>
 #include <ranges>
 #include <type_traits>
 #include <utility>
@@ -63,33 +64,34 @@ class MergeUniqueView : public std::ranges::view_interface<MergeUniqueView<Range
               comp_{comp},
               proj1_{std::move(proj1)},
               proj2_{std::move(proj2)} {
-            selector_ = select(it1_ended(), it2_ended());
+            advance();
         }
 
         reference operator*() const {
-            switch (selector_) {
-                case 1:
-                    return *it1_;
-                case 2:
-                    return *it2_;
-                default:
-                    SILKWORM_ASSERT(false);
-                    std::abort();
-            }
+            SILKWORM_ASSERT(current_value_);
+            return *current_value_;
         }
 
         Iterator operator++(int) { return std::exchange(*this, ++Iterator{*this}); }
         Iterator& operator++() {
-            if (selector_ == 0) {
-                SILKWORM_ASSERT(false);
-                return *this;
+            advance();
+            return *this;
+        }
+
+        void advance() {
+            const char selector = select(it1_ended(), it2_ended());
+            if (selector == 0) {
+                current_value_.reset();
+                return;
             }
 
-            // backup the current key for duplicate detection
-            auto current_key = (selector_ == 1) ? std::invoke(proj1_, *it1_) : std::invoke(proj2_, *it2_);
+            current_value_.emplace(move_it_value(selector));
+
+            // grab the current key for duplicate detection
+            const auto& current_key = std::invoke((selector == 1) ? proj1_ : proj2_, *current_value_);
 
             // increment the current iterator once
-            if (selector_ == 1) {
+            if (selector == 1) {
                 ++it1_;
             } else {
                 ++it2_;
@@ -102,16 +104,13 @@ class MergeUniqueView : public std::ranges::view_interface<MergeUniqueView<Range
             while (!it2_ended() && std::is_eq(std::invoke(*comp_, std::invoke(proj2_, *it2_), current_key))) {
                 ++it2_;
             }
-
-            selector_ = select(it1_ended(), it2_ended());
-            return *this;
         }
 
         friend bool operator==(const Iterator& it, const std::default_sentinel_t&) {
-            return !it.selector_;
+            return !it.current_value_.has_value();
         }
         friend bool operator!=(const Iterator& it, const std::default_sentinel_t&) {
-            return it.selector_;
+            return it.current_value_.has_value();
         }
         friend bool operator==(const std::default_sentinel_t& s, const Iterator& it) {
             return it == s;
@@ -137,6 +136,17 @@ class MergeUniqueView : public std::ranges::view_interface<MergeUniqueView<Range
             // if equal prefer the first range
             return 1;
         }
+        value_type move_it_value(char selector) {
+            switch (selector) {
+                case 1:
+                    return std::ranges::iter_move(it1_);
+                case 2:
+                    return std::ranges::iter_move(it2_);
+                default:
+                    SILKWORM_ASSERT(false);
+                    std::abort();
+            }
+        }
 
         Range1Iterator it1_;
         Range1Sentinel sentinel1_;
@@ -145,7 +155,7 @@ class MergeUniqueView : public std::ranges::view_interface<MergeUniqueView<Range
         const Comp* comp_{nullptr};
         Proj1 proj1_;
         Proj2 proj2_;
-        char selector_{0};
+        mutable std::optional<value_type> current_value_;
     };
 
     static_assert(std::input_iterator<Iterator>);

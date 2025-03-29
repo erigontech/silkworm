@@ -18,15 +18,21 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 
 #include <silkworm/core/common/bytes.hpp>
 
 #include "../common/entity_name.hpp"
+#include "../common/step.hpp"
 #include "common/cache.hpp"
 
 namespace silkworm::snapshots {
 
-using DomainCache = Cache<BytesOrByteView>;
+struct DomainCacheData {
+    BytesOrByteView value;
+    std::optional<datastore::Step> range_end{0};
+};
+using DomainCache = Cache<DomainCacheData>;
 using DomainCaches = std::map<datastore::EntityName, std::unique_ptr<DomainCache>>;
 
 }  // namespace silkworm::snapshots

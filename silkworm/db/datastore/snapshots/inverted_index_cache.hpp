@@ -27,11 +27,11 @@
 
 namespace silkworm::snapshots {
 
-struct InvertedIndexTimestamps {
+struct InvertedIndexCacheData {
     datastore::Timestamp requested;
     datastore::Timestamp found;
 };
-using InvertedIndexCache = Cache<InvertedIndexTimestamps>;
+using InvertedIndexCache = Cache<InvertedIndexCacheData>;
 using InvertedIndexCaches = std::map<datastore::EntityName, std::unique_ptr<InvertedIndexCache>>;
 
 }  // namespace silkworm::snapshots

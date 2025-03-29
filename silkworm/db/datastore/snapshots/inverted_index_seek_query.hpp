@@ -80,15 +80,15 @@ struct InvertedIndexSeekQuery {
         key_encoder.value = std::move(key);
         ByteView key_data = key_encoder.encode_word();
 
-        std::optional<InvertedIndexTimestamps> ts_pair;
         uint64_t key_hash_hi{0};
         if (cache) {
-            if (std::tie(ts_pair, key_hash_hi) = cache->get(key_data); ts_pair) {
-                if (ts_pair->requested <= timestamp) {
-                    if (timestamp <= ts_pair->found) {
-                        return ts_pair->found;
+            std::optional<InvertedIndexCacheData> cached_data;
+            if (std::tie(cached_data, key_hash_hi) = cache->get(key_data); cached_data) {
+                if (cached_data->requested <= timestamp) {
+                    if (timestamp <= cached_data->found) {
+                        return cached_data->found;
                     }
-                    if (ts_pair->found == 0) {
+                    if (cached_data->found == 0) {  // hit in cache but value not found
                         return std::nullopt;
                     }
                 }
@@ -102,13 +102,13 @@ struct InvertedIndexSeekQuery {
             std::optional<datastore::Timestamp> higher_or_equal = query.exec_raw(key_data, timestamp);
             if (higher_or_equal) {
                 if (cache && *higher_or_equal > timestamp) {
-                    cache->put(key_hash_hi, InvertedIndexTimestamps{.requested = timestamp, .found = *higher_or_equal});
+                    cache->put(key_hash_hi, {.requested = timestamp, .found = *higher_or_equal});
                 }
                 return higher_or_equal;
             }
         }
         if (cache) {
-            cache->put(key_hash_hi, InvertedIndexTimestamps{.requested = timestamp, .found = 0});
+            cache->put(key_hash_hi, {.requested = timestamp, .found = 0});  // 0 means value not found
         }
         return std::nullopt;
     }

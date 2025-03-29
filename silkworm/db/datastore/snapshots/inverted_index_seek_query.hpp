@@ -30,8 +30,8 @@ namespace silkworm::snapshots {
 
 template <EncoderConcept TKeyEncoder>
 struct InvertedIndexSeekSegmentQuery {
-    explicit InvertedIndexSeekSegmentQuery(InvertedIndex entity, InvertedIndexCache* cache)
-        : query_{std::move(entity)}, cache_{cache} {}
+    explicit InvertedIndexSeekSegmentQuery(InvertedIndex entity)
+        : query_{std::move(entity)} {}
 
     using Key = decltype(TKeyEncoder::value);
 
@@ -43,22 +43,6 @@ struct InvertedIndexSeekSegmentQuery {
     }
 
     std::optional<datastore::Timestamp> exec_raw(ByteView key, datastore::Timestamp timestamp) {
-        std::optional<InvertedIndexTimestamps> ts_pair;
-        uint64_t key_hash_hi{0};
-
-        if (cache_) {
-            if (std::tie(ts_pair, key_hash_hi) = cache_->get(key); ts_pair) {
-                if (ts_pair->requested <= timestamp) {
-                    if (timestamp <= ts_pair->found) {
-                        return ts_pair->found;
-                    }
-                    if (ts_pair->found == 0) {
-                        return std::nullopt;
-                    }
-                }
-            }
-        }
-
         auto list_opt = query_.exec_raw(key);
         if (!list_opt) {
             return std::nullopt;
@@ -69,18 +53,12 @@ struct InvertedIndexSeekSegmentQuery {
         if (!seek_result) {
             return std::nullopt;
         }
-        const auto [_, higher_or_equal_ts] = *seek_result;
-
-        if (cache_ && higher_or_equal_ts > timestamp) {
-            cache_->put(key_hash_hi, InvertedIndexTimestamps{.requested = timestamp, .found = higher_or_equal_ts});
-        }
-
-        return higher_or_equal_ts;
+        const auto [_, higher_or_equal_timestamp] = *seek_result;
+        return higher_or_equal_timestamp;
     }
 
   private:
     InvertedIndexFindByKeySegmentQuery<TKeyEncoder> query_;
-    InvertedIndexCache* cache_;
 };
 
 template <EncoderConcept TKeyEncoder>
@@ -102,17 +80,35 @@ struct InvertedIndexSeekQuery {
         key_encoder.value = std::move(key);
         ByteView key_data = key_encoder.encode_word();
 
+        std::optional<InvertedIndexTimestamps> ts_pair;
+        uint64_t key_hash_hi{0};
+        if (cache) {
+            if (std::tie(ts_pair, key_hash_hi) = cache->get(key_data); ts_pair) {
+                if (ts_pair->requested <= timestamp) {
+                    if (timestamp <= ts_pair->found) {
+                        return ts_pair->found;
+                    }
+                    if (ts_pair->found == 0) {
+                        return std::nullopt;
+                    }
+                }
+            }
+        }
+
         datastore::TimestampRange ts_range{timestamp, repository_.max_timestamp_available() + 1};
         for (auto& bundle_ptr : repository_.bundles_intersecting_range(ts_range, /*ascending=*/true)) {
             const SnapshotBundle& bundle = *bundle_ptr;
-            InvertedIndexSeekSegmentQuery<TKeyEncoder> query{entity_provider_(bundle), cache};
-            auto result = query.exec_raw(key_data, timestamp);
-            if (result) {
-                return result;
+            InvertedIndexSeekSegmentQuery<TKeyEncoder> query{entity_provider_(bundle)};
+            std::optional<datastore::Timestamp> higher_or_equal = query.exec_raw(key_data, timestamp);
+            if (higher_or_equal) {
+                if (cache && *higher_or_equal > timestamp) {
+                    cache->put(key_hash_hi, InvertedIndexTimestamps{.requested = timestamp, .found = *higher_or_equal});
+                }
+                return higher_or_equal;
             }
         }
         if (cache) {
-            cache->put(key_data, InvertedIndexTimestamps{.requested = timestamp, .found = 0});
+            cache->put(key_hash_hi, InvertedIndexTimestamps{.requested = timestamp, .found = 0});
         }
         return std::nullopt;
     }

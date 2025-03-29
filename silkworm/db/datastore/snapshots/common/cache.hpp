@@ -34,10 +34,6 @@ class Cache {
         cache_.put(key_hash_high, value);
     }
 
-    void put(ByteView key, const Value& value) {
-        cache_.put(key_hasher_.hash(key), value);
-    }
-
     std::optional<Value> get(uint64_t key_hash_high) {
         return cache_.get_as_copy(key_hash_high);
     }

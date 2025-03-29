@@ -18,8 +18,8 @@
 
 #include <utility>
 
-#include <agrpc/grpc_context.hpp>
-#include <agrpc/test.hpp>
+#include <asio-grpc-wrap/grpc_context.hpp>
+#include <asio-grpc-wrap/test.hpp>
 #include <grpcpp/grpcpp.h>
 
 namespace silkworm::rpc::test {

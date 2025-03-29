@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2025 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,13 +16,8 @@
 
 #pragma once
 
-#include <asio-grpc-wrap/client_rpc.hpp>
-#include <boost/asio/use_awaitable.hpp>
-
-#include <silkworm/interfaces/remote/kv.grpc.pb.h>
-
-namespace silkworm::db::kv::grpc::client {
-
-using TxRpc = boost::asio::use_awaitable_t<>::as_default_on_t<agrpc::ClientRPC<&::remote::KV::StubInterface::PrepareAsyncTx>>;
-
-}  // namespace silkworm::db::kv::grpc::client
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#include <agrpc/repeatedly_request.hpp>
+#pragma GCC diagnostic pop

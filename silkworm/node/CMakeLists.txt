@@ -20,7 +20,6 @@ add_subdirectory(execution/block)
 add_subdirectory(stagedsync/stages)
 
 find_package(absl REQUIRED COMPONENTS strings)
-find_package(asio-grpc REQUIRED)
 find_package(Boost REQUIRED COMPONENTS headers)
 find_package(gRPC REQUIRED)
 find_package(GTest REQUIRED)

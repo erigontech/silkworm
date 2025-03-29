@@ -30,12 +30,11 @@ class SilkwormRecipe(ConanFile):
             return
 
         self.requires('abseil/20240116.2', override=True)
-        self.requires('asio-grpc/2.9.2')
         self.requires('benchmark/1.6.1')
         self.requires('boost/1.83.0', override=True)
         self.requires('cli11/2.2.0')
         self.requires('gmp/6.2.1')
-        self.requires('grpc/1.67.1', override=True)
+        self.requires('grpc/1.67.1')
         self.requires('gtest/1.12.1')
         self.requires('jwt-cpp/0.6.0')
         self.requires('libtorrent/2.0.10')
@@ -49,8 +48,6 @@ class SilkwormRecipe(ConanFile):
         self.requires('tomlplusplus/3.3.0')
 
     def configure(self):
-        self.options['asio-grpc'].local_allocator = 'boost_container'
-
         if (self.settings.os == 'Linux') and (self.settings.compiler == 'clang'):
             self.options['grpc'].with_libsystemd = False
 

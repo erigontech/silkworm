@@ -16,7 +16,7 @@
 
 #include "kv_calls.hpp"
 
-#include <agrpc/asio_grpc.hpp>
+#include <asio-grpc-wrap/asio_grpc.hpp>
 #include <boost/asio/as_tuple.hpp>
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>

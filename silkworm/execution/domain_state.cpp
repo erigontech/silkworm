@@ -23,6 +23,8 @@
 #include <silkworm/db/state/step_txn_id_converter.hpp>
 #include <silkworm/db/state/storage_domain.hpp>
 
+#include "silkworm/db/state/receipts_domain.hpp"
+
 namespace silkworm::execution {
 
 using namespace db::state;
@@ -103,9 +105,58 @@ std::optional<evmc::bytes32> DomainState::canonical_hash(BlockNum block_num) con
     return data_model_.read_canonical_header_hash(block_num);
 }
 
-void DomainState::insert_receipts(BlockNum block_num, const std::vector<Receipt>& receipts) {
-    // TODO: write to domain receipts table db::state::kDomainNameReceipts
-    db::write_receipts(tx_, receipts, block_num);
+void DomainState::insert_txn_receipts(std::vector<Receipt>& receipts, const std::vector<std::pair<TxnId, Transaction>>& transactions) {
+    uint64_t log_index = 0;
+    uint64_t blob_gas_used = 0;
+    uint64_t gas_used = 0;
+
+    for (size_t i = 0; i < std::size(receipts); i++) {
+        auto& receipt = receipts[i];
+        const auto& [txn_id, transaction] = transactions[i];
+        gas_used += receipt.cumulative_gas_used;
+
+        // Receipt contains gas used within a block + gas used by itself
+        receipt.cumulative_gas_used = gas_used;
+
+        // Update blob gas used by transaction
+        blob_gas_used += transaction.total_blob_gas();
+
+        insert_receipt(receipt, log_index, blob_gas_used);
+
+        // Update log index for the next receipt
+        log_index += std::size(receipt.logs);
+    }
+}
+
+void DomainState::insert_receipt(const Receipt& receipt, uint64_t current_log_index, uint64_t cumulative_blob_gas_used) {
+    ReceiptsDomainPutQuery query{database_, tx_};
+
+    // Encode cumulative gas used in block - receipt should already contain txn gas used + block gas used so far
+    {
+        const Bytes gas_used_key{static_cast<uint8_t>(ReceiptsDomainKey::kCumulativeGasUsedInBlockKey)};
+        Bytes encoded_value;
+        VarintSnapshotEncoder encoder{encoded_value, receipt.cumulative_gas_used};
+        const auto encoded_view = encoder.encode_word();
+        query.exec(gas_used_key, encoded_view, txn_id_, std::nullopt, current_step());
+    }
+
+    // Encode cumulative blob gas used - requires interface extension to include list of executed transactions
+    {
+        const Bytes gas_used_key{static_cast<uint8_t>(ReceiptsDomainKey::kCumulativeBlobGasUsedInBlockKey)};
+        Bytes encoded_value;
+        VarintSnapshotEncoder encoder{encoded_value, cumulative_blob_gas_used};
+        const auto encoded_view = encoder.encode_word();
+        query.exec(gas_used_key, encoded_view, txn_id_, std::nullopt, current_step());
+    }
+
+    // Log index - this should correspond to actual log index in a block (0 for now)
+    {
+        const Bytes gas_used_key{static_cast<uint8_t>(ReceiptsDomainKey::kFirstLogIndexKey)};
+        Bytes encoded_value;
+        VarintSnapshotEncoder encoder{encoded_value, current_log_index};
+        const auto encoded_view = encoder.encode_word();
+        query.exec(gas_used_key, encoded_view, txn_id_, std::nullopt, current_step());
+    }
 }
 
 datastore::Step DomainState::current_step() const {

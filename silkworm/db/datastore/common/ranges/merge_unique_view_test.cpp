@@ -16,6 +16,8 @@
 
 #include "merge_unique_view.hpp"
 
+#include <string>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include "owning_view.hpp"
@@ -67,6 +69,19 @@ TEST_CASE("MergeUniqueView") {
                   std::views::transform([](int v) { return std::vector<int>{v, v, v}; }) | std::views::join,
               silkworm::ranges::owning_view(std::vector<int>{4, 4, 4}))) ==
           std::vector<int>{1, 2, 3, 4});
+}
+
+TEST_CASE("MergeUniqueView - move results") {
+    auto view = merge_unique(
+        silkworm::ranges::owning_view(std::vector<std::string>{"v1"}),
+        silkworm::ranges::owning_view(std::vector<std::string>{"v1"}));
+    auto it = view.begin();
+    {
+        std::string v1 = std::move(*it);
+        CHECK(v1 == "v1");
+    }
+    CHECK_FALSE(it == view.end());
+    CHECK(++it == view.end());
 }
 
 }  // namespace silkworm::views

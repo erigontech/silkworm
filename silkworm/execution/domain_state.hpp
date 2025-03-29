@@ -86,7 +86,9 @@ class DomainState : public State {
 
     void decanonize_block(BlockNum /*block_num*/) override {}
 
-    void insert_receipts(BlockNum block_num, const std::vector<Receipt>& receipts) override;
+    void insert_txn_receipts(std::vector<Receipt>& receipts, const std::vector<std::pair<TxnId, Transaction>>& transactions) override;
+
+    void insert_receipt(const Receipt& receipt, uint64_t current_log_index, uint64_t cumulative_blob_gas_used) override;
 
     void insert_call_traces(BlockNum /*block_num*/, const CallTraces& /*traces*/) override {}
 

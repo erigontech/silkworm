@@ -62,7 +62,12 @@ class State : public BlockState {
 
     virtual void decanonize_block(BlockNum block_num) = 0;
 
-    virtual void insert_receipts(BlockNum block_num, const std::vector<Receipt>& receipts) = 0;
+    virtual void insert_receipts([[maybe_unused]] BlockNum block_num, [[maybe_unused]] const std::vector<Receipt>& receipts){};
+
+    // Added in Erigon3
+    virtual void insert_txn_receipts([[maybe_unused]] std::vector<Receipt>& receipts, [[maybe_unused]] const std::vector<std::pair<TxnId, Transaction>>& transactions){};
+
+    virtual void insert_receipt([[maybe_unused]] const Receipt& receipt, [[maybe_unused]] uint64_t current_log_index, [[maybe_unused]] uint64_t blob_gas_used){};
 
     virtual void insert_call_traces(BlockNum block_num, const CallTraces& traces) = 0;
 

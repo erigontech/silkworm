@@ -985,7 +985,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_state_snapshot", "[capi]") {
     const auto kv_segment_path_string{kv_segment_file.path().path().string()};
 
     const snapshot_test::SampleAccountsDomainExistenceIndexFile existence_index_file{tmp_dir.path()};
-    bloom_filter::BloomFilter existence_index{existence_index_file.path().path(), bloom_filter::BloomFilterKeyHasher{kZeroSalt}};
+    bloom_filter::BloomFilter existence_index{existence_index_file.path().path(), KeyHasher{kZeroSalt}};
     const auto existence_index_path_string{existence_index_file.path().path().string()};
 
     const snapshot_test::SampleAccountsDomainBTreeIndexFile btree_index_file{tmp_dir.path()};

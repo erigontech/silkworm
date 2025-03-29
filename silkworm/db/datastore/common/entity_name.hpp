@@ -35,6 +35,9 @@ struct EntityName {
     friend bool operator!=(const EntityName& lhs, const EntityName& rhs) {
         return lhs.name.data() != rhs.name.data();
     }
+    friend bool operator<(const EntityName& lhs, const EntityName& rhs) {
+        return lhs.name < rhs.name;
+    }
 
     std::string to_string() const { return std::string{name}; }
 

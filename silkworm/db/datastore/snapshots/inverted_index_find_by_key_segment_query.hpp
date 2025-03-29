@@ -73,7 +73,10 @@ struct InvertedIndexFindByKeySegmentQuery {
         TKeyEncoder key_encoder;
         key_encoder.value = std::move(key);
         ByteView key_data = key_encoder.encode_word();
+        return exec_raw(key_data);
+    }
 
+    std::optional<elias_fano::EliasFanoList32> exec_raw(ByteView key_data) {
         auto offset = entity_.accessor_index.lookup_by_key(key_data);
         if (!offset) {
             return std::nullopt;

@@ -518,7 +518,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     seg::Decompressor kv_decompressor{settings.input_file_path};
-    bloom_filter::BloomFilter existence_index{existence_index_file_path, bloom_filter::BloomFilterKeyHasher{salt}};
+    bloom_filter::BloomFilter existence_index{existence_index_file_path, KeyHasher{salt}};
 
     SILK_INFO << "Starting KV scan and existence index check";
     size_t key_count{0}, found_count{0}, nonexistent_count{0}, nonexistent_found_count{0};

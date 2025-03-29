@@ -23,7 +23,7 @@
 #include <optional>
 #include <vector>
 
-#include "bloom_filter_key_hasher.hpp"
+#include "../common/key_hasher.hpp"
 
 namespace silkworm::snapshots::bloom_filter {
 
@@ -33,7 +33,7 @@ class BloomFilter {
   public:
     explicit BloomFilter(
         std::filesystem::path path,
-        std::optional<BloomFilterKeyHasher> data_key_hasher = std::nullopt);
+        std::optional<KeyHasher> data_key_hasher = std::nullopt);
     BloomFilter();
     BloomFilter(uint64_t max_key_count, double p);
 
@@ -70,7 +70,7 @@ class BloomFilter {
     std::filesystem::path path_;
 
     //! Data key hasher
-    std::optional<BloomFilterKeyHasher> data_key_hasher_;
+    std::optional<KeyHasher> data_key_hasher_;
 
     //! The number of bits that the bitmap should be able to track
     uint64_t bits_count_;

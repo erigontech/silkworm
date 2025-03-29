@@ -1,5 +1,5 @@
 /*
-   Copyright 2024 The Silkworm Authors
+   Copyright 2025 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,17 +14,25 @@
    limitations under the License.
 */
 
-#include "bloom_filter_key_hasher.hpp"
+#pragma once
 
-#include <catch2/catch_test_macros.hpp>
+#include <map>
+#include <memory>
+#include <optional>
 
-#include <silkworm/core/common/util.hpp>
+#include <silkworm/core/common/bytes.hpp>
 
-namespace silkworm::snapshots::bloom_filter {
+#include "../common/entity_name.hpp"
+#include "../common/step.hpp"
+#include "common/cache.hpp"
 
-TEST_CASE("BloomFilterKeyHasher") {
-    CHECK(BloomFilterKeyHasher{0}.hash(*from_hex("CAFEBABE")) == 2809309899937206063u);
-    CHECK(BloomFilterKeyHasher{12345}.hash(*from_hex("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")) == 17810263873480351644u);
-}
+namespace silkworm::snapshots {
 
-}  // namespace silkworm::snapshots::bloom_filter
+struct DomainCacheData {
+    BytesOrByteView value;
+    std::optional<datastore::Step> range_end{0};
+};
+using DomainCache = Cache<DomainCacheData>;
+using DomainCaches = std::map<datastore::EntityName, std::unique_ptr<DomainCache>>;
+
+}  // namespace silkworm::snapshots

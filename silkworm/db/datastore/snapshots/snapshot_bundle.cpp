@@ -87,7 +87,7 @@ static datastore::EntityMap<bloom_filter::BloomFilter> open_existence_indexes(
     for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kExistenceIndex, entity, dir_path, range)) {
         SILK_TRACE << "make_existence_indexes opens " << name.to_string() << " at " << path.filename();
         SILKWORM_ASSERT(salt);
-        results.emplace(name, bloom_filter::BloomFilter{path.path(), bloom_filter::BloomFilterKeyHasher{*salt}});
+        results.emplace(name, bloom_filter::BloomFilter{path.path(), KeyHasher{*salt}});
     }
     return results;
 }

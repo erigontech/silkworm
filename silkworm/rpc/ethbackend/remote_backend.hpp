@@ -43,7 +43,7 @@ class RemoteBackEnd final : public BackEnd {
     Task<NodeInfos> engine_node_info() override;
     Task<PeerInfos> peers() override;
     Task<bool> get_block(BlockNum block_num, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) override;
-    Task<std::optional<BlockNum>> get_block_num_from_txn_hash(const HashAsSpan& hash) override;
+    Task<std::pair<std::optional<BlockNum>, std::optional<TxnId>>> get_block_num_from_txn_hash(const HashAsSpan& hash) override;
     Task<std::optional<BlockNum>> get_block_num_from_hash(const HashAsSpan& hash) override;
     Task<std::optional<evmc::bytes32>> get_block_hash_from_block_num(BlockNum block_num) override;
     Task<std::optional<Bytes>> canonical_body_for_storage(BlockNum block_num) override;

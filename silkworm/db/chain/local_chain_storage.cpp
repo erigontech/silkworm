@@ -145,8 +145,8 @@ Task<std::optional<intx::uint256>> LocalChainStorage::read_total_difficulty(cons
     co_return data_model_.read_total_difficulty(block_num, hash);
 }
 
-Task<std::optional<BlockNum>> LocalChainStorage::read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
-    co_return data_model_.read_tx_lookup(transaction_hash);
+Task<std::pair<std::optional<BlockNum>, std::optional<TxnId>>> LocalChainStorage::read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
+    co_return std::make_pair(data_model_.read_tx_lookup(transaction_hash), std::nullopt); // Temporary
 }
 
 Task<std::optional<Transaction>> LocalChainStorage::read_transaction_by_idx_in_block(BlockNum block_num, uint64_t txn_idx) const {

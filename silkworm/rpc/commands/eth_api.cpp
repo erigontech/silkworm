@@ -844,7 +844,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
 
         const auto tx_num_min = co_await tx->user_txn_id_at(*block_num_optional);
 
-        const uint32_t tx_index = (*txn_id_optional - tx_num_min - 2);
+        const uint32_t tx_index = static_cast<uint32_t>(*txn_id_optional - tx_num_min - 2);
         const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(*block_num_optional, tx_index);
         if (!transaction) {
             reply = make_json_content(request, {});

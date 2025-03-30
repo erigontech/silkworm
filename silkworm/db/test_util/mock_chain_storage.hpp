@@ -72,7 +72,7 @@ class MockChainStorage : public chain::ChainStorage {
 
     MOCK_METHOD((Task<std::optional<intx::uint256>>), read_total_difficulty, (const Hash&, BlockNum), (const, override));
 
-    MOCK_METHOD((Task<std::optional<BlockNum>>), read_block_num_by_transaction_hash, (const evmc::bytes32&), (const, override));
+    MOCK_METHOD((Task<std::pair<std::optional<BlockNum>, std::optional<TxnId>>>), read_block_num_by_transaction_hash, (const evmc::bytes32&), (const, override));
     MOCK_METHOD((Task<std::optional<Transaction>>), read_transaction_by_idx_in_block, (BlockNum, uint64_t), (const, override));
 
     MOCK_METHOD((Task<std::pair<std::optional<BlockHeader>, std::optional<Hash>>>), read_head_header_and_hash, (), (const, override));

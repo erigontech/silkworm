@@ -83,7 +83,7 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_block_num_or_hash(BlockCache&
 }
 
 Task<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& cache, const db::chain::ChainStorage& storage, const evmc::bytes32& transaction_hash) {
-    const auto block_num = co_await storage.read_block_num_by_transaction_hash(transaction_hash);
+    const auto [block_num, txn_id] = co_await storage.read_block_num_by_transaction_hash(transaction_hash);
     if (!block_num) {
         co_return nullptr;
     }
@@ -95,7 +95,7 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& 
 }
 
 Task<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const db::chain::ChainStorage& storage, const evmc::bytes32& transaction_hash) {
-    const auto block_num = co_await storage.read_block_num_by_transaction_hash(transaction_hash);
+    const auto [block_num, txn_id] = co_await storage.read_block_num_by_transaction_hash(transaction_hash);
     if (!block_num) {
         co_return std::nullopt;
     }

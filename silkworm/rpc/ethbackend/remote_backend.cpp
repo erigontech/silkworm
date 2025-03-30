@@ -165,17 +165,19 @@ Task<bool> RemoteBackEnd::get_block(BlockNum block_num, const HashAsSpan& hash, 
     co_return true;
 }
 
-Task<std::optional<BlockNum>> RemoteBackEnd::get_block_num_from_txn_hash(const HashAsSpan& hash) {
+Task<std::pair<std::optional<BlockNum>, std::optional<TxnId>>> RemoteBackEnd::get_block_num_from_txn_hash(const HashAsSpan& hash) {
     const auto start_time = clock_time::now();
     ::remote::TxnLookupRequest request;
     request.set_allocated_txn_hash(h256_from_bytes(hash).release());
     const auto reply = co_await rpc::unary_rpc(&Stub::AsyncTxnLookup, *stub_, request, grpc_context_);
     if (reply.block_number() == 0) {
-        co_return std::nullopt;
+        co_return std::make_pair(std::nullopt, std::nullopt);
     }
-    auto block_num = reply.block_number();
-    SILK_TRACE << "RemoteBackEnd::get_block_num_from_txn_hash block_num=" << block_num << " t=" << clock_time::since(start_time);
-    co_return block_num;
+    const auto block_num = reply.block_number();
+    const TxnId txn_id = reply.tx_number();
+
+    SILK_TRACE << "RemoteBackEnd::get_block_num_from_txn_hash block_num=" << block_num << "  txn_id=" << txn_id << " t=" << clock_time::since(start_time);
+    co_return std::make_pair(block_num, txn_id);
 }
 
 Task<std::optional<BlockNum>> RemoteBackEnd::get_block_num_from_hash(const HashAsSpan& hash) {

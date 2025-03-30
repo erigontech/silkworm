@@ -823,38 +823,42 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
     auto tx = co_await database_->begin_transaction();
 
     try {
+        silkworm::Block block;
         const auto chain_storage = tx->create_storage();
 
-        const auto block_with_hash = co_await core::read_block_by_transaction_hash(*block_cache_, *chain_storage, transaction_hash);
-        if (!block_with_hash) {
+        const auto [block_num_optional, txn_id_optional] = co_await chain_storage->read_block_num_by_transaction_hash(transaction_hash);
+
+        if (!block_num_optional || !txn_id_optional) {
             reply = make_json_content(request, {});
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
-        const auto& transactions = block_with_hash->block.transactions;
-        if (receipts.size() != transactions.size()) {
-            throw std::invalid_argument{"Unexpected size for receipts in handle_eth_get_transaction_receipt"};
+
+        const auto header = co_await chain_storage->read_canonical_header(*block_num_optional);
+        if (!header) {
+            reply = make_json_content(request, {});
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
+        block.header = std::move(*header);
+
+        const auto tx_num_min = co_await tx->user_txn_id_at(*block_num_optional);
+
+        const auto tx_index = (*txn_id_optional - tx_num_min - 2);
+        const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(*block_num_optional, tx_index);
+        if (!transaction) {
+            reply = make_json_content(request, {});
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
         }
 
-        std::optional<size_t> tx_index;
-        for (size_t idx{0}; idx < transactions.size(); ++idx) {
-            auto ethash_hash = transactions[idx].hash();
-
-            SILK_TRACE << "tx " << idx << ") hash: " << silkworm::to_hex(silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength}));
-            if (std::memcmp(transaction_hash.bytes, ethash_hash.bytes, silkworm::kHashLength) == 0) {
-                tx_index = idx;
-                const intx::uint256 base_fee_per_gas{block_with_hash->block.header.base_fee_per_gas.value_or(0)};
-                const intx::uint256 effective_gas_price{transactions[idx].max_fee_per_gas >= base_fee_per_gas ? transactions[idx].effective_gas_price(base_fee_per_gas)
-                                                                                                              : transactions[idx].max_priority_fee_per_gas};
-                receipts[idx].effective_gas_price = effective_gas_price;
-                break;
-            }
+        auto receipt = co_await core::get_receipt(*tx, block, *txn_id_optional, tx_index, *transaction, *chain_storage, workers_);
+        if (!receipt) {
+            reply = make_json_content(request, {});
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
         }
-        if (!tx_index) {
-            throw std::invalid_argument{"Unexpected transaction index in handle_eth_get_transaction_receipt"};
-        }
-        reply = make_json_content(request, receipts[*tx_index]);
+        reply = make_json_content(request, *receipt);
     } catch (const std::invalid_argument&) {
         reply = make_json_content(request, {});
     } catch (const std::exception& e) {

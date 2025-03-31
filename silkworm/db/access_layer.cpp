@@ -1416,7 +1416,7 @@ bool DataModel::read_rlp_transactions(BlockNum block_num, const evmc::bytes32& h
 }
 
 std::pair<std::optional<BlockNum>, std::optional<TxnId>> DataModel::read_tx_lookup(const evmc::bytes32& tx_hash) const {
-    auto [ block_num, txn_id ]  = read_tx_lookup_from_db(tx_hash);
+    auto [block_num, txn_id] = read_tx_lookup_from_db(tx_hash);
     if (block_num) {
         return std::make_pair(block_num, txn_id);
     }
@@ -1431,14 +1431,14 @@ std::pair<std::optional<BlockNum>, std::optional<TxnId>> DataModel::read_tx_look
         return std::make_pair(std::nullopt, std::nullopt);
     }
     const auto block_num = std::stoul(silkworm::to_hex(from_slice(data.value)), nullptr, 16);
-    //const auto txn_id = std::stoul(silkworm::to_hex(from_slice(data.value + 8)), nullptr, 16); 
-    const auto txn_id = std::nullopt; // Temporary
+    // const auto txn_id = std::stoul(silkworm::to_hex(from_slice(data.value + 8)), nullptr, 16);
+    const auto txn_id = std::nullopt;  // Temporary
     return std::make_pair(block_num, txn_id);
 }
 
-std::pair<std::optional<BlockNum>,std::optional<TxnId>> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const {
+std::pair<std::optional<BlockNum>, std::optional<TxnId>> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const {
     TransactionBlockNumByTxnHashQuery query{repository_};
-    return std::make_pair(query.exec(tx_hash), std::nullopt); // Temporary
+    return std::make_pair(query.exec(tx_hash), std::nullopt);  // Temporary
 }
 
 std::optional<intx::uint256> DataModel::read_total_difficulty(BlockNum block_num, const evmc::bytes32& hash) const {

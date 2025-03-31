@@ -83,11 +83,11 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_block_num_or_hash(BlockCache&
 }
 
 Task<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& cache, const db::chain::ChainStorage& storage, const evmc::bytes32& transaction_hash) {
-    const auto [block_num, txn_id] = co_await storage.read_block_num_by_transaction_hash(transaction_hash);
-    if (!block_num) {
+    const auto result = co_await storage.read_block_num_by_transaction_hash(transaction_hash);
+    if (!result) {
         co_return nullptr;
     }
-    const auto block_by_hash = co_await read_block_by_number(cache, storage, *block_num);
+    const auto block_by_hash = co_await read_block_by_number(cache, storage, result->first);
     if (!block_by_hash) {
         co_return nullptr;
     }
@@ -95,11 +95,11 @@ Task<std::shared_ptr<BlockWithHash>> read_block_by_transaction_hash(BlockCache& 
 }
 
 Task<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const db::chain::ChainStorage& storage, const evmc::bytes32& transaction_hash) {
-    const auto [block_num, txn_id] = co_await storage.read_block_num_by_transaction_hash(transaction_hash);
-    if (!block_num) {
+    const auto result = co_await storage.read_block_num_by_transaction_hash(transaction_hash);
+    if (!result) {
         co_return std::nullopt;
     }
-    const auto block_with_hash = co_await read_block_by_number(cache, storage, *block_num);
+    const auto block_with_hash = co_await read_block_by_number(cache, storage, result->first);
     if (!block_with_hash) {
         co_return std::nullopt;
     }

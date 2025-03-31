@@ -826,15 +826,15 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
         silkworm::Block block;
         const auto chain_storage = tx->create_storage();
 
-        const auto [block_num_optional, txn_id_optional] = co_await chain_storage->read_block_num_by_transaction_hash(transaction_hash);
+        const auto result = co_await chain_storage->read_block_num_by_transaction_hash(transaction_hash);
 
-        if (!block_num_optional || !txn_id_optional) {
+        if (!result) {
             reply = make_json_content(request, {});
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
 
-        const auto header = co_await chain_storage->read_canonical_header(*block_num_optional);
+        const auto header = co_await chain_storage->read_canonical_header(result->first);
         if (!header) {
             reply = make_json_content(request, {});
             co_await tx->close();  // RAII not (yet) available with coroutines
@@ -842,17 +842,17 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
         }
         block.header = std::move(*header);
 
-        const auto tx_num_min = co_await tx->user_txn_id_at(*block_num_optional);
+        const auto tx_num_min = co_await tx->user_txn_id_at(result->first);
 
-        const uint32_t tx_index = static_cast<uint32_t>(*txn_id_optional - tx_num_min - 2);
-        const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(*block_num_optional, tx_index);
+        const uint32_t tx_index = static_cast<uint32_t>(result->second - tx_num_min - 2);
+        const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(result->first, tx_index);
         if (!transaction) {
             reply = make_json_content(request, {});
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
 
-        auto receipt = co_await core::get_receipt(*tx, block, *txn_id_optional, tx_index, *transaction, *chain_storage, workers_);
+        auto receipt = co_await core::get_receipt(*tx, block, result->second, tx_index, *transaction, *chain_storage, workers_);
         if (!receipt) {
             reply = make_json_content(request, {});
             co_await tx->close();  // RAII not (yet) available with coroutines

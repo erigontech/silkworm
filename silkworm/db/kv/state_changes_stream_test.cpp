@@ -86,7 +86,7 @@ struct RemoteStateChangesStreamTest : public StateChangesStreamTest {
         [](BlockNum, HashAsSpan, bool, Block&) -> Task<bool> { co_return false; }};
     // We're not testing blocks here, so we don't care about proper block-number-from-txn-hash provider
     chain::BlockNumFromTxnHashProvider block_num_from_txn_hash_provider{
-        [](HashAsSpan) -> Task<std::pair<std::optional<BlockNum>, std::optional<TxnId>>> { co_return std::make_pair(std::nullopt, std::nullopt); }};
+        [](HashAsSpan) -> Task<std::optional<std::pair<BlockNum, TxnId>>> { co_return std::make_pair(0, 0); }};
     chain::BlockNumFromBlockHashProvider block_num_from_block_hash_provider{
         [](HashAsSpan) -> Task<std::optional<BlockNum>> { co_return std::nullopt; }};
     chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider{

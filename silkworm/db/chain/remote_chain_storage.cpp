@@ -203,18 +203,18 @@ Task<bool> RemoteChainStorage::read_rlp_transactions(BlockNum block_num, const e
 }
 
 Task<bool> RemoteChainStorage::read_rlp_transaction(const evmc::bytes32& txn_hash, Bytes& rlp_tx) const {
-    auto [block_num, txn_id] = co_await providers_.block_num_from_txn_hash(txn_hash.bytes);
-    if (!block_num) {
+    auto result = co_await providers_.block_num_from_txn_hash(txn_hash.bytes);
+    if (!result) {
         co_return false;
     }
 
-    const auto block_hash = co_await providers_.canonical_block_hash_from_number(*block_num);
+    const auto block_hash = co_await providers_.canonical_block_hash_from_number(result->first);
     if (!block_hash) {
         co_return false;
     }
 
     Block block;
-    const bool success = co_await providers_.block(*block_num, block_hash->bytes, /*.read_senders=*/false, block);
+    const bool success = co_await providers_.block(result->first, block_hash->bytes, /*.read_senders=*/false, block);
     if (!success) {
         co_return false;
     }
@@ -246,7 +246,7 @@ Task<std::optional<intx::uint256>> RemoteChainStorage::read_total_difficulty(con
     co_return total_difficulty;
 }
 
-Task<std::pair<std::optional<BlockNum>, std::optional<TxnId>>> RemoteChainStorage::read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
+Task<std::optional<std::pair<BlockNum, TxnId>>> RemoteChainStorage::read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
     co_return co_await providers_.block_num_from_txn_hash(transaction_hash.bytes);
 }
 

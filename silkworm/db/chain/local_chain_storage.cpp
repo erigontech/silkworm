@@ -120,16 +120,16 @@ Task<bool> LocalChainStorage::read_rlp_transactions(BlockNum block_num, const ev
 }
 
 Task<bool> LocalChainStorage::read_rlp_transaction(const evmc::bytes32& txn_hash, Bytes& rlp_tx) const {
-    auto [block_num, txn_id] = data_model_.read_tx_lookup(txn_hash);
-    if (!block_num) {
+    auto result = data_model_.read_tx_lookup(txn_hash);
+    if (!result) {
         co_return false;
     }
-    auto block_hash = data_model_.read_canonical_header_hash(*block_num);
+    auto block_hash = data_model_.read_canonical_header_hash(result->first);
     if (!block_hash) {
         co_return false;
     }
     std::vector<Bytes> rlp_txs;
-    if (!co_await read_rlp_transactions(*block_num, *block_hash, rlp_txs)) {
+    if (!co_await read_rlp_transactions(result->first, *block_hash, rlp_txs)) {
         co_return false;
     }
     for (const auto& rlp : rlp_txs) {
@@ -145,7 +145,7 @@ Task<std::optional<intx::uint256>> LocalChainStorage::read_total_difficulty(cons
     co_return data_model_.read_total_difficulty(block_num, hash);
 }
 
-Task<std::pair<std::optional<BlockNum>, std::optional<TxnId>>> LocalChainStorage::read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
+Task<std::optional<std::pair<BlockNum, TxnId>>> LocalChainStorage::read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
     co_return data_model_.read_tx_lookup(transaction_hash);
 }
 

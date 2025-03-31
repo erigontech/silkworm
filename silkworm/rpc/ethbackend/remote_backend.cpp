@@ -165,13 +165,13 @@ Task<bool> RemoteBackEnd::get_block(BlockNum block_num, const HashAsSpan& hash, 
     co_return true;
 }
 
-Task<std::pair<std::optional<BlockNum>, std::optional<TxnId>>> RemoteBackEnd::get_block_num_from_txn_hash(const HashAsSpan& hash) {
+Task<std::optional<std::pair<BlockNum, TxnId>>> RemoteBackEnd::get_block_num_from_txn_hash(const HashAsSpan& hash) {
     const auto start_time = clock_time::now();
     ::remote::TxnLookupRequest request;
     request.set_allocated_txn_hash(h256_from_bytes(hash).release());
     const auto reply = co_await rpc::unary_rpc(&Stub::AsyncTxnLookup, *stub_, request, grpc_context_);
     if (reply.block_number() == 0) {
-        co_return std::make_pair(std::nullopt, std::nullopt);
+        co_return std::nullopt;
     }
     const auto block_num = reply.block_number();
     const TxnId txn_id = reply.tx_number();

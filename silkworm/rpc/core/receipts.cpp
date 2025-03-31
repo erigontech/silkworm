@@ -260,7 +260,12 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     new_receipt.from = transaction.sender();
     new_receipt.to = transaction.to;
     new_receipt.type = transaction.type;
+    new_receipt.effective_gas_price = transaction.effective_gas_price(block.header.base_fee_per_gas.value_or(0));
 
+    new_receipt.block_num = block.header.number;
+    new_receipt.block_hash = block.header.hash();
+    new_receipt.tx_hash = transaction.hash();
+    new_receipt.tx_index = tx_index;
     for (auto& curr_log : new_receipt.logs) {
         curr_log.block_num = block.header.number;
         curr_log.block_hash = block.header.hash();

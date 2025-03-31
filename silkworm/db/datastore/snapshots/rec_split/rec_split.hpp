@@ -706,10 +706,10 @@ class RecSplit {
         return lookup_by_ordinal(Ordinal{data_id - base_data_id()});
     }
 
-    std::optional<size_t> lookup_by_key(ByteView key) const {
+    std::optional<std::pair<size_t, uint64_t>> lookup_by_key(ByteView key) const {
         auto ord = lookup_ordinal_by_key(key);
         if (!ord) return std::nullopt;
-        return double_enum_index_ ? lookup_by_ordinal(*ord) : std::optional{ord->value};
+        return std::pair{double_enum_index_ ? lookup_by_ordinal(*ord) : ord->value, base_data_id() + ord->value};
     }
 
     //! Return the number of keys used to build the RecSplit instance

@@ -22,6 +22,7 @@
 
 #include <silkworm/core/types/hash.hpp>
 
+#include "../common/timestamp.hpp"
 #include "segment/segment_reader.hpp"
 #include "segment_and_accessor_index.hpp"
 #include "snapshot_repository_ro_access.hpp"
@@ -76,12 +77,12 @@ struct FindByKeySegmentQuery : public BasicSegmentQuery<TValueDecoder, segment_n
         key_encoder.value = key;
         ByteView key_data = key_encoder.encode_word();
 
-        auto offset = this->index_.lookup_by_key(key_data);
-        if (!offset) {
+        auto offset_and_data_id = this->index_.lookup_by_key(key_data);
+        if (!offset_and_data_id) {
             return std::nullopt;
         }
 
-        return this->reader_.seek_one(*offset);
+        return this->reader_.seek_one(offset_and_data_id->first);
     }
 };
 
@@ -92,19 +93,27 @@ struct FindByHashSegmentQuery : public BasicSegmentQuery<TDecoder, segment_names
     using BasicSegmentQuery<TDecoder, segment_names>::BasicSegmentQuery;
 
     std::optional<decltype(TDecoder::value)> exec(const Hash& hash) {
-        auto offset = this->index_.lookup_by_key(hash);
-        if (!offset) {
+        auto result = exec_with_timestamp(hash);
+        if (!result) return std::nullopt;
+        return result->first;
+    }
+
+    std::optional<std::pair<decltype(TDecoder::value), datastore::Timestamp>> exec_with_timestamp(const Hash& hash) {
+        const auto offset_and_data_id = this->index_.lookup_by_key(hash);
+        if (!offset_and_data_id) {
             return std::nullopt;
         }
+        const auto [offset, data_id] = *offset_and_data_id;
 
-        auto result = this->reader_.seek_one(*offset, ByteView{hash.bytes, 1});
+        auto result = this->reader_.seek_one(offset, ByteView{hash.bytes, 1});
+        if (!result) return std::nullopt;
 
         // We *must* ensure that the retrieved txn hash matches because there is no way to know if key exists in MPHF
-        if (result && (result->hash() != hash)) {
+        if (result->hash() != hash) {
             return std::nullopt;
         }
 
-        return result;
+        return std::pair{std::move(*result), data_id};
     }
 };
 

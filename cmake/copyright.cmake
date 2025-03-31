@@ -1,33 +1,28 @@
 # Copyright 2025 The Silkworm Authors
 # SPDX-License-Identifier: Apache-2.0
 
-set(COPYRIGHT_HEADER_TEMPLATE
-    "/*
-   Copyright YYYY The Silkworm Authors
+set(COPYRIGHT_HEADER_TEMPLATE_C
+    "// Copyright YYYY The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
-   Licensed under the Apache License, Version 2.0 (the \"License\");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an \"AS IS\" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
 "
 )
 
-set(SILKWORM_COPYRIGHT_YEARS "2022" "2023" "2024" "2025")
+set(COPYRIGHT_HEADER_TEMPLATE_SH
+    "# Copyright YYYY The Silkworm Authors
+# SPDX-License-Identifier: Apache-2.0
 
-function(check file_path)
-  string(LENGTH "${COPYRIGHT_HEADER_TEMPLATE}" header_len)
+"
+)
+
+set(SILKWORM_COPYRIGHT_YEARS "2025")
+
+function(check file_path template)
+  string(LENGTH "${template}" header_len)
   file(READ "${file_path}" header LIMIT ${header_len})
 
   foreach(Y IN LISTS SILKWORM_COPYRIGHT_YEARS)
-    string(REPLACE "YYYY" "${Y}" COPYRIGHT_HEADER "${COPYRIGHT_HEADER_TEMPLATE}")
+    string(REPLACE "YYYY" "${Y}" COPYRIGHT_HEADER "${template}")
 
     if(header STREQUAL COPYRIGHT_HEADER)
       return()
@@ -41,7 +36,7 @@ cmake_policy(SET CMP0009 NEW)
 file(
   GLOB_RECURSE SRC
   LIST_DIRECTORIES false
-  "cmd/*.?pp" "silkworm/*.?pp"
+  "cmd/*.?pp" "examples/*.?pp" "silkworm/*.?pp"
 )
 list(FILTER SRC EXCLUDE REGEX [[silkworm/core/chain/genesis_[a-z_]+\.cpp$]])
 list(FILTER SRC EXCLUDE REGEX [[silkworm/core/common/lru_cache(_test)?\..pp$]])
@@ -53,5 +48,16 @@ list(FILTER SRC EXCLUDE REGEX [[silkworm/rpc/json_rpc/specification\.cpp$]])
 list(FILTER SRC EXCLUDE REGEX [[silkworm/sync/internals/preverified_hashes/preverified_hashes_[a-z]+\.cpp$]])
 
 foreach(F IN LISTS SRC)
-  check("${F}")
+  check("${F}" "${COPYRIGHT_HEADER_TEMPLATE_C}")
+endforeach()
+
+file(
+  GLOB_RECURSE SRC_CMAKE
+  LIST_DIRECTORIES false
+  "cmake/*.cmake" "cmake/*CMakeLists.txt" "cmd/*CMakeLists.txt" "examples/*CMakeLists.txt" "silkworm/*CMakeLists.txt"
+)
+list(FILTER SRC_CMAKE EXCLUDE REGEX [[cmake/conan_quiet.cmake$]])
+
+foreach(F IN LISTS SRC_CMAKE)
+  check("${F}" "${COPYRIGHT_HEADER_TEMPLATE_SH}")
 endforeach()

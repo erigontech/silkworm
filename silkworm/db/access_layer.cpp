@@ -1415,27 +1415,30 @@ bool DataModel::read_rlp_transactions(BlockNum block_num, const evmc::bytes32& h
     return read_rlp_transactions_from_snapshot(block_num, rlp_txs);
 }
 
-std::optional<BlockNum> DataModel::read_tx_lookup(const evmc::bytes32& tx_hash) const {
-    auto block_num = read_tx_lookup_from_db(tx_hash);
+std::pair<std::optional<BlockNum>, std::optional<TxnId>> DataModel::read_tx_lookup(const evmc::bytes32& tx_hash) const {
+    auto [ block_num, txn_id ]  = read_tx_lookup_from_db(tx_hash);
     if (block_num) {
-        return block_num;
+        return std::make_pair(block_num, txn_id);
     }
 
     return read_tx_lookup_from_snapshot(tx_hash);
 }
 
-std::optional<BlockNum> DataModel::read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const {
+std::pair<std::optional<BlockNum>, std::optional<TxnId>> DataModel::read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const {
     auto cursor = txn_.ro_cursor(table::kTxLookup);
     const auto data = cursor->find(to_slice(tx_hash), /*throw_notfound=*/false);
     if (!data) {
-        return std::nullopt;
+        return std::make_pair(std::nullopt, std::nullopt);
     }
-    return std::stoul(silkworm::to_hex(from_slice(data.value)), nullptr, 16);
+    const auto block_num = std::stoul(silkworm::to_hex(from_slice(data.value)), nullptr, 16);
+    //const auto txn_id = std::stoul(silkworm::to_hex(from_slice(data.value + 8)), nullptr, 16); 
+    const auto txn_id = std::nullopt; // Temporary
+    return std::make_pair(block_num, txn_id);
 }
 
-std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const {
+std::pair<std::optional<BlockNum>,std::optional<TxnId>> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const {
     TransactionBlockNumByTxnHashQuery query{repository_};
-    return query.exec(tx_hash);
+    return std::make_pair(query.exec(tx_hash), std::nullopt); // Temporary
 }
 
 std::optional<intx::uint256> DataModel::read_total_difficulty(BlockNum block_num, const evmc::bytes32& hash) const {

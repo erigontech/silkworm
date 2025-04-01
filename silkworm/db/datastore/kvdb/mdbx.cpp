@@ -119,7 +119,7 @@ static mdbx::cursor::move_operation move_operation(CursorMoveDirection direction
         throw std::runtime_error("Database map size is too small. Min required " + human_size(db_file_size));
     }
 
-    uint32_t flags{MDBX_NOTLS | MDBX_NORDAHEAD | MDBX_COALESCE | MDBX_SYNC_DURABLE};  // Default flags
+    uint32_t flags{ MDBX_NORDAHEAD |  MDBX_SYNC_DURABLE};  // Default flags
 
     if (config.read_ahead) {
         flags &= ~MDBX_NORDAHEAD;

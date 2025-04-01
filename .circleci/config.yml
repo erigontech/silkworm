@@ -270,7 +270,7 @@ jobs:
       - build_using_conan:
           build_type: Debug
           compiler_id: clang
-          compiler_version: 17
+          compiler_version: 18
       - test:
           sanitizer: address,undefined
 
@@ -429,7 +429,7 @@ jobs:
 parameters:
   clang_version_min:
     type: integer
-    default: 16
+    default: 18
   clang_version_latest:
     type: integer
     default: 18

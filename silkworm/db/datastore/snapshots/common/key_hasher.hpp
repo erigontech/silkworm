@@ -14,17 +14,19 @@
    limitations under the License.
 */
 
-#include "bloom_filter_key_hasher.hpp"
+#pragma once
 
-#include <catch2/catch_test_macros.hpp>
+#include <silkworm/core/common/bytes.hpp>
 
-#include <silkworm/core/common/util.hpp>
+namespace silkworm::snapshots {
 
-namespace silkworm::snapshots::bloom_filter {
+class KeyHasher {
+  public:
+    explicit KeyHasher(uint32_t salt) : salt_{salt} {}
+    uint64_t hash(ByteView key) const;
 
-TEST_CASE("BloomFilterKeyHasher") {
-    CHECK(BloomFilterKeyHasher{0}.hash(*from_hex("CAFEBABE")) == 2809309899937206063u);
-    CHECK(BloomFilterKeyHasher{12345}.hash(*from_hex("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")) == 17810263873480351644u);
-}
+  private:
+    uint32_t salt_;
+};
 
-}  // namespace silkworm::snapshots::bloom_filter
+}  // namespace silkworm::snapshots

@@ -26,12 +26,16 @@ namespace silkworm::rpc {
 struct Error {
     int code{0};
     std::string message;
+
+    std::string to_string() const;
 };
 
 std::ostream& operator<<(std::ostream& out, const Error& error);
 
 struct RevertError : public Error {
     silkworm::Bytes data;
+
+    std::string to_string() const;
 };
 
 std::ostream& operator<<(std::ostream& out, const RevertError& error);

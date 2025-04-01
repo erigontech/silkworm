@@ -17,6 +17,7 @@
 #pragma once
 
 #include <memory>
+#include <ostream>
 
 #include <gsl/pointers>
 
@@ -33,7 +34,11 @@ namespace silkworm::protocol {
 struct BlockReward {
     intx::uint256 miner;
     std::vector<intx::uint256> ommers;
+
+    std::string to_string() const;
 };
+
+std::ostream& operator<<(std::ostream& out, const BlockReward& reward);
 
 // Abstract class representing a set of protocol rules.
 // For example, its subclass BorRuleSet corresponds to the protocol rule set of Polygon PoS.

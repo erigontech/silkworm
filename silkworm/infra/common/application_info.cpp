@@ -45,7 +45,7 @@ std::string make_client_id_from_build_info(const buildinfo& info) {
            "/" + info.compiler_id + "-" + info.compiler_version;
 }
 
-std::string get_description_from_build_info(const buildinfo* info) {
+std::string build_info_to_string(const buildinfo* info) {
     std::string description{"version: "};
     description.append(info->git_branch);
     description.append(info->project_version);
@@ -66,7 +66,7 @@ ApplicationInfo make_application_info(const buildinfo* info) {
     return {
         .version = info->project_version,
         .commit_hash = info->git_commit_hash,
-        .build_description = get_description_from_build_info(info),
+        .build_description = build_info_to_string(info),
         .node_name = get_node_name_from_build_info(info),
         .client_id = make_client_id_from_build_info(*info),
     };

@@ -35,6 +35,8 @@ struct Filter {
     FilterAddresses addresses;
     FilterTopics topics;
     std::optional<std::string> block_hash;
+
+    std::string to_string() const;
 };
 
 struct LogFilterOptions {
@@ -43,6 +45,8 @@ struct LogFilterOptions {
     std::uint64_t log_count{0};
     std::uint64_t block_count{0};
     bool ignore_topics_order{false};
+
+    std::string to_string() const;
 };
 
 std::ostream& operator<<(std::ostream& out, const Filter& filter);

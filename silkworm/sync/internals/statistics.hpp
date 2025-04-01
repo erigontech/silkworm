@@ -40,6 +40,8 @@ struct DownloadStatistics {
         uint64_t invalid{0};
         uint64_t bad{0};
     } reject_causes;
+
+    std::string to_string() const;
 };
 
 std::ostream& operator<<(std::ostream& os, const DownloadStatistics& stats);
@@ -61,6 +63,6 @@ struct NetworkStatistics {
 
 using IntervalNetworkStatistics = std::tuple<NetworkStatistics&, NetworkStatistics&, seconds_t>;
 
-std::ostream& operator<<(std::ostream& os, IntervalNetworkStatistics prev_and_curr_stats);
+std::ostream& operator<<(std::ostream& os, const IntervalNetworkStatistics& stats);
 
 }  // namespace silkworm

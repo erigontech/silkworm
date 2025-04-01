@@ -40,6 +40,8 @@ struct Account {
     Bytes rlp(const evmc::bytes32& storage_root) const;
 
     friend bool operator==(const Account&, const Account&) = default;
+
+    std::string to_string() const;
 };
 
 }  // namespace silkworm

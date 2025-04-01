@@ -27,6 +27,14 @@
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Receipt& r) {
+    out << r.to_string();
+    return out;
+}
+
+std::string Receipt::to_string() const {
+    const auto& r = *this;
+    std::stringstream out;
+
     out << " block_hash: " << to_hex(r.block_hash);
     out << " block_num: " << r.block_num;
     out << " contract_address: " << r.contract_address;
@@ -49,7 +57,7 @@ std::ostream& operator<<(std::ostream& out, const Receipt& r) {
     out << " tx_hash: " << to_hex(r.tx_hash);
     out << " tx_index: " << r.tx_index;
     out << " type: 0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(r.type) << std::dec;
-    return out;
+    return out.str();
 }
 
 Bloom bloom_from_logs(const Logs& logs) {

@@ -19,8 +19,16 @@
 namespace silkworm {
 
 std::ostream& operator<<(std::ostream& os, const silkworm::InboundMessage& msg) {
-    os << msg.name() << " content: " << msg.content();
+    os << msg.to_string();
     return os;
+}
+
+std::string InboundMessage::to_string() const {
+    const auto& msg = *this;
+    std::stringstream os;
+
+    os << msg.name() << " content: " << msg.content();
+    return os.str();
 }
 
 std::string identify(const silkworm::InboundMessage& message) {

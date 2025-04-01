@@ -27,6 +27,8 @@ using BlockHeadersPacket = std::vector<BlockHeader>;
 struct BlockHeadersPacket66 {  // eth/66 version
     uint64_t request_id{0};
     BlockHeadersPacket request;
+
+    std::string to_string() const;
 };
 
 namespace rlp {
@@ -40,6 +42,14 @@ namespace rlp {
 }  // namespace rlp
 
 inline std::ostream& operator<<(std::ostream& os, const BlockHeadersPacket66& packet) {
+    os << packet.to_string();
+    return os;
+}
+
+inline std::string BlockHeadersPacket66::to_string() const {
+    const auto& packet = *this;
+    std::stringstream os;
+
     os << "reqId=" << packet.request_id;
     os << " headers(block_num)=";
 
@@ -49,7 +59,7 @@ inline std::ostream& operator<<(std::ostream& os, const BlockHeadersPacket66& pa
     }
     if (packet.request.size() > max_display) os << "...";
 
-    return os;
+    return os.str();
 }
 
 }  // namespace silkworm

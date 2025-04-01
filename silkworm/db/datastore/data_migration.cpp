@@ -32,7 +32,7 @@ Task<bool> DataMigration::exec() {
         SILK_DEBUG_M(name()) << "END noop";
         co_return false;
     }
-    SILK_DEBUG_M(name()) << "migrate " << command->description();
+    SILK_DEBUG_M(name()) << "migrate " << command->to_string();
     auto result = migrate(std::move(command));
     SILK_DEBUG_M(name()) << "index";
     index(result);

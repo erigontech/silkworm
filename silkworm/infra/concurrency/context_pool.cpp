@@ -19,8 +19,16 @@
 namespace silkworm::concurrency {
 
 std::ostream& operator<<(std::ostream& out, const Context& c) {
-    out << "io_context: " << c.ioc() << " id: " << c.id();
+    out << c.to_string();
     return out;
+}
+
+std::string Context::to_string() const {
+    const auto& c = *this;
+    std::stringstream out;
+
+    out << "io_context: " << c.ioc() << " id: " << c.id();
+    return out.str();
 }
 
 Context::Context(size_t context_id)

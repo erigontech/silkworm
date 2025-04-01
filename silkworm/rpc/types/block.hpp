@@ -36,6 +36,7 @@ struct Block {
     bool full_tx{false};
 
     uint64_t get_block_size() const;
+    std::string to_string() const;
 };
 
 std::ostream& operator<<(std::ostream& out, const Block& b);
@@ -77,13 +78,15 @@ class BlockNumOrHash {
         return is_tag() ? *std::get_if<std::string>(&value_) : "";
     }
 
+    std::string to_string() const;
+
   private:
     void parse(std::string const& block_num_or_hash);
 
     std::variant<uint64_t, evmc::bytes32, std::string> value_;
 };
 
-std::ostream& operator<<(std::ostream& out, const BlockNumOrHash& b);
+std::ostream& operator<<(std::ostream& out, const BlockNumOrHash& block_num_or_hash);
 
 struct BlockDetails {
     uint64_t block_size;

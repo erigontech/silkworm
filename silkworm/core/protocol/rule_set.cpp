@@ -284,4 +284,24 @@ RuleSetPtr rule_set_factory(const ChainConfig& chain_config) {
     return rule_set;
 }
 
+std::ostream& operator<<(std::ostream& out, const BlockReward& reward) {
+    out << reward.to_string();
+    return out;
+}
+
+std::string BlockReward::to_string() const {
+    const auto& reward = *this;
+    std::stringstream out;
+
+    out << "miner_reward: " << intx::to_string(reward.miner) << " ommer_rewards: [";
+    for (size_t i{0}; i < reward.ommers.size(); ++i) {
+        out << intx::to_string(reward.ommers[i]);
+        if (i != reward.ommers.size() - 1) {
+            out << " ";
+        }
+    }
+    out << "]";
+    return out.str();
+}
+
 }  // namespace silkworm::protocol

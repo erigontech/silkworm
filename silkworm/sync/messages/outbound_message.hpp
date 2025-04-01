@@ -36,6 +36,7 @@ class OutboundMessage : public Message {
 
     virtual silkworm::sentry::eth::MessageId eth_message_id() const = 0;
     virtual Bytes message_data() const = 0;
+    virtual std::string to_string() const;
 
   protected:
     size_t sent_reqs_{0};
@@ -43,8 +44,16 @@ class OutboundMessage : public Message {
 };
 
 inline std::ostream& operator<<(std::ostream& os, const silkworm::OutboundMessage& msg) {
-    os << msg.name() << " content: " << msg.content();
+    os << msg.to_string();
     return os;
+}
+
+inline std::string OutboundMessage::to_string() const {
+    const auto& msg = *this;
+    std::stringstream os;
+
+    os << msg.name() << " content: " << msg.content();
+    return os.str();
 }
 
 }  // namespace silkworm

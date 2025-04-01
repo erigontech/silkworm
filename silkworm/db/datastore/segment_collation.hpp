@@ -35,7 +35,7 @@ struct SegmentCollationCommand : public DataMigrationCommand {
           base_txn_id(base_txn_id1) {}
     ~SegmentCollationCommand() override = default;
 
-    std::string description() const override {
+    std::string to_string() const override {
         std::stringstream stream;
         stream << "SegmentCollationCommand " << range.to_string();
         return stream.str();

@@ -60,6 +60,8 @@ enum Penalty : int {
 struct PeerPenalization {
     Penalty penalty;
     PeerId peer_id;
+
+    std::string to_string() const;
 };
 
 std::ostream& operator<<(std::ostream& os, const PeerPenalization& penalization);

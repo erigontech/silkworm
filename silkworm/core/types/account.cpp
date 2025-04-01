@@ -16,6 +16,8 @@
 
 #include "account.hpp"
 
+#include <sstream>
+
 #include <silkworm/core/rlp/encode.hpp>
 
 namespace silkworm {
@@ -36,6 +38,18 @@ Bytes Account::rlp(const evmc::bytes32& storage_root) const {
     rlp::encode(to, code_hash);
 
     return to;
+}
+
+std::string Account::to_string() const {
+    const auto& account = *this;
+    std::stringstream out;
+
+    out << "nonce: " << account.nonce;
+    out << " balance: "
+        << "0x" << intx::hex(account.balance);
+    out << " code_hash: 0x" << to_hex(account.code_hash);
+    out << " incarnation: " << account.incarnation;
+    return out.str();
 }
 
 }  // namespace silkworm

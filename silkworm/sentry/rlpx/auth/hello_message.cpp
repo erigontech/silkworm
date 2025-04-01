@@ -56,7 +56,7 @@ std::string HelloMessage::Capability::to_string() const {
     return stream.str();
 }
 
-std::string HelloMessage::capabilities_description() {
+std::string HelloMessage::capabilities_to_string() {
     std::ostringstream stream;
     for (auto& capability : capabilities_) {
         stream << capability.to_string() << ";";

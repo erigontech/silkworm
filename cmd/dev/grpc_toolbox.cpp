@@ -48,7 +48,8 @@ using namespace silkworm;
 using namespace silkworm::db::kv::api;
 using namespace silkworm::rpc;
 
-inline std::ostream& operator<<(std::ostream& out, const types::H160& address) {
+std::string h160_address_to_string(const types::H160& address) {
+    std::stringstream out;
     out << "address=" << address.has_hi();
     if (address.has_hi()) {
         auto& hi_half = address.hi();
@@ -58,6 +59,11 @@ inline std::ostream& operator<<(std::ostream& out, const types::H160& address) {
         out << std::hex << lo_half;
     }
     out << std::dec;
+    return out.str();
+}
+
+std::ostream& operator<<(std::ostream& out, const types::H160& address) {
+    out << h160_address_to_string(address);
     return out;
 }
 

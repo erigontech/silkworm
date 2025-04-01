@@ -34,14 +34,20 @@ inline bool operator==(const Status& lhs, const Status& rhs) {
            lhs.error_details() == rhs.error_details();
 }
 
-// operator<< overloading for grpc::Status is *NOT* present in gRPC library
-inline std::ostream& operator<<(std::ostream& out, const Status& status) {
+inline std::string status_to_string(const Status& status) {
+    std::stringstream out;
     out << "status=" << (status.ok() ? "OK" : "KO");
     if (!status.ok()) {
         out << " error_code=" << status.error_code()
             << " error_message=" << status.error_message()
             << " error_details=" << status.error_details();
     }
+    return out.str();
+}
+
+// operator<< overloading for grpc::Status is *NOT* present in gRPC library
+inline std::ostream& operator<<(std::ostream& out, const Status& status) {
+    out << status_to_string(status);
     return out;
 }
 

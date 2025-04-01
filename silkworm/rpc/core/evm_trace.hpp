@@ -51,6 +51,8 @@ struct TraceConfig {
     bool vm_trace{false};
     bool trace{false};
     bool state_diff{false};
+
+    std::string to_string() const;
 };
 
 void from_json(const nlohmann::json& json, TraceConfig& tc);
@@ -70,6 +72,8 @@ struct TraceFilter {
     std::optional<std::string> mode;
     std::uint32_t after{0};
     std::uint32_t count{std::numeric_limits<uint32_t>::max()};
+
+    std::string to_string() const;
 };
 
 void from_json(const nlohmann::json& json, TraceFilter& tf);

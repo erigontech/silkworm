@@ -52,14 +52,30 @@ void from_json(const nlohmann::json& json, TraceConfig& tc) {
 }
 
 std::ostream& operator<<(std::ostream& out, const TraceConfig& tc) {
+    out << tc.to_string();
+    return out;
+}
+
+std::string TraceConfig::to_string() const {
+    const auto& tc = *this;
+    std::stringstream out;
+
     out << "vmTrace: " << std::boolalpha << tc.vm_trace;
     out << " Trace: " << std::boolalpha << tc.trace;
     out << " stateDiff: " << std::boolalpha << tc.state_diff;
 
-    return out;
+    return out.str();
 }
 
 std::ostream& operator<<(std::ostream& out, const TraceFilter& tf) {
+    out << tf.to_string();
+    return out;
+}
+
+std::string TraceFilter::to_string() const {
+    const auto& tf = *this;
+    std::stringstream out;
+
     out << "from_block: " << std::dec << tf.from_block;
     out << ", to_block: " << std::dec << tf.to_block;
     if (!tf.from_addresses.empty()) {
@@ -78,7 +94,7 @@ std::ostream& operator<<(std::ostream& out, const TraceFilter& tf) {
     out << ", after: " << std::dec << tf.after;
     out << ", count: " << std::dec << tf.count;
 
-    return out;
+    return out.str();
 }
 
 void from_json(const nlohmann::json& json, TraceCall& tc) {

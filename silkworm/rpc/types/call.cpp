@@ -16,6 +16,7 @@
 
 #include "call.hpp"
 
+#include <sstream>
 #include <string>
 
 #include <silkworm/core/common/endian.hpp>
@@ -34,6 +35,13 @@ static std::string optional_bytes_to_string(const std::optional<silkworm::Bytes>
 }
 
 std::ostream& operator<<(std::ostream& out, const Call& call) {
+    out << call.to_string();
+    return out;
+}
+
+std::string Call::to_string() const {
+    const auto& call = *this;
+    std::stringstream out;
     out << "from: " << call.from.value_or(evmc::address{}) << " "
         << "to: " << call.to.value_or(evmc::address{}) << " "
         << "gas: " << call.gas.value_or(0) << " "
@@ -42,10 +50,11 @@ std::ostream& operator<<(std::ostream& out, const Call& call) {
         << "max_fee_per_gas: " << optional_uint256_to_string(call.max_fee_per_gas) << " "
         << "value: " << optional_uint256_to_string(call.value) << " "
         << "data: " << optional_bytes_to_string(call.data);
-    return out;
+    return out.str();
 }
 
-std::ostream& operator<<(std::ostream& out, const Bundles& bundles) {
+std::string bundles_to_string(const Bundles& bundles) {
+    std::stringstream out;
     out << "[";
     bool first = true;
     for (const auto& bundle : bundles) {
@@ -56,33 +65,61 @@ std::ostream& operator<<(std::ostream& out, const Bundles& bundles) {
         first = false;
     }
     out << "]";
+    return out.str();
+}
+
+std::ostream& operator<<(std::ostream& out, const Bundles& bundles) {
+    out << bundles_to_string(bundles);
     return out;
 }
 
 std::ostream& operator<<(std::ostream& out, const Bundle& bundle) {
+    out << bundle.to_string();
+    return out;
+}
+
+std::string Bundle::to_string() const {
+    const auto& bundle = *this;
+    std::stringstream out;
+
     out << "transactions: [";
     for (const auto& transaction : bundle.transactions) {
         out << transaction;
     }
     out << "] ";
     out << "block_override: " << bundle.block_override;
-
-    return out;
+    return out.str();
 }
 
 std::ostream& operator<<(std::ostream& out, const BlockOverrides& bo) {
-    out << "block_num: " << bo.block_num.value_or(0) << " ";
-
+    out << bo.to_string();
     return out;
+}
+
+std::string BlockOverrides::to_string() const {
+    const auto& bo = *this;
+    std::stringstream out;
+
+    out << "block_num: " << bo.block_num.value_or(0) << " ";
+    return out.str();
 }
 
 std::ostream& operator<<(std::ostream& out, const SimulationContext& sc) {
-    out << "block_num: " << sc.block_num << " "
-        << "transaction_index: " << sc.transaction_index;
+    out << sc.to_string();
     return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const AccountsOverrides& ao) {
+std::string SimulationContext::to_string() const {
+    const auto& sc = *this;
+    std::stringstream out;
+
+    out << "block_num: " << sc.block_num << " "
+        << "transaction_index: " << sc.transaction_index;
+    return out.str();
+}
+
+std::string accounts_overrides_to_string(const AccountsOverrides& ao) {
+    std::stringstream out;
     out << "{";
     bool first = true;
     for (const auto& item : ao) {
@@ -93,18 +130,29 @@ std::ostream& operator<<(std::ostream& out, const AccountsOverrides& ao) {
         first = false;
     }
     out << "} ";
+    return out.str();
+}
 
+std::ostream& operator<<(std::ostream& out, const AccountsOverrides& ao) {
+    out << accounts_overrides_to_string(ao);
     return out;
 }
 
 std::ostream& operator<<(std::ostream& out, const AccountOverrides& ao) {
+    out << ao.to_string();
+    return out;
+}
+
+std::string AccountOverrides::to_string() const {
+    const auto& ao = *this;
+    std::stringstream out;
+
     out << "balance: " << optional_uint256_to_string(ao.balance) << " "
         << "nonce: " << ao.nonce.value_or(0) << " "
         << "code: " << optional_bytes_to_string(ao.code) << " "
         << "state: #" << ao.state.size() << " "
         << "state_diff: #" << ao.state_diff.size() << " ";
-
-    return out;
+    return out.str();
 }
 
 }  // namespace silkworm::rpc

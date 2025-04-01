@@ -71,6 +71,7 @@ inline auto hash_of_transaction(const silkworm::Transaction& txn) {
 }
 
 namespace boost::asio {
+
 inline std::ostream& operator<<(std::ostream& out, const const_buffer& buffer) {
     out << std::string{static_cast<const char*>(buffer.data()), buffer.size()};
     return out;
@@ -82,4 +83,5 @@ inline std::ostream& operator<<(std::ostream& out, const std::vector<const_buffe
     }
     return out;
 }
+
 }  // namespace boost::asio

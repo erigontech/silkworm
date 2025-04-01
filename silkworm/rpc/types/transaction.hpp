@@ -39,6 +39,8 @@ struct Transaction : public silkworm::Transaction {
     bool queued_in_pool{false};
 
     intx::uint256 effective_gas_price() const;  // EIP-1559
+
+    std::string to_string() const;
 };
 
 struct Rlp {

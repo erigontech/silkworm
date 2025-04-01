@@ -55,6 +55,14 @@ void from_json(const nlohmann::json& json, DebugConfig& tc) {
 }
 
 std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
+    out << tc.to_string();
+    return out;
+}
+
+std::string DebugConfig::to_string() const {
+    const auto& tc = *this;
+    std::stringstream out;
+
     out << "disableStorage: " << std::boolalpha << tc.disable_storage;
     out << " disableMemory: " << std::boolalpha << tc.disable_memory;
     out << " disableStack: " << std::boolalpha << tc.disable_stack;
@@ -63,7 +71,7 @@ std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
         out << " TxIndex: " << std::dec << tc.tx_index.value();
     }
 
-    return out;
+    return out.str();
 }
 
 std::string uint256_to_hex(const evmone::uint256& x) {

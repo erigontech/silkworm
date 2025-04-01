@@ -22,7 +22,7 @@ namespace silkworm::datastore {
 
 struct DataMigrationCommand {
     virtual ~DataMigrationCommand() = default;
-    virtual std::string description() const = 0;
+    virtual std::string to_string() const = 0;
 };
 
 }  // namespace silkworm::datastore

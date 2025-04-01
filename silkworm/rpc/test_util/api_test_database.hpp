@@ -78,13 +78,21 @@ class TestDataStoreBase {
 
 class LocalContextTestBase : public ServiceContextTestBase {
   public:
-    explicit LocalContextTestBase(db::DataStoreRef data_store, db::kv::api::StateCache* state_cache) {
+    LocalContextTestBase(db::DataStoreRef data_store, db::kv::api::StateCache* state_cache) {
+        datastore::kvdb::ROTxnManaged ro_txn = data_store.chaindata.access_ro().start_ro_tx();
+        auto chain_config = db::read_chain_config(ro_txn);
+        SILKWORM_ASSERT(chain_config);
+        chain_config_ = std::move(*chain_config);
         db::kv::api::StateChangeRunner runner{ioc_.get_executor()};
         db::kv::api::ServiceRouter router{runner.state_changes_calls_channel()};
         add_private_service<db::kv::api::Client>(ioc_,
                                                  std::make_unique<db::kv::api::DirectClient>(
-                                                     std::make_shared<db::kv::api::DirectService>(router, std::move(data_store), state_cache)));
+                                                     std::make_shared<db::kv::api::DirectService>(
+                                                         router, std::move(data_store), chain_config_, state_cache)));
     }
+
+  private:
+    ChainConfig chain_config_;
 };
 
 template <typename TestRequestHandler>

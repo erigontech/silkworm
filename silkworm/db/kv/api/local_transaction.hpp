@@ -35,27 +35,10 @@ namespace silkworm::db::kv::api {
 
 class LocalTransaction : public BaseTransaction {
   public:
-    class Cache {
-      public:
-        using ChainStorageCache = db::chain::LocalChainStorage::Cache;
-        explicit Cache(StateCache* state_cache)
-            : state_cache_{state_cache},
-              chain_storage_cache_{std::make_shared<ChainStorageCache>()} {}
-        StateCache* state_cache() const { return state_cache_; }
-        std::shared_ptr<ChainStorageCache> chain_storage_cache() const { return chain_storage_cache_; }
-
-      private:
-        //! The local state cache built upon incoming state changes
-        StateCache* state_cache_;
-        std::shared_ptr<ChainStorageCache> chain_storage_cache_;
-    };
-
-    LocalTransaction(
-        DataStoreRef data_store,
-        std::shared_ptr<Cache> cache)
-        : BaseTransaction{cache->state_cache()},
+    LocalTransaction(DataStoreRef data_store, const ChainConfig& chain_config, StateCache* state_cache)
+        : BaseTransaction{state_cache},
           data_store_{std::move(data_store)},
-          cache_{std::move(cache)},
+          chain_config_{chain_config},
           tx_{data_store_.chaindata.access_ro().start_ro_tx()} {}
 
     ~LocalTransaction() override = default;
@@ -124,7 +107,7 @@ class LocalTransaction : public BaseTransaction {
     std::map<std::string, std::shared_ptr<CursorDupSort>> dup_cursors_;
 
     DataStoreRef data_store_;
-    std::shared_ptr<Cache> cache_;
+    const ChainConfig& chain_config_;
     uint32_t last_cursor_id_{0};
     datastore::kvdb::ROTxnManaged tx_;
     uint64_t tx_id_{++next_tx_id_};

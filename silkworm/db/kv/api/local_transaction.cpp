@@ -139,8 +139,7 @@ Task<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::str
 std::shared_ptr<chain::ChainStorage> LocalTransaction::create_storage() {
     // The calling thread *must* be the *same* which created this LocalTransaction instance
     return std::make_shared<chain::LocalChainStorage>(
-        DataModel{tx_, data_store_.blocks_repository},
-        cache_->chain_storage_cache());
+        DataModel{tx_, data_store_.blocks_repository}, chain_config_);
 }
 
 Task<TxnId> LocalTransaction::first_txn_num_in_block(BlockNum block_num) {

@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <mutex>
-
 #include <silkworm/db/access_layer.hpp>
 
 #include "chain_storage.hpp"
@@ -28,14 +26,7 @@ namespace silkworm::db::chain {
 //! in local database (accessed via MDBX API) or local snapshot files (accessed via custom snapshot API)
 class LocalChainStorage : public ChainStorage {
   public:
-    struct Cache {
-        std::optional<ChainConfig> chain_config;
-        std::once_flag chain_config_once_flag;
-    };
-
-    LocalChainStorage(
-        db::DataModel data_model,
-        std::shared_ptr<Cache> cache);
+    LocalChainStorage(db::DataModel data_model, const ChainConfig& chain_config);
     ~LocalChainStorage() override = default;
 
     Task<ChainConfig> read_chain_config() const override;
@@ -82,7 +73,7 @@ class LocalChainStorage : public ChainStorage {
 
   private:
     db::DataModel data_model_;
-    std::shared_ptr<Cache> cache_;
+    const ChainConfig& chain_config_;
 };
 
 }  // namespace silkworm::db::chain

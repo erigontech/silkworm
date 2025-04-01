@@ -28,7 +28,7 @@ namespace silkworm::db::kv::api {
 //! This is used both client-side by 'direct' (i.e. no-gRPC) implementation and server-side by gRPC server.
 class DirectService : public Service {
   public:
-    DirectService(ServiceRouter router, DataStoreRef data_store, StateCache* state_cache);
+    DirectService(ServiceRouter router, DataStoreRef data_store, const ChainConfig& chain_config, StateCache* state_cache);
     ~DirectService() override = default;
 
     DirectService(const DirectService&) = delete;
@@ -53,7 +53,11 @@ class DirectService : public Service {
     //! The data store
     DataStoreRef data_store_;
 
-    std::shared_ptr<LocalTransaction::Cache> shared_transaction_cache_;
+    //! The chain configuration
+    const ChainConfig& chain_config_;
+
+    //! The local state cache built upon incoming state changes
+    StateCache* state_cache_;
 };
 
 }  // namespace silkworm::db::kv::api

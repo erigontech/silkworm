@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include <silkworm/core/chain/config.hpp>
 #include <silkworm/db/data_store.hpp>
 #include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/kv/api/client.hpp>
@@ -44,8 +45,9 @@ class Daemon {
   public:
     static int run(const DaemonSettings& settings);
 
-    explicit Daemon(
+    Daemon(
         DaemonSettings settings,
+        std::optional<ChainConfig> chain_config,
         std::optional<db::DataStoreRef> data_store);
 
     Daemon(const Daemon&) = delete;
@@ -73,6 +75,9 @@ class Daemon {
 
     //! The RPC daemon configuration settings.
     DaemonSettings settings_;
+
+    //! The chain configuration or std::nullopt if working remotely
+    std::optional<ChainConfig> chain_config_;
 
     //! The factory of gRPC client-side channels.
     ChannelFactory create_channel_;

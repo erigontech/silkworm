@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/data_store.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/daemon.hpp>
@@ -113,8 +114,16 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* en
         *handle->state_repository_historical,
     };
 
+    if (!handle->chain_config) {
+        datastore::kvdb::ROTxnManaged ro_txn = handle->chaindata->access_ro().start_ro_tx();
+        handle->chain_config = db::read_chain_config(ro_txn);
+        if (!handle->chain_config) {
+            return SILKWORM_INVALID_SETTINGS;
+        }
+    }
+
     // Create the one-and-only Silkrpc daemon
-    handle->rpcdaemon = std::make_unique<rpc::Daemon>(daemon_settings, data_store);
+    handle->rpcdaemon = std::make_unique<rpc::Daemon>(daemon_settings, *handle->chain_config, data_store);
 
     // Check protocol version compatibility with Core Services
     if (!daemon_settings.skip_protocol_check) {

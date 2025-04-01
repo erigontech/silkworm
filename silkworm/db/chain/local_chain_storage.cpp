@@ -17,18 +17,16 @@
 #include "local_chain_storage.hpp"
 
 #include <bit>
-#include <stdexcept>
 
 #include <silkworm/db/access_layer.hpp>
 
 namespace silkworm::db::chain {
 
+LocalChainStorage::LocalChainStorage(db::DataModel data_model, const ChainConfig& chain_config)
+    : data_model_{data_model}, chain_config_{chain_config} {}
+
 Task<ChainConfig> LocalChainStorage::read_chain_config() const {
-    const auto chain_config{data_model_.read_chain_config()};
-    if (!chain_config) {
-        throw std::runtime_error{"empty chain config data in storage"};
-    }
-    co_return *chain_config;
+    co_return chain_config_;
 }
 
 Task<BlockNum> LocalChainStorage::max_block_num() const {

@@ -53,7 +53,7 @@ Sync::Sync(const boost::asio::any_io_executor& executor,
             .num_workers = 1,  // single-client so just one worker should be OK
             .jwt_secret_file = rpc_settings.jwt_secret_file,
         };
-        engine_rpc_server_ = std::make_unique<rpc::Daemon>(engine_rpc_settings, data_store);
+        engine_rpc_server_ = std::make_unique<rpc::Daemon>(engine_rpc_settings, std::make_optional(config), data_store);
 
         // Create the synchronization algorithm based on Casper + LMD-GHOST, i.e. PoS
         auto pos_sync = std::make_shared<PoSSync>(block_exchange_, execution);

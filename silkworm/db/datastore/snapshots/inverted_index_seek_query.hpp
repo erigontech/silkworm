@@ -66,7 +66,7 @@ struct InvertedIndexSeekQuery {
     explicit InvertedIndexSeekQuery(
         const SnapshotRepositoryROAccess& repository,
         std::function<InvertedIndex(const SnapshotBundle&)> entity_provider,
-        std::function<InvertedIndexCache*()> cache_provider)
+        std::function<InvertedIndexSeekCache*()> cache_provider)
         : repository_{repository},
           entity_provider_{std::move(entity_provider)},
           cache_provider_{std::move(cache_provider)} {}
@@ -74,7 +74,7 @@ struct InvertedIndexSeekQuery {
     using Key = decltype(TKeyEncoder::value);
 
     std::optional<datastore::Timestamp> exec(Key key, datastore::Timestamp timestamp) {
-        InvertedIndexCache* cache = cache_provider_();
+        InvertedIndexSeekCache* cache = cache_provider_();
 
         TKeyEncoder key_encoder;
         key_encoder.value = std::move(key);
@@ -82,7 +82,7 @@ struct InvertedIndexSeekQuery {
 
         uint64_t key_hash_hi{0};
         if (cache) {
-            std::optional<InvertedIndexCacheData> cached_data;
+            std::optional<InvertedIndexSeekCacheData> cached_data;
             if (std::tie(cached_data, key_hash_hi) = cache->get(key_data); cached_data) {
                 if (cached_data->requested <= timestamp) {
                     if (timestamp <= cached_data->found) {
@@ -116,7 +116,7 @@ struct InvertedIndexSeekQuery {
   private:
     const SnapshotRepositoryROAccess& repository_;
     std::function<InvertedIndex(const SnapshotBundle&)> entity_provider_;
-    std::function<InvertedIndexCache*()> cache_provider_;
+    std::function<InvertedIndexSeekCache*()> cache_provider_;
 };
 
 }  // namespace silkworm::snapshots

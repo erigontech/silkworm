@@ -34,7 +34,7 @@ struct HistoryGetQuery {
         : timestamp_query_{
               repository,
               [](const SnapshotBundle& bundle) { return bundle.history(segment_names.front()).inverted_index; },
-              [&]() { return repository.inverted_index_cache(segment_names.front()); },
+              [&]() { return repository.inverted_index_seek_cache(segment_names.front()); },
           },
           value_query_{repository} {}
 

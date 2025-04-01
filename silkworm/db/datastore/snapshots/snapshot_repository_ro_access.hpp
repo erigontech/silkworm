@@ -62,8 +62,8 @@ struct SnapshotRepositoryROAccess {
 
     virtual ~SnapshotRepositoryROAccess() = default;
 
-    virtual DomainCache* domain_cache(const datastore::EntityName& name) const = 0;
-    virtual InvertedIndexCache* inverted_index_cache(const datastore::EntityName& name) const = 0;
+    virtual DomainGetLatestCache* domain_get_latest_cache(const datastore::EntityName& name) const = 0;
+    virtual InvertedIndexSeekCache* inverted_index_seek_cache(const datastore::EntityName& name) const = 0;
 
     virtual size_t bundles_count() const = 0;
 

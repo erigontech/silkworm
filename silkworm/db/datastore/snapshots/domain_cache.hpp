@@ -28,11 +28,11 @@
 
 namespace silkworm::snapshots {
 
-struct DomainCacheData {
+struct DomainGetLatestCacheData {
     BytesOrByteView value;
     std::optional<datastore::Step> range_end{0};
 };
-using DomainCache = Cache<DomainCacheData>;
-using DomainCaches = std::map<datastore::EntityName, std::unique_ptr<DomainCache>>;
+using DomainGetLatestCache = Cache<DomainGetLatestCacheData>;
+using DomainGetLatestCaches = std::map<datastore::EntityName, std::unique_ptr<DomainGetLatestCache>>;
 
 }  // namespace silkworm::snapshots

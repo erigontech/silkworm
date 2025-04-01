@@ -41,8 +41,8 @@ SnapshotRepository::SnapshotRepository(
     StepToTimestampConverter step_converter,
     std::optional<uint32_t> index_salt,
     std::unique_ptr<IndexBuildersFactory> index_builders_factory,
-    std::optional<DomainCaches> domain_caches,
-    std::optional<InvertedIndexCaches> inverted_index_caches)
+    std::optional<DomainGetLatestCaches> domain_caches,
+    std::optional<InvertedIndexSeekCaches> inverted_index_caches)
     : name_(std::move(name)),
       dir_path_(std::move(dir_path)),
       schema_(std::move(schema)),
@@ -76,13 +76,13 @@ void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
     bundles_ = bundles;
 }
 
-DomainCache* SnapshotRepository::domain_cache(const datastore::EntityName& name) const {
+DomainGetLatestCache* SnapshotRepository::domain_get_latest_cache(const datastore::EntityName& name) const {
     if (!domain_caches_) return nullptr;
     if (!domain_caches_->contains(name)) return nullptr;
     return domain_caches_->at(name).get();
 }
 
-InvertedIndexCache* SnapshotRepository::inverted_index_cache(const datastore::EntityName& name) const {
+InvertedIndexSeekCache* SnapshotRepository::inverted_index_seek_cache(const datastore::EntityName& name) const {
     if (!inverted_index_caches_) return nullptr;
     if (!inverted_index_caches_->contains(name)) return nullptr;
     return inverted_index_caches_->at(name).get();

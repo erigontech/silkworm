@@ -81,7 +81,7 @@ struct DomainGetLatestQuery {
     };
 
     std::optional<Result> exec(const Key& key) {
-        DomainCache* cache = repository.domain_cache(entity_name);
+        DomainGetLatestCache* cache = repository.domain_get_latest_cache(entity_name);
 
         TKeyEncoder key_encoder;
         key_encoder.value = key;
@@ -89,7 +89,7 @@ struct DomainGetLatestQuery {
 
         uint64_t key_hash_hi{0};
         if (cache) {
-            std::optional<DomainCacheData> cached_data;
+            std::optional<DomainGetLatestCacheData> cached_data;
             if (std::tie(cached_data, key_hash_hi) = cache->get(key_data); cached_data) {
                 if (!cached_data->range_end) {  // hit in cache but value not found
                     return std::nullopt;

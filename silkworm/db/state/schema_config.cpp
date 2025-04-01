@@ -109,12 +109,12 @@ static auto make_caches(std::optional<uint32_t> salt) {
     return caches;
 }
 
-static snapshots::DomainCaches make_domain_caches(std::optional<uint32_t> salt) {
-    return make_caches<snapshots::DomainCache, kDomainCacheEnvVar, kDefaultDomainCacheSize>(salt);
+static snapshots::DomainGetLatestCaches make_domain_caches(std::optional<uint32_t> salt) {
+    return make_caches<snapshots::DomainGetLatestCache, kDomainCacheEnvVar, kDefaultDomainCacheSize>(salt);
 }
 
-static snapshots::InvertedIndexCaches make_inverted_index_caches(std::optional<uint32_t> salt) {
-    return make_caches<snapshots::InvertedIndexCache, kInvertedIndexCacheEnvVar, kDefaultInvertedIndexCacheSize>(salt);
+static snapshots::InvertedIndexSeekCaches make_inverted_index_caches(std::optional<uint32_t> salt) {
+    return make_caches<snapshots::InvertedIndexSeekCache, kInvertedIndexCacheEnvVar, kDefaultInvertedIndexCacheSize>(salt);
 }
 
 static snapshots::SnapshotRepository make_state_repository(

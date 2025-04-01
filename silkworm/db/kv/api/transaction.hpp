@@ -58,7 +58,7 @@ class Transaction {
 
     virtual bool is_local() const = 0;
 
-    virtual std::shared_ptr<chain::ChainStorage> create_storage() = 0;
+    virtual std::shared_ptr<chain::ChainStorage> make_storage() = 0;
 
     virtual Task<void> close() = 0;
 

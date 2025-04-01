@@ -35,7 +35,7 @@ class RemoteClientImpl;
 
 struct RemoteClient : public api::Client {
     RemoteClient(
-        const rpc::ChannelFactory& create_channel,
+        const rpc::ChannelFactory& channel_factory,
         agrpc::GrpcContext& grpc_context,
         api::StateCache* state_cache,
         chain::Providers providers,

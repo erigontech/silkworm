@@ -41,7 +41,7 @@ class MockTransaction : public kv::api::Transaction {
     MOCK_METHOD((Task<std::shared_ptr<kv::api::Cursor>>), cursor, (const std::string&), (override));
     MOCK_METHOD((Task<std::shared_ptr<kv::api::CursorDupSort>>), cursor_dup_sort, (const std::string&), (override));
     bool is_local() const override { return false; }
-    MOCK_METHOD((std::shared_ptr<chain::ChainStorage>), create_storage, (), (override));
+    MOCK_METHOD((std::shared_ptr<chain::ChainStorage>), make_storage, (), (override));
     MOCK_METHOD((Task<TxnId>), first_txn_num_in_block, (BlockNum), (override));
     MOCK_METHOD((Task<void>), close, (), (override));
     MOCK_METHOD((Task<kv::api::KeyValue>), get, (const std::string&, ByteView), (override));

@@ -54,7 +54,7 @@ class RemoteTransaction : public api::BaseTransaction {
 
     Task<std::shared_ptr<api::CursorDupSort>> cursor_dup_sort(const std::string& table) override;
 
-    std::shared_ptr<chain::ChainStorage> create_storage() override;
+    std::shared_ptr<chain::ChainStorage> make_storage() override;
 
     Task<TxnId> first_txn_num_in_block(BlockNum block_num) override;
 

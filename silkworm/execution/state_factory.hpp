@@ -31,7 +31,7 @@ namespace silkworm::execution {
 struct StateFactory {
     db::kv::api::Transaction& tx;
 
-    std::shared_ptr<State> create_state(
+    std::shared_ptr<State> make(
         boost::asio::any_io_executor& executor,
         const db::chain::ChainStorage& storage,
         std::optional<TxnId> txn_id) const;

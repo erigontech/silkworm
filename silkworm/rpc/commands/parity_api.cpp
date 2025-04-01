@@ -62,7 +62,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         rpc::BlockReader block_reader{*chain_storage, *tx};
 
         const auto block_num = co_await block_reader.get_block_num(block_id);

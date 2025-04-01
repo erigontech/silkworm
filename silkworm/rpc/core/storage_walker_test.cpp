@@ -194,7 +194,7 @@ class DummyTransaction : public BaseTransaction {
         co_return cursor;
     }
 
-    std::shared_ptr<ChainStorage> create_storage() override {
+    std::shared_ptr<ChainStorage> make_storage() override {
         return nullptr;
     }
 

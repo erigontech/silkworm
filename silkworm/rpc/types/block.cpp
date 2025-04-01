@@ -83,7 +83,7 @@ std::ostream& operator<<(std::ostream& out, const BlockNumOrHash& block_num_or_h
     return out;
 }
 
-void BlockNumOrHash::build(const std::string& block_num_or_hash) {
+void BlockNumOrHash::parse(const std::string& block_num_or_hash) {
     value_ = uint64_t{0};
     if (block_num_or_hash == kEarliestBlockId) {
         value_ = kEarliestBlockNum;

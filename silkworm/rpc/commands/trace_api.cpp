@@ -53,7 +53,7 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         const BlockReader block_reader{*chain_storage, *tx};
 
         const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
@@ -101,7 +101,7 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         const BlockReader block_reader{*chain_storage, *tx};
 
         const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
@@ -190,7 +190,7 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         const BlockReader block_reader{*chain_storage, *tx};  // always at latest block
 
         const auto block_num = co_await block_reader.get_latest_block_num();
@@ -238,7 +238,7 @@ Task<void> TraceRpcApi::handle_trace_replay_block_transactions(const nlohmann::j
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (block_with_hash) {
             const BlockReader block_reader{*chain_storage, *tx};
@@ -279,7 +279,7 @@ Task<void> TraceRpcApi::handle_trace_replay_transaction(const nlohmann::json& re
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
             std::ostringstream oss;
@@ -323,7 +323,7 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, kInvalidParams, "block not found");
@@ -371,7 +371,7 @@ Task<void> TraceRpcApi::handle_trace_filter(const nlohmann::json& request, json:
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
 
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
@@ -421,7 +421,7 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
 
         const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
@@ -467,7 +467,7 @@ Task<void> TraceRpcApi::handle_trace_transaction(const nlohmann::json& request, 
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
         if (!tx_with_block) {
             reply = make_json_content(request);

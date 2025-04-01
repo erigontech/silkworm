@@ -124,7 +124,7 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohm
     SILK_DEBUG << "start_block_id: " << start_block_id << " end_block_id: " << end_block_id;
 
     auto tx = co_await database_->begin_transaction();
-    const auto chain_storage = tx->create_storage();
+    const auto chain_storage = tx->make_storage();
 
     try {
         BlockReader block_reader{*chain_storage, *tx};
@@ -174,7 +174,7 @@ Task<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohman
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         const BlockReader block_reader{*chain_storage, *tx};
 
         const auto start_block_num = co_await chain_storage->read_block_num(start_hash);
@@ -228,7 +228,7 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
@@ -307,7 +307,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (!block_with_hash) {
@@ -403,7 +403,7 @@ Task<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& req
 
     try {
         debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         co_await executor.trace_transaction(stream, *chain_storage, transaction_hash);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -445,7 +445,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, j
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         BlockReader block_reader{*chain_storage, *tx};
 
         const bool is_latest_block = co_await block_reader.is_latest_block_num(block_num_or_hash);
@@ -512,7 +512,7 @@ Task<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& reque
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         BlockReader block_reader{*chain_storage, *tx};
 
         const bool is_latest_block = co_await block_reader.is_latest_block_num(simulation_context.block_num);
@@ -544,7 +544,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
     auto tx = co_await database_->begin_transaction();
     BlockNum block_num{0};
     if (params[0].is_string()) {
-        auto chain_storage = tx->create_storage();
+        auto chain_storage = tx->make_storage();
         BlockReader block_reader{*chain_storage, *tx};
 
         const auto value = params[0].get<std::string>();
@@ -564,7 +564,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json&
     stream.write_field("jsonrpc", "2.0");
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
 
         debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
         co_await executor.trace_block(stream, *chain_storage, block_num);
@@ -613,7 +613,7 @@ Task<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& r
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
 
         debug::DebugExecutor executor{*block_cache_, workers_, *tx, config};
         co_await executor.trace_block(stream, *chain_storage, block_hash);
@@ -687,7 +687,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_block(const nlohmann::json& request
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         BlockReader block_reader{*chain_storage, *tx};
         const auto block_num = co_await block_reader.get_block_num(block_id);
         silkworm::Block block;
@@ -724,7 +724,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_receipts(const nlohmann::json& requ
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_content(request, nullptr);
@@ -785,7 +785,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_header(const nlohmann::json& reques
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         BlockReader block_reader{*chain_storage, *tx};
         const auto block_num = co_await block_reader.get_block_num(block_id);
         const auto block_hash = co_await chain_storage->read_canonical_header_hash(block_num);
@@ -824,7 +824,7 @@ Task<void> DebugRpcApi::handle_debug_get_raw_transaction(const nlohmann::json& r
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage{tx->create_storage()};
+        const auto chain_storage{tx->make_storage()};
 
         Bytes rlp{};
         co_await chain_storage->read_rlp_transaction(transaction_hash, rlp);

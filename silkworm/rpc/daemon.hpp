@@ -80,7 +80,7 @@ class Daemon {
     std::optional<ChainConfig> chain_config_;
 
     //! The factory of gRPC client-side channels.
-    ChannelFactory create_channel_;
+    ChannelFactory channel_factory_;
 
     //! The execution contexts capturing the asynchronous scheduling model.
     ClientContextPool context_pool_;

@@ -55,7 +55,7 @@ class LocalTransaction : public BaseTransaction {
     bool is_local() const override { return true; }
     DataStoreRef data_store() const { return data_store_; }
 
-    std::shared_ptr<chain::ChainStorage> create_storage() override;
+    std::shared_ptr<chain::ChainStorage> make_storage() override;
 
     Task<TxnId> first_txn_num_in_block(BlockNum block_num) override;
 

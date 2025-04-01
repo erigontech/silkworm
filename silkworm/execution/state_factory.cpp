@@ -24,7 +24,7 @@
 
 namespace silkworm::execution {
 
-std::shared_ptr<State> StateFactory::create_state(
+std::shared_ptr<State> StateFactory::make(
     boost::asio::any_io_executor& executor,
     const db::chain::ChainStorage& storage,
     std::optional<TxnId> txn_id) const {

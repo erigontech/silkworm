@@ -464,7 +464,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
     const auto txn_id = co_await tx_.user_txn_id_at(block_num);
 
     co_await async_task(workers_.executor(), [&]() -> void {
-        auto state = state_factory.create_state(current_executor, storage, txn_id);
+        auto state = state_factory.make(current_executor, storage, txn_id);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         bool refunds = !config_.no_refunds;
@@ -540,7 +540,7 @@ Task<void> DebugExecutor::execute(
 
     co_await async_task(workers_.executor(), [&]() {
         execution::StateFactory state_factory{tx_};
-        const auto state = state_factory.create_state(current_executor, storage, txn_id);
+        const auto state = state_factory.make(current_executor, storage, txn_id);
 
         EVMExecutor executor{block, chain_config, workers_, state};
 
@@ -612,7 +612,7 @@ Task<void> DebugExecutor::execute(
     }
 
     co_await async_task(workers_.executor(), [&]() {
-        auto state = state_factory.create_state(current_executor, storage, txn_id);
+        auto state = state_factory.make(current_executor, storage, txn_id);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         for (const auto& bundle : bundles) {

@@ -762,7 +762,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
             SILK_DEBUG << "block_num: " << block_num << " max_tx_num: " << max_tx_num;
         }
 
-        const auto results = co_await collect_transactions_with_receipts(
+        const TransactionsWithReceipts results = co_await collect_transactions_with_receipts(
             *tx, chain_storage, canonical_body_provider, block_num, address, from_timestamp, /*ascending=*/false, page_size);
 
         reply = make_json_content(request, results);
@@ -815,12 +815,12 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
             SILK_DEBUG << "block_num: " << block_num << " max_tx_num: " << max_tx_num;
         }
 
-        auto results = co_await collect_transactions_with_receipts(
+        TransactionsWithReceipts results = co_await collect_transactions_with_receipts(
             *tx, chain_storage, canonical_body_provider, block_num, address, from_timestamp, /*ascending=*/true, page_size);
 
-        std::reverse(results.transactions.begin(), results.transactions.end());
-        std::reverse(results.receipts.begin(), results.receipts.end());
-        std::reverse(results.headers.begin(), results.headers.end());
+        std::ranges::reverse(results.transactions);
+        std::ranges::reverse(results.receipts);
+        std::ranges::reverse(results.headers);
 
         reply = make_json_content(request, results);
     } catch (const std::invalid_argument& iv) {
@@ -884,18 +884,15 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     std::optional<BlockHeader> header;
 
     while (const auto tnx_nums = co_await txn_nums_it->next()) {
-        SILK_DEBUG
-            << "txn_id: " << tnx_nums->txn_id
-            << " block_num: " << tnx_nums->block_num
-            << ", tnx_index: " << (tnx_nums->txn_index ? std::to_string(*tnx_nums->txn_index) : "")
-            << ", ascending: " << std::boolalpha << ascending;
+        SILK_DEBUG << "txn_id: " << tnx_nums->txn_id << " block_num: " << tnx_nums->block_num
+                   << ", tnx_index: " << (tnx_nums->txn_index ? std::to_string(*tnx_nums->txn_index) : "")
+                   << ", ascending: " << std::boolalpha << ascending;
 
         if (tnx_nums->block_changed) {
             block_info.reset();
 
-            // Even if the desired page size is reached, drain the entire matching
-            // txs inside the block; reproduces e2 behavior. An e3/paginated-aware
-            // ots spec could improve in this area.
+            // Even if the desired page size is reached, drain the entire matching txs inside the block to reproduce E2
+            // behavior. An E3 paginated-aware ots spec could improve in this area.
             if (results.transactions.size() >= page_size) {
                 if (ascending) {
                     results.first_page = false;
@@ -938,9 +935,7 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
         results.headers.push_back(block.header);
     }
 
-    SILK_DEBUG << "Results"
-               << " transactions size: " << results.transactions.size()
-               << " receipts size: " << results.receipts.size();
+    SILK_DEBUG << "Results transactions size: " << results.transactions.size() << " receipts size: " << results.receipts.size();
 
     co_return results;
 }
@@ -964,7 +959,6 @@ intx::uint256 OtsRpcApi::get_block_fees(const silkworm::BlockWithHash& block, co
     for (const auto& receipt : receipts) {
         auto& txn = block.block.transactions[receipt.tx_index];
 
-        // effective_gas_price contains already baseFee
         intx::uint256 base_fee = block.block.header.base_fee_per_gas.value_or(0);
         const auto effective_gas_price = txn.effective_gas_price(base_fee);
 

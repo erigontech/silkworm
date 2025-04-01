@@ -94,7 +94,7 @@ static snapshots::SnapshotBundleEntityData build_domain_bundle_data(
         Schema::kDomainExistenceIndexName,
         bloom_filter::BloomFilter{
             parse_snapshot_path(snapshot.existence_index.file_path).path(),
-            bloom_filter::BloomFilterKeyHasher{index_salt},
+            KeyHasher{index_salt},
         });
     data.btree_indexes.emplace(
         Schema::kDomainBTreeIndexName,

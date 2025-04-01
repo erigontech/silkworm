@@ -28,6 +28,8 @@
 #include "../common/step.hpp"
 #include "../common/timestamp.hpp"
 #include "common/util/iterator/map_values_view.hpp"
+#include "domain_cache.hpp"
+#include "inverted_index_cache.hpp"
 #include "segment_and_accessor_index.hpp"
 
 namespace silkworm::snapshots {
@@ -59,6 +61,9 @@ struct SnapshotRepositoryROAccess {
     };
 
     virtual ~SnapshotRepositoryROAccess() = default;
+
+    virtual DomainGetLatestCache* domain_get_latest_cache(const datastore::EntityName& name) const = 0;
+    virtual InvertedIndexSeekCache* inverted_index_seek_cache(const datastore::EntityName& name) const = 0;
 
     virtual size_t bundles_count() const = 0;
 

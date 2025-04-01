@@ -75,7 +75,9 @@ struct StateChangesStreamTest : public StateCacheTestBase {
 struct DirectStateChangesStreamTest : public StateChangesStreamTest {
     TemporaryDirectory tmp_dir;
     test_util::TestDataStore data_store{tmp_dir};
-    std::shared_ptr<api::DirectService> direct_service{std::make_shared<api::DirectService>(router, data_store->ref(), state_cache.get())};
+    ChainConfig chain_config;
+    std::shared_ptr<api::DirectService> direct_service{
+        std::make_shared<api::DirectService>(router, data_store->ref(), chain_config, state_cache.get())};
     api::DirectClient direct_client{direct_service};
     StateChangesStream stream{context_, direct_client};
 };

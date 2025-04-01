@@ -51,7 +51,7 @@ uint64_t BloomFilter::optimal_bits_count(uint64_t max_key_count, double p) {
 
 BloomFilter::BloomFilter(
     std::filesystem::path path,
-    std::optional<BloomFilterKeyHasher> data_key_hasher)
+    std::optional<KeyHasher> data_key_hasher)
     : BloomFilter{kMinimumBitsCount, new_random_keys()} {
     if (!std::filesystem::exists(path)) {
         throw std::runtime_error("index file " + path.filename().string() + " doesn't exist");

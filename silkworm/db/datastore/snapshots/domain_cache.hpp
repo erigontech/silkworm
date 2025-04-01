@@ -1,5 +1,5 @@
 /*
-   Copyright 2024 The Silkworm Authors
+   Copyright 2025 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,17 +16,23 @@
 
 #pragma once
 
+#include <map>
+#include <memory>
+#include <optional>
+
 #include <silkworm/core/common/bytes.hpp>
 
-namespace silkworm::snapshots::bloom_filter {
+#include "../common/entity_name.hpp"
+#include "../common/step.hpp"
+#include "common/cache.hpp"
 
-class BloomFilterKeyHasher {
-  public:
-    explicit BloomFilterKeyHasher(uint32_t salt) : salt_{salt} {}
-    uint64_t hash(ByteView key) const;
+namespace silkworm::snapshots {
 
-  private:
-    uint32_t salt_;
+struct DomainGetLatestCacheData {
+    BytesOrByteView value;
+    std::optional<datastore::Step> range_end{0};
 };
+using DomainGetLatestCache = Cache<DomainGetLatestCacheData>;
+using DomainGetLatestCaches = std::map<datastore::EntityName, std::unique_ptr<DomainGetLatestCache>>;
 
-}  // namespace silkworm::snapshots::bloom_filter
+}  // namespace silkworm::snapshots

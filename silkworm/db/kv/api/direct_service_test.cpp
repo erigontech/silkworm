@@ -36,11 +36,12 @@ struct DirectServiceTest : public test_util::KVTestBase {
 
     TemporaryDirectory tmp_dir;
     TestDataStore data_store{tmp_dir};
+    ChainConfig chain_config{kMainnetConfig};
 
     StateChangeChannelPtr channel{std::make_shared<StateChangeChannel>(ioc_.get_executor())};
     concurrency::Channel<StateChangesCall> state_changes_calls_channel{ioc_.get_executor()};
     std::unique_ptr<StateCache> state_cache{std::make_unique<CoherentStateCache>()};
-    DirectService service{ServiceRouter{state_changes_calls_channel}, data_store->ref(), state_cache.get()};
+    DirectService service{ServiceRouter{state_changes_calls_channel}, data_store->ref(), chain_config, state_cache.get()};
     std::vector<StateChangeSet> change_set_vector;
 };
 

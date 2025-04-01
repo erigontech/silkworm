@@ -26,8 +26,7 @@ namespace silkworm::db::chain {
 //! in local database (accessed via MDBX API) or local snapshot files (accessed via custom snapshot API)
 class LocalChainStorage : public ChainStorage {
   public:
-    explicit LocalChainStorage(db::DataModel data_model)
-        : data_model_{data_model} {}
+    LocalChainStorage(db::DataModel data_model, const ChainConfig& chain_config);
     ~LocalChainStorage() override = default;
 
     Task<ChainConfig> read_chain_config() const override;
@@ -74,6 +73,7 @@ class LocalChainStorage : public ChainStorage {
 
   private:
     db::DataModel data_model_;
+    const ChainConfig& chain_config_;
 };
 
 }  // namespace silkworm::db::chain

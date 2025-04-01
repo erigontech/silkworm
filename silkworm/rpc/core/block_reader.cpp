@@ -118,7 +118,7 @@ Task<bool> BlockReader::is_latest_block_num(BlockNum block_num) const {
     co_return last_executed_block_num == block_num;
 }
 
-Task<BlockNum> BlockReader::get_block_num_by_tag(const std::string& block_id) const {
+Task<BlockNum> BlockReader::get_block_num_by_tag(std::string_view block_id) const {
     BlockNum block_num{0};
     if (block_id == kEarliestBlockId) {
         block_num = kEarliestBlockNum;
@@ -135,7 +135,7 @@ Task<BlockNum> BlockReader::get_block_num_by_tag(const std::string& block_id) co
     co_return block_num;
 }
 
-Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const std::string& block_id, bool latest_required) const {
+Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(std::string_view block_id, bool latest_required) const {
     BlockNum block_num{0};
     bool is_latest_block = false;
     bool check_if_latest = false;
@@ -154,10 +154,10 @@ Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const std::string& bl
         block_num = co_await get_latest_executed_block_num();
         is_latest_block = true;
     } else if (is_valid_hex(block_id)) {
-        block_num = static_cast<BlockNum>(std::stol(block_id, nullptr, 16));
+        std::from_chars(block_id.data() + 2, block_id.data() + block_id.size(), block_num, 16);
         check_if_latest = latest_required;
     } else if (is_valid_dec(block_id)) {
-        block_num = static_cast<BlockNum>(std::stol(block_id, nullptr, 10));
+        std::from_chars(block_id.data(), block_id.data() + block_id.size(), block_num, 10);
         check_if_latest = latest_required;
     } else {
         throw std::invalid_argument("get_block_num::Invalid Block Id");
@@ -170,7 +170,7 @@ Task<std::pair<BlockNum, bool>> BlockReader::get_block_num(const std::string& bl
     co_return std::make_pair(block_num, is_latest_block);
 }
 
-Task<BlockNum> BlockReader::get_block_num(const std::string& block_id) const {
+Task<BlockNum> BlockReader::get_block_num(std::string_view block_id) const {
     const auto [block_num, _] = co_await get_block_num(block_id, /*latest_required=*/false);
     co_return block_num;
 }

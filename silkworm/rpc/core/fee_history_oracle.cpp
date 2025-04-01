@@ -134,6 +134,9 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
 
         if (!reward_percentiles.empty()) {
             block_fees.block = co_await block_provider_(block_num);  // block_range.last_block;
+            if (!block_fees.block) {
+                continue;
+            }
             block_fees.receipts = co_await receipts_provider_(*block_fees.block);
             block_fees.block_header = block_fees.block->block.header;
         } else {

@@ -101,7 +101,7 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_feeHistory succeeds if req
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
-        "result":{"gasUsedRatio":null,"oldestBlock":"0x0", "blobGasUsedRatio":null}
+        "result":{"baseFeePerBlobGas":["0x0","0x0"],"baseFeePerGas":["0x0","0x0"],"blobGasUsedRatio":[0.0],"gasUsedRatio":[0.0],"oldestBlock":"0x867a80","reward":[[]]}
     })"_json);
 }
 

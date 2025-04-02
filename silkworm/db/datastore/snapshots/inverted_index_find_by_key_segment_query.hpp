@@ -77,13 +77,13 @@ struct InvertedIndexFindByKeySegmentQuery {
     }
 
     std::optional<elias_fano::EliasFanoList32> exec_raw(ByteView key_data) {
-        auto offset_and_data_id = entity_.accessor_index.lookup_by_key(key_data);
-        if (!offset_and_data_id) {
+        auto offset = entity_.accessor_index.lookup_by_key(key_data);
+        if (!offset) {
             return std::nullopt;
         }
 
         auto reader = entity_.kv_segment_reader<RawDecoder<Bytes>>();
-        std::optional<std::pair<Bytes, elias_fano::EliasFanoList32>> result = reader.seek_one(offset_and_data_id->first);
+        std::optional<std::pair<Bytes, elias_fano::EliasFanoList32>> result = reader.seek_one(*offset);
 
         // ensure that the found key matches to avoid lookup_by_key false positives
         if (result && (result->first == key_data)) {

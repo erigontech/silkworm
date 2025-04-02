@@ -52,10 +52,10 @@ class TransactionBlockNumByTxnHashSegmentQuery {
 
     std::optional<std::pair<BlockNum, TxnId>> exec(const Hash& hash) {
         // Lookup the entire txn to check that the retrieved txn hash matches (no way to know if key exists in MPHF)
-        const auto transaction_and_timestamp = cross_check_query_.exec_with_timestamp(hash);
-        const auto result = transaction_and_timestamp ? index_.lookup_by_key(hash) : std::nullopt;
+        const auto cross_check_result = cross_check_query_.exec(hash);
+        const auto result = cross_check_result ? index_.lookup_by_key(hash) : std::nullopt;
         if (!result) return std::nullopt;
-        return std::pair<BlockNum, TxnId>{result->first, transaction_and_timestamp->second};
+        return std::pair<BlockNum, TxnId>{*result, cross_check_result->timestamp};
     }
 
     static TransactionBlockNumByTxnHashSegmentQuery make(db::blocks::BundleDataRef bundle) {

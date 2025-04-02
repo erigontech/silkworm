@@ -77,12 +77,12 @@ struct FindByKeySegmentQuery : public BasicSegmentQuery<TValueDecoder, segment_n
         key_encoder.value = key;
         ByteView key_data = key_encoder.encode_word();
 
-        auto offset_and_data_id = this->index_.lookup_by_key(key_data);
-        if (!offset_and_data_id) {
+        auto offset = this->index_.lookup_by_key(key_data);
+        if (!offset) {
             return std::nullopt;
         }
 
-        return this->reader_.seek_one(offset_and_data_id->first);
+        return this->reader_.seek_one(*offset);
     }
 };
 
@@ -92,20 +92,24 @@ template <
 struct FindByHashSegmentQuery : public BasicSegmentQuery<TDecoder, segment_names> {
     using BasicSegmentQuery<TDecoder, segment_names>::BasicSegmentQuery;
 
-    std::optional<decltype(TDecoder::value)> exec(const Hash& hash) {
-        auto result = exec_with_timestamp(hash);
-        if (!result) return std::nullopt;
-        return result->first;
-    }
+    using Value = decltype(TDecoder::value);
 
-    std::optional<std::pair<decltype(TDecoder::value), datastore::Timestamp>> exec_with_timestamp(const Hash& hash) {
-        const auto offset_and_data_id = this->index_.lookup_by_key(hash);
-        if (!offset_and_data_id) {
+    struct Result {
+        Value value;
+        datastore::Timestamp timestamp{0};
+    };
+
+    std::optional<Result> exec(const Hash& hash) {
+        const auto data_id = this->index_.lookup_data_id_by_key(hash);
+        if (!data_id) {
             return std::nullopt;
         }
-        const auto [offset, data_id] = *offset_and_data_id;
+        const auto offset = this->index_.lookup_by_data_id(*data_id);
+        if (!offset) {
+            return std::nullopt;
+        }
 
-        auto result = this->reader_.seek_one(offset, ByteView{hash.bytes, 1});
+        auto result = this->reader_.seek_one(*offset, ByteView{hash.bytes, 1});
         if (!result) return std::nullopt;
 
         // We *must* ensure that the retrieved txn hash matches because there is no way to know if key exists in MPHF
@@ -113,7 +117,7 @@ struct FindByHashSegmentQuery : public BasicSegmentQuery<TDecoder, segment_names
             return std::nullopt;
         }
 
-        return std::pair{std::move(*result), data_id};
+        return Result{std::move(*result), *data_id};
     }
 };
 

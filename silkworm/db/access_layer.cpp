@@ -1333,7 +1333,9 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(BlockNum block_n
 }
 
 std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash) const {
-    return HeaderFindByHashQuery{repository_}.exec(hash);
+    auto result = HeaderFindByHashQuery{repository_}.exec(hash);
+    if (!result) return std::nullopt;
+    return std::move(result->value);
 }
 
 std::optional<BlockBodyForStorage> DataModel::read_canonical_body_for_storage(BlockNum block_num) const {

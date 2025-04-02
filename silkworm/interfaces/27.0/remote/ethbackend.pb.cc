@@ -28,6 +28,7 @@ namespace remote {
 inline constexpr TxnLookupReply::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : block_number_{::uint64_t{0u}},
+        tx_number_{::uint64_t{0u}},
         _cached_size_{0} {}
 
 template <typename>
@@ -944,6 +945,7 @@ const ::uint32_t
         ~0u,  // no _split_
         ~0u,  // no sizeof(Split)
         PROTOBUF_FIELD_OFFSET(::remote::TxnLookupReply, _impl_.block_number_),
+        PROTOBUF_FIELD_OFFSET(::remote::TxnLookupReply, _impl_.tx_number_),
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::remote::NodesInfoRequest, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -1047,14 +1049,14 @@ static const ::_pbi::MigrationSchema
         {235, -1, -1, sizeof(::remote::BlockReply)},
         {245, 254, -1, sizeof(::remote::TxnLookupRequest)},
         {255, -1, -1, sizeof(::remote::TxnLookupReply)},
-        {264, -1, -1, sizeof(::remote::NodesInfoRequest)},
-        {273, -1, -1, sizeof(::remote::AddPeerRequest)},
-        {282, -1, -1, sizeof(::remote::NodesInfoReply)},
-        {291, -1, -1, sizeof(::remote::PeersReply)},
-        {300, -1, -1, sizeof(::remote::AddPeerReply)},
-        {309, -1, -1, sizeof(::remote::PendingBlockReply)},
-        {318, -1, -1, sizeof(::remote::EngineGetPayloadBodiesByHashV1Request)},
-        {327, -1, -1, sizeof(::remote::EngineGetPayloadBodiesByRangeV1Request)},
+        {265, -1, -1, sizeof(::remote::NodesInfoRequest)},
+        {274, -1, -1, sizeof(::remote::AddPeerRequest)},
+        {283, -1, -1, sizeof(::remote::NodesInfoReply)},
+        {292, -1, -1, sizeof(::remote::PeersReply)},
+        {301, -1, -1, sizeof(::remote::AddPeerReply)},
+        {310, -1, -1, sizeof(::remote::PendingBlockReply)},
+        {319, -1, -1, sizeof(::remote::EngineGetPayloadBodiesByHashV1Request)},
+        {328, -1, -1, sizeof(::remote::EngineGetPayloadBodiesByRangeV1Request)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
     &::remote::_EtherbaseRequest_default_instance_._instance,
@@ -1133,55 +1135,55 @@ const char descriptor_table_protodef_remote_2fethbackend_2eproto[] ABSL_ATTRIBUT
     "ight\030\002 \001(\004\022\037\n\nblock_hash\030\003 \001(\0132\013.types.H"
     "256\"0\n\nBlockReply\022\021\n\tblock_rlp\030\001 \001(\014\022\017\n\007"
     "senders\030\002 \001(\014\"1\n\020TxnLookupRequest\022\035\n\010txn"
-    "_hash\030\001 \001(\0132\013.types.H256\"&\n\016TxnLookupRep"
-    "ly\022\024\n\014block_number\030\001 \001(\004\"!\n\020NodesInfoReq"
-    "uest\022\r\n\005limit\030\001 \001(\r\"\035\n\016AddPeerRequest\022\013\n"
-    "\003url\030\001 \001(\t\":\n\016NodesInfoReply\022(\n\nnodes_in"
-    "fo\030\001 \003(\0132\024.types.NodeInfoReply\",\n\nPeersR"
-    "eply\022\036\n\005peers\030\001 \003(\0132\017.types.PeerInfo\"\037\n\014"
-    "AddPeerReply\022\017\n\007success\030\001 \001(\010\"&\n\021Pending"
-    "BlockReply\022\021\n\tblock_rlp\030\001 \001(\014\"D\n%EngineG"
-    "etPayloadBodiesByHashV1Request\022\033\n\006hashes"
-    "\030\001 \003(\0132\013.types.H256\"F\n&EngineGetPayloadB"
-    "odiesByRangeV1Request\022\r\n\005start\030\001 \001(\004\022\r\n\005"
-    "count\030\002 \001(\004*J\n\005Event\022\n\n\006HEADER\020\000\022\020\n\014PEND"
-    "ING_LOGS\020\001\022\021\n\rPENDING_BLOCK\020\002\022\020\n\014NEW_SNA"
-    "PSHOT\020\0032\323\n\n\nETHBACKEND\022=\n\tEtherbase\022\030.re"
-    "mote.EtherbaseRequest\032\026.remote.Etherbase"
-    "Reply\022@\n\nNetVersion\022\031.remote.NetVersionR"
-    "equest\032\027.remote.NetVersionReply\022F\n\014NetPe"
-    "erCount\022\033.remote.NetPeerCountRequest\032\031.r"
-    "emote.NetPeerCountReply\0226\n\007Version\022\026.goo"
-    "gle.protobuf.Empty\032\023.types.VersionReply\022"
-    "7\n\007Syncing\022\026.google.protobuf.Empty\032\024.rem"
-    "ote.SyncingReply\022O\n\017ProtocolVersion\022\036.re"
-    "mote.ProtocolVersionRequest\032\034.remote.Pro"
-    "tocolVersionReply\022I\n\rClientVersion\022\034.rem"
-    "ote.ClientVersionRequest\032\032.remote.Client"
-    "VersionReply\022\?\n\tSubscribe\022\030.remote.Subsc"
-    "ribeRequest\032\026.remote.SubscribeReply0\001\022J\n"
-    "\rSubscribeLogs\022\031.remote.LogsFilterReques"
-    "t\032\032.remote.SubscribeLogsReply(\0010\001\0221\n\005Blo"
-    "ck\022\024.remote.BlockRequest\032\022.remote.BlockR"
-    "eply\022g\n\027CanonicalBodyForStorage\022&.remote"
-    ".CanonicalBodyForStorageRequest\032$.remote"
-    ".CanonicalBodyForStorageReply\022I\n\rCanonic"
-    "alHash\022\034.remote.CanonicalHashRequest\032\032.r"
-    "emote.CanonicalHashReply\022F\n\014HeaderNumber"
-    "\022\033.remote.HeaderNumberRequest\032\031.remote.H"
-    "eaderNumberReply\022=\n\tTxnLookup\022\030.remote.T"
-    "xnLookupRequest\032\026.remote.TxnLookupReply\022"
-    "<\n\010NodeInfo\022\030.remote.NodesInfoRequest\032\026."
-    "remote.NodesInfoReply\0223\n\005Peers\022\026.google."
-    "protobuf.Empty\032\022.remote.PeersReply\0227\n\007Ad"
-    "dPeer\022\026.remote.AddPeerRequest\032\024.remote.A"
-    "ddPeerReply\022A\n\014PendingBlock\022\026.google.pro"
-    "tobuf.Empty\032\031.remote.PendingBlockReply\022F"
-    "\n\014BorTxnLookup\022\033.remote.BorTxnLookupRequ"
-    "est\032\031.remote.BorTxnLookupReply\022=\n\tBorEve"
-    "nts\022\030.remote.BorEventsRequest\032\026.remote.B"
-    "orEventsReplyB\026Z\024./remote;remoteprotob\006p"
-    "roto3"
+    "_hash\030\001 \001(\0132\013.types.H256\"9\n\016TxnLookupRep"
+    "ly\022\024\n\014block_number\030\001 \001(\004\022\021\n\ttx_number\030\002 "
+    "\001(\004\"!\n\020NodesInfoRequest\022\r\n\005limit\030\001 \001(\r\"\035"
+    "\n\016AddPeerRequest\022\013\n\003url\030\001 \001(\t\":\n\016NodesIn"
+    "foReply\022(\n\nnodes_info\030\001 \003(\0132\024.types.Node"
+    "InfoReply\",\n\nPeersReply\022\036\n\005peers\030\001 \003(\0132\017"
+    ".types.PeerInfo\"\037\n\014AddPeerReply\022\017\n\007succe"
+    "ss\030\001 \001(\010\"&\n\021PendingBlockReply\022\021\n\tblock_r"
+    "lp\030\001 \001(\014\"D\n%EngineGetPayloadBodiesByHash"
+    "V1Request\022\033\n\006hashes\030\001 \003(\0132\013.types.H256\"F"
+    "\n&EngineGetPayloadBodiesByRangeV1Request"
+    "\022\r\n\005start\030\001 \001(\004\022\r\n\005count\030\002 \001(\004*J\n\005Event\022"
+    "\n\n\006HEADER\020\000\022\020\n\014PENDING_LOGS\020\001\022\021\n\rPENDING"
+    "_BLOCK\020\002\022\020\n\014NEW_SNAPSHOT\020\0032\323\n\n\nETHBACKEN"
+    "D\022=\n\tEtherbase\022\030.remote.EtherbaseRequest"
+    "\032\026.remote.EtherbaseReply\022@\n\nNetVersion\022\031"
+    ".remote.NetVersionRequest\032\027.remote.NetVe"
+    "rsionReply\022F\n\014NetPeerCount\022\033.remote.NetP"
+    "eerCountRequest\032\031.remote.NetPeerCountRep"
+    "ly\0226\n\007Version\022\026.google.protobuf.Empty\032\023."
+    "types.VersionReply\0227\n\007Syncing\022\026.google.p"
+    "rotobuf.Empty\032\024.remote.SyncingReply\022O\n\017P"
+    "rotocolVersion\022\036.remote.ProtocolVersionR"
+    "equest\032\034.remote.ProtocolVersionReply\022I\n\r"
+    "ClientVersion\022\034.remote.ClientVersionRequ"
+    "est\032\032.remote.ClientVersionReply\022\?\n\tSubsc"
+    "ribe\022\030.remote.SubscribeRequest\032\026.remote."
+    "SubscribeReply0\001\022J\n\rSubscribeLogs\022\031.remo"
+    "te.LogsFilterRequest\032\032.remote.SubscribeL"
+    "ogsReply(\0010\001\0221\n\005Block\022\024.remote.BlockRequ"
+    "est\032\022.remote.BlockReply\022g\n\027CanonicalBody"
+    "ForStorage\022&.remote.CanonicalBodyForStor"
+    "ageRequest\032$.remote.CanonicalBodyForStor"
+    "ageReply\022I\n\rCanonicalHash\022\034.remote.Canon"
+    "icalHashRequest\032\032.remote.CanonicalHashRe"
+    "ply\022F\n\014HeaderNumber\022\033.remote.HeaderNumbe"
+    "rRequest\032\031.remote.HeaderNumberReply\022=\n\tT"
+    "xnLookup\022\030.remote.TxnLookupRequest\032\026.rem"
+    "ote.TxnLookupReply\022<\n\010NodeInfo\022\030.remote."
+    "NodesInfoRequest\032\026.remote.NodesInfoReply"
+    "\0223\n\005Peers\022\026.google.protobuf.Empty\032\022.remo"
+    "te.PeersReply\0227\n\007AddPeer\022\026.remote.AddPee"
+    "rRequest\032\024.remote.AddPeerReply\022A\n\014Pendin"
+    "gBlock\022\026.google.protobuf.Empty\032\031.remote."
+    "PendingBlockReply\022F\n\014BorTxnLookup\022\033.remo"
+    "te.BorTxnLookupRequest\032\031.remote.BorTxnLo"
+    "okupReply\022=\n\tBorEvents\022\030.remote.BorEvent"
+    "sRequest\032\026.remote.BorEventsReplyB\026Z\024./re"
+    "mote;remoteprotob\006proto3"
 };
 static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fethbackend_2eproto_deps[3] =
     {
@@ -1193,7 +1195,7 @@ static ::absl::once_flag descriptor_table_remote_2fethbackend_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_remote_2fethbackend_2eproto = {
     false,
     false,
-    3485,
+    3504,
     descriptor_table_protodef_remote_2fethbackend_2eproto,
     "remote/ethbackend.proto",
     &descriptor_table_remote_2fethbackend_2eproto_once,
@@ -6062,7 +6064,12 @@ inline PROTOBUF_NDEBUG_INLINE TxnLookupReply::Impl_::Impl_(
 
 inline void TxnLookupReply::SharedCtor(::_pb::Arena* arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
-  _impl_.block_number_ = {};
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, block_number_),
+           0,
+           offsetof(Impl_, tx_number_) -
+               offsetof(Impl_, block_number_) +
+               sizeof(Impl_::tx_number_));
 }
 TxnLookupReply::~TxnLookupReply() {
   // @@protoc_insertion_point(destructor:remote.TxnLookupReply)
@@ -6095,15 +6102,15 @@ TxnLookupReply::GetClassData() const {
   return _data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<0, 1, 0, 0, 2> TxnLookupReply::_table_ = {
+const ::_pbi::TcParseTable<1, 2, 0, 0, 2> TxnLookupReply::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    1, 0,  // max_field_number, fast_idx_mask
+    2, 8,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967294,  // skipmap
+    4294967292,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    1,  // num_field_entries
+    2,  // num_field_entries
     0,  // num_aux_entries
     offsetof(decltype(_table_), field_names),  // no aux_entries
     &_TxnLookupReply_default_instance_._instance,
@@ -6113,6 +6120,9 @@ const ::_pbi::TcParseTable<0, 1, 0, 0, 2> TxnLookupReply::_table_ = {
     ::_pbi::TcParser::GetTable<::remote::TxnLookupReply>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
+    // uint64 tx_number = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(TxnLookupReply, _impl_.tx_number_), 63>(),
+     {16, 63, 0, PROTOBUF_FIELD_OFFSET(TxnLookupReply, _impl_.tx_number_)}},
     // uint64 block_number = 1;
     {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(TxnLookupReply, _impl_.block_number_), 63>(),
      {8, 63, 0, PROTOBUF_FIELD_OFFSET(TxnLookupReply, _impl_.block_number_)}},
@@ -6121,6 +6131,9 @@ const ::_pbi::TcParseTable<0, 1, 0, 0, 2> TxnLookupReply::_table_ = {
   }}, {{
     // uint64 block_number = 1;
     {PROTOBUF_FIELD_OFFSET(TxnLookupReply, _impl_.block_number_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUInt64)},
+    // uint64 tx_number = 2;
+    {PROTOBUF_FIELD_OFFSET(TxnLookupReply, _impl_.tx_number_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kUInt64)},
   }},
   // no aux_entries
@@ -6135,7 +6148,9 @@ PROTOBUF_NOINLINE void TxnLookupReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.block_number_ = ::uint64_t{0u};
+  ::memset(&_impl_.block_number_, 0, static_cast<::size_t>(
+      reinterpret_cast<char*>(&_impl_.tx_number_) -
+      reinterpret_cast<char*>(&_impl_.block_number_)) + sizeof(_impl_.tx_number_));
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
@@ -6151,6 +6166,13 @@ PROTOBUF_NOINLINE void TxnLookupReply::Clear() {
     target = stream->EnsureSpace(target);
     target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
         1, this->_internal_block_number(), target);
+  }
+
+  // uint64 tx_number = 2;
+  if (this->_internal_tx_number() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
+        2, this->_internal_tx_number(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -6170,10 +6192,17 @@ PROTOBUF_NOINLINE void TxnLookupReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  ::_pbi::Prefetch5LinesFrom7Lines(reinterpret_cast<const void*>(this));
   // uint64 block_number = 1;
   if (this->_internal_block_number() != 0) {
     total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
         this->_internal_block_number());
+  }
+
+  // uint64 tx_number = 2;
+  if (this->_internal_tx_number() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
+        this->_internal_tx_number());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -6191,6 +6220,9 @@ void TxnLookupReply::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::
   if (from._internal_block_number() != 0) {
     _this->_impl_.block_number_ = from._impl_.block_number_;
   }
+  if (from._internal_tx_number() != 0) {
+    _this->_impl_.tx_number_ = from._impl_.tx_number_;
+  }
   _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -6205,7 +6237,12 @@ void TxnLookupReply::CopyFrom(const TxnLookupReply& from) {
 void TxnLookupReply::InternalSwap(TxnLookupReply* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-        swap(_impl_.block_number_, other->_impl_.block_number_);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(TxnLookupReply, _impl_.tx_number_)
+      + sizeof(TxnLookupReply::_impl_.tx_number_)
+      - PROTOBUF_FIELD_OFFSET(TxnLookupReply, _impl_.block_number_)>(
+          reinterpret_cast<char*>(&_impl_.block_number_),
+          reinterpret_cast<char*>(&other->_impl_.block_number_));
 }
 
 ::google::protobuf::Metadata TxnLookupReply::GetMetadata() const {

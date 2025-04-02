@@ -240,7 +240,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     db::state::VarintSnapshotsDecoder varint;
     Word value1{std::move(result.value)};
     varint.decode_word(value1);
-    auto first_cumulative_gas_used_in_tx = varint.value;
+    const auto first_cumulative_gas_used_in_tx = varint.value;
 
     db::kv::api::GetAsOfRequest query_first_log_index{
         .table = db::table::kReceiptDomain,
@@ -260,12 +260,16 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     new_receipt.from = transaction.sender();
     new_receipt.to = transaction.to;
     new_receipt.type = transaction.type;
-    new_receipt.tx_index = tx_index;
     new_receipt.block_num = block.header.number;
+    new_receipt.block_hash = block.header.hash();
+    new_receipt.tx_hash = transaction.hash();
+    new_receipt.tx_index = tx_index;
+    new_receipt.effective_gas_price = transaction.effective_gas_price(block.header.base_fee_per_gas.value_or(0));
 
-    // When tx receiver is not set, create a contract with address depending on tx sender and its nonce
-    if (!transaction.to.has_value()) {
-        new_receipt.contract_address = create_address(*(transaction.sender()), transaction.nonce);
+    // When tx receiver is not set, compute contract address depending on tx sender and its nonce
+    const auto sender = transaction.sender();
+    if (!transaction.to && sender) {
+        new_receipt.contract_address = create_address(*sender, transaction.nonce);
     }
 
     for (auto& curr_log : new_receipt.logs) {

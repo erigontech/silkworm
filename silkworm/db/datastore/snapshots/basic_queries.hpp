@@ -22,6 +22,7 @@
 
 #include <silkworm/core/types/hash.hpp>
 
+#include "../common/timestamp.hpp"
 #include "segment/segment_reader.hpp"
 #include "segment_and_accessor_index.hpp"
 #include "snapshot_repository_ro_access.hpp"
@@ -91,20 +92,32 @@ template <
 struct FindByHashSegmentQuery : public BasicSegmentQuery<TDecoder, segment_names> {
     using BasicSegmentQuery<TDecoder, segment_names>::BasicSegmentQuery;
 
-    std::optional<decltype(TDecoder::value)> exec(const Hash& hash) {
-        auto offset = this->index_.lookup_by_key(hash);
+    using Value = decltype(TDecoder::value);
+
+    struct Result {
+        Value value;
+        datastore::Timestamp timestamp{0};
+    };
+
+    std::optional<Result> exec(const Hash& hash) {
+        const auto data_id = this->index_.lookup_data_id_by_key(hash);
+        if (!data_id) {
+            return std::nullopt;
+        }
+        const auto offset = this->index_.lookup_by_data_id(*data_id);
         if (!offset) {
             return std::nullopt;
         }
 
         auto result = this->reader_.seek_one(*offset, ByteView{hash.bytes, 1});
+        if (!result) return std::nullopt;
 
         // We *must* ensure that the retrieved txn hash matches because there is no way to know if key exists in MPHF
-        if (result && (result->hash() != hash)) {
+        if (result->hash() != hash) {
             return std::nullopt;
         }
 
-        return result;
+        return Result{std::move(*result), *data_id};
     }
 };
 

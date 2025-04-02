@@ -34,6 +34,7 @@ class AccessorIndex : private RecSplitIndex {
 
     using RecSplitIndex::lookup_by_data_id;
     using RecSplitIndex::lookup_by_key;
+    using RecSplitIndex::lookup_data_id_by_key;
 
     using RecSplitIndex::base_data_id;
     using RecSplitIndex::memory_file_region;

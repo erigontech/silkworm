@@ -79,7 +79,7 @@ TEST_CASE("64-bit Endian") {
 
 static std::string hex_endian_swap(const std::string& native_hex) {
     std::string ret{};
-    for (unsigned int i = 0; i < native_hex.length(); i += 2) {
+    for (unsigned int i = 0; i < native_hex.size(); i += 2) {
         ret.insert(0, native_hex.substr(i, 2));
     }
     return ret;

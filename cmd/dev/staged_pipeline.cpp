@@ -202,8 +202,8 @@ void list_stages(datastore::kvdb::EnvConfig& config) {
             // Handle "prune_" stages
             static constexpr std::string_view kPrunePrefix{"prune_"};
             size_t offset{0};
-            if (std::memcmp(stage_name.data(), kPrunePrefix.data(), kPrunePrefix.length()) == 0) {
-                offset = kPrunePrefix.length();
+            if (std::memcmp(stage_name.data(), kPrunePrefix.data(), kPrunePrefix.size()) == 0) {
+                offset = kPrunePrefix.size();
             }
             const bool known = db::stages::is_known_stage(stage_name.data() + offset);
             std::cout << (boost::format(kTableRowFormat) % stage_name % stage_height %
@@ -844,7 +844,7 @@ void trie_account_analysis(datastore::kvdb::EnvConfig& config) {
     code_cursor.to_first();
     cursor_for_each(code_cursor,
                     [&histogram, &batch_size, &progress](ByteView key, ByteView) {
-                        ++histogram[key.length()];
+                        ++histogram[key.size()];
                         if (!--batch_size) {
                             progress.set_current(progress.get_current() + progress.get_increment_count());
                             std::cout << progress.print_interval('.') << std::flush;
@@ -942,13 +942,13 @@ void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage
             auto node_k{data1_k.substr(prefix_len)};
 
             // Only unmarshal relevant data without copy on read
-            if (data1_v.length() < 6) {
+            if (data1_v.size() < 6) {
                 throw std::runtime_error("At key " + to_hex(data1_k, true) + " invalid value length " +
-                                         std::to_string(data1_v.length()) + ". Expected >= 6");
+                                         std::to_string(data1_v.size()) + ". Expected >= 6");
             }
-            if ((data1_v.length() - 6) % kHashLength != 0) {
+            if ((data1_v.size() - 6) % kHashLength != 0) {
                 throw std::runtime_error("At key " + to_hex(data1_k, true) + " invalid hashes count " +
-                                         std::to_string(data1_v.length() - 6) + ". Expected multiple of " +
+                                         std::to_string(data1_v.size() - 6) + ". Expected multiple of " +
                                          std::to_string(kHashLength));
             }
 
@@ -981,7 +981,7 @@ void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage
 
             data1_v.remove_prefix(6);
             auto expected_hashes_count{static_cast<size_t>(std::popcount(node_hash_mask))};
-            auto effective_hashes_count{data1_v.length() / kHashLength};
+            auto effective_hashes_count{data1_v.size() / kHashLength};
             if (!(effective_hashes_count == expected_hashes_count ||
                   effective_hashes_count == expected_hashes_count + 1u)) {
                 std::string what{"At key " + to_hex(data1_k, true) + " invalid hashes count " +
@@ -1124,7 +1124,7 @@ void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage
                 buffer.assign(data1_k.substr(prefix_len));
                 buffer.push_back('\0');
 
-                auto bits_to_match{buffer.length() * 4};
+                auto bits_to_match{buffer.size() * 4};
 
                 // >>> See Erigon /ethdb/kv_util.go::BytesMask
                 uint8_t mask{0xff};
@@ -1150,7 +1150,7 @@ void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage
                         auto data3{state_cursor.lower_bound(datastore::kvdb::to_slice(seek), false)};
                         if (data3) {
                             auto data3_k{datastore::kvdb::from_slice(data3.key)};
-                            if (data3_k.length() >= fixed_bytes) {
+                            if (data3_k.size() >= fixed_bytes) {
                                 found = (bits_to_match == 0 ||
                                          ((data3_k.substr(0, fixed_bytes - 1) == seek.substr(0, fixed_bytes - 1)) &&
                                           ((data3_k[fixed_bytes - 1] & mask) == (seek[fixed_bytes - 1] & mask))));
@@ -1172,7 +1172,7 @@ void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage
                                                                        datastore::kvdb::to_slice(seek), false)};
                         if (data3) {
                             auto data3_v{datastore::kvdb::from_slice(data3.value)};
-                            if (data3_v.length() >= fixed_bytes) {
+                            if (data3_v.size() >= fixed_bytes) {
                                 found = (bits_to_match == 0 ||
                                          ((data3_v.substr(0, fixed_bytes - 1) == seek.substr(0, fixed_bytes - 1)) &&
                                           ((data3_v[fixed_bytes - 1] & mask) == (seek[fixed_bytes - 1] & mask))));

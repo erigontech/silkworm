@@ -143,7 +143,7 @@ TEST_CASE("abridge") {
     std::string a{"0x1234567890abcdef"};
     std::string b{abridge(a, 6)};
     CHECK(b == "0x1234...");
-    b = abridge(a, a.length() + 1);
+    b = abridge(a, a.size() + 1);
     CHECK(b == a);
 }
 

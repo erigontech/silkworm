@@ -32,13 +32,13 @@ class ByteView : public evmc::bytes_view {
 
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
     constexpr ByteView(const evmc::bytes_view& other) noexcept
-        : evmc::bytes_view{other.data(), other.length()} {}
+        : evmc::bytes_view{other.data(), other.size()} {}
 
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
-    ByteView(const Bytes& str) noexcept : evmc::bytes_view{str.data(), str.length()} {}
+    ByteView(const Bytes& str) noexcept : evmc::bytes_view{str.data(), str.size()} {}
 
-    constexpr ByteView(const uint8_t* data, size_type length) noexcept
-        : evmc::bytes_view{data, length} {}
+    constexpr ByteView(const uint8_t* data, size_type size) noexcept
+        : evmc::bytes_view{data, size} {}
 
     template <size_t N>
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
@@ -55,6 +55,10 @@ class ByteView : public evmc::bytes_view {
         : evmc::bytes_view{span.data(), span.size()} {}
 
     bool is_null() const noexcept { return data() == nullptr; }
+
+  private:
+    // see code style P28
+    using evmc::bytes_view::length;
 };
 
 template <size_t Extent>

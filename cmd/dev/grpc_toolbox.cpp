@@ -318,7 +318,7 @@ int kv_seek(const std::string& target, const std::string& table_name, silkworm::
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK);
     seek_message.set_cursor(cursor_id);
-    seek_message.set_k(key.data(), key.length());
+    seek_message.set_k(key.data(), key.size());
     success = reader_writer->Write(seek_message);
     if (!success) {
         std::cerr << "KV stream closed sending SEEK operation req\n";
@@ -430,7 +430,7 @@ int kv_seek_async(const std::string& target, const std::string& table_name, silk
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK);
     seek_message.set_cursor(cursor_id);
-    seek_message.set_k(key.data(), key.length());
+    seek_message.set_k(key.data(), key.size());
     reader_writer->Write(seek_message, seek_tag);
     has_event = queue.Next(&got_tag, &ok);
     if (!has_event || got_tag != seek_tag) {
@@ -556,7 +556,7 @@ int kv_seek_async_callback(const std::string& target, const std::string& table_n
                 auto seek_message = remote::Cursor{};
                 seek_message.set_op(remote::Op::SEEK);
                 seek_message.set_cursor(cursor_id);
-                seek_message.set_k(key.data(), key.length());
+                seek_message.set_k(key.data(), key.size());
                 reactor.write_start(&seek_message, [&, cursor_id](bool seek_write_ok) {
                     if (!seek_write_ok) {
                         std::cout << "error writing SEEK gRPC" << std::flush;
@@ -645,8 +645,8 @@ int kv_seek_both(const std::string& target, const std::string& table_name, silkw
     auto seek_both_message = remote::Cursor{};
     seek_both_message.set_op(remote::Op::SEEK_BOTH);
     seek_both_message.set_cursor(cursor_id);
-    seek_both_message.set_k(key.data(), key.length());
-    seek_both_message.set_v(subkey.data(), subkey.length());
+    seek_both_message.set_k(key.data(), key.size());
+    seek_both_message.set_v(subkey.data(), subkey.size());
     success = reader_writer->Write(seek_both_message);
     if (!success) {
         std::cerr << "KV stream closed sending SEEK_BOTH operation req\n";

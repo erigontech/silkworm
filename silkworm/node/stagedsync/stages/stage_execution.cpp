@@ -172,11 +172,11 @@ void Execution::prefetch_blocks(RWTxn& txn, const BlockNum from, const BlockNum 
                 throw std::runtime_error("Bad canonical header sequence: expected " + std::to_string(block_num) +
                                          " got " + std::to_string(reached_block_num));
             }
-            if (value.length() != kHashLength) {
+            if (value.size() != kHashLength) {
                 throw std::runtime_error("Invalid value for hash in " +
                                          std::string(table::kCanonicalHashes.name) +
                                          " expected=" + std::to_string(kHashLength) +
-                                         " got=" + std::to_string(value.length()));
+                                         " got=" + std::to_string(value.size()));
             }
 
             const auto hash_ptr{value.data()};

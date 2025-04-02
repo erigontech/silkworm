@@ -213,7 +213,7 @@ ValidationResult RuleSet::validate_block_header(const BlockHeader& header, const
 }
 
 ValidationResult RuleSet::validate_extra_data(const BlockHeader& header) const {
-    if (header.extra_data.length() > kMaxExtraDataBytes) {
+    if (header.extra_data.size() > kMaxExtraDataBytes) {
         return ValidationResult::kExtraDataTooLong;
     }
     return ValidationResult::kOk;

@@ -50,7 +50,7 @@ Stage::Result Finish::forward(db::RWTxn& txn) {
 
         // Log the new version of app at this block_num
         if (sync_context_->is_first_cycle) {
-            Bytes build_info{byte_ptr_cast(build_info_.data()), build_info_.length()};
+            Bytes build_info{byte_ptr_cast(build_info_.data()), build_info_.size()};
             db::write_build_info_block_num(txn, build_info, execution_stage_progress);
         }
         txn.commit_and_renew();

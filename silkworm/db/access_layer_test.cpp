@@ -466,7 +466,7 @@ TEST_CASE("Headers and bodies", "[db][access_layer]") {
         Bytes full_senders{
             *from_hex("5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c"
                       "941591b6ca8e8dd05c69efdec02b77c72dac1496")};
-        REQUIRE(full_senders.length() == 2 * kAddressLength);
+        REQUIRE(full_senders.size() == 2 * kAddressLength);
 
         Bytes key{block_key(header.number, hash.bytes)};
         auto sender_table{open_cursor(txn, table::kSenders)};

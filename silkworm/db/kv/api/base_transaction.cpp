@@ -46,7 +46,7 @@ Task<std::optional<Bytes>> BaseTransaction::get_both_range(const std::string& ta
         SILK_DEBUG << "BaseTransaction::get_both_range value: " << value << " subkey: " << subkey;
         co_return std::nullopt;
     }
-    co_return value.substr(subkey.length());
+    co_return value.substr(subkey.size());
 }
 
 }  // namespace silkworm::db::kv::api

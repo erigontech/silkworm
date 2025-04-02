@@ -42,7 +42,7 @@ int main() {
     static const Bytes kKzgSetupG2{*from_hex(
         "b5bfd7dd8cdeb128843bc287230af38926187075cbfbefa81009a2ce615ac53d2914e5870cb452d2afaaab24f3499f72185cbfee53492714734429b7b38608e23926c911cceceac9a36851477ba4c60b087041de621000edc98edada20c1def2")};
 
-    SILKWORM_ASSERT(kKzgSetupG2.length() == 96);
+    SILKWORM_ASSERT(kKzgSetupG2.size() == 96);
 
     blst_p2_affine g2_affine;
     SILKWORM_ASSERT(blst_p2_uncompress(&g2_affine, kKzgSetupG2.data()) == BLST_SUCCESS);

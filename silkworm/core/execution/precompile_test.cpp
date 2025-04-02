@@ -270,7 +270,7 @@ TEST_CASE("POINT_EVALUATION") {
             "a421e229565952cfff4ef3517100a97da1d4fe57956fa50a442f92af03b1bf37adacc8ad4ed209b31287ea5bb94d9d06"
             "a444d6bb5aadc3ceb615b50d6606bd54bfe529f59247987cd1ab848d19de599a9052f1835fb0d0d44cf70183e19a68c9")};
     std::optional<Bytes> out{point_evaluation_run(in)};
-    REQUIRE((out && out->length() == 64));
+    REQUIRE((out && out->size() == 64));
     intx::uint256 field_elements_per_blob{intx::be::unsafe::load<intx::uint256>(out->data())};
     CHECK(field_elements_per_blob == 4096);
     intx::uint256 bls_modulus{intx::be::unsafe::load<intx::uint256>(out->data() + 32)};

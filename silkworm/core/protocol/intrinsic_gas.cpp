@@ -41,7 +41,7 @@ intx::uint128 intrinsic_gas(const UnsignedTransaction& txn, const evmc_revision 
     // EIP-7702 Set EOA account code
     gas += txn.authorizations.size() * fee::kPerEmptyAccountCost;
 
-    const uint64_t data_len{txn.data.length()};
+    const uint64_t data_len{txn.data.size()};
     if (data_len == 0) {
         return gas;
     }
@@ -63,7 +63,7 @@ intx::uint128 intrinsic_gas(const UnsignedTransaction& txn, const evmc_revision 
 // EIP-7623: Increase calldata cost
 uint64_t floor_cost(const UnsignedTransaction& txn) noexcept {
     const uint64_t zero_bytes = static_cast<uint64_t>(std::ranges::count(txn.data, 0));
-    const uint64_t non_zero_bytes{txn.data.length() - zero_bytes};
+    const uint64_t non_zero_bytes{txn.data.size() - zero_bytes};
     return fee::kGTransaction + (zero_bytes + non_zero_bytes * 4) * fee::kTotalCostFloorPerToken;
 }
 

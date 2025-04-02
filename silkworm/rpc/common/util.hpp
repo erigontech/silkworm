@@ -61,13 +61,13 @@ std::optional<std::string_view> get_opcode_name(std::uint8_t opcode) noexcept;
 }  // namespace silkworm
 
 inline auto hash_of(const silkworm::ByteView& bytes) {
-    return ethash::keccak256(bytes.data(), bytes.length());
+    return ethash::keccak256(bytes.data(), bytes.size());
 }
 
 inline auto hash_of_transaction(const silkworm::Transaction& txn) {
     silkworm::Bytes txn_rlp{};
     silkworm::rlp::encode(txn_rlp, txn, /*wrap_eip2718_into_string=*/false);
-    return ethash::keccak256(txn_rlp.data(), txn_rlp.length());
+    return ethash::keccak256(txn_rlp.data(), txn_rlp.size());
 }
 
 namespace boost::asio {

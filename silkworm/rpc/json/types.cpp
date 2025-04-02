@@ -50,7 +50,7 @@ void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes) {
 
 void to_hex_no_leading_zeros(std::span<char> hex_bytes, silkworm::ByteView bytes) {
     static constexpr const char* kHexDigits{"0123456789abcdef"};
-    size_t len = bytes.length();
+    size_t len = bytes.size();
     if (len * 2 + 2 + 1 > hex_bytes.size()) {
         SILK_ERROR << "req buffer length: " << len * 2 + 2 + 1 << "  buffer length: " << hex_bytes.size() << "\n";
         throw std::invalid_argument("to_hex_no_leading_zeros: hex_bytes too small");
@@ -112,10 +112,10 @@ std::string to_hex_no_leading_zeros(silkworm::ByteView bytes) {
         return out;
     }
 
-    out.reserve(2 * bytes.length());
+    out.reserve(2 * bytes.size());
 
     bool found_nonzero{false};
-    for (size_t i{0}; i < bytes.length(); ++i) {
+    for (size_t i{0}; i < bytes.size(); ++i) {
         uint8_t x{bytes[i]};
         char lo{kHexDigits[x & 0x0f]};
         char hi{kHexDigits[x >> 4]};
@@ -128,7 +128,7 @@ std::string to_hex_no_leading_zeros(silkworm::ByteView bytes) {
         if (!found_nonzero && lo != '0') {
             found_nonzero = true;
         }
-        if (found_nonzero || i == bytes.length() - 1) {
+        if (found_nonzero || i == bytes.size() - 1) {
             out.push_back(lo);
         }
     }

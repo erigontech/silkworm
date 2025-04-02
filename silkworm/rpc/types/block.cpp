@@ -109,7 +109,7 @@ void BlockNumOrHash::parse(const std::string& block_num_or_hash) {
                block_num_or_hash == kSafeBlockId) {
         value_ = block_num_or_hash;
     } else if (absl::StartsWithIgnoreCase(block_num_or_hash, "0x")) {
-        if (block_num_or_hash.length() == 66) {
+        if (block_num_or_hash.size() == 66) {
             const auto b32_bytes = silkworm::from_hex(block_num_or_hash);
             const auto b32 = silkworm::to_bytes32(b32_bytes.value_or(silkworm::Bytes{}));
             value_ = b32;

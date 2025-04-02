@@ -62,10 +62,10 @@ ValidationResult BorRuleSet::validate_extra_data(const BlockHeader& header) cons
     static constexpr size_t kValidatorHeaderLength{kAddressLength + 20};  // address + power
 
     // See https://github.com/maticnetwork/bor/blob/v1.0.6/consensus/bor/bor.go#L393
-    if (header.extra_data.length() < kExtraVanityLength) {
+    if (header.extra_data.size() < kExtraVanityLength) {
         return ValidationResult::kMissingVanity;
     }
-    if (header.extra_data.length() < kExtraVanityLength + kExtraSealSize) {
+    if (header.extra_data.size() < kExtraVanityLength + kExtraSealSize) {
         return ValidationResult::kMissingSignature;
     }
 
@@ -74,7 +74,7 @@ ValidationResult BorRuleSet::validate_extra_data(const BlockHeader& header) cons
     const bool is_sprint_end{is_sprint_start(header.number + 1, config().sprint_size(header.number))};
 
     // Ensure that the extra-data contains a signer list on checkpoint, but none otherwise
-    const size_t signers_length{header.extra_data.length() - (kExtraVanityLength + kExtraSealSize)};
+    const size_t signers_length{header.extra_data.size() - (kExtraVanityLength + kExtraSealSize)};
     if (!is_sprint_end && signers_length != 0) {
         return ValidationResult::kExtraValidators;
     }
@@ -94,8 +94,8 @@ static std::optional<evmc::address> ecrecover(const BlockHeader& header, const B
         seal_hash = copy.hash(/*for_sealing=*/false, /*exclude_extra_data_sig=*/true);
     }
 
-    ByteView signature{&header.extra_data[header.extra_data.length() - kExtraSealSize], kExtraSealSize - 1};
-    uint8_t recovery_id{header.extra_data[header.extra_data.length() - 1]};
+    ByteView signature{&header.extra_data[header.extra_data.size() - kExtraSealSize], kExtraSealSize - 1};
+    uint8_t recovery_id{header.extra_data[header.extra_data.size() - 1]};
 
     static secp256k1_context* context{secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS)};
     evmc::address beneficiary;

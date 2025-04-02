@@ -250,7 +250,7 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
                        << " value: " << silkworm::to_hex(value);
 
             auto val = silkworm::to_hex(value);
-            val.insert(0, 64 - val.length(), '0');
+            val.insert(0, 64 - val.size(), '0');
             if (count < max_result) {
                 storage["0x" + silkworm::to_hex(sec_key)] = {{"key", "0x" + silkworm::to_hex(key)}, {"value", "0x" + val}};
             } else {

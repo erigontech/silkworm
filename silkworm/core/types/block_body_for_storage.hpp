@@ -76,7 +76,7 @@ inline DecodingResult decode_stored_block_body(ByteView& from, BlockBodyForStora
     if (!header->list) {
         return tl::unexpected{DecodingError::kUnexpectedString};
     }
-    const uint64_t leftover{from.length() - header->payload_length};
+    const uint64_t leftover{from.size() - header->payload_length};
     if (leftover) {
         return tl::unexpected{DecodingError::kInputTooLong};
     }
@@ -86,7 +86,7 @@ inline DecodingResult decode_stored_block_body(ByteView& from, BlockBodyForStora
     }
 
     to.withdrawals = std::nullopt;
-    if (from.length() > leftover) {
+    if (from.size() > leftover) {
         std::vector<Withdrawal> withdrawals;
         if (DecodingResult res{rlp::decode(from, withdrawals, rlp::Leftover::kAllow)}; !res) {
             return res;
@@ -94,7 +94,7 @@ inline DecodingResult decode_stored_block_body(ByteView& from, BlockBodyForStora
         to.withdrawals = withdrawals;
     }
 
-    if (from.length() != leftover) {
+    if (from.size() != leftover) {
         return tl::unexpected{DecodingError::kUnexpectedListElements};
     }
     return {};

@@ -56,7 +56,7 @@ bool SplitCursor::match_key(const ByteView& key) {
     if (match_bytes_ == 0) {
         return true;
     }
-    if (key.length() < match_bytes_) {
+    if (key.size() < match_bytes_) {
         return false;
     }
     if (first_bytes_ != key.substr(0, match_bytes_ - 1)) {
@@ -77,10 +77,10 @@ SplittedKeyValue SplitCursor::split_key_value(const KeyValue& kv) {
 
     SplittedKeyValue skv{key.substr(0, part1_end_)};
 
-    if (key.length() > part2_start_) {
+    if (key.size() > part2_start_) {
         skv.key2 = kv.key.substr(part2_start_, part3_start_ - part2_start_);
     }
-    if (key.length() > part3_start_) {
+    if (key.size() > part3_start_) {
         skv.key3 = kv.key.substr(part3_start_);
     }
 
@@ -127,7 +127,7 @@ bool SplitCursorDupSort::match_key(const ByteView& key) {
     if (match_bytes_ == 0) {
         return true;
     }
-    if (key.length() < match_bytes_) {
+    if (key.size() < match_bytes_) {
         return false;
     }
     if (first_bytes_ != key.substr(0, match_bytes_ - 1)) {

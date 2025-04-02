@@ -47,7 +47,7 @@ void encode(Bytes& to, const T& n) {
         to.push_back(static_cast<uint8_t>(n));
     } else {
         const ByteView be{endian::to_big_compact(n)};
-        encode_header(to, {.list = false, .payload_length = be.length()});
+        encode_header(to, {.list = false, .payload_length = be.size()});
         to.append(be);
     }
 }

@@ -278,7 +278,7 @@ RunResults blockchain_test(const nlohmann::json& json_test) {
 
 static void print_test_status(std::string_view key, const RunResults& res) {
     std::cout << key << " ";
-    for (size_t i{key.length() + 1}; i < kColumnWidth; ++i) {
+    for (size_t i{key.size() + 1}; i < kColumnWidth; ++i) {
         std::cout << '.';
     }
     if (res.failed) {

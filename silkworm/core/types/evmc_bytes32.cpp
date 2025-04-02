@@ -27,7 +27,7 @@ namespace silkworm {
 evmc::bytes32 to_bytes32(ByteView bytes) {
     evmc::bytes32 out;
     if (!bytes.empty()) {
-        size_t n{std::min(bytes.length(), kHashLength)};
+        size_t n{std::min(bytes.size(), kHashLength)};
         std::memcpy(out.bytes + kHashLength - n, bytes.data(), n);
     }
     return out;

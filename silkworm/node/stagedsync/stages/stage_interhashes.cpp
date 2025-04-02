@@ -413,10 +413,10 @@ trie::PrefixSet InterHashes::collect_storage_changes(RWTxn& txn, BlockNum from, 
 
             auto unpacked_location{trie::unpack_nibbles(hashed_location.bytes)};
             std::memcpy(&hashed_key[kHashedStoragePrefixLength], unpacked_location.data(),
-                        unpacked_location.length());
-            auto ret_item{ByteView(hashed_key.data(), kHashedStoragePrefixLength + unpacked_location.length())};
+                        unpacked_location.size());
+            auto ret_item{ByteView(hashed_key.data(), kHashedStoragePrefixLength + unpacked_location.size())};
 
-            ret.insert(ret_item, changeset_value_view.length() == kHashLength);
+            ret.insert(ret_item, changeset_value_view.size() == kHashLength);
             changeset_data = storage_changeset->to_current_next_multi(/*throw_notfound=*/false);
         }
 

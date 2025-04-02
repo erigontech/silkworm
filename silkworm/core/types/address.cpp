@@ -77,7 +77,7 @@ evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& 
 evmc::address bytes_to_address(ByteView bytes) {
     evmc::address out;
     if (!bytes.empty()) {
-        size_t n{std::min(bytes.length(), kAddressLength)};
+        size_t n{std::min(bytes.size(), kAddressLength)};
         std::memcpy(out.bytes + kAddressLength - n, bytes.data(), n);
     }
     return out;

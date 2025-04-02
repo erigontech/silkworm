@@ -87,7 +87,7 @@ std::string to_hex(T value, bool with_prefix = false) {
     uint8_t bytes[sizeof(T)];
     intx::be::store(bytes, value);
     std::string hexed{to_hex(zeroless_view(bytes), with_prefix)};
-    if (hexed.length() == (with_prefix ? 2 : 0)) {
+    if (hexed.size() == (with_prefix ? 2 : 0)) {
         hexed += "00";
     }
     return hexed;

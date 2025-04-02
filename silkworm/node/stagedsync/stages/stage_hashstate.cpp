@@ -292,19 +292,19 @@ Stage::Result HashState::hash_from_plainstate(RWTxn& txn) {
                     return;
                 }
 
-                if (entry.key.length() == kHashLength) {
-                    mdbx::slice k{entry.key.data(), entry.key.length()};
-                    mdbx::slice v{entry.value.data(), entry.value.length()};
+                if (entry.key.size() == kHashLength) {
+                    mdbx::slice k{entry.key.data(), entry.key.size()};
+                    mdbx::slice v{entry.value.data(), entry.value.size()};
                     mdbx::error::success_or_throw(target.put(k, &v, MDBX_APPEND));
-                } else if (entry.key.length() == kHashedStoragePrefixLength + kHashLength) {
-                    Bytes new_value(kHashLength + entry.value.length(), '\0');
+                } else if (entry.key.size() == kHashedStoragePrefixLength + kHashLength) {
+                    Bytes new_value(kHashLength + entry.value.size(), '\0');
                     std::memcpy(&new_value[0], &entry.key[kHashedStoragePrefixLength], kHashLength);
-                    std::memcpy(&new_value[kHashLength], entry.value.data(), entry.value.length());
+                    std::memcpy(&new_value[kHashLength], entry.value.data(), entry.value.size());
                     mdbx::slice k{entry.key.data(), kHashedStoragePrefixLength};
-                    mdbx::slice v{new_value.data(), new_value.length()};
+                    mdbx::slice v{new_value.data(), new_value.size()};
                     mdbx::error::success_or_throw(storage_target->put(k, &v, MDBX_APPENDDUP));
                 } else {
-                    std::string what{"Unexpected key length " + std::to_string(entry.key.length()) + " in PlainState"};
+                    std::string what{"Unexpected key length " + std::to_string(entry.key.size()) + " in PlainState"};
                     throw StageError(Stage::Result::kUnexpectedError, what);
                 }
             };
@@ -627,15 +627,15 @@ Stage::Result HashState::unwind_from_account_changeset(RWTxn& txn, BlockNum prev
 
             while (changeset_data.done) {
                 auto changeset_value_view{from_slice(changeset_data.value)};
-                ensure(changeset_value_view.length() >= kAddressLength,
-                       [&]() { return "invalid account changeset value size=" + std::to_string(changeset_value_view.length()) +
+                ensure(changeset_value_view.size() >= kAddressLength,
+                       [&]() { return "invalid account changeset value size=" + std::to_string(changeset_value_view.size()) +
                                       " at block " + std::to_string(reached_blocknum); });
                 evmc::address address{bytes_to_address(changeset_value_view)};
 
                 if (!changed_addresses.contains(address)) {
                     changeset_value_view.remove_prefix(kAddressLength);
                     auto address_hash{to_bytes32(keccak256(address.bytes).bytes)};
-                    Bytes previous_value(changeset_value_view.data(), changeset_value_view.length());
+                    Bytes previous_value(changeset_value_view.data(), changeset_value_view.size());
                     changed_addresses[address] = std::make_pair(address_hash, previous_value);
                 }
                 changeset_data = changeset_cursor->to_current_next_multi(/*throw_notfound=*/false);
@@ -705,8 +705,8 @@ Stage::Result HashState::unwind_from_storage_changeset(RWTxn& txn, BlockNum prev
 
         while (changeset_data.done) {
             auto changeset_key_view{from_slice(changeset_data.key)};
-            ensure(changeset_key_view.length() == sizeof(BlockNum) + kPlainStoragePrefixLength,
-                   [&]() { return "invalid storage changeset key size=" + std::to_string(changeset_key_view.length()); });
+            ensure(changeset_key_view.size() == sizeof(BlockNum) + kPlainStoragePrefixLength,
+                   [&]() { return "invalid storage changeset key size=" + std::to_string(changeset_key_view.size()); });
             reached_blocknum = endian::load_big_u64(changeset_key_view.data());
             if (reached_blocknum > previous_progress) {
                 break;
@@ -733,8 +733,8 @@ Stage::Result HashState::unwind_from_storage_changeset(RWTxn& txn, BlockNum prev
 
             while (changeset_data.done) {
                 auto changeset_value_view{from_slice(changeset_data.value)};
-                ensure(changeset_value_view.length() >= kHashLength,
-                       [&]() { return "invalid storage changeset value size=" + std::to_string(changeset_value_view.length()) +
+                ensure(changeset_value_view.size() >= kHashLength,
+                       [&]() { return "invalid storage changeset value size=" + std::to_string(changeset_value_view.size()) +
                                       " at block " + std::to_string(reached_blocknum); });
                 auto location{to_bytes32(changeset_value_view)};
                 if (!storage_changes[address][incarnation].contains(location)) {

@@ -745,10 +745,42 @@ SILKWORM_EXPORT int silkworm_block_exec_end(SilkwormHandle handle, MDBX_txn* mdb
         return SILKWORM_INVALID_MDBX_TXN;
     }
 
-    auto unmanaged_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_tx};
-    auto unmanaged_env = silkworm::datastore::kvdb::EnvUnmanaged{::mdbx_txn_env(mdbx_tx)};
-    auto chain_db = db::DataStore::make_chaindata_database(std::move(unmanaged_env));
-    auto db_ref = chain_db.ref();
+    std::cerr << "SILKWORM block end" << '\n';
+
+    {
+        auto unmanaged_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_in_mem_temp_tx};
+        {
+            auto rw_cursor = unmanaged_tx.rw_cursor(db::table::kBlockReceipts);
+            std::cerr << "Size of the table PRE is: " << rw_cursor->size() << '\n';
+            uint64_t receipt_idx = 0;
+            for (const auto& receipt : handle->receipts_in_current_block) {
+                Bytes rlp_encoded;
+                rlp::encode(rlp_encoded, receipt);
+
+                Bytes key(sizeof(int64_t), '\0');
+
+                endian::store_big_u64(key.data(), receipt_idx);
+
+                std::cerr << "Storing receipt under key: " << evmc::hex(key) << ", encoded hex receipt: " << evmc::hex(rlp_encoded) << '\n';
+                rw_cursor->insert(datastore::kvdb::Slice(key), datastore::kvdb::Slice(rlp_encoded));
+
+                receipt_idx++;
+            }
+        }
+    }
+
+    {
+        {
+            auto unmanaged_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_in_mem_temp_tx};
+            auto ro_cursor = unmanaged_tx.ro_cursor(db::table::kBlockReceipts);
+            for (auto db_item = ro_cursor->to_first(false); db_item.done;
+                 db_item = ro_cursor->to_next(/*throw_notfound=*/false)) {
+                const ByteView rlp_encoded{datastore::kvdb::from_slice(db_item.value)};
+
+                std::cerr << "Got decoded receipt hex: " << evmc::hex(rlp_encoded) << '\n';
+            }
+        }
+    }
 
     SILKWORM_ASSERT(std::size(handle->receipts_in_current_block) == std::size(handle->transactions_in_current_block));
 

@@ -51,10 +51,10 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
     MemoryOverlay overlay{
         tmp_dir.path(),
         &main_rw_txn,
-        [](const std::string& map_name) {
+        [](std::string_view map_name) {
             if (map_name == kTestMap.name) return kTestMap;
             if (map_name == kTestMultiMap.name) return kTestMultiMap;
-            return MapConfig{map_name.c_str()};
+            return MapConfig{map_name};
         },
         "Sequence",
     };

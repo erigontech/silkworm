@@ -80,20 +80,20 @@ TEST_CASE("BorConfig JSON") {
 }
 
 TEST_CASE("bor_config_value_lookup") {
-    static constexpr SmallMap<BlockNum, std::string_view> kConfig{{20, "b"sv}, {10, "a"sv}, {30, "c"sv}};
+    static constexpr SmallMap<BlockNum, std::string_view> kConfig{{20, "b"}, {10, "a"}, {30, "c"}};
 
     static_assert(!config_value_lookup(kConfig, 0));
     static_assert(!config_value_lookup(kConfig, 1));
     static_assert(!config_value_lookup(kConfig, 9));
-    static_assert(*config_value_lookup(kConfig, 10) == "a"sv);
-    static_assert(*config_value_lookup(kConfig, 11) == "a"sv);
-    static_assert(*config_value_lookup(kConfig, 19) == "a"sv);
-    static_assert(*config_value_lookup(kConfig, 20) == "b"sv);
-    static_assert(*config_value_lookup(kConfig, 21) == "b"sv);
-    static_assert(*config_value_lookup(kConfig, 29) == "b"sv);
-    static_assert(*config_value_lookup(kConfig, 30) == "c"sv);
-    static_assert(*config_value_lookup(kConfig, 31) == "c"sv);
-    static_assert(*config_value_lookup(kConfig, 100) == "c"sv);
+    static_assert(*config_value_lookup(kConfig, 10) == "a");
+    static_assert(*config_value_lookup(kConfig, 11) == "a");
+    static_assert(*config_value_lookup(kConfig, 19) == "a");
+    static_assert(*config_value_lookup(kConfig, 20) == "b");
+    static_assert(*config_value_lookup(kConfig, 21) == "b");
+    static_assert(*config_value_lookup(kConfig, 29) == "b");
+    static_assert(*config_value_lookup(kConfig, 30) == "c");
+    static_assert(*config_value_lookup(kConfig, 31) == "c");
+    static_assert(*config_value_lookup(kConfig, 100) == "c");
 }
 
 }  // namespace silkworm::protocol::bor

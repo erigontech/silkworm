@@ -259,7 +259,7 @@ TEST_CASE("Sync Stages") {
 
         constexpr evmc::address kExpectedSender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
         {
-            auto senders_map{txn->open_map(table::kSenders.name)};
+            auto senders_map{txn->open_map(table::kSenders.name_str())};
             REQUIRE(txn->get_map_stat(senders_map).ms_entries == 2);
 
             auto written_senders{read_senders(txn, 1, b1_hash.bytes)};
@@ -280,7 +280,7 @@ TEST_CASE("Sync Stages") {
         REQUIRE(stage_result == stagedsync::Stage::Result::kSuccess);
 
         {
-            auto senders_map{txn->open_map(table::kSenders.name)};
+            auto senders_map{txn->open_map(table::kSenders.name_str())};
             REQUIRE(txn->get_map_stat(senders_map).ms_entries == 1);
 
             auto written_senders{read_senders(txn, 1, b1_hash.bytes)};

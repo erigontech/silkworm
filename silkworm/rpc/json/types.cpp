@@ -20,7 +20,7 @@
 namespace silkworm::rpc {
 
 void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes) {
-    static constexpr const char* kHexDigits{"0123456789abcdef"};
+    static constexpr std::string_view kHexDigits{"0123456789abcdef"};
     if (bytes.size() * 2 + 2 + 1 > hex_bytes.size()) {
         SILK_ERROR << "req buffer length: " << bytes.size() * 2 + 2 + 1 << "  buffer length: " << hex_bytes.size() << "\n";
         throw std::invalid_argument("to_hex: hex_bytes too small");
@@ -36,7 +36,7 @@ void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes) {
 }
 
 void to_hex_no_leading_zeros(std::span<char> hex_bytes, silkworm::ByteView bytes) {
-    static constexpr const char* kHexDigits{"0123456789abcdef"};
+    static constexpr std::string_view kHexDigits{"0123456789abcdef"};
     size_t len = bytes.size();
     if (len * 2 + 2 + 1 > hex_bytes.size()) {
         SILK_ERROR << "req buffer length: " << len * 2 + 2 + 1 << "  buffer length: " << hex_bytes.size() << "\n";
@@ -89,7 +89,7 @@ void to_quantity(std::span<char> quantity_hex_bytes, intx::uint256 number) {
 }
 
 std::string to_hex_no_leading_zeros(silkworm::ByteView bytes) {
-    static constexpr const char* kHexDigits{"0123456789abcdef"};
+    static constexpr std::string_view kHexDigits{"0123456789abcdef"};
 
     std::string out{};
 

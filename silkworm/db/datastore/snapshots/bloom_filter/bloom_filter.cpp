@@ -30,7 +30,7 @@ static constexpr size_t kRotation = 17;
 static constexpr size_t kRotationOf64 = 64 - kRotation;
 
 //! The magic header used in serialization format for version v2
-static const ByteView kMagicHeader = string_view_to_byte_view("\0\0\0\0\0\0\0\0v02\n"sv);
+static constexpr std::string_view kMagicHeader{"\0\0\0\0\0\0\0\0v02\n"sv};
 
 uint64_t BloomFilter::optimal_bits_count(uint64_t max_key_count, double p) {
     return static_cast<uint64_t>(std::ceil(-static_cast<double>(max_key_count) * std::log(p) / (ln2 * ln2)));
@@ -161,7 +161,7 @@ std::istream& operator>>(std::istream& is, BloomFilter& filter) {
     // Read Magic Header byte sequence
     Bytes magic_buffer(kMagicHeader.size(), '\0');
     hashing_istream.read(magic_buffer);
-    if (magic_buffer != kMagicHeader) {
+    if (magic_buffer != string_view_to_byte_view(kMagicHeader)) {
         throw std::runtime_error{"incompatible version, wrong magic: " + to_hex(magic_buffer)};
     }
 

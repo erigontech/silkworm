@@ -35,9 +35,9 @@ class LocalTransaction : public BaseTransaction {
 
     Task<void> open() override;
 
-    Task<std::shared_ptr<Cursor>> cursor(const std::string& table) override;
+    Task<std::shared_ptr<Cursor>> cursor(std::string_view table) override;
 
-    Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override;
+    Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(std::string_view table) override;
 
     bool is_local() const override { return true; }
     DataStoreRef data_store() const { return data_store_; }
@@ -86,7 +86,7 @@ class LocalTransaction : public BaseTransaction {
         return query.exec(key, ts);
     }
 
-    Task<std::shared_ptr<CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
+    Task<std::shared_ptr<CursorDupSort>> get_cursor(std::string_view table, bool is_cursor_dup_sort);
 
     static inline uint64_t next_tx_id_{0};
 

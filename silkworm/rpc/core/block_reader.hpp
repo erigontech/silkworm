@@ -22,12 +22,12 @@ using BalanceChanges = std::map<evmc::address, intx::uint256>;
 
 void to_json(nlohmann::json& json, const BalanceChanges& balance_changes);
 
-inline constexpr const char* kEarliestBlockId{"earliest"};
-inline constexpr const char* kLatestBlockId{"latest"};
-inline constexpr const char* kPendingBlockId{"pending"};
-inline constexpr const char* kFinalizedBlockId{"finalized"};
-inline constexpr const char* kSafeBlockId{"safe"};
-inline constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
+inline constexpr std::string_view kEarliestBlockId{"earliest"};
+inline constexpr std::string_view kLatestBlockId{"latest"};
+inline constexpr std::string_view kPendingBlockId{"pending"};
+inline constexpr std::string_view kFinalizedBlockId{"finalized"};
+inline constexpr std::string_view kSafeBlockId{"safe"};
+inline constexpr std::string_view kLatestExecutedBlockId{"latestExecuted"};
 
 class BlockReader {
   public:
@@ -77,7 +77,7 @@ class BlockReader {
     Task<std::optional<BlockHeader>> read_header(BlockNum block_num) { co_return co_await chain_storage_.read_canonical_header(block_num); }
 
   private:
-    Task<BlockNum> get_forkchoice_block_num(const char* block_hash_tag) const;
+    Task<BlockNum> get_forkchoice_block_num(std::string_view block_hash_tag) const;
     const db::chain::ChainStorage& chain_storage_;
     db::kv::api::Transaction& transaction_;
 };

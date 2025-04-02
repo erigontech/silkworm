@@ -13,7 +13,7 @@
 
 namespace silkworm {
 
-inline constexpr const char* kDefaultNodeName{"silkworm"};
+inline constexpr std::string_view kDefaultNodeName{"silkworm"};
 
 class EthereumBackEnd {
   public:

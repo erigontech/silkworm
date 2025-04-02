@@ -427,10 +427,10 @@ Stage::Result InterHashes::regenerate_intermediate_hashes(RWTxn& txn, const evmc
     Stage::Result ret{Stage::Result::kSuccess};
 
     try {
-        SILK_INFO_M(log_prefix_, {"clearing", table::kTrieOfAccounts.name});
-        txn->clear_map(table::kTrieOfAccounts.name);
-        SILK_INFO_M(log_prefix_, {"clearing", table::kTrieOfStorage.name});
-        txn->clear_map(table::kTrieOfStorage.name);
+        SILK_INFO_M(log_prefix_, {"clearing", table::kTrieOfAccounts.name_str()});
+        txn->clear_map(table::kTrieOfAccounts.name_str());
+        SILK_INFO_M(log_prefix_, {"clearing", table::kTrieOfStorage.name_str()});
+        txn->clear_map(table::kTrieOfStorage.name_str());
         txn.commit_and_renew();
 
         account_collector_ = std::make_unique<Collector>(etl_settings_);

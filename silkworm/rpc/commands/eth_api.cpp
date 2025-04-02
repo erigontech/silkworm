@@ -108,7 +108,7 @@ Task<void> EthereumRpcApi::handle_eth_syncing(const nlohmann::json& request, nlo
 
             syncing_data.current_block = to_quantity(current_block_num);
             syncing_data.max_block = to_quantity(max_block_num);
-            for (const char* stage_name : silkworm::db::stages::kAllStages) {
+            for (std::string_view stage_name : silkworm::db::stages::kAllStages) {
                 StageData current_stage;
                 current_stage.stage_name = stage_name;
                 current_stage.block_num = to_quantity(co_await stages::get_sync_stage_progress(*tx, string_to_bytes(current_stage.stage_name)));

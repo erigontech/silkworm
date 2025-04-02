@@ -22,9 +22,9 @@ using db::kv::StateReader;
 using namespace silkworm::db;
 using namespace silkworm::db::chain;
 
-static constexpr const char* kHeadBlockHash = "headBlockHash";
-static constexpr const char* kFinalizedBlockHash = "finalizedBlockHash";
-static constexpr const char* kSafeBlockHash = "safeBlockHash";
+static constexpr std::string_view kHeadBlockHash = "headBlockHash";
+static constexpr std::string_view kFinalizedBlockHash = "finalizedBlockHash";
+static constexpr std::string_view kSafeBlockHash = "safeBlockHash";
 
 void to_json(nlohmann::json& json, const BalanceChanges& balance_changes) {
     for (const auto& entry : balance_changes) {
@@ -133,7 +133,7 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOr
     StateReader state_reader{transaction_, txn_id};
 
     db::kv::api::HistoryRangeRequest query{
-        .table = db::table::kAccountDomain,
+        .table = std::string{db::table::kAccountDomain},
         .from_timestamp = static_cast<db::kv::api::Timestamp>(start_txn_number),
         .to_timestamp = static_cast<db::kv::api::Timestamp>(end_txn_number),
         .ascending_order = true};
@@ -166,8 +166,8 @@ Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOr
     SILK_DEBUG << "Changed balances: " << balance_changes.size();
 }
 
-Task<BlockNum> BlockReader::get_forkchoice_block_num(const char* block_hash_tag) const {
-    const auto kv_pair = co_await transaction_.get(table::kLastForkchoiceName, string_to_bytes(block_hash_tag));
+Task<BlockNum> BlockReader::get_forkchoice_block_num(std::string_view block_hash_tag) const {
+    const auto kv_pair = co_await transaction_.get(table::kLastForkchoiceName, string_view_to_byte_view(block_hash_tag));
     const auto block_hash_data = kv_pair.value;
     if (block_hash_data.empty()) {
         co_return 0;
@@ -278,7 +278,7 @@ Task<BlockNum> BlockReader::get_latest_executed_block_num() const {
 }
 
 Task<BlockNum> BlockReader::get_latest_block_num() const {
-    const auto kv_pair = co_await transaction_.get(table::kLastForkchoiceName, string_to_bytes(kHeadBlockHash));
+    const auto kv_pair = co_await transaction_.get(table::kLastForkchoiceName, string_view_to_byte_view(kHeadBlockHash));
     const auto head_block_hash_data = kv_pair.value;
     if (!head_block_hash_data.empty()) {
         const auto head_block_hash = to_bytes32(head_block_hash_data);

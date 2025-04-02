@@ -164,7 +164,7 @@ class ThreadedKvClient {
 };
 
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
-const std::string kTestAddressUri{"localhost:12345"};
+constexpr std::string_view kTestAddressUri{"localhost:12345"};
 
 const silkworm::datastore::kvdb::MapConfig kTestMap{"TestTable"};
 const silkworm::datastore::kvdb::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
@@ -197,7 +197,7 @@ struct KvEnd2EndTest {
     explicit KvEnd2EndTest() {
         log::init();
         std::shared_ptr<grpc::Channel> channel =
-            grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
+            grpc::CreateChannel(std::string{kTestAddressUri}, grpc::InsecureChannelCredentials());
         kv_stub = remote::KV::NewStub(channel);
         kv_client = std::make_unique<KvClient>(kv_stub.get());
 

@@ -83,7 +83,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
                            << to_timestamp;
 
                 db::kv::api::IndexRangeRequest query = {
-                    .table = db::table::kLogTopicIdx,
+                    .table = std::string{db::table::kLogTopicIdx},
                     .key = db::topic_domain_key(*it),
                     .from_timestamp = from_timestamp,
                     .to_timestamp = to_timestamp,
@@ -104,7 +104,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
             SILK_DEBUG << "address: " << *it << ", from_timestamp: " << from_timestamp << ", to_timestamp: " << to_timestamp;
 
             db::kv::api::IndexRangeRequest query = {
-                .table = db::table::kLogAddrIdx,
+                .table = std::string{db::table::kLogAddrIdx},
                 .key = db::account_domain_key(*it),
                 .from_timestamp = from_timestamp,
                 .to_timestamp = to_timestamp,

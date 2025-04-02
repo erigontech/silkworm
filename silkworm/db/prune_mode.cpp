@@ -14,7 +14,7 @@ using datastore::kvdb::from_slice;
 using datastore::kvdb::to_slice;
 
 //! \brief Retrieves the proper BlockAmount prune threshold for given key
-static BlockAmount read_block_amount_for_key(mdbx::cursor& source, const char* key) {
+static BlockAmount read_block_amount_for_key(mdbx::cursor& source, std::string_view key) {
     std::string key_str{key};
     auto data{source.find(mdbx::slice(key_str), /*throw_notfound=*/false)};
     if (data.done) {
@@ -45,7 +45,7 @@ static BlockAmount read_block_amount_for_key(mdbx::cursor& source, const char* k
 }
 
 //! \brief Writes the BlockAmount keys in db
-static void write_block_amount_for_key(mdbx::cursor& target, const char* key, const BlockAmount& block_amount) {
+static void write_block_amount_for_key(mdbx::cursor& target, std::string_view key, const BlockAmount& block_amount) {
     std::string db_key{key};
     std::string db_type{"older"};
     Bytes db_value(sizeof(BlockNum), '\0');

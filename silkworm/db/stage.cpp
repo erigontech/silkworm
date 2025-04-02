@@ -11,7 +11,7 @@ namespace silkworm::stagedsync {
 
 using namespace silkworm::db::stages;
 
-Stage::Stage(SyncContext* sync_context, const char* stage_name)
+Stage::Stage(SyncContext* sync_context, std::string_view stage_name)
     : sync_context_{sync_context}, stage_name_{stage_name} {}
 
 BlockNum Stage::get_progress(db::ROTxn& txn) {

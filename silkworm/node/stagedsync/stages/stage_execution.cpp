@@ -406,7 +406,7 @@ Stage::Result Execution::prune(RWTxn& txn) {
             }
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
-                SILK_TRACE_M(log_prefix_, {"source", table::kAccountChangeSet.name,
+                SILK_TRACE_M(log_prefix_, {"source", table::kAccountChangeSet.name_str(),
                                            "erased", std::to_string(erased),
                                            "elapsed", StopWatch::format(duration)});
             }
@@ -423,7 +423,7 @@ Stage::Result Execution::prune(RWTxn& txn) {
             }
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
-                SILK_TRACE_M(log_prefix_, {"source", table::kStorageChangeSet.name,
+                SILK_TRACE_M(log_prefix_, {"source", table::kStorageChangeSet.name_str(),
                                            "erased", std::to_string(erased),
                                            "elapsed", StopWatch::format(duration)});
             }
@@ -443,7 +443,7 @@ Stage::Result Execution::prune(RWTxn& txn) {
             size_t erased = cursor_erase(*source, key, CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
-                SILK_TRACE_M(log_prefix_, {"source", table::kBlockReceipts.name,
+                SILK_TRACE_M(log_prefix_, {"source", table::kBlockReceipts.name_str(),
                                            "erased", std::to_string(erased),
                                            "elapsed", StopWatch::format(duration)});
             }
@@ -452,7 +452,7 @@ Stage::Result Execution::prune(RWTxn& txn) {
             erased = cursor_erase(*source, key, CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
-                SILK_TRACE_M(log_prefix_, {"source", table::kLogs.name,
+                SILK_TRACE_M(log_prefix_, {"source", table::kLogs.name_str(),
                                            "erased", std::to_string(erased),
                                            "elapsed", StopWatch::format(duration)});
             }
@@ -472,7 +472,7 @@ Stage::Result Execution::prune(RWTxn& txn) {
             size_t erased = cursor_erase(*source, key, CursorMoveDirection::kReverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
-                SILK_TRACE_M(log_prefix_, {"source", table::kCallTraceSet.name,
+                SILK_TRACE_M(log_prefix_, {"source", table::kCallTraceSet.name_str(),
                                            "erased", std::to_string(erased),
                                            "elapsed", StopWatch::format(duration)});
             }

@@ -35,7 +35,7 @@ Sync::Sync(const boost::asio::any_io_executor& executor,
             },
             .eth_end_point = "",  // no need for Ethereum JSON RPC end-point
             .engine_end_point = rpc_settings.engine_end_point,
-            .eth_api_spec = kDefaultEth2ApiSpec,
+            .eth_api_spec = std::string{kDefaultEth2ApiSpec},
             .private_api_addr = rpc_settings.private_api_addr,
             .num_workers = 1,  // single-client so just one worker should be OK
             .jwt_secret_file = rpc_settings.jwt_secret_file,

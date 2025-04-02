@@ -336,7 +336,7 @@ TEST_CASE("Iterator::Iterator empty data", "[silkworm][node][seg][decompressor]"
     }
 }
 
-static const std::string kLoremIpsum{
+static constexpr std::string_view kLoremIpsum{
     "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et\n"
     "dolore magna aliqua Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo\n"
     "consequat Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur\n"

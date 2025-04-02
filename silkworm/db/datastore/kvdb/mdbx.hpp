@@ -183,9 +183,11 @@ class RWCursorDupSort : public RWCursor, public ROCursorDupSort {
 
 //! \brief Configuration settings for a "map" (aka a table)
 struct MapConfig {
-    const char* name{nullptr};                                        // Name of the table (is key in MAIN_DBI)
+    const std::string_view name{};                                    // Name of the table (is key in MAIN_DBI)
     const ::mdbx::key_mode key_mode{::mdbx::key_mode::usual};         // Key collation order
     const ::mdbx::value_mode value_mode{::mdbx::value_mode::single};  // Data Storage Mode
+
+    std::string name_str() const { return std::string{name}; }
 };
 
 //! \brief ROTxn represents a read-only transaction.
@@ -515,7 +517,7 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
 //! \param [in] tx : a reference to a valid mdbx transaction
 //! \param [in] map_name : the name of the map to check for
 //! \return True / False
-bool has_map(::mdbx::txn& tx, const char* map_name);
+bool has_map(::mdbx::txn& tx, std::string_view map_name);
 
 //! \brief List the names of the existing maps in database
 //! \param [in] tx : a reference to a valid mdbx transaction

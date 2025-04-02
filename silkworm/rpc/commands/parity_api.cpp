@@ -37,7 +37,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         auto value = params[2].get<std::string>();
         offset = silkworm::from_hex(value);
     }
-    std::string block_id = kLatestBlockId;
+    std::string_view block_id = kLatestBlockId;
     if (params.size() >= 4) {
         block_id = params[3].get<std::string>();
     }
@@ -75,7 +75,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         SILK_DEBUG << "handle_parity_list_storage_keys: from " << from << ", to " << to;
 
         db::kv::api::DomainRangeRequest query{
-            .table = db::table::kStorageDomain,
+            .table = std::string{db::table::kStorageDomain},
             .from_key = from,
             .to_key = to,
             .timestamp = txn_number,

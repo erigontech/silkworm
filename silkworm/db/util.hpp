@@ -39,10 +39,10 @@ struct VersionBase {
 /* Common Keys */
 
 //! Key for DbInfo bucket storing db schema version
-inline constexpr const char* kDbSchemaVersionKey{"dbVersion"};
+inline constexpr std::string_view kDbSchemaVersionKey{"dbVersion"};
 
 //! Key for Sequence bucket storing state version
-inline constexpr const char* kPlainStateVersionKey{"PlainStateVersion"};
+inline constexpr std::string_view kPlainStateVersionKey{"PlainStateVersion"};
 
 inline constexpr size_t kIncarnationLength{8};
 inline constexpr size_t kLocationLength{32};

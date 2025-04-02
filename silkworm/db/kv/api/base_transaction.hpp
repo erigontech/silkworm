@@ -17,11 +17,11 @@ class BaseTransaction : public Transaction {
 
     bool is_local() const override { return false; }
 
-    Task<KeyValue> get(const std::string& table, ByteView key) override;
+    Task<KeyValue> get(std::string_view table, ByteView key) override;
 
-    Task<Bytes> get_one(const std::string& table, ByteView key) override;
+    Task<Bytes> get_one(std::string_view table, ByteView key) override;
 
-    Task<std::optional<Bytes>> get_both_range(const std::string& table, ByteView key, ByteView subkey) override;
+    Task<std::optional<Bytes>> get_both_range(std::string_view table, ByteView key, ByteView subkey) override;
 
   private:
     StateCache* state_cache_;

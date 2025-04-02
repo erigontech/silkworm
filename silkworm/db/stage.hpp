@@ -70,7 +70,7 @@ class Stage : public Stoppable {
         kPrune,    // Executing Prune
     };
 
-    Stage(SyncContext* sync_context, const char* stage_name);
+    Stage(SyncContext* sync_context, std::string_view stage_name);
 
     //! \brief Forward is called when the stage is executed. The main logic of the stage must be here.
     //! \param [in] txn : A db transaction holder
@@ -111,7 +111,7 @@ class Stage : public Stoppable {
     virtual std::vector<std::string> get_log_progress() { return {}; };
 
     //! \brief Returns the key name of the stage instance
-    const char* name() const { return stage_name_; }
+    std::string_view name() const { return stage_name_; }
 
     //! \brief Forces an exception if stage has been requested to stop
     void throw_if_stopping();
@@ -119,7 +119,7 @@ class Stage : public Stoppable {
   protected:
     // Shared context across stages
     SyncContext* sync_context_;
-    const char* stage_name_;
+    std::string_view stage_name_;
     std::atomic<OperationType> operation_{OperationType::kNone};
     // To synchronize access by outer sync loop
     std::mutex sl_mutex_;

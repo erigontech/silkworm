@@ -24,19 +24,19 @@ using testing::Expectation;
 using testing::Property;
 namespace test = rpc::test;
 
-static constexpr const char* kPlainStateKey{"e0a2bd4258d2768837baa26a28fe71dc079f84c7"};
-static constexpr const char* kPlainStateValue{""};
+static constexpr std::string_view kPlainStateKey{"e0a2bd4258d2768837baa26a28fe71dc079f84c7"};
+static constexpr std::string_view kPlainStateValue{""};
 
-static const silkworm::Bytes kPlainStateKeyBytes{string_to_bytes(kPlainStateKey)};
-static const silkworm::Bytes kPlainStateValueBytes{string_to_bytes(kPlainStateValue)};
+static const silkworm::ByteView kPlainStateKeyBytes{string_view_to_byte_view(kPlainStateKey)};
+static const silkworm::ByteView kPlainStateValueBytes{string_view_to_byte_view(kPlainStateValue)};
 
-static constexpr const char* kAccountChangeSetKey{"0000000000532b9f"};
-static constexpr const char* kAccountChangeSetSubkey{"0000000000000000000000000000000000000000"};
-static constexpr const char* kAccountChangeSetValue{"020944ed67f28fd50bb8e9"};
+static constexpr std::string_view kAccountChangeSetKey{"0000000000532b9f"};
+static constexpr std::string_view kAccountChangeSetSubkey{"0000000000000000000000000000000000000000"};
+static constexpr std::string_view kAccountChangeSetValue{"020944ed67f28fd50bb8e9"};
 
-static const silkworm::Bytes kAccountChangeSetKeyBytes{string_to_bytes(kAccountChangeSetKey)};
-static const silkworm::Bytes kAccountChangeSetSubkeyBytes{string_to_bytes(kAccountChangeSetSubkey)};
-static const silkworm::Bytes kAccountChangeSetValueBytes{string_to_bytes(kAccountChangeSetValue)};
+static const silkworm::ByteView kAccountChangeSetKeyBytes{string_view_to_byte_view(kAccountChangeSetKey)};
+static const silkworm::ByteView kAccountChangeSetSubkeyBytes{string_view_to_byte_view(kAccountChangeSetSubkey)};
+static const silkworm::ByteView kAccountChangeSetValueBytes{string_view_to_byte_view(kAccountChangeSetValue)};
 
 class RemoteCursorTest : public test_util::KVTestBase {
   public:

@@ -44,7 +44,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_num);
 
     db::kv::api::DomainRangeRequest query{
-        .table = db::table::kAccountDomain,
+        .table = std::string{db::table::kAccountDomain},
         .from_key = key,
         .timestamp = start_txn_number,
         .ascending_order = true};
@@ -76,7 +76,7 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
 
         if (account->code_hash != kZeroHash && !exclude_code) {
             db::kv::api::GetLatestRequest query_code{
-                .table = db::table::kCodeDomain,
+                .table = std::string{db::table::kCodeDomain},
                 .key = db::account_domain_key(address)};
 
             const auto code = co_await transaction_.get_latest(std::move(query_code));
@@ -103,7 +103,7 @@ Task<void> AccountDumper::load_storage(BlockNum block_num, DumpAccounts& dump_ac
         increment(to);
 
         db::kv::api::DomainRangeRequest query{
-            .table = db::table::kStorageDomain,
+            .table = std::string{db::table::kStorageDomain},
             .from_key = db::code_domain_key(address),
             .to_key = to,
             .timestamp = txn_number,

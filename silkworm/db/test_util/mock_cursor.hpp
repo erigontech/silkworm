@@ -12,7 +12,7 @@ namespace silkworm::db::test_util {
 class MockCursor : public kv::api::Cursor {
   public:
     MOCK_METHOD((uint32_t), cursor_id, (), (const));
-    MOCK_METHOD((Task<void>), open_cursor, (const std::string& table_name, bool is_dup_sorted));
+    MOCK_METHOD((Task<void>), open_cursor, (std::string_view table_name, bool is_dup_sorted));
     MOCK_METHOD((Task<kv::api::KeyValue>), seek, (ByteView key));
     MOCK_METHOD((Task<kv::api::KeyValue>), seek_exact, (ByteView key));
     MOCK_METHOD((Task<kv::api::KeyValue>), first, ());
@@ -25,7 +25,7 @@ class MockCursor : public kv::api::Cursor {
 class MockCursorDupSort : public kv::api::CursorDupSort {
   public:
     MOCK_METHOD((uint32_t), cursor_id, (), (const));
-    MOCK_METHOD((Task<void>), open_cursor, (const std::string& table_name, bool is_dup_sorted));
+    MOCK_METHOD((Task<void>), open_cursor, (std::string_view table_name, bool is_dup_sorted));
     MOCK_METHOD((Task<kv::api::KeyValue>), seek, (ByteView key));
     MOCK_METHOD((Task<kv::api::KeyValue>), seek_exact, (ByteView key));
     MOCK_METHOD((Task<kv::api::KeyValue>), first, ());

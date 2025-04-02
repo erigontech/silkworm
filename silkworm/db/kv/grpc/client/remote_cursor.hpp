@@ -25,7 +25,7 @@ class RemoteCursor : public api::CursorDupSort {
 
     uint32_t cursor_id() const override { return cursor_id_; };
 
-    Task<void> open_cursor(const std::string& table_name, bool is_dup_sorted) override;
+    Task<void> open_cursor(std::string_view table_name, bool is_dup_sorted) override;
 
     Task<api::KeyValue> seek(ByteView key) override;
 

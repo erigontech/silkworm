@@ -72,8 +72,8 @@ datastore::kvdb::Schema::DatabaseDef make_state_database_schema() {
 static constexpr size_t kDefaultDomainCacheSize = 10'000;
 static constexpr size_t kDefaultInvertedIndexCacheSize = 4'096;
 
-static constexpr const char* kDomainCacheEnvVar = "D_LRU_CACHE_SIZE";
-static constexpr const char* kInvertedIndexCacheEnvVar = "II_LRU_CACHE_SIZE";
+static constexpr std::string_view kDomainCacheEnvVar = "D_LRU_CACHE_SIZE";
+static constexpr std::string_view kInvertedIndexCacheEnvVar = "II_LRU_CACHE_SIZE";
 
 template <typename Cache, const auto& env_var_name, size_t default_size>
 static size_t cache_size() {

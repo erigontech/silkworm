@@ -37,8 +37,8 @@ TEST_CASE("BodyIndex::build OK", "[silkworm][snapshot][index]") {
 
 TEST_CASE("TransactionIndex::build KO: empty snapshot", "[silkworm][snapshot][index]") {
     TemporaryDirectory tmp_dir;
-    constexpr const char* kBodiesSnapshotFileName{"v1-014500-015000-bodies.seg"};
-    constexpr const char* kTransactionsSnapshotFileName{"v1-014500-015000-transactions.seg"};
+    constexpr std::string_view kBodiesSnapshotFileName{"v1-014500-015000-bodies.seg"};
+    constexpr std::string_view kTransactionsSnapshotFileName{"v1-014500-015000-transactions.seg"};
 
     SECTION("KO: empty body snapshot", "[.]") {
         test::TemporarySnapshotFile body_segment_file{tmp_dir.path(), kBodiesSnapshotFileName};
@@ -54,7 +54,7 @@ TEST_CASE("TransactionIndex::build KO: empty snapshot", "[silkworm][snapshot][in
 
 TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][index]") {
     TemporaryDirectory tmp_dir;
-    constexpr const char* kTransactionsSnapshotFileName{"v1-015000-015500-transactions.seg"};
+    constexpr std::string_view kTransactionsSnapshotFileName{"v1-015000-015500-transactions.seg"};
 
     SECTION("KO: invalid zero word length") {
         test::TemporarySnapshotFile body_segment_file{

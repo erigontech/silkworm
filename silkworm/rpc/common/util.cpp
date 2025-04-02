@@ -3,8 +3,11 @@
 
 #include "util.hpp"
 
+#include <base64.h>
+
 #include <evmone/instructions_traits.hpp>
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 
 namespace silkworm {
@@ -13,17 +16,6 @@ std::ostream& operator<<(std::ostream& out, const Account& account) {
     out << account.to_string();
     return out;
 }
-
-static const char* kBase64Chars[2] = {
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    "abcdefghijklmnopqrstuvwxyz"
-    "0123456789"
-    "+/",
-
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    "abcdefghijklmnopqrstuvwxyz"
-    "0123456789"
-    "-_"};
 
 void increment(Bytes& array) {
     for (auto& it : std::ranges::reverse_view(array)) {
@@ -34,40 +26,9 @@ void increment(Bytes& array) {
         it = 0x00;
     }
 }
+
 std::string base64_encode(ByteView bytes_to_encode, bool url) {
-    const size_t len = bytes_to_encode.size();
-    const size_t len_encoded = (len + 2) / 3 * 4;
-
-    char trailing_char = url ? '.' : '=';
-    const char* base64_chars = kBase64Chars[url ? 1 : 0];
-
-    std::string ret;
-    ret.reserve(len_encoded);
-
-    unsigned int pos = 0;
-    while (pos < len) {
-        ret.push_back(base64_chars[(bytes_to_encode[pos + 0] & 0xfc) >> 2]);
-
-        if (pos + 1 < len) {
-            ret.push_back(base64_chars[((bytes_to_encode[pos + 0] & 0x03) << 4) + ((bytes_to_encode[pos + 1] & 0xf0) >> 4)]);
-
-            if (pos + 2 < len) {
-                ret.push_back(base64_chars[((bytes_to_encode[pos + 1] & 0x0f) << 2) + ((bytes_to_encode[pos + 2] & 0xc0) >> 6)]);
-                ret.push_back(base64_chars[bytes_to_encode[pos + 2] & 0x3f]);
-            } else {
-                ret.push_back(base64_chars[(bytes_to_encode[pos + 1] & 0x0f) << 2]);
-                ret.push_back(trailing_char);
-            }
-        } else {
-            ret.push_back(base64_chars[(bytes_to_encode[pos + 0] & 0x03) << 4]);
-            ret.push_back(trailing_char);
-            ret.push_back(trailing_char);
-        }
-
-        pos += 3;
-    }
-
-    return ret;
+    return ::base64_encode(byte_view_to_string_view(bytes_to_encode), url);
 }
 
 // check whether the fee of the given transaction is reasonable (under the cap)
@@ -135,7 +96,7 @@ const silkworm::ChainConfig* lookup_chain_config(uint64_t chain_id) {
 }
 
 std::string get_opcode_hex(uint8_t opcode) {
-    static constexpr const char* kHexDigits = "0123456789abcdef";
+    static constexpr std::string_view kHexDigits = "0123456789abcdef";
     if (opcode < 16) {
         return {'0', 'x', kHexDigits[opcode]};
     }

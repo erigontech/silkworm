@@ -218,7 +218,7 @@ TEST_CASE("Schema Version", "[db][access_layer]") {
     }
 
     SECTION("Incompatible table") {
-        (void)context.txn().create_map(table::kBlockBodies.name, mdbx::key_mode::reverse,
+        (void)context.txn().create_map(table::kBlockBodies.name_str(), mdbx::key_mode::reverse,
                                        mdbx::value_mode::multi_reverse);
         REQUIRE_THROWS(table::check_or_create_chaindata_tables(context.rw_txn()));
     }

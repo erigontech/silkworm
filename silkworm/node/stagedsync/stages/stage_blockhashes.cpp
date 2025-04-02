@@ -128,11 +128,11 @@ std::vector<std::string> BlockHashes::get_log_progress() {
     if (!is_stopping()) {
         switch (current_phase_) {
             case 1:
-                return {"from", db::table::kCanonicalHashes.name, "to", "etl",
+                return {"from", db::table::kCanonicalHashes.name_str(), "to", "etl",
                         "block", std::to_string(reached_block_num_)};
             case 2:
                 return {"from", "etl",
-                        "to", db::table::kHeaderNumbers.name,
+                        "to", db::table::kHeaderNumbers.name_str(),
                         "key", collector_ ? collector_->get_load_key() : ""};
             default:
                 break;

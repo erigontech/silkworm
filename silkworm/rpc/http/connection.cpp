@@ -32,7 +32,7 @@ using namespace std::chrono_literals;
 static constexpr std::string_view kMaxAge{"600"};
 static constexpr uint64_t kMaxPayloadSize = 30 * kMebi;  // 30MiB
 static constexpr std::array kAcceptedContentTypes{"application/json", "application/jsonrequest", "application/json-rpc"};
-static constexpr const char* kGzipEncoding{"gzip"};
+static constexpr std::string_view kGzipEncoding{"gzip"};
 static constexpr std::string_view kIdentity{"Identity"};
 static constexpr std::string_view kBearerTokenPrefix{"Bearer "};  // space matters: format is `Bearer <token>`
 
@@ -282,7 +282,7 @@ Task<size_t> Connection::write(std::string_view content, bool /*last*/) {
     co_return bytes_transferred;
 }
 
-Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status, const std::string& content_encoding) {
+Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status, std::string_view content_encoding) {
     try {
         SILK_TRACE << "Connection::do_write response: " << http_status << " content: " << content;
         boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};

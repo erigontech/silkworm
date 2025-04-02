@@ -33,7 +33,7 @@ inline constexpr VersionBase kRequiredSchemaVersion{6, 1, 0};  // Erigon2 latest
 //!   key   : block_num_u64 (BE)
 //!   value : address + X
 //! \endverbatim
-inline constexpr const char* kAccountChangeSetName{"AccountChangeSet"};
+inline constexpr std::string_view kAccountChangeSetName{"AccountChangeSet"};
 inline constexpr MapConfig kAccountChangeSet{kAccountChangeSetName, mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 //! \details Holds the list of blocks in which a specific account has been changed
@@ -48,7 +48,7 @@ inline constexpr MapConfig kAccountChangeSet{kAccountChangeSetName, mdbx::key_mo
 //! how RoaringBitmap64 work.
 //! \remark This table/bucket indexes the contents of PlainState (Account record type) therefore honoring the
 //! same content limits wrt pruning
-inline constexpr const char* kAccountHistoryName{"AccountHistory"};
+inline constexpr std::string_view kAccountHistoryName{"AccountHistory"};
 inline constexpr MapConfig kAccountHistory{kAccountHistoryName};
 
 //! \details Holds block body data
@@ -57,7 +57,7 @@ inline constexpr MapConfig kAccountHistory{kAccountHistoryName};
 //!   key   : block number (BE 8 bytes) + block header hash (32 bytes)
 //!   value : block body data RLP encoded
 //! \endverbatim
-inline constexpr const char* kBlockBodiesName{"BlockBody"};
+inline constexpr std::string_view kBlockBodiesName{"BlockBody"};
 inline constexpr MapConfig kBlockBodies{kBlockBodiesName};
 
 //! \details Stores the binding of *canonical* block number with header hash
@@ -66,7 +66,7 @@ inline constexpr MapConfig kBlockBodies{kBlockBodiesName};
 //!   key   : block_num_u64 (BE)
 //!   value : header_hash
 //! \endverbatim
-inline constexpr const char* kCanonicalHashesName{"CanonicalHeader"};
+inline constexpr std::string_view kCanonicalHashesName{"CanonicalHeader"};
 inline constexpr MapConfig kCanonicalHashes{kCanonicalHashesName};
 
 //! \details Stores the headers downloaded from peers
@@ -75,7 +75,7 @@ inline constexpr MapConfig kCanonicalHashes{kCanonicalHashesName};
 //!   key   : block_num_u64 (BE) + header hash
 //!   value : header RLP encoded
 //! \endverbatim
-inline constexpr const char* kHeadersName{"Header"};
+inline constexpr std::string_view kHeadersName{"Header"};
 inline constexpr MapConfig kHeaders{kHeadersName};
 
 //! \details Stores the total difficulty accrued at each block number
@@ -84,7 +84,7 @@ inline constexpr MapConfig kHeaders{kHeadersName};
 //!   key   : block_num_u64 (BE) + header hash
 //!   value : total difficulty (RLP encoded
 //! \endverbatim
-inline constexpr const char* kDifficultyName{"HeadersTotalDifficulty"};
+inline constexpr std::string_view kDifficultyName{"HeadersTotalDifficulty"};
 inline constexpr MapConfig kDifficulty{kDifficultyName};
 
 //! \details Stores the receipts for every canonical block
@@ -94,7 +94,7 @@ inline constexpr MapConfig kDifficulty{kDifficultyName};
 //!   key   : block_num_u64 (BE)
 //!   value : receipts (CBOR Encoded)
 //! \endverbatim
-inline constexpr const char* kBlockReceiptsName{"Receipt"};
+inline constexpr std::string_view kBlockReceiptsName{"Receipt"};
 inline constexpr MapConfig kBlockReceipts{kBlockReceiptsName};
 
 //! \details Stores the mapping of block number to the set (sorted) of all accounts touched by call traces.
@@ -103,7 +103,7 @@ inline constexpr MapConfig kBlockReceipts{kBlockReceiptsName};
 //!   key   : block_num_u64 (BE)
 //!   value : account address + two bits (one for "from" + another for "to")
 //! \endverbatim
-inline constexpr const char* kCallTraceSetName{"CallTraceSet"};
+inline constexpr std::string_view kCallTraceSetName{"CallTraceSet"};
 inline constexpr MapConfig kCallTraceSet{kCallTraceSetName, mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 //! \details Stores the list of blocks in which a specific call sender (i.e. "from") has been traced
@@ -116,7 +116,7 @@ inline constexpr MapConfig kCallTraceSet{kCallTraceSetName, mdbx::key_mode::usua
 //! of the list of blocks contained in the value part. When this integer is equal to UINT64_MAX, it means this
 //! record holds the last known chunk of blocks which contain the address as sender for some call. This is due
 //! to how roaring bitmaps work.
-inline constexpr const char* kCallFromIndexName{"CallFromIndex"};
+inline constexpr std::string_view kCallFromIndexName{"CallFromIndex"};
 inline constexpr MapConfig kCallFromIndex{kCallFromIndexName};
 
 //! \details Stores the list of blocks in which a specific call receiver (i.e. "to") has been traced
@@ -129,7 +129,7 @@ inline constexpr MapConfig kCallFromIndex{kCallFromIndexName};
 //! of the list of blocks contained in the value part. When this integer is equal to UINT64_MAX, it means this
 //! record holds the last known chunk of blocks which contain the address as receiver for some call. This is due
 //! to how roaring bitmaps work.
-inline constexpr const char* kCallToIndexName{"CallToIndex"};
+inline constexpr std::string_view kCallToIndexName{"CallToIndex"};
 inline constexpr MapConfig kCallToIndex{kCallToIndexName};
 
 //! \details Stores contract's code
@@ -138,16 +138,16 @@ inline constexpr MapConfig kCallToIndex{kCallToIndexName};
 //!   key   : contract code hash
 //!   value : contract code
 //! \endverbatim
-inline constexpr const char* kCodeName{"Code"};
+inline constexpr std::string_view kCodeName{"Code"};
 inline constexpr MapConfig kCode{kCodeName};
 
-inline constexpr const char* kConfigName{"Config"};
+inline constexpr std::string_view kConfigName{"Config"};
 inline constexpr MapConfig kConfig{kConfigName};
 
-inline constexpr const char* kDatabaseInfoName{"DbInfo"};
+inline constexpr std::string_view kDatabaseInfoName{"DbInfo"};
 inline constexpr MapConfig kDatabaseInfo{kDatabaseInfoName};
 
-inline constexpr const char* kBlockTransactionsName{"BlockTransaction"};
+inline constexpr std::string_view kBlockTransactionsName{"BlockTransaction"};
 inline constexpr MapConfig kBlockTransactions{kBlockTransactionsName};
 
 //! \details Store "current" state for accounts with hashed address key
@@ -157,7 +157,7 @@ inline constexpr MapConfig kBlockTransactions{kBlockTransactionsName};
 //!   key   : account address hash (32 bytes)
 //!   value : account encoded for storage
 //! \endverbatim
-inline constexpr const char* kHashedAccountsName{"HashedAccount"};
+inline constexpr std::string_view kHashedAccountsName{"HashedAccount"};
 inline constexpr MapConfig kHashedAccounts{kHashedAccountsName};
 
 //! \details Store contract code hash for given contract by key hashed address + incarnation
@@ -177,10 +177,10 @@ inline constexpr MapConfig kHashedCodeHash{"HashedCodeHash"};
 //!   key   : contract address hash (32 bytes) + incarnation (u64 BE)
 //!   value : storage key hash (32 bytes) + storage value (hash 32 bytes)
 //! \endverbatim
-inline constexpr const char* kHashedStorageName{"HashedStorage"};
+inline constexpr std::string_view kHashedStorageName{"HashedStorage"};
 inline constexpr MapConfig kHashedStorage{kHashedStorageName, mdbx::key_mode::usual, mdbx::value_mode::multi};
 
-inline constexpr const char* kHeadBlockName{"LastBlock"};
+inline constexpr std::string_view kHeadBlockName{"LastBlock"};
 inline constexpr MapConfig kHeadBlock{kHeadBlockName};
 
 //! \details Store last canonical header hash for ease of access and performance
@@ -190,10 +190,10 @@ inline constexpr MapConfig kHeadBlock{kHeadBlockName};
 //!   key   : "LastHeader" as bytes
 //!   value : last header hash (32 bytes)
 //! \endverbatim
-inline constexpr const char* kHeadHeaderName{"LastHeader"};
+inline constexpr std::string_view kHeadHeaderName{"LastHeader"};
 inline constexpr MapConfig kHeadHeader{kHeadHeaderName};
 
-inline constexpr const char* kHeaderNumbersName{"HeaderNumber"};
+inline constexpr std::string_view kHeaderNumbersName{"HeaderNumber"};
 inline constexpr MapConfig kHeaderNumbers{kHeaderNumbersName};
 
 //! \details Stores the last incarnation of last contract SelfDestruct
@@ -202,7 +202,7 @@ inline constexpr MapConfig kHeaderNumbers{kHeaderNumbersName};
 //!   key   : contract address (unhashed 20 bytes)
 //!   value : incarnation (u64 BE)
 //! \endverbatim
-inline constexpr const char* kIncarnationMapName{"IncarnationMap"};
+inline constexpr std::string_view kIncarnationMapName{"IncarnationMap"};
 inline constexpr MapConfig kIncarnationMap{kIncarnationMapName};
 
 //! \details Holds the list of blocks in which a specific log address has been touched
@@ -215,7 +215,7 @@ inline constexpr MapConfig kIncarnationMap{kIncarnationMapName};
 //! of the list of blocks contained in value part. When this integer is equal to UINT32_MAX it means this
 //! record holds the last known chunk of blocks which have changed the account. This is due to
 //! how roaring bitmaps work.
-inline constexpr const char* kLogAddressIndexName{"LogAddressIndex"};
+inline constexpr std::string_view kLogAddressIndexName{"LogAddressIndex"};
 inline constexpr MapConfig kLogAddressIndex{kLogAddressIndexName};
 
 //! \details Holds the list of blocks in which a specific log topic has been touched
@@ -228,7 +228,7 @@ inline constexpr MapConfig kLogAddressIndex{kLogAddressIndexName};
 //! of the list of blocks contained in value part. When this integer is equal to UINT32_MAX it means this
 //! record holds the last known chunk of blocks which have changed the account. This is due to
 //! how roaring bitmaps work.
-inline constexpr const char* kLogTopicIndexName{"LogTopicIndex"};
+inline constexpr std::string_view kLogTopicIndexName{"LogTopicIndex"};
 inline constexpr MapConfig kLogTopicIndex{kLogTopicIndexName};
 
 //! \details Stores the logs for every transaction in canonical blocks
@@ -238,10 +238,10 @@ inline constexpr MapConfig kLogTopicIndex{kLogTopicIndexName};
 //!   key   : block_num_u64 (BE) + transaction_index_u32 (BE)
 //!   value : logs of transaction (CBOR Encoded)
 //! \endverbatim
-inline constexpr const char* kLogsName{"TransactionLog"};
+inline constexpr std::string_view kLogsName{"TransactionLog"};
 inline constexpr MapConfig kLogs{kLogsName};
 
-inline constexpr const char* kMigrationsName{"Migration"};
+inline constexpr std::string_view kMigrationsName{"Migration"};
 inline constexpr MapConfig kMigrations{kMigrationsName};
 
 //! \details Store contract code hash for given contract address + incarnation
@@ -251,7 +251,7 @@ inline constexpr MapConfig kMigrations{kMigrationsName};
 //!   key   : contract address (20 bytes) + incarnation (u64 BE)
 //!   value : code hash (32 bytes)
 //! \endverbatim
-inline constexpr const char* kPlainCodeHashName{"PlainCodeHash"};
+inline constexpr std::string_view kPlainCodeHashName{"PlainCodeHash"};
 inline constexpr MapConfig kPlainCodeHash{kPlainCodeHashName};
 
 //! \details Store "current" state for accounts and storage and is used for block execution
@@ -265,7 +265,7 @@ inline constexpr MapConfig kPlainCodeHash{kPlainCodeHashName};
 //!   key   : address (20 bytes) + incarnation (u64 BE)
 //!   value : storage key (32 bytes) + storage value (hash 32 bytes)
 //! \endverbatim
-inline constexpr const char* kPlainStateName{"PlainState"};
+inline constexpr std::string_view kPlainStateName{"PlainState"};
 inline constexpr MapConfig kPlainState{kPlainStateName, mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 //! \details Store recovered senders' addresses for each transaction in a block
@@ -277,7 +277,7 @@ inline constexpr MapConfig kPlainState{kPlainStateName, mdbx::key_mode::usual, m
 //!   value : array of addresses (each 20 bytes)
 //!   The addresses in array are listed in the same order of the transactions of the block
 //! \endverbatim
-inline constexpr const char* kSendersName{"TxSender"};
+inline constexpr std::string_view kSendersName{"TxSender"};
 inline constexpr MapConfig kSenders{kSendersName};
 
 //! \details Stores sequence values for different keys
@@ -287,7 +287,7 @@ inline constexpr MapConfig kSenders{kSendersName};
 //!   key   : a string
 //!   value : last increment generated (u64 BE)
 //! \endverbatim
-inline constexpr const char* kSequenceName{"Sequence"};
+inline constexpr std::string_view kSequenceName{"Sequence"};
 inline constexpr MapConfig kSequence{kSequenceName};
 
 //! \details At block N stores value of state of storage for block N-1.
@@ -301,7 +301,7 @@ inline constexpr MapConfig kSequence{kSequenceName};
 //!   key   : block_num_u64 (BE) + address + incarnation_u64 (BE)
 //!   value : plain_storage_location (32 bytes) + X
 //! \endverbatim
-inline constexpr const char* kStorageChangeSetName{"StorageChangeSet"};
+inline constexpr std::string_view kStorageChangeSetName{"StorageChangeSet"};
 inline constexpr MapConfig kStorageChangeSet{kStorageChangeSetName, mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 //! \details Holds the list of blocks in which a specific storage location has been changed
@@ -316,7 +316,7 @@ inline constexpr MapConfig kStorageChangeSet{kStorageChangeSetName, mdbx::key_mo
 //! how RoaringBitmap64 work.
 //! \remark This table/bucket indexes the contents of PlainState (Account record type) therefore honoring the
 //! same content limits wrt pruning
-inline constexpr const char* kStorageHistoryName{"StorageHistory"};
+inline constexpr std::string_view kStorageHistoryName{"StorageHistory"};
 inline constexpr MapConfig kStorageHistory{kStorageHistoryName};
 
 //! \details Stores reached progress for each stage
@@ -325,7 +325,7 @@ inline constexpr MapConfig kStorageHistory{kStorageHistoryName};
 //!   key   : stage name
 //!   value : block_num_u64 (BE)
 //! \endverbatim
-inline constexpr const char* kSyncStageProgressName{"SyncStage"};
+inline constexpr std::string_view kSyncStageProgressName{"SyncStage"};
 inline constexpr MapConfig kSyncStageProgress{kSyncStageProgressName};
 
 //! \brief Hold the nodes composing the StateRoot
@@ -334,7 +334,7 @@ inline constexpr MapConfig kSyncStageProgress{kSyncStageProgressName};
 //!   value : serialized node value (see core::trie::Node)
 //! \endverbatim
 //! \remark The only record with empty key is the root node
-inline constexpr const char* kTrieOfAccountsName{"TrieAccount"};
+inline constexpr std::string_view kTrieOfAccountsName{"TrieAccount"};
 inline constexpr MapConfig kTrieOfAccounts{kTrieOfAccountsName};
 
 //! \brief Hold the nodes composing the StorageRoot for each contract
@@ -344,13 +344,13 @@ inline constexpr MapConfig kTrieOfAccounts{kTrieOfAccountsName};
 //! \endverbatim
 //! \remark Each trie has its own invariant db::kHashedStoragePrefix
 //! \remark Records with key len == 40 (ie node key == 0) are root nodes
-inline constexpr const char* kTrieOfStorageName{"TrieStorage"};
+inline constexpr std::string_view kTrieOfStorageName{"TrieStorage"};
 inline constexpr MapConfig kTrieOfStorage{kTrieOfStorageName};
 
-inline constexpr const char* kTxLookupName{"BlockTransactionLookup"};
+inline constexpr std::string_view kTxLookupName{"BlockTransactionLookup"};
 inline constexpr MapConfig kTxLookup{kTxLookupName};
 
-inline constexpr const char* kLastForkchoiceName{"LastForkchoice"};
+inline constexpr std::string_view kLastForkchoiceName{"LastForkchoice"};
 inline constexpr MapConfig kLastForkchoice{kLastForkchoiceName};
 
 //! \brief Hold the maximum canonical transaction number for each block
@@ -359,7 +359,7 @@ inline constexpr MapConfig kLastForkchoice{kLastForkchoiceName};
 //!  value: max_tx_num_in_block_u64 (BE)
 //! \endverbatim
 //! \details In Erigon3: table MaxTxNum storing TxNum (not TxnID). History/Indices are using TxNum (not TxnID).
-inline constexpr const char* kMaxTxNumName{"MaxTxNum"};
+inline constexpr std::string_view kMaxTxNumName{"MaxTxNum"};
 inline constexpr MapConfig kMaxTxNum{kMaxTxNumName};
 
 inline constexpr MapConfig kChainDataTables[]{
@@ -406,26 +406,26 @@ inline constexpr MapConfig kChainDataTables[]{
 void check_or_create_chaindata_tables(datastore::kvdb::RWTxn& txn);
 
 //! \brief Get the table config associated to the table name (if any)
-std::optional<MapConfig> get_map_config(const std::string& map_name);
+std::optional<MapConfig> get_map_config(std::string_view map_name);
 
 /// Part of the compatibility layer with Erigon snapshot format
 
 //! \details Domain storing the account common information
-inline constexpr const char* kAccountDomain{"accounts"};
-inline constexpr const char* kStorageDomain{"storage"};
-inline constexpr const char* kCodeDomain{"code"};
-inline constexpr const char* kCommitmentDomain{"commitment"};
-inline constexpr const char* kReceiptDomain{"receipt"};
+inline constexpr std::string_view kAccountDomain{"accounts"};
+inline constexpr std::string_view kStorageDomain{"storage"};
+inline constexpr std::string_view kCodeDomain{"code"};
+inline constexpr std::string_view kCommitmentDomain{"commitment"};
+inline constexpr std::string_view kReceiptDomain{"receipt"};
 
 //! \details Inverted Index storing the account common information
-inline constexpr const char* kAccountsHistoryIdx{"AccountsHistoryIdx"};
-inline constexpr const char* kStorageHistoryIdx{"StorageHistoryIdx"};
-inline constexpr const char* kCodeHistoryIdx{"CodeHistoryIdx"};
-inline constexpr const char* kCommitmentHistoryIdx{"CommitmentHistoryIdx"};
-inline constexpr const char* kReceiptHistoryIdx{"ReceiptHistoryIdx"};
-inline constexpr const char* kTracesFromIdx{"TracesFromIdx"};
-inline constexpr const char* kTracesToIdx{"TracesToIdx"};
-inline constexpr const char* kLogAddrIdx{"LogAddrIdx"};
-inline constexpr const char* kLogTopicIdx{"LogTopicIdx"};
+inline constexpr std::string_view kAccountsHistoryIdx{"AccountsHistoryIdx"};
+inline constexpr std::string_view kStorageHistoryIdx{"StorageHistoryIdx"};
+inline constexpr std::string_view kCodeHistoryIdx{"CodeHistoryIdx"};
+inline constexpr std::string_view kCommitmentHistoryIdx{"CommitmentHistoryIdx"};
+inline constexpr std::string_view kReceiptHistoryIdx{"ReceiptHistoryIdx"};
+inline constexpr std::string_view kTracesFromIdx{"TracesFromIdx"};
+inline constexpr std::string_view kTracesToIdx{"TracesToIdx"};
+inline constexpr std::string_view kLogAddrIdx{"LogAddrIdx"};
+inline constexpr std::string_view kLogTopicIdx{"LogTopicIdx"};
 
 }  // namespace silkworm::db::table

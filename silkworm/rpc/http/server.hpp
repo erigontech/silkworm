@@ -27,7 +27,7 @@ class Server {
     Server& operator=(const Server&) = delete;
 
     // Construct the server to listen on the specified local TCP end-point
-    Server(const std::string& end_point,
+    Server(std::string_view end_point,
            RequestHandlerFactory&& handler_factory,
            boost::asio::io_context& ioc,
            WorkerPool& workers,
@@ -41,7 +41,7 @@ class Server {
     void start();
 
   private:
-    static std::tuple<std::string, std::string> parse_endpoint(const std::string& tcp_end_point);
+    static std::tuple<std::string_view, std::string_view> parse_endpoint(std::string_view tcp_end_point);
 
     Task<void> run();
 

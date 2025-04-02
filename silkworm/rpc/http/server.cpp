@@ -21,13 +21,13 @@ using reuse_port = boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_RE
 using reuse_port = boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT>;
 #endif
 
-std::tuple<std::string, std::string> Server::parse_endpoint(const std::string& tcp_end_point) {
+std::tuple<std::string_view, std::string_view> Server::parse_endpoint(std::string_view tcp_end_point) {
     const auto host = tcp_end_point.substr(0, tcp_end_point.find(kAddressPortSeparator));
     const auto port = tcp_end_point.substr(tcp_end_point.find(kAddressPortSeparator) + 1, std::string::npos);
     return {host, port};
 }
 
-Server::Server(const std::string& end_point,
+Server::Server(std::string_view end_point,
                RequestHandlerFactory&& handler_factory,
                boost::asio::io_context& ioc,
                WorkerPool& workers,

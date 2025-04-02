@@ -239,12 +239,12 @@ void write_canonical_hash(RWTxn& txn, BlockNum block_num, const evmc::bytes32& h
 //! \throws std::std::length_error on badly recorded value
 //! \remarks Initial sequence for any key (also unset) is 0. Changes to sequences are invisible until the transaction is
 //! committed
-uint64_t increment_map_sequence(RWTxn& txn, const char* map_name, uint64_t increment = 1u);
+uint64_t increment_map_sequence(RWTxn& txn, std::string_view map_name, uint64_t increment = 1u);
 
 //! \brief Returns the current sequence for a map_name
 //! \remarks If the key is not present in Sequence bucket the return value is 0
 //! \throws std::std::length_error on badly recorded value
-uint64_t read_map_sequence(ROTxn& txn, const char* map_name);
+uint64_t read_map_sequence(ROTxn& txn, std::string_view map_name);
 
 //! \brief Reset the sequence value for a given map (bucket)
 //! \param [in] map_name : the name of the map to reset the sequence for
@@ -253,7 +253,7 @@ uint64_t read_map_sequence(ROTxn& txn, const char* map_name);
 //! \throws std::std::length_error on badly recorded value
 //! \remarks Initial sequence for any key (also unset) is 0. Changes to sequences are invisible until the transaction is
 //! committed
-uint64_t reset_map_sequence(RWTxn& txn, const char* map_name, uint64_t new_sequence);
+uint64_t reset_map_sequence(RWTxn& txn, std::string_view map_name, uint64_t new_sequence);
 
 //! \brief Read the last head block as stated by the last FCU
 std::optional<evmc::bytes32> read_last_head_block(ROTxn& txn);

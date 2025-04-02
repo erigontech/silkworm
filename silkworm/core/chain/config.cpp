@@ -14,7 +14,7 @@
 
 namespace silkworm {
 
-static constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};
+static constexpr std::string_view kTerminalTotalDifficulty{"terminalTotalDifficulty"};
 
 static void member_to_json(nlohmann::json& json, const std::string& key, const std::optional<uint64_t>& source) {
     if (source) {

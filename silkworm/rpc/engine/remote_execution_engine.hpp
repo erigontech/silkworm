@@ -3,7 +3,11 @@
 
 #pragma once
 
-#include <asio-grpc-wrap/asio_grpc.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#include <agrpc/asio_grpc.hpp>
+#pragma GCC diagnostic pop
 
 #include <silkworm/execution/grpc/client/remote_client.hpp>
 

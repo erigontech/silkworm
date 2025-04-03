@@ -3,7 +3,10 @@
 
 #include "remote_client.hpp"
 
-#include <asio-grpc-wrap/client_rpc.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#include <agrpc/client_rpc.hpp>
+#pragma GCC diagnostic pop
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <grpcpp/grpcpp.h>

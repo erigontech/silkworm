@@ -5,8 +5,11 @@
 
 #include <utility>
 
-#include <asio-grpc-wrap/grpc_context.hpp>
-#include <asio-grpc-wrap/test.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#include <agrpc/grpc_context.hpp>
+#include <agrpc/test.hpp>
+#pragma GCC diagnostic pop
 #include <grpcpp/grpcpp.h>
 
 namespace silkworm::rpc::test {

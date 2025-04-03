@@ -15,10 +15,10 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <agrpc/detail/rpc.hpp>
+#include <agrpc/grpc_context.hpp>
+#include <agrpc/rpc.hpp>
 #pragma GCC diagnostic pop
 
-#include <agrpc/rpc.hpp>
-#include <asio-grpc-wrap/grpc_context.hpp>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <grpcpp/grpcpp.h>

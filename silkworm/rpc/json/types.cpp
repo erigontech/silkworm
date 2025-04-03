@@ -447,15 +447,14 @@ void to_json(nlohmann::json& json, const TransactionsWithReceipts& b) {
     for (size_t i{0}; i < b.transactions.size(); ++i) {
         auto& json_txn = json["txs"][i];
         auto& json_receipt = json["receipts"][i];
+        auto gas_price = to_quantity(b.receipts.at(i).effective_gas_price);
 
-        const auto hash = b.headers.at(i).hash();
-        const auto gas_price = to_quantity(b.transactions[i].effective_gas_price(b.headers[i].base_fee_per_gas.value_or(0)));
-        json_txn["blockHash"] = hash;
+        json_txn["blockHash"] = b.receipts.at(i).block_hash;
         json_txn["blockNumber"] = to_quantity(b.receipts.at(i).block_num);
         json_txn["gasPrice"] = gas_price;
         json_txn["transactionIndex"] = to_quantity(b.receipts.at(i).tx_index);
 
-        json_receipt["blockHash"] = hash;
+        json_receipt["blockHash"] = b.receipts.at(i).block_hash;;
         json_receipt["blockNumber"] = to_quantity(b.receipts.at(i).block_num);
         json_receipt["timestamp"] = b.headers.at(i).timestamp;
         json_receipt["effectiveGasPrice"] = gas_price;

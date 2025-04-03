@@ -56,17 +56,29 @@ add_executable(staged_pipeline "${SILKWORM_MAIN_DIR}/silkworm/node/cli/staged_pi
 target_link_libraries(staged_pipeline PRIVATE silkworm_node silkworm_infra_cli CLI11::CLI11 magic_enum::magic_enum)
 
 if(MSVC)
-    add_link_options(/STACK:${SILKWORM_STACK_SIZE})
+  add_link_options(/STACK:${SILKWORM_STACK_SIZE})
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    add_link_options(-Wl,-stack_size -Wl,${SILKWORM_STACK_SIZE})
+  add_link_options(-Wl,-stack_size -Wl,${SILKWORM_STACK_SIZE})
 else()
-    add_link_options(-Wl,-z,stack-size=${SILKWORM_STACK_SIZE})
+  add_link_options(-Wl,-z,stack-size=${SILKWORM_STACK_SIZE})
 endif()
 
 add_executable(state_transition "${SILKWORM_MAIN_DIR}/silkworm/dev/cli/runner.cpp")
 target_link_libraries(state_transition PRIVATE silkworm_dev)
 set(SILKWORM_DEV_CLI "${SILKWORM_MAIN_DIR}/silkworm/dev/cli")
-configure_file("${SILKWORM_DEV_CLI}/state_transition_sample1.json" ${CMAKE_CURRENT_BINARY_DIR}/state_transition_sample1.json COPYONLY)
-configure_file("${SILKWORM_DEV_CLI}/state_transition_sample2.json" ${CMAKE_CURRENT_BINARY_DIR}/state_transition_sample2.json COPYONLY)
-configure_file("${SILKWORM_DEV_CLI}/state_transition_sample3.json" ${CMAKE_CURRENT_BINARY_DIR}/state_transition_sample3.json COPYONLY)
-configure_file("${SILKWORM_DEV_CLI}/state_transition_sample4.json" ${CMAKE_CURRENT_BINARY_DIR}/state_transition_sample4.json COPYONLY)
+configure_file(
+  "${SILKWORM_DEV_CLI}/state_transition_sample1.json" ${CMAKE_CURRENT_BINARY_DIR}/state_transition_sample1.json
+  COPYONLY
+)
+configure_file(
+  "${SILKWORM_DEV_CLI}/state_transition_sample2.json" ${CMAKE_CURRENT_BINARY_DIR}/state_transition_sample2.json
+  COPYONLY
+)
+configure_file(
+  "${SILKWORM_DEV_CLI}/state_transition_sample3.json" ${CMAKE_CURRENT_BINARY_DIR}/state_transition_sample3.json
+  COPYONLY
+)
+configure_file(
+  "${SILKWORM_DEV_CLI}/state_transition_sample4.json" ${CMAKE_CURRENT_BINARY_DIR}/state_transition_sample4.json
+  COPYONLY
+)

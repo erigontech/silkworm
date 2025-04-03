@@ -23,6 +23,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
+#include <silkworm/rpc/http/deflater.hpp>
 
 namespace silkworm::rpc::http {
 
@@ -464,13 +465,9 @@ std::string Connection::get_date_time() {
 }
 
 Task<void> Connection::compress(const std::string& clear_data, std::string& compressed_data) {
-    boost::iostreams::filtering_ostream out;
     co_await async_task(workers_.executor(), [&]() -> void {
-#ifndef SILKWORM_SANITIZE
-        out.push(boost::iostreams::gzip_compressor());
-#endif
-        out.push(boost::iostreams::back_inserter(compressed_data));
-        boost::iostreams::copy(boost::make_iterator_range(clear_data), out);
+        Deflater deflater;
+        deflater.compress(clear_data, compressed_data);
     });
 }
 

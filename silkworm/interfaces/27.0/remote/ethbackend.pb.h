@@ -330,6 +330,7 @@ class TxnLookupReply final : public ::google::protobuf::Message
   // accessors -------------------------------------------------------
   enum : int {
     kBlockNumberFieldNumber = 1,
+    kTxNumberFieldNumber = 2,
   };
   // uint64 block_number = 1;
   void clear_block_number() ;
@@ -341,12 +342,22 @@ class TxnLookupReply final : public ::google::protobuf::Message
   void _internal_set_block_number(::uint64_t value);
 
   public:
+  // uint64 tx_number = 2;
+  void clear_tx_number() ;
+  ::uint64_t tx_number() const;
+  void set_tx_number(::uint64_t value);
+
+  private:
+  ::uint64_t _internal_tx_number() const;
+  void _internal_set_tx_number(::uint64_t value);
+
+  public:
   // @@protoc_insertion_point(class_scope:remote.TxnLookupReply)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      0, 1, 0,
+      1, 2, 0,
       0, 2>
       _table_;
 
@@ -368,6 +379,7 @@ class TxnLookupReply final : public ::google::protobuf::Message
                           ::google::protobuf::Arena* arena, const Impl_& from,
                           const TxnLookupReply& from_msg);
     ::uint64_t block_number_;
+    ::uint64_t tx_number_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
@@ -8109,6 +8121,28 @@ inline ::uint64_t TxnLookupReply::_internal_block_number() const {
 inline void TxnLookupReply::_internal_set_block_number(::uint64_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.block_number_ = value;
+}
+
+// uint64 tx_number = 2;
+inline void TxnLookupReply::clear_tx_number() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.tx_number_ = ::uint64_t{0u};
+}
+inline ::uint64_t TxnLookupReply::tx_number() const {
+  // @@protoc_insertion_point(field_get:remote.TxnLookupReply.tx_number)
+  return _internal_tx_number();
+}
+inline void TxnLookupReply::set_tx_number(::uint64_t value) {
+  _internal_set_tx_number(value);
+  // @@protoc_insertion_point(field_set:remote.TxnLookupReply.tx_number)
+}
+inline ::uint64_t TxnLookupReply::_internal_tx_number() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.tx_number_;
+}
+inline void TxnLookupReply::_internal_set_tx_number(::uint64_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.tx_number_ = value;
 }
 
 // -------------------------------------------------------------------

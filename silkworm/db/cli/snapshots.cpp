@@ -518,7 +518,7 @@ void open_existence_index(const SnapshotSubcommandSettings& settings) {
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     seg::Decompressor kv_decompressor{settings.input_file_path};
-    bloom_filter::BloomFilter existence_index{existence_index_file_path, bloom_filter::BloomFilterKeyHasher{salt}};
+    bloom_filter::BloomFilter existence_index{existence_index_file_path, KeyHasher{salt}};
 
     SILK_INFO << "Starting KV scan and existence index check";
     size_t key_count{0}, found_count{0}, nonexistent_count{0}, nonexistent_found_count{0};
@@ -682,9 +682,9 @@ void lookup_header_by_hash(const SnapshotSubcommandSettings& settings) {
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
         auto segment_and_index = bundle.segment_and_accessor_index(db::blocks::kHeaderSegmentAndIdxNames);
-        const auto header = HeaderFindByHashSegmentQuery{segment_and_index}.exec(*hash);
-        if (header) {
-            matching_header = header;
+        auto result = HeaderFindByHashSegmentQuery{segment_and_index}.exec(*hash);
+        if (result) {
+            matching_header = std::move(result->value);
             matching_snapshot_path = segment_and_index.segment.path();
             break;
         }
@@ -869,11 +869,11 @@ void lookup_txn_by_hash_in_one(const SnapshotSubcommandSettings& settings, const
     {
         rec_split::AccessorIndex idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
 
-        const auto transaction = TransactionFindByHashSegmentQuery{{txn_segment, idx_txn_hash}}.exec(hash);
-        if (transaction) {
+        const auto result = TransactionFindByHashSegmentQuery{{txn_segment, idx_txn_hash}}.exec(hash);
+        if (result) {
             SILK_INFO << "Lookup txn hash: " << hash.to_hex() << " found in: " << txn_segment.path().filename();
             if (settings.verbose) {
-                print_txn(*transaction, txn_segment.path().filename());
+                print_txn(result->value, txn_segment.path().filename());
             }
         } else {
             SILK_WARN << "Lookup txn hash: " << hash.to_hex() << " NOT found in: " << txn_segment.path().filename();
@@ -891,11 +891,11 @@ void lookup_txn_by_hash_in_all(const SnapshotSubcommandSettings& settings, const
     for (const auto& bundle_ptr : repository.view_bundles_reverse()) {
         const auto& bundle = *bundle_ptr;
         auto segment_and_index = bundle.segment_and_accessor_index(db::blocks::kTxnSegmentAndIdxNames);
-        const auto transaction = TransactionFindByHashSegmentQuery{segment_and_index}.exec(hash);
-        if (transaction) {
+        const auto result = TransactionFindByHashSegmentQuery{segment_and_index}.exec(hash);
+        if (result) {
             matching_snapshot_path = segment_and_index.segment.path();
             if (settings.verbose) {
-                print_txn(*transaction, matching_snapshot_path->path().filename());
+                print_txn(result->value, matching_snapshot_path->path().filename());
             }
             break;
         }

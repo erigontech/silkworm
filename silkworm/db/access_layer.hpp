@@ -366,7 +366,7 @@ class DataModel {
     //! Read the RLP encoded block transactions at specified block_num
     [[nodiscard]] bool read_rlp_transactions(BlockNum block_num, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const;
 
-    std::optional<BlockNum> read_tx_lookup(const evmc::bytes32& tx_hash) const;
+    std::optional<std::pair<BlockNum, TxnId>> read_tx_lookup(const evmc::bytes32& tx_hash) const;
 
     //! Read total difficulty at specified block_num
     std::optional<intx::uint256> read_total_difficulty(BlockNum block_num, const evmc::bytes32& hash) const;
@@ -384,8 +384,8 @@ class DataModel {
     bool is_body_in_snapshot(BlockNum block_num) const;
     bool read_rlp_transactions_from_snapshot(BlockNum block_num, std::vector<Bytes>& rlp_txs) const;
     bool read_transactions_from_snapshot(BlockNum block_num, uint64_t base_txn_id, uint64_t txn_count, std::vector<Transaction>& txs) const;
-    std::optional<BlockNum> read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const;
-    std::optional<BlockNum> read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const;
+    std::optional<std::pair<BlockNum, TxnId>> read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const;
+    std::optional<std::pair<BlockNum, TxnId>> read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const;
 
     ROTxn& txn_;
     const snapshots::SnapshotRepositoryROAccess& repository_;

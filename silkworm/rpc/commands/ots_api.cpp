@@ -762,7 +762,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
             SILK_DEBUG << "block_num: " << block_num << " max_tx_num: " << max_tx_num;
         }
 
-        const auto results = co_await collect_transactions_with_receipts(
+        const TransactionsWithReceipts results = co_await collect_transactions_with_receipts(
             *tx, chain_storage, canonical_body_provider, block_num, address, from_timestamp, /*ascending=*/false, page_size);
 
         reply = make_json_content(request, results);
@@ -815,12 +815,12 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
             SILK_DEBUG << "block_num: " << block_num << " max_tx_num: " << max_tx_num;
         }
 
-        auto results = co_await collect_transactions_with_receipts(
+        TransactionsWithReceipts results = co_await collect_transactions_with_receipts(
             *tx, chain_storage, canonical_body_provider, block_num, address, from_timestamp, /*ascending=*/true, page_size);
 
-        std::reverse(results.transactions.begin(), results.transactions.end());
-        std::reverse(results.receipts.begin(), results.receipts.end());
-        std::reverse(results.blocks.begin(), results.blocks.end());
+        std::ranges::reverse(results.transactions);
+        std::ranges::reverse(results.receipts);
+        std::ranges::reverse(results.headers);
 
         reply = make_json_content(request, results);
     } catch (const std::invalid_argument& iv) {
@@ -880,65 +880,62 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     auto paginated_stream = db::kv::api::set_union(std::move(it_from), std::move(it_to), ascending);
     auto txn_nums_it = db::txn::make_txn_nums_stream(std::move(paginated_stream), ascending, tx, provider);
 
+    silkworm::Block block;
+    std::optional<BlockHeader> header;
+
     while (const auto tnx_nums = co_await txn_nums_it->next()) {
-        SILK_DEBUG
-            << "txn_id: " << tnx_nums->txn_id
-            << " block_num: " << tnx_nums->block_num
-            << ", tnx_index: " << (tnx_nums->txn_index ? std::to_string(*tnx_nums->txn_index) : "")
-            << ", ascending: " << std::boolalpha << ascending;
+        SILK_DEBUG << "txn_id: " << tnx_nums->txn_id << " block_num: " << tnx_nums->block_num
+                   << ", tnx_index: " << (tnx_nums->txn_index ? std::to_string(*tnx_nums->txn_index) : "")
+                   << ", ascending: " << std::boolalpha << ascending;
 
         if (tnx_nums->block_changed) {
             block_info.reset();
+
+            // Even if the desired page size is reached, drain the entire matching txs inside the block to reproduce E2
+            // behavior. An E3 paginated-aware ots spec could improve in this area.
+            if (results.transactions.size() >= page_size) {
+                if (ascending) {
+                    results.first_page = false;
+                } else {
+                    results.last_page = false;
+                }
+                break;
+            }
         }
 
         if (!tnx_nums->txn_index) {
             continue;
         }
 
-        if (!block_info) {
-            const auto block_with_hash = co_await rpc::core::read_block_by_number(*block_cache_, *chain_storage, tnx_nums->block_num);
-            if (!block_with_hash) {
-                SILK_DEBUG << "Not found block no.  " << tnx_nums->block_num;
-                co_return results;
+        if (tnx_nums->block_changed) {
+            header = co_await chain_storage->read_canonical_header(tnx_nums->block_num);
+            if (!header) {
+                SILK_DEBUG << "Not found header no.  " << tnx_nums->block_num;
+                break;
             }
-
-            auto rr = co_await core::get_receipts(tx, *block_with_hash, *chain_storage, workers_);
-            SILK_DEBUG << "Read #" << rr.size() << " receipts from block " << tnx_nums->block_num;
-
-            std::for_each(rr.begin(), rr.end(), [&receipts](const auto& item) {
-                receipts[silkworm::to_hex(item.tx_hash, false)] = std::move(item);
-            });
-
-            const Block extended_block{block_with_hash, false};
-            const auto block_size = extended_block.get_block_size();
-            const BlockDetails block_details{block_size, block_with_hash->hash, block_with_hash->block.header,
-                                             block_with_hash->block.transactions.size(), block_with_hash->block.ommers,
-                                             block_with_hash->block.withdrawals};
-            block_info = BlockInfo{block_with_hash->block.header.number, block_details};
-        }
-        if (results.transactions.size() >= page_size && tnx_nums->block_changed) {
-            if (ascending) {
-                results.first_page = false;
-            } else {
-                results.last_page = false;
-            }
-            break;
+            block.header = std::move(*header);
         }
 
-        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index.value());
+        SILKWORM_ASSERT(header);
+
+        const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index.value());
         if (!transaction) {
             SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index.value();
-            co_return results;
+            continue;
         }
-        results.receipts.push_back(std::move(receipts.at(silkworm::to_hex(transaction->hash(), false))));
+
+        auto receipt = co_await core::get_receipt(tx, block, tnx_nums->txn_id, tnx_nums->txn_index.value(), *transaction, *chain_storage, workers_);
+        if (!receipt) {
+            SILK_DEBUG << "No receipt found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index.value();
+            continue;
+        }
+
+        results.receipts.push_back(std::move(*receipt));
         results.transactions.push_back(std::move(*transaction));
-        results.blocks.push_back(block_info.value().details);
+        results.headers.push_back(block.header);
     }
 
-    SILK_DEBUG << "Results"
-               << " transactions size: " << results.transactions.size()
-               << " receipts size: " << results.receipts.size()
-               << " block details size: " << results.blocks.size();
+    SILK_DEBUG << "Results transactions size: " << results.transactions.size() << " receipts size: " << results.receipts.size();
 
     co_return results;
 }
@@ -962,7 +959,6 @@ intx::uint256 OtsRpcApi::get_block_fees(const silkworm::BlockWithHash& block, co
     for (const auto& receipt : receipts) {
         auto& txn = block.block.transactions[receipt.tx_index];
 
-        // effective_gas_price contains already baseFee
         intx::uint256 base_fee = block.block.header.base_fee_per_gas.value_or(0);
         const auto effective_gas_price = txn.effective_gas_price(base_fee);
 

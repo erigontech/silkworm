@@ -709,7 +709,7 @@ class RecSplit {
     std::optional<size_t> lookup_by_key(ByteView key) const {
         auto ord = lookup_ordinal_by_key(key);
         if (!ord) return std::nullopt;
-        return double_enum_index_ ? lookup_by_ordinal(*ord) : std::optional{ord->value};
+        return double_enum_index_ ? lookup_by_ordinal(*ord) : ord->value;
     }
 
     //! Return the number of keys used to build the RecSplit instance

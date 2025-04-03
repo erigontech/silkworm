@@ -1333,7 +1333,9 @@ std::optional<BlockHeader> DataModel::read_header_from_snapshot(BlockNum block_n
 }
 
 std::optional<BlockHeader> DataModel::read_header_from_snapshot(const Hash& hash) const {
-    return HeaderFindByHashQuery{repository_}.exec(hash);
+    auto result = HeaderFindByHashQuery{repository_}.exec(hash);
+    if (!result) return std::nullopt;
+    return std::move(result->value);
 }
 
 std::optional<BlockBodyForStorage> DataModel::read_canonical_body_for_storage(BlockNum block_num) const {
@@ -1415,25 +1417,31 @@ bool DataModel::read_rlp_transactions(BlockNum block_num, const evmc::bytes32& h
     return read_rlp_transactions_from_snapshot(block_num, rlp_txs);
 }
 
-std::optional<BlockNum> DataModel::read_tx_lookup(const evmc::bytes32& tx_hash) const {
-    auto block_num = read_tx_lookup_from_db(tx_hash);
-    if (block_num) {
-        return block_num;
+std::optional<std::pair<BlockNum, TxnId>> DataModel::read_tx_lookup(const evmc::bytes32& tx_hash) const {
+    auto result = read_tx_lookup_from_db(tx_hash);
+    if (result) {
+        return result;
     }
 
     return read_tx_lookup_from_snapshot(tx_hash);
 }
 
-std::optional<BlockNum> DataModel::read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const {
+std::optional<std::pair<BlockNum, TxnId>> DataModel::read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const {
     auto cursor = txn_.ro_cursor(table::kTxLookup);
     const auto data = cursor->find(to_slice(tx_hash), /*throw_notfound=*/false);
     if (!data) {
         return std::nullopt;
     }
-    return std::stoul(silkworm::to_hex(from_slice(data.value)), nullptr, 16);
+    const ByteView data_value = from_slice(data.value);
+    if (data_value.size() < 2 * sizeof(uint64_t)) {
+        return std::nullopt;
+    }
+    const BlockNum block_num = endian::load_big_u64(data_value.data());
+    const TxnId txn_id = endian::load_big_u64(data_value.data() + sizeof(uint64_t));
+    return std::make_pair(block_num, txn_id);
 }
 
-std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const {
+std::optional<std::pair<BlockNum, TxnId>> DataModel::read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const {
     TransactionBlockNumByTxnHashQuery query{repository_};
     return query.exec(tx_hash);
 }

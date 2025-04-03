@@ -18,6 +18,7 @@
 #include <filesystem>
 #include <iostream>
 #include <map>
+#include <ranges>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -51,13 +52,12 @@
 #include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
-#include <silkworm/node/stagedsync/stages/stage_interhashes.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 #include <silkworm/node/stagedsync/stages_factory_impl.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;
-using namespace silkworm::datastore::kvdb;
+using namespace silkworm::datastore;
 
 class Progress {
   public:
@@ -119,12 +119,11 @@ class Progress {
     uint32_t printed_bar_len_{0};
 };
 
-void cursor_for_each(::mdbx::cursor& cursor, datastore::kvdb::WalkFuncRef walker) {
-    const bool throw_notfound{false};
-    auto data = cursor.eof() ? cursor.to_first(throw_notfound) : cursor.current(throw_notfound);
+void cursor_for_each(::mdbx::cursor& cursor, kvdb::WalkFuncRef walker) {
+    auto data = cursor.eof() ? cursor.to_first(/*throw_notfound=*/false) : cursor.current(/*throw_notfound=*/false);
     while (data) {
-        walker(datastore::kvdb::from_slice(data.key), datastore::kvdb::from_slice(data.value));
-        data = cursor.move(mdbx::cursor::move_operation::next, throw_notfound);
+        walker(kvdb::from_slice(data.key), kvdb::from_slice(data.value));
+        data = cursor.move(mdbx::cursor::move_operation::next, /*throw_notfound=*/false);
     }
 }
 
@@ -151,8 +150,8 @@ bool user_confirmation(const std::string& message = {"Confirm ?"}) {
 struct StageOrderCompare {
     bool operator()(const std::string& lhs, const std::string& rhs) const {
         static const auto kStagesForwardOrder = fix_stages_forward_order();
-        const auto lhs_it = std::find(kStagesForwardOrder.begin(), kStagesForwardOrder.end(), lhs);
-        const auto rhs_it = std::find(kStagesForwardOrder.begin(), kStagesForwardOrder.end(), rhs);
+        const auto lhs_it = std::ranges::find(kStagesForwardOrder, lhs);
+        const auto rhs_it = std::ranges::find(kStagesForwardOrder, rhs);
         if (lhs_it == kStagesForwardOrder.end() && rhs_it == kStagesForwardOrder.end()) {
             return lhs < rhs;
         }
@@ -167,18 +166,18 @@ struct StageOrderCompare {
         return stages_forward_order;
     }
     static void add_after_history_index(stagedsync::ExecutionPipeline::StageNames& forward_stages, const char* stage) {
-        auto history_index_it = std::find(forward_stages.begin(), forward_stages.end(), db::stages::kHistoryIndexKey);
+        auto history_index_it = std::ranges::find(forward_stages, db::stages::kHistoryIndexKey);
         forward_stages.insert(std::next(history_index_it), stage);
     }
 };
 
-void list_stages(datastore::kvdb::EnvConfig& config) {
+void list_stages(const kvdb::EnvConfig& config) {
     static constexpr char kTableHeaderFormat[] = " %-26s %10s ";
     static constexpr char kTableRowFormat[] = " %-26s %10u %-8s";
 
-    auto env = silkworm::datastore::kvdb::open_env(config);
+    auto env = kvdb::open_env(config);
     auto txn = env.start_read();
-    if (!has_map(txn, db::table::kSyncStageProgress.name)) {
+    if (!kvdb::has_map(txn, db::table::kSyncStageProgress.name)) {
         throw std::runtime_error("Either not a Silkworm db or table " +
                                  std::string{db::table::kSyncStageProgress.name} + " not found");
     }
@@ -219,21 +218,21 @@ void list_stages(datastore::kvdb::EnvConfig& config) {
     env.close(config.shared);
 }
 
-void set_stage_progress(datastore::kvdb::EnvConfig& config, const std::string& stage_name, uint32_t new_height, bool dry) {
+void set_stage_progress(kvdb::EnvConfig& config, const std::string& stage_name, uint32_t new_height, bool dry) {
     config.readonly = false;
 
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
-    auto env{silkworm::datastore::kvdb::open_env(config)};
-    RWTxnManaged txn{env};
+    auto env{kvdb::open_env(config)};
+    kvdb::RWTxnManaged txn{env};
     if (!db::stages::is_known_stage(stage_name.c_str())) {
         throw std::runtime_error("Stage name " + stage_name + " is not known");
     }
-    if (!has_map(txn, silkworm::db::table::kSyncStageProgress.name)) {
+    if (!has_map(txn, db::table::kSyncStageProgress.name)) {
         throw std::runtime_error("Either non Silkworm db or table " +
-                                 std::string(silkworm::db::table::kSyncStageProgress.name) + " not found");
+                                 std::string(db::table::kSyncStageProgress.name) + " not found");
     }
     auto old_height{db::stages::read_stage_progress(txn, stage_name.c_str())};
     db::stages::write_stage_progress(txn, stage_name.c_str(), new_height);
@@ -247,7 +246,7 @@ void set_stage_progress(datastore::kvdb::EnvConfig& config, const std::string& s
 static stagedsync::BodiesStageFactory make_bodies_stage_factory(
     const ChainConfig& chain_config,
     db::DataModelFactory data_model_factory) {
-    return [chain_config, data_model_factory = std::move(data_model_factory)](stagedsync::SyncContext* sync_context) {
+    return [&chain_config, data_model_factory = std::move(data_model_factory)](stagedsync::SyncContext* sync_context) {
         return std::make_unique<stagedsync::BodiesStage>(
             sync_context,
             chain_config,
@@ -267,8 +266,8 @@ static stagedsync::StageContainerFactory make_stages_factory(
     });
 }
 
-void debug_unwind(datastore::kvdb::EnvConfig& config, BlockNum height, uint32_t step, const bool dry, const bool force,
-                  const std::string& start_at_stage, const std::string& stop_before_stage) {
+void debug_unwind(kvdb::EnvConfig& config, std::unique_ptr<DataDirectory>&& data_directory, BlockNum height, uint32_t step,
+                  const bool dry, const bool force, const std::string& start_at_stage, const std::string& stop_before_stage) {
     ensure(config.exclusive, "Function requires exclusive access to database");
     ensure(height > 0, "Function requires non-zero height block");
 
@@ -281,10 +280,9 @@ void debug_unwind(datastore::kvdb::EnvConfig& config, BlockNum height, uint32_t 
     Environment::set_start_at_stage(start_at_stage);
     Environment::set_stop_before_stage(stop_before_stage);
 
-    auto data_directory = std::make_unique<DataDirectory>(datadir_path);
     db::DataStore data_store{config, data_directory->snapshots().path()};
 
-    datastore::kvdb::ROTxnManaged ro_txn = data_store.chaindata().access_ro().start_ro_tx();
+    kvdb::ROTxnManaged ro_txn = data_store.chaindata().access_ro().start_ro_tx();
     const auto chain_config = db::read_chain_config(ro_txn);
     ensure(chain_config.has_value(), "Uninitialized Silkworm db or unknown/custom chain");
     ro_txn.abort();
@@ -321,7 +319,7 @@ void debug_unwind(datastore::kvdb::EnvConfig& config, BlockNum height, uint32_t 
     snap_sync_future.get();
 
     // Commit is enabled by default in RWTxn(Managed), so we need to check here
-    RWTxnManaged txn = data_store.chaindata().access_rw().start_rw_tx();
+    kvdb::RWTxnManaged txn = data_store.chaindata().access_rw().start_rw_tx();
     if (dry) {
         txn.disable_commit();
     } else {
@@ -379,15 +377,15 @@ void debug_unwind(datastore::kvdb::EnvConfig& config, BlockNum height, uint32_t 
     txn.commit_and_stop();
 }
 
-void unwind(datastore::kvdb::EnvConfig& config, BlockNum unwind_point, const bool remove_blocks, const bool dry) {
+void unwind(kvdb::EnvConfig& config, std::unique_ptr<DataDirectory>&& data_directory,
+            BlockNum unwind_point, const bool remove_blocks, const bool dry) {
     ensure(config.exclusive, "Function requires exclusive access to database");
 
     config.readonly = false;
 
-    auto data_directory = std::make_unique<DataDirectory>();
     db::DataStore data_store{config, data_directory->snapshots().path()};
 
-    RWTxnManaged txn = data_store.chaindata().access_rw().start_rw_tx();
+    kvdb::RWTxnManaged txn = data_store.chaindata().access_rw().start_rw_tx();
 
     // Commit is enabled by default in RWTxn(Managed), so we need to check here
     if (dry) {
@@ -444,7 +442,7 @@ void unwind(datastore::kvdb::EnvConfig& config, BlockNum unwind_point, const boo
         const auto body_cursor{txn.rw_cursor(db::table::kBlockBodies)};
         const auto start_key{db::block_key(unwind_point)};
         std::size_t erased_bodies{0};
-        auto body_data{body_cursor->lower_bound(datastore::kvdb::to_slice(start_key), /*throw_notfound=*/false)};
+        auto body_data{body_cursor->lower_bound(kvdb::to_slice(start_key), /*throw_notfound=*/false)};
         while (body_data) {
             body_cursor->erase();
             ++erased_bodies;
@@ -455,7 +453,7 @@ void unwind(datastore::kvdb::EnvConfig& config, BlockNum unwind_point, const boo
         // Remove the block headers up to the unwind point
         const auto header_cursor{txn.rw_cursor(db::table::kHeaders)};
         std::size_t erased_headers{0};
-        auto header_data{header_cursor->lower_bound(datastore::kvdb::to_slice(start_key), /*throw_notfound=*/false)};
+        auto header_data{header_cursor->lower_bound(kvdb::to_slice(start_key), /*throw_notfound=*/false)};
         while (header_data) {
             header_cursor->erase();
             ++erased_headers;
@@ -466,7 +464,7 @@ void unwind(datastore::kvdb::EnvConfig& config, BlockNum unwind_point, const boo
         // Remove the canonical hashes up to the unwind point
         const auto canonical_cursor{txn.rw_cursor(db::table::kCanonicalHashes)};
         std::size_t erased_hashes{0};
-        auto hash_data{canonical_cursor->lower_bound(datastore::kvdb::to_slice(start_key), /*throw_notfound=*/false)};
+        auto hash_data{canonical_cursor->lower_bound(kvdb::to_slice(start_key), /*throw_notfound=*/false)};
         while (hash_data) {
             canonical_cursor->erase();
             ++erased_hashes;
@@ -478,8 +476,8 @@ void unwind(datastore::kvdb::EnvConfig& config, BlockNum unwind_point, const boo
     }
 }
 
-void forward(datastore::kvdb::EnvConfig& config, BlockNum forward_point, const bool dry,
-             const std::string& start_at_stage, const std::string& stop_before_stage) {
+void forward(kvdb::EnvConfig& config, std::unique_ptr<DataDirectory>&& data_directory, BlockNum forward_point,
+             const bool dry, const std::string& start_at_stage, const std::string& stop_before_stage) {
     ensure(config.exclusive, "Function requires exclusive access to database");
 
     config.readonly = false;
@@ -488,10 +486,9 @@ void forward(datastore::kvdb::EnvConfig& config, BlockNum forward_point, const b
     Environment::set_start_at_stage(start_at_stage);
     Environment::set_stop_before_stage(stop_before_stage);
 
-    auto data_directory = std::make_unique<DataDirectory>();
     db::DataStore data_store{config, data_directory->snapshots().path()};
 
-    RWTxnManaged txn = data_store.chaindata().access_rw().start_rw_tx();
+    kvdb::RWTxnManaged txn = data_store.chaindata().access_rw().start_rw_tx();
 
     // Commit is enabled by default in RWTxn(Managed), so we need to check here
     if (dry) {
@@ -544,7 +541,7 @@ void forward(datastore::kvdb::EnvConfig& config, BlockNum forward_point, const b
     std::cout << "\n Staged pipeline forward up to block: " << forward_point << " completed\n";
 }
 
-void bisect_pipeline(datastore::kvdb::EnvConfig& config, BlockNum start, BlockNum end, const bool dry,
+void bisect_pipeline(kvdb::EnvConfig& config, BlockNum start, BlockNum end, const bool dry,
                      const std::string& start_at_stage, const std::string& stop_before_stage) {
     ensure(config.exclusive, "Function requires exclusive access to database");
     ensure(start > 0, "Function requires non-zero start block");
@@ -559,7 +556,7 @@ void bisect_pipeline(datastore::kvdb::EnvConfig& config, BlockNum start, BlockNu
     auto data_directory = std::make_unique<DataDirectory>();
     db::DataStore data_store{config, data_directory->snapshots().path()};
 
-    RWTxnManaged txn = data_store.chaindata().access_rw().start_rw_tx();
+    kvdb::RWTxnManaged txn = data_store.chaindata().access_rw().start_rw_tx();
 
     // Commit is enabled by default in RWTxn(Managed), so we need to check here
     if (dry) {
@@ -652,7 +649,7 @@ void bisect_pipeline(datastore::kvdb::EnvConfig& config, BlockNum start, BlockNu
     }
 }
 
-void reset_to_download(datastore::kvdb::EnvConfig& config, const bool keep_senders, const bool force) {
+void reset_to_download(const kvdb::EnvConfig& config, const bool keep_senders, const bool force) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
@@ -662,8 +659,8 @@ void reset_to_download(datastore::kvdb::EnvConfig& config, const bool keep_sende
         return;
     }
 
-    auto env{silkworm::datastore::kvdb::open_env(config)};
-    RWTxnManaged txn(env);
+    auto env{kvdb::open_env(config)};
+    kvdb::RWTxnManaged txn(env);
 
     StopWatch sw(/*auto_start=*/true);
     // Void finish stage
@@ -674,7 +671,7 @@ void reset_to_download(datastore::kvdb::EnvConfig& config, const bool keep_sende
 
     // Void TxLookup stage
     SILK_INFO_M(db::stages::kTxLookupKey, {"table", db::table::kTxLookup.name}) << "truncating ...";
-    PooledCursor source(*txn, db::table::kTxLookup);
+    kvdb::PooledCursor source(*txn, db::table::kTxLookup);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kTxLookupKey, 0);
     db::stages::write_stage_prune_progress(txn, db::stages::kTxLookupKey, 0);
@@ -818,14 +815,14 @@ void reset_to_download(datastore::kvdb::EnvConfig& config, const bool keep_sende
     SILK_INFO_M("All done", {"in", StopWatch::format(duration)});
 }
 
-void trie_account_analysis(datastore::kvdb::EnvConfig& config) {
+void trie_account_analysis(const kvdb::EnvConfig& config) {
     static std::string fmt_hdr{" %-24s %=50s "};
 
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
-    auto env{datastore::kvdb::open_env(config)};
+    auto env{kvdb::open_env(config)};
     auto txn{env.start_read()};
 
     std::cout << "\n"
@@ -865,7 +862,7 @@ void trie_account_analysis(datastore::kvdb::EnvConfig& config) {
     std::cout << "\n\n";
 }
 
-void trie_scan(datastore::kvdb::EnvConfig& config, bool del) {
+void trie_scan(const kvdb::EnvConfig& config, bool del) {
     auto env{open_env(config)};
     auto txn{env.start_write()};
     std::vector<db::MapConfig> tables{db::table::kTrieOfAccounts, db::table::kTrieOfStorage};
@@ -875,12 +872,12 @@ void trie_scan(datastore::kvdb::EnvConfig& config, bool del) {
         if (SignalHandler::signalled()) {
             break;
         }
-        datastore::kvdb::PooledCursor cursor(txn, map_config);
+        kvdb::PooledCursor cursor(txn, map_config);
         std::cout << " Scanning " << map_config.name << "\n";
         auto data{cursor.to_first(false)};
         while (data) {
             if (data.value.empty()) {
-                std::cout << "Empty value at key " << to_hex(datastore::kvdb::from_slice(data.key), true) << "\n";
+                std::cout << "Empty value at key " << to_hex(kvdb::from_slice(data.key), true) << "\n";
                 if (del) {
                     cursor.erase();
                 }
@@ -900,7 +897,7 @@ void trie_scan(datastore::kvdb::EnvConfig& config, bool del) {
     std::cout << "\n\n";
 }
 
-void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage, bool continue_scan, bool sanitize) {
+void trie_integrity(kvdb::EnvConfig& config, bool with_state_coverage, bool continue_scan, bool sanitize) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
@@ -914,9 +911,9 @@ void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage
     std::string source{db::table::kTrieOfAccounts.name};
 
     bool is_healthy{true};
-    PooledCursor trie_cursor1{txn, db::table::kTrieOfAccounts};
-    PooledCursor trie_cursor2{txn, db::table::kTrieOfAccounts};
-    PooledCursor state_cursor{txn, db::table::kHashedAccounts};
+    kvdb::PooledCursor trie_cursor1{txn, db::table::kTrieOfAccounts};
+    kvdb::PooledCursor trie_cursor2{txn, db::table::kTrieOfAccounts};
+    kvdb::PooledCursor state_cursor{txn, db::table::kHashedAccounts};
     size_t prefix_len{0};
 
     Bytes buffer;
@@ -937,8 +934,8 @@ void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage
         auto data1{trie_cursor1.to_first(false)};
 
         while (data1) {
-            auto data1_k{datastore::kvdb::from_slice(data1.key)};
-            auto data1_v{datastore::kvdb::from_slice(data1.value)};
+            auto data1_k{kvdb::from_slice(data1.key)};
+            auto data1_v{kvdb::from_slice(data1.value)};
             auto node_k{data1_k.substr(prefix_len)};
 
             // Only unmarshal relevant data without copy on read
@@ -1032,14 +1029,14 @@ void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage
                         continue;
                     }
                     buffer.back() = static_cast<uint8_t>(i);
-                    auto data2{trie_cursor2.lower_bound(datastore::kvdb::to_slice(buffer), false)};
+                    auto data2{trie_cursor2.lower_bound(kvdb::to_slice(buffer), false)};
                     if (!data2) {
                         throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
                                                  std::bitset<16>(node_tree_mask).to_string() +
                                                  " but there is no child " + std::to_string(i) +
                                                  " in db. LTE found is : null");
                     }
-                    auto data2_k{datastore::kvdb::from_slice(data2.key)};
+                    auto data2_k{kvdb::from_slice(data2.key)};
                     if (!data2_k.starts_with(buffer)) {
                         throw std::runtime_error("At key " + to_hex(data1_k, true) + " tree mask is " +
                                                  std::bitset<16>(node_tree_mask).to_string() +
@@ -1063,12 +1060,12 @@ void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage
 
                 for (size_t i{data1_k.size() - 1}; i >= prefix_len && !found; --i) {
                     auto parent_seek_key{data1_k.substr(0, i)};
-                    auto data2{trie_cursor2.find(datastore::kvdb::to_slice(parent_seek_key), false)};
+                    auto data2{trie_cursor2.find(kvdb::to_slice(parent_seek_key), false)};
                     if (!data2) {
                         continue;
                     }
                     found = true;
-                    const auto data2_v{datastore::kvdb::from_slice(data2.value)};
+                    const auto data2_v{kvdb::from_slice(data2.value)};
                     const auto parent_tree_mask{endian::load_big_u16(&data2_v[2])};
                     const auto parent_child_id{static_cast<int>(data1_k[i])};
                     const auto parent_has_tree_bit{(parent_tree_mask & (1 << parent_child_id)) != 0};
@@ -1147,9 +1144,9 @@ void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage
 
                     // On first loop we search HashedAccounts (which is not dup-sorted)
                     if (!loop_id) {
-                        auto data3{state_cursor.lower_bound(datastore::kvdb::to_slice(seek), false)};
+                        auto data3{state_cursor.lower_bound(kvdb::to_slice(seek), false)};
                         if (data3) {
-                            auto data3_k{datastore::kvdb::from_slice(data3.key)};
+                            auto data3_k{kvdb::from_slice(data3.key)};
                             if (data3_k.size() >= fixed_bytes) {
                                 found = (bits_to_match == 0 ||
                                          ((data3_k.substr(0, fixed_bytes - 1) == seek.substr(0, fixed_bytes - 1)) &&
@@ -1161,17 +1158,17 @@ void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage
                                              std::bitset<16>(node_state_mask).to_string() + " but there is no child " +
                                              std::to_string(i) + "," + to_hex(seek, true) + " in hashed state"};
                             if (data3) {
-                                auto data3_k{datastore::kvdb::from_slice(data3.key)};
+                                auto data3_k{kvdb::from_slice(data3.key)};
                                 what.append(" found instead " + to_hex(data3_k, true));
                             }
                             throw std::runtime_error(what);
                         }
                     } else {
                         // On second loop we search HashedStorage (which is dup-sorted)
-                        auto data3{state_cursor.lower_bound_multivalue(datastore::kvdb::to_slice(data1_k.substr(0, prefix_len)),
-                                                                       datastore::kvdb::to_slice(seek), false)};
+                        auto data3{state_cursor.lower_bound_multivalue(kvdb::to_slice(data1_k.substr(0, prefix_len)),
+                                                                       kvdb::to_slice(seek), false)};
                         if (data3) {
-                            auto data3_v{datastore::kvdb::from_slice(data3.value)};
+                            auto data3_v{kvdb::from_slice(data3.value)};
                             if (data3_v.size() >= fixed_bytes) {
                                 found = (bits_to_match == 0 ||
                                          ((data3_v.substr(0, fixed_bytes - 1) == seek.substr(0, fixed_bytes - 1)) &&
@@ -1183,8 +1180,8 @@ void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage
                                              std::bitset<16>(node_state_mask).to_string() + " but there is no child " +
                                              std::to_string(i) + "," + to_hex(seek, true) + " in state"};
                             if (data3) {
-                                auto data3_k{datastore::kvdb::from_slice(data3.key)};
-                                auto data3_v{datastore::kvdb::from_slice(data3.value)};
+                                auto data3_k{kvdb::from_slice(data3.key)};
+                                auto data3_v{kvdb::from_slice(data3.value)};
                                 what.append(" found instead " + to_hex(data3_k, true) + to_hex(data3_v, false));
                             }
                             throw std::runtime_error(what);
@@ -1215,7 +1212,7 @@ void trie_integrity(datastore::kvdb::EnvConfig& config, bool with_state_coverage
     env.close();
 }
 
-void trie_reset(datastore::kvdb::EnvConfig& config, bool always_yes) {
+void trie_reset(const kvdb::EnvConfig& config, bool always_yes) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
@@ -1227,7 +1224,7 @@ void trie_reset(datastore::kvdb::EnvConfig& config, bool always_yes) {
     }
 
     auto env{open_env(config)};
-    RWTxnManaged txn{env};
+    kvdb::RWTxnManaged txn{env};
     SILK_INFO << "Clearing ..." << log::Args{"table", db::table::kTrieOfAccounts.name};
     txn->clear_map(db::table::kTrieOfAccounts.name);
     SILK_INFO << "Clearing ..." << log::Args{"table", db::table::kTrieOfStorage.name};
@@ -1240,14 +1237,14 @@ void trie_reset(datastore::kvdb::EnvConfig& config, bool always_yes) {
     env.close();
 }
 
-void trie_root(datastore::kvdb::EnvConfig& config) {
+void trie_root(const kvdb::EnvConfig& config) {
     if (!config.exclusive) {
         throw std::runtime_error("Function requires exclusive access to database");
     }
 
     auto env{open_env(config)};
-    datastore::kvdb::ROTxnManaged txn{env};
-    PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
+    kvdb::ROTxnManaged txn{env};
+    kvdb::PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
 
     // Retrieve expected state root
     auto hashstate_stage_progress{db::stages::read_stage_progress(txn, db::stages::kHashStateKey)};
@@ -1406,34 +1403,34 @@ int main(int argc, char* argv[]) {
         // Parse arguments and validate
         app.parse(argc, argv);
 
-        auto data_dir_factory = [&chaindata_opt, &datadir_opt]() -> DataDirectory {
+        auto data_dir_factory = [&chaindata_opt, &datadir_opt]() -> std::unique_ptr<DataDirectory> {
             if (*chaindata_opt) {
                 fs::path p{chaindata_opt->as<std::string>()};
-                return DataDirectory::from_chaindata(p);
+                return std::make_unique<DataDirectory>(DataDirectory::from_chaindata(p).path());
             }
             fs::path p{datadir_opt->as<std::string>()};
-            return DataDirectory(p, /*create=*/false);
+            return std::make_unique<DataDirectory>(p, /*create=*/false);
         };
 
         log::init(log_settings);
 
-        DataDirectory data_dir{data_dir_factory()};
-        datastore::kvdb::EnvConfig chaindata_env_config{data_dir.chaindata().path().string()};
+        auto data_dir = data_dir_factory();
+        kvdb::EnvConfig chaindata_env_config{data_dir->chaindata().path().string()};
         chaindata_env_config.shared = shared_opt->as<bool>();
         chaindata_env_config.exclusive = exclusive_opt->as<bool>();
 
-        if (!data_dir.chaindata().exists() || data_dir.chaindata().is_empty()) {
-            data_dir.deploy();
+        if (!data_dir->chaindata().exists() || data_dir->chaindata().is_empty()) {
+            data_dir->deploy();
             db::chain_data_init(db::ChainDataInitSettings{
                 .chaindata_env_config = chaindata_env_config,
                 .network_id = 1,
                 .init_if_empty = true,
             });
         }
-        const auto mdbx_path{datastore::kvdb::get_datafile_path(data_dir.chaindata().path())};
+        const auto mdbx_path{kvdb::get_datafile_path(data_dir->chaindata().path())};
         if (!fs::exists(mdbx_path) || !fs::is_regular_file(mdbx_path)) {
-            std::cerr << "\n Directory " << data_dir.chaindata().path().string() << " does not contain "
-                      << datastore::kvdb::kDbDataFileName << "\n";
+            std::cerr << "\n Directory " << data_dir->chaindata().path().string() << " does not contain "
+                      << kvdb::kDbDataFileName << "\n";
             return -1;
         }
 
@@ -1447,12 +1444,14 @@ int main(int argc, char* argv[]) {
                                app_dry_opt->as<bool>());
         } else if (*cmd_staged_forward) {
             forward(chaindata_env_config,
+                    std::move(data_dir),
                     cmd_staged_forward_height->as<uint32_t>(),
                     app_dry_opt->as<bool>(),
                     cmd_staged_forward_start_at_stage_opt->as<std::string>(),
                     cmd_staged_forward_stop_before_stage_opt->as<std::string>());
         } else if (*cmd_debug_unwind) {
             debug_unwind(chaindata_env_config,
+                         std::move(data_dir),
                          cmd_debug_unwind_height->as<uint32_t>(),
                          cmd_debug_unwind_step->as<uint32_t>(),
                          app_dry_opt->as<bool>(),
@@ -1461,6 +1460,7 @@ int main(int argc, char* argv[]) {
                          cmd_debug_unwind_stop_before_stage_opt->as<std::string>());
         } else if (*cmd_staged_unwind) {
             unwind(chaindata_env_config,
+                   std::move(data_dir),
                    cmd_staged_unwind_height->as<uint32_t>(),
                    cmd_staged_unwind_remove_blocks->as<bool>(),
                    app_dry_opt->as<bool>());

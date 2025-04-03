@@ -36,6 +36,7 @@ class SilkwormRecipe(ConanFile):
         self.requires('spdlog/1.12.0')
         self.requires('sqlitecpp/3.3.0')
         self.requires('tomlplusplus/3.3.0')
+        self.requires('libdeflate/1.23')
 
     def configure(self):
         self.options['asio-grpc'].local_allocator = 'boost_container'

@@ -11,6 +11,7 @@ find_package(GTest REQUIRED)
 find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(roaring REQUIRED)
+find_package(libdeflate REQUIRED)
 
 set(SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES
     silkworm_db
@@ -19,6 +20,7 @@ set(SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES
     asio-grpc::asio-grpc
     cborcpp
     evmone
+    libdeflate::libdeflate_static
     glaze::glaze
     gRPC::grpc++
     jwt-cpp::jwt-cpp

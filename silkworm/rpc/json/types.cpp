@@ -455,7 +455,6 @@ void to_json(nlohmann::json& json, const TransactionsWithReceipts& b) {
         json_txn["transactionIndex"] = to_quantity(b.receipts.at(i).tx_index);
 
         json_receipt["blockHash"] = b.receipts.at(i).block_hash;
-        ;
         json_receipt["blockNumber"] = to_quantity(b.receipts.at(i).block_num);
         json_receipt["timestamp"] = b.headers.at(i).timestamp;
         json_receipt["effectiveGasPrice"] = gas_price;

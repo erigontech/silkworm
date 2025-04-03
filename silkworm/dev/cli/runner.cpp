@@ -5,7 +5,7 @@
 
 #include <CLI/CLI.hpp>
 
-#include "state_transition.hpp"
+#include "../state_transition.hpp"
 
 void execute_test(const std::string& path, bool terminate_flag, bool diagnostics_flag);
 using namespace silkworm::cmd::state_transition;

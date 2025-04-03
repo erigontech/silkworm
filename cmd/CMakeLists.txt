@@ -15,9 +15,6 @@ if(NOT SILKWORM_CORE_ONLY)
     find_package(mimalloc REQUIRED)
   endif()
 
-  # State transition and fuzzy tests runner tool
-  add_subdirectory(state-transition)
-
   # Development utility tools
   add_subdirectory(dev)
 

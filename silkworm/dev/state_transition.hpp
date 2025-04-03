@@ -1,22 +1,21 @@
 // Copyright 2025 The Silkworm Authors
 // SPDX-License-Identifier: Apache-2.0
 
+#pragma once
+
 #include <iostream>
 #include <memory>
 #include <stdexcept>
 
-#include <ethash/keccak.hpp>
 #include <nlohmann/json.hpp>
 
-#include "cmd/state-transition/expected_state.hpp"
-#include "silkworm/core/common/bytes_to_string.hpp"
-#include "silkworm/core/execution/execution.hpp"
-#include "silkworm/core/protocol/rule_set.hpp"
-#include "silkworm/core/rlp/encode_vector.hpp"
-#include "silkworm/core/state/in_memory_state.hpp"
-#include "silkworm/sentry/common/ecc_key_pair.hpp"
+#include <silkworm/core/execution/execution.hpp>
+#include <silkworm/core/state/in_memory_state.hpp>
+
+#include "expected_state.hpp"
 
 namespace silkworm::cmd::state_transition {
+
 class StateTransition {
   private:
     nlohmann::json test_data_;
@@ -46,4 +45,5 @@ class StateTransition {
     void validate_transition(const Receipt& receipt, const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const InMemoryState& state);
     void run();
 };
+
 }  // namespace silkworm::cmd::state_transition

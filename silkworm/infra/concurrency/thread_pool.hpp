@@ -1,18 +1,5 @@
-/**
- * @file thread_pool.hpp
- * @author Barak Shoshany (baraksh@gmail.com) (http://baraksh.com)
- * @version 3.4.0
- * @date 2023-05-12
- * @copyright Copyright (c) 2023 Barak Shoshany. Licensed under the MIT license. If you found this project useful,
- * please consider starring it on GitHub! If you use this library in software of any kind, please provide a link to
- * the GitHub repository https://github.com/bshoshany/thread-pool in the source code and documentation. If you use
- * this library in published research, please cite it as follows: Barak Shoshany, "A C++17 Thread Pool
- * for High-Performance Scientific Computing", doi:10.5281/zenodo.4742687, arXiv:2105.00613 (May 2021)
- *
- * @note Modified for Silkworm. Main modification: configurable stack size.
- */
-
-#pragma once
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include <atomic>              // std::atomic
 #include <condition_variable>  // std::condition_variable

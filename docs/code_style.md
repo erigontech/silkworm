@@ -348,7 +348,7 @@ Bad:
 
 Use SPDX short form like in evmone:
 
-	// Copyright 2025 The Silkworm Authors.
+	// Copyright 2025 The Silkworm Authors
 	// SPDX-License-Identifier: Apache-2.0
 
 ### P26 filename vs file name

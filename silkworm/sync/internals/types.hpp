@@ -30,7 +30,7 @@ inline const PeerId kNoPeer{byte_ptr_cast("")};
 
 // Bytes already has operator<<, so PeerId but PeerId is too long
 inline Bytes human_readable_id(const PeerId& peer_id) {
-    return {peer_id.data(), std::min<size_t>(peer_id.length(), 20)};
+    return {peer_id.data(), std::min<size_t>(peer_id.size(), 20)};
 }
 
 enum Penalty : int {
@@ -47,6 +47,8 @@ enum Penalty : int {
 struct PeerPenalization {
     Penalty penalty;
     PeerId peer_id;
+
+    std::string to_string() const;
 };
 
 std::ostream& operator<<(std::ostream& os, const PeerPenalization& penalization);

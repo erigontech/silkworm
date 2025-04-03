@@ -27,7 +27,7 @@ struct SnapshotMergerCommand : public DataMigrationCommand {
         : range(range1) {}
     ~SnapshotMergerCommand() override = default;
 
-    std::string description() const override {
+    std::string to_string() const override {
         std::stringstream stream;
         stream << "SnapshotMergerCommand " << range.to_string();
         return stream.str();

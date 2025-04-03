@@ -95,7 +95,7 @@ Task<std::shared_ptr<api::CursorDupSort>> RemoteTransaction::get_cursor(const st
     co_return cursor;
 }
 
-std::shared_ptr<chain::ChainStorage> RemoteTransaction::create_storage() {
+std::shared_ptr<chain::ChainStorage> RemoteTransaction::make_storage() {
     return std::make_shared<chain::RemoteChainStorage>(*this, providers_);
 }
 

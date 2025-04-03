@@ -21,6 +21,8 @@ struct ProtocolVersion {
     uint32_t major;
     uint32_t minor;
     uint32_t patch;
+
+    std::string to_string() const;
 };
 
 inline constexpr ProtocolVersion kKvServiceApiVersion{7, 0, 0};

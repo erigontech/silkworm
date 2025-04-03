@@ -112,9 +112,9 @@ void Buffer::update_account_code(const evmc::address& address, uint64_t incarnat
     // Don't overwrite existing code so that views of it that were previously returned by read_code are still valid
     const auto [inserted_or_existing_it, inserted] = hash_to_code_.try_emplace(code_hash, code);
     if (inserted) {
-        batch_state_size_ += kHashLength + code.length();
+        batch_state_size_ += kHashLength + code.size();
     } else {
-        batch_state_size_ += code.length() - inserted_or_existing_it->second.length();
+        batch_state_size_ += code.size() - inserted_or_existing_it->second.size();
     }
 
     if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(address, incarnation), code_hash).second) {
@@ -138,9 +138,9 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     const auto [_, inserted] = storage_[address][incarnation].insert_or_assign(location, current);
     ByteView current_val{zeroless_view(current.bytes)};
     if (inserted) {
-        batch_state_size_ += kPlainStoragePrefixLength + kHashLength + current_val.length();
+        batch_state_size_ += kPlainStoragePrefixLength + kHashLength + current_val.size();
     } else {
-        batch_state_size_ += current_val.length() - zeroless_view(initial.bytes).length();
+        batch_state_size_ += current_val.size() - zeroless_view(initial.bytes).size();
     }
 }
 
@@ -163,11 +163,11 @@ void Buffer::write_history_to_db(bool write_change_sets) {
             written_size += sizeof(BlockNum);
             for (const auto& [address, account_encoded] : account_changes) {
                 std::memcpy(&change_value[0], address.bytes, kAddressLength);
-                std::memcpy(&change_value[kAddressLength], account_encoded.data(), account_encoded.length());
+                std::memcpy(&change_value[kAddressLength], account_encoded.data(), account_encoded.size());
                 mdbx::slice k{to_slice(change_key)};
-                mdbx::slice v{change_value.data(), kAddressLength + account_encoded.length()};
+                mdbx::slice v{change_value.data(), kAddressLength + account_encoded.size()};
                 mdbx::error::success_or_throw(account_change_table.put(k, &v, MDBX_APPENDDUP));
-                written_size += kAddressLength + account_encoded.length();
+                written_size += kAddressLength + account_encoded.size();
             }
         }
         total_written_size += written_size;
@@ -195,11 +195,11 @@ void Buffer::write_history_to_db(bool write_change_sets) {
                     written_size += kIncarnationLength;
                     for (const auto& [location, value] : locations_values) {
                         std::memcpy(&change_value[0], location.bytes, kHashLength);
-                        std::memcpy(&change_value[kHashLength], value.data(), value.length());
-                        mdbx::slice change_value_slice{change_value.data(), kHashLength + value.length()};
+                        std::memcpy(&change_value[kHashLength], value.data(), value.size());
+                        mdbx::slice change_value_slice{change_value.data(), kHashLength + value.size()};
                         mdbx::error::success_or_throw(
                             storage_change_table.put(to_slice(change_key), &change_value_slice, MDBX_APPENDDUP));
-                        written_size += kLocationLength + value.length();
+                        written_size += kLocationLength + value.size();
                     }
                 }
             }
@@ -310,7 +310,7 @@ void Buffer::write_state_to_db() {
         auto code_table{open_cursor(txn_, table::kCode)};
         for (const auto& entry : hash_to_code_) {
             code_table.upsert(to_slice(entry.first), to_slice(entry.second));
-            written_size += kHashLength + entry.second.length();
+            written_size += kHashLength + entry.second.size();
         }
         hash_to_code_.clear();
         total_written_size += written_size;
@@ -358,7 +358,7 @@ void Buffer::write_state_to_db() {
             if (it->second.has_value()) {
                 Bytes encoded = state::AccountCodec::encode_for_storage(*it->second);
                 state_table->upsert(key, to_slice(encoded));
-                written_size += kAddressLength + encoded.length();
+                written_size += kAddressLength + encoded.size();
             }
             accounts_.erase(it);
         }
@@ -375,7 +375,7 @@ void Buffer::write_state_to_db() {
                     if (auto storage_it{contract_storage.find(location)}; storage_it != contract_storage.end()) {
                         const auto& value{storage_it->second};
                         upsert_storage_value(*state_table, prefix, location.bytes, value.bytes);
-                        written_size += prefix.length() + kLocationLength + zeroless_view(value.bytes).size();
+                        written_size += prefix.size() + kLocationLength + zeroless_view(value.bytes).size();
                     }
                 }
             }

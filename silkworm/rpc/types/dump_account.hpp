@@ -34,6 +34,8 @@ struct DumpAccounts {
     evmc::bytes32 root{0};
     evmc::address next{0};
     AccountsMap accounts;
+
+    std::string to_string() const;
 };
 
 std::ostream& operator<<(std::ostream& out, const DumpAccounts& dump);

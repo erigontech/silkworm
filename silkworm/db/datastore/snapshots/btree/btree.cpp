@@ -159,7 +159,7 @@ void BTree::warmup(const KeyValueIndex& index) {
         const size_t data_index = i - 1;
         auto [_, key] = compare_key({}, data_index, index);
         cache_.emplace_back(Node{data_index, Bytes{key}});
-        cached_bytes += sizeof(Node) + ByteView{key}.length();
+        cached_bytes += sizeof(Node) + ByteView{key}.size();
     }
     SILK_DEBUG << "BTree::warmup finished M=" << fanout_ << " N=" << num_nodes_ << " cache_size=" << cached_bytes;
 }

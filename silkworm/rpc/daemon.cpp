@@ -221,7 +221,7 @@ Daemon::Daemon(
     std::optional<db::DataStoreRef> data_store)
     : settings_(std::move(settings)),
       chain_config_{std::move(chain_config)},
-      create_channel_{make_channel_factory(settings_)},
+      channel_factory_{make_channel_factory(settings_)},
       context_pool_{settings_.context_pool_settings.num_contexts},
       worker_pool_{settings_.num_workers},
       data_store_{std::move(data_store)} {
@@ -249,7 +249,7 @@ Daemon::Daemon(
 }
 
 void Daemon::add_private_services() {
-    auto grpc_channel = create_channel_();
+    auto grpc_channel = channel_factory_();
 
     // Add the private state to each execution context
     for (size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
@@ -293,7 +293,7 @@ std::unique_ptr<db::kv::api::Client> Daemon::make_kv_client(rpc::ClientContext& 
     auto* backend{must_use_private_service<rpc::ethbackend::BackEnd>(ioc)};
     if (remote) {
         return std::make_unique<db::kv::grpc::client::RemoteClient>(
-            create_channel_, grpc_context, state_cache, ethdb::kv::make_backend_providers(backend));
+            channel_factory_, grpc_context, state_cache, ethdb::kv::make_backend_providers(backend));
     }
     // TODO(canepat) finish implementation and clean-up composition of objects here
     db::kv::api::StateChangeRunner runner{ioc.get_executor()};
@@ -314,7 +314,7 @@ void Daemon::add_execution_services(const std::vector<std::shared_ptr<engine::Ex
 }
 
 DaemonChecklist Daemon::run_checklist() {
-    const auto core_service_channel{create_channel_()};
+    const auto core_service_channel{channel_factory_()};
 
     const auto kv_protocol_check{wait_for_kv_protocol_check(core_service_channel)};
     const auto ethbackend_protocol_check{wait_for_ethbackend_protocol_check(core_service_channel)};

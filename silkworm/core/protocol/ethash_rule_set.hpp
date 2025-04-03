@@ -45,6 +45,4 @@ class EthashRuleSet : public RuleSet {
     ethash::epoch_context_ptr epoch_context_{nullptr, ethash_destroy_epoch_context};
 };
 
-std::ostream& operator<<(std::ostream& out, const BlockReward& reward);
-
 }  // namespace silkworm::protocol

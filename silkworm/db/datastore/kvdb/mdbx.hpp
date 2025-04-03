@@ -585,7 +585,7 @@ size_t cursor_erase(RWCursor& cursor, ByteView set_key,
 size_t cursor_erase_prefix(RWCursor& cursor, ByteView prefix);
 
 inline Slice to_slice(ByteView value) {
-    return {value.data(), value.length()};
+    return {value.data(), value.size()};
 }
 
 inline ByteView from_slice(const Slice slice) {

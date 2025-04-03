@@ -12,6 +12,8 @@ using GetBlockBodiesPacket = std::vector<Hash>;
 struct GetBlockBodiesPacket66 {  // eth/66 version
     uint64_t request_id{0};
     GetBlockBodiesPacket request;
+
+    std::string to_string() const;
 };
 
 namespace rlp {
@@ -25,6 +27,14 @@ namespace rlp {
 }  // namespace rlp
 
 inline std::ostream& operator<<(std::ostream& os, const GetBlockBodiesPacket66& packet) {
+    os << packet.to_string();
+    return os;
+}
+
+inline std::string GetBlockBodiesPacket66::to_string() const {
+    const auto& packet = *this;
+    std::stringstream os;
+
     os << "reqId=" << packet.request_id;
 
     if (packet.request.size() == 1) {
@@ -32,7 +42,7 @@ inline std::ostream& operator<<(std::ostream& os, const GetBlockBodiesPacket66& 
     } else {
         os << " requested=" << packet.request.size() << " block hashes";
     }
-    return os;
+    return os.str();
 }
 
 }  // namespace silkworm

@@ -72,6 +72,8 @@ struct Call {
         txn.data = data.value_or(silkworm::Bytes{});
         return txn;
     }
+
+    std::string to_string() const;
 };
 
 std::ostream& operator<<(std::ostream& out, const Call& call);
@@ -84,11 +86,15 @@ struct BlockOverrides {
     std::optional<std::uint64_t> gas_limit;
     std::optional<std::uint64_t> base_fee;
     std::map<std::uint64_t, evmc::bytes32> block_hash;
+
+    std::string to_string() const;
 };
 
 struct SimulationContext {
     BlockNumOrHash block_num{0};
     std::int32_t transaction_index{-1};
+
+    std::string to_string() const;
 };
 
 struct AccountOverrides {
@@ -98,11 +104,15 @@ struct AccountOverrides {
     std::optional<evmc::bytes32> code_hash;
     std::map<evmc::bytes32, intx::uint256> state;
     std::map<evmc::bytes32, intx::uint256> state_diff;
+
+    std::string to_string() const;
 };
 
 struct Bundle {
     std::vector<Call> transactions;
     BlockOverrides block_override;
+
+    std::string to_string() const;
 };
 
 using Bundles = std::vector<Bundle>;

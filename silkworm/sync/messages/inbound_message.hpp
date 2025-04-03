@@ -14,6 +14,7 @@ class InboundMessage : public Message {
   public:
     virtual uint64_t req_id() const = 0;
     virtual std::string content() const = 0;
+    virtual std::string to_string() const;
 };
 
 std::ostream& operator<<(std::ostream&, const silkworm::InboundMessage&);

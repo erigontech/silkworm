@@ -17,6 +17,8 @@ struct GetBlockHeadersPacket {
 struct GetBlockHeadersPacket66 {  // eth/66 version
     uint64_t request_id{0};
     GetBlockHeadersPacket request;
+
+    std::string to_string() const;
 };
 
 namespace rlp {
@@ -36,9 +38,17 @@ namespace rlp {
 }  // namespace rlp
 
 inline std::ostream& operator<<(std::ostream& os, const GetBlockHeadersPacket66& packet) {
+    os << packet.to_string();
+    return os;
+}
+
+inline std::string GetBlockHeadersPacket66::to_string() const {
+    const auto& packet = *this;
+    std::stringstream os;
+
     os << "reqId=" << packet.request_id << " origin=" << packet.request.origin << " amount=" << packet.request.amount
        << " skip=" << packet.request.skip << " reverse=" << packet.request.reverse;
-    return os;
+    return os.str();
 }
 
 }  // namespace silkworm

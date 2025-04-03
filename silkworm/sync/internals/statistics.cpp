@@ -9,7 +9,16 @@
 namespace silkworm {
 
 std::ostream& operator<<(std::ostream& os, const DownloadStatistics& stats) {
+    os << stats.to_string();
+    return os;
+}
+
+std::string DownloadStatistics::to_string() const {
     using namespace std::chrono;
+
+    const auto& stats = *this;
+    std::stringstream os;
+
     uint64_t perc_received = stats.requested_items > 0 ? stats.received_items * 100 / stats.requested_items : 0;
     uint64_t perc_accepted = stats.received_items > 0 ? stats.accepted_items * 100 / stats.received_items : 0;
     uint64_t perc_rejected = stats.received_items > 0 ? stats.rejected_items() * 100 / stats.received_items : 0;
@@ -31,7 +40,7 @@ std::ostream& operator<<(std::ostream& os, const DownloadStatistics& stats) {
 
     os << " [elapsed(m)=" << duration_cast<minutes>(stats.elapsed()).count() << "]";
 
-    return os;
+    return os.str();
 }
 
 duration_t DownloadStatistics::elapsed() const {
@@ -70,7 +79,9 @@ void NetworkStatistics::inaccurate_copy(const NetworkStatistics& other) {
         << "(+" << std::setw(2) << (curr.VARIABLE.load() - prev.VARIABLE.load()) / (FACTOR) \
         << ", +" << std::setw(2) << (curr.VARIABLE.load() - prev.VARIABLE.load()) / (FACTOR) / elapsed_s << "/s)")
 
-std::ostream& operator<<(std::ostream& os, std::tuple<NetworkStatistics&, NetworkStatistics&, seconds_t> stats) {
+std::string interval_network_statistics_string(const IntervalNetworkStatistics& stats) {
+    std::stringstream os;
+
     NetworkStatistics& prev = get<0>(stats);
     NetworkStatistics& curr = get<1>(stats);
     seconds_t elapsed = get<2>(stats);
@@ -90,6 +101,11 @@ std::ostream& operator<<(std::ostream& os, std::tuple<NetworkStatistics&, Networ
 
     os << " [last_update=" << elapsed.count() << "s]";
 
+    return os.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const IntervalNetworkStatistics& stats) {
+    os << interval_network_statistics_string(stats);
     return os;
 }
 

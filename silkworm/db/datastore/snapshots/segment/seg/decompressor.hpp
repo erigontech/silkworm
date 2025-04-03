@@ -94,6 +94,8 @@ class PatternTable : public DecodingTable {
 
     size_t build_condensed(std::span<Pattern> patterns);
 
+    std::string to_string() const;
+
   private:
     static const WordDistances kWordDistances;
     static size_t condensed_table_bit_length_threshold_;
@@ -140,6 +142,8 @@ class PositionTable : public DecodingTable {
     }
 
     int build(std::span<Position> positions);
+
+    std::string to_string() const;
 
   private:
     int build_tree(

@@ -181,7 +181,7 @@ class DummyTransaction : public BaseTransaction {
         co_return cursor;
     }
 
-    std::shared_ptr<ChainStorage> create_storage() override {
+    std::shared_ptr<ChainStorage> make_storage() override {
         return nullptr;
     }
 
@@ -276,7 +276,7 @@ TEST_CASE("StorageWalker::storage_range_at") {
     nlohmann::json storage({});
     StorageWalker::StorageCollector collector = [&](const silkworm::ByteView key, const silkworm::ByteView sec_key, const silkworm::ByteView value) {
         auto val = silkworm::to_hex(value);
-        val.insert(0, 64 - val.length(), '0');
+        val.insert(0, 64 - val.size(), '0');
         storage["0x" + silkworm::to_hex(sec_key)] = {{"key", "0x" + silkworm::to_hex(key)}, {"value", "0x" + val}};
 
         return true;

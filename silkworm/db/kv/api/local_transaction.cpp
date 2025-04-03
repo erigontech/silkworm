@@ -123,7 +123,7 @@ Task<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::str
     co_return cursor;
 }
 
-std::shared_ptr<chain::ChainStorage> LocalTransaction::create_storage() {
+std::shared_ptr<chain::ChainStorage> LocalTransaction::make_storage() {
     // The calling thread *must* be the *same* which created this LocalTransaction instance
     return std::make_shared<chain::LocalChainStorage>(
         DataModel{tx_, data_store_.blocks_repository}, chain_config_);

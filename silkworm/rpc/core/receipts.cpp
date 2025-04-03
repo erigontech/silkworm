@@ -161,7 +161,7 @@ Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx,
     const auto txn_id = co_await tx.user_txn_id_at(block_num);
 
     const auto receipts = co_await async_task(workers.executor(), [&]() -> Receipts {
-        auto state = state_factory.create_state(current_executor, chain_storage, txn_id);
+        auto state = state_factory.make(current_executor, chain_storage, txn_id);
 
         EVMExecutor executor{block, chain_config, workers, state};
 
@@ -201,7 +201,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     execution::StateFactory state_factory{tx};
 
     auto new_receipt = co_await async_task(workers.executor(), [&]() -> Receipt {
-        auto state = state_factory.create_state(current_executor, chain_storage, txn_id);
+        auto state = state_factory.make(current_executor, chain_storage, txn_id);
 
         EVMExecutor executor{block, chain_config, workers, state};
 

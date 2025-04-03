@@ -302,7 +302,7 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
 
             co_await compress(content, compressed_content);
 
-            res.content_length(compressed_content.length());
+            res.content_length(compressed_content.size());
             res.body() = std::move(compressed_content);
         } else {
             // Any negative response or positive response w/o compression

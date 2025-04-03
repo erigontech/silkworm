@@ -122,6 +122,4 @@ class RemoteState : public State {
     AsyncRemoteState async_state_;
 };
 
-std::ostream& operator<<(std::ostream& out, const RemoteState& s);
-
 }  // namespace silkworm::execution

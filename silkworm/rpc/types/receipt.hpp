@@ -35,6 +35,8 @@ struct Receipt {
     intx::uint256 effective_gas_price{0};
     std::optional<uint64_t> blob_gas_used{std::nullopt};        // EIP-4844
     std::optional<intx::uint256> blob_gas_price{std::nullopt};  // EIP-4844
+
+    std::string to_string() const;
 };
 
 std::ostream& operator<<(std::ostream& out, const Receipt& r);

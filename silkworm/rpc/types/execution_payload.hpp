@@ -51,6 +51,8 @@ struct ExecutionPayload {
     std::optional<std::vector<Withdrawal>> withdrawals;  // present iff version == V2
     std::optional<uint64_t> blob_gas_used;               // present iff version == V3
     std::optional<uint64_t> excess_blob_gas;             // present iff version == V3
+
+    std::string to_string() const;
 };
 
 //! ForkChoiceStateV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#forkchoicestatev1
@@ -58,6 +60,8 @@ struct ForkChoiceState {
     evmc::bytes32 head_block_hash;
     evmc::bytes32 safe_block_hash;
     evmc::bytes32 finalized_block_hash;
+
+    std::string to_string() const;
 };
 
 //! PayloadAttributes represents either
@@ -78,6 +82,8 @@ struct PayloadAttributes {
     evmc::address suggested_fee_recipient;
     std::optional<std::vector<Withdrawal>> withdrawals;     // present iff version == V2
     std::optional<evmc::bytes32> parent_beacon_block_root;  // present iff version == V3
+
+    std::string to_string() const;
 };
 
 struct NewPayloadRequest {
@@ -102,6 +108,8 @@ struct PayloadStatus {
     std::string status;
     std::optional<Hash> latest_valid_hash;
     std::optional<std::string> validation_error;
+
+    std::string to_string() const;
 };
 
 inline const PayloadStatus PayloadStatus::kSyncing{.status = PayloadStatus::kSyncingStr};
@@ -115,11 +123,15 @@ inline bool operator==(const PayloadStatus& lhs, const PayloadStatus& rhs) {
 struct ForkChoiceUpdatedRequest {
     ForkChoiceState fork_choice_state;
     std::optional<PayloadAttributes> payload_attributes;
+
+    std::string to_string() const;
 };
 
 struct ForkChoiceUpdatedReply {
     PayloadStatus payload_status;
     std::optional<uint64_t> payload_id;
+
+    std::string to_string() const;
 };
 
 //! TransitionConfigurationV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#transitionconfigurationv1
@@ -127,19 +139,26 @@ struct TransitionConfiguration {
     intx::uint256 terminal_total_difficulty;
     evmc::bytes32 terminal_block_hash;
     BlockNum terminal_block_num{0};
+
+    std::string to_string() const;
 };
 
 //! Response for engine_getPayloadV2 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#response-2
 struct ExecutionPayloadAndValue {
     ExecutionPayload payload;
     intx::uint256 block_value;  // in wei
+
+    std::string to_string() const;
 };
 
 //! ExecutionPayloadBodyV1 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#executionpayloadbodyv1
 struct ExecutionPayloadBody {
     std::optional<std::vector<Bytes>> transactions;      // not present iff requested block is missing
     std::optional<std::vector<Withdrawal>> withdrawals;  // present iff after Shanghai
+
+    std::string to_string() const;
 };
+
 using ExecutionPayloadBodies = std::vector<ExecutionPayloadBody>;
 
 //! BlobsBundleV1 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#blobsbundlev1

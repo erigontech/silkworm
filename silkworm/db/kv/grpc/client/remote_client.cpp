@@ -25,12 +25,12 @@ using Stub = proto::KV::StubInterface;
 
 class RemoteClientImpl final : public api::Service {
   public:
-    RemoteClientImpl(const rpc::ChannelFactory& create_channel,
+    RemoteClientImpl(const rpc::ChannelFactory& channel_factory,
                      agrpc::GrpcContext& grpc_context,
                      api::StateCache* state_cache,
                      chain::Providers providers,
                      rpc::DisconnectHook on_disconnect)
-        : channel_{create_channel()},
+        : channel_{channel_factory()},
           stub_{proto::KV::NewStub(channel_)},
           grpc_context_{grpc_context},
           state_cache_{state_cache},
@@ -134,12 +134,12 @@ class RemoteClientImpl final : public api::Service {
     std::chrono::milliseconds max_backoff_timeout_{rpc::kDefaultMaxBackoffReconnectTimeout};
 };
 
-RemoteClient::RemoteClient(const rpc::ChannelFactory& create_channel,
+RemoteClient::RemoteClient(const rpc::ChannelFactory& channel_factory,
                            agrpc::GrpcContext& grpc_context,
                            api::StateCache* state_cache,
                            chain::Providers providers,
                            rpc::DisconnectHook on_disconnect)
-    : p_impl_{std::make_shared<RemoteClientImpl>(create_channel,
+    : p_impl_{std::make_shared<RemoteClientImpl>(channel_factory,
                                                  grpc_context,
                                                  state_cache,
                                                  std::move(providers),

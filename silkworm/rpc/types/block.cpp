@@ -18,6 +18,14 @@
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Block& b) {
+    out << b.to_string();
+    return out;
+}
+
+std::string Block::to_string() const {
+    const auto& b = *this;
+    std::stringstream out;
+
     auto& block = b.block_with_hash->block;
     out << "parent_hash: " << to_hex(block.header.parent_hash);
     out << " ommers_hash: " << to_hex(block.header.ommers_hash);
@@ -42,7 +50,7 @@ std::ostream& operator<<(std::ostream& out, const Block& b) {
     out << " #ommers: " << block.ommers.size();
     out << " hash: " << to_hex(b.block_with_hash->hash);
     out << " full_tx: " << b.full_tx;
-    return out;
+    return out.str();
 }
 
 uint64_t Block::get_block_size() const {
@@ -59,6 +67,14 @@ uint64_t Block::get_block_size() const {
 }
 
 std::ostream& operator<<(std::ostream& out, const BlockNumOrHash& block_num_or_hash) {
+    out << block_num_or_hash.to_string();
+    return out;
+}
+
+std::string BlockNumOrHash::to_string() const {
+    const auto& block_num_or_hash = *this;
+    std::stringstream out;
+
     if (block_num_or_hash.is_number()) {
         out << "0x" << std::hex << block_num_or_hash.number() << std::dec;
     } else if (block_num_or_hash.is_hash()) {
@@ -67,10 +83,10 @@ std::ostream& operator<<(std::ostream& out, const BlockNumOrHash& block_num_or_h
         SILKWORM_ASSERT(block_num_or_hash.is_tag());
         out << block_num_or_hash.tag();
     }
-    return out;
+    return out.str();
 }
 
-void BlockNumOrHash::build(const std::string& block_num_or_hash) {
+void BlockNumOrHash::parse(const std::string& block_num_or_hash) {
     value_ = uint64_t{0};
     if (block_num_or_hash == kEarliestBlockId) {
         value_ = kEarliestBlockNum;
@@ -80,7 +96,7 @@ void BlockNumOrHash::build(const std::string& block_num_or_hash) {
                block_num_or_hash == kSafeBlockId) {
         value_ = block_num_or_hash;
     } else if (absl::StartsWithIgnoreCase(block_num_or_hash, "0x")) {
-        if (block_num_or_hash.length() == 66) {
+        if (block_num_or_hash.size() == 66) {
             const auto b32_bytes = silkworm::from_hex(block_num_or_hash);
             const auto b32 = silkworm::to_bytes32(b32_bytes.value_or(silkworm::Bytes{}));
             value_ = b32;

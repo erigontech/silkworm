@@ -12,10 +12,18 @@
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const DumpAccounts& dump) {
+    out << dump.to_string();
+    return out;
+}
+
+std::string DumpAccounts::to_string() const {
+    const auto& dump = *this;
+    std::stringstream out;
+
     out << "root: 0x" << silkworm::to_hex(dump.root)
         << " next: " << dump.next
         << " accounts: " << dump.accounts.size();
-    return out;
+    return out.str();
 }
 
 void to_json(nlohmann::json& json, const DumpAccounts& dump) {

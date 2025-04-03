@@ -24,11 +24,17 @@ namespace rlp {
 
 }  // namespace rlp
 
-inline std::ostream& operator<<(std::ostream& os, const NewBlockHashesPacket& packet) {
+inline std::string new_block_hashes_packet_to_string(const NewBlockHashesPacket& packet) {
+    std::stringstream os;
     if (packet.size() == 1)
         os << "block num " << packet[0].block_num /* << " hash " << to_hex(packet[0].hash) */;
     else
         os << packet.size() << " new block hashes/nums";
+    return os.str();
+}
+
+inline std::ostream& operator<<(std::ostream& os, const NewBlockHashesPacket& packet) {
+    os << new_block_hashes_packet_to_string(packet);
     return os;
 }
 

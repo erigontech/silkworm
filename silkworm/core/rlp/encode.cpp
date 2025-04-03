@@ -12,7 +12,7 @@ void encode_header(Bytes& to, Header header) {
     } else {
         auto len_be{endian::to_big_compact(header.payload_length)};
         const uint8_t code = header.list ? 0xF7 : 0xB7;
-        to.push_back(static_cast<uint8_t>(code + len_be.length()));
+        to.push_back(static_cast<uint8_t>(code + len_be.size()));
         to.append(len_be);
     }
 }
@@ -29,16 +29,16 @@ void encode(Bytes& to, bool x) {
 }
 
 void encode(Bytes& to, ByteView s) {
-    if (s.length() != 1 || s[0] >= kEmptyStringCode) {
-        encode_header(to, {.list = false, .payload_length = s.length()});
+    if (s.size() != 1 || s[0] >= kEmptyStringCode) {
+        encode_header(to, {.list = false, .payload_length = s.size()});
     }
     to.append(s);
 }
 
 size_t length(ByteView s) noexcept {
-    size_t len{s.length()};
-    if (s.length() != 1 || s[0] >= kEmptyStringCode) {
-        len += length_of_length(s.length());
+    size_t len{s.size()};
+    if (s.size() != 1 || s[0] >= kEmptyStringCode) {
+        len += length_of_length(s.size());
     }
     return len;
 }

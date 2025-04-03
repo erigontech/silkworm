@@ -330,7 +330,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v2(const nlohmann::json& requ
 #ifndef BUILD_COVERAGE
     try {
 #endif
-        const auto storage{tx->create_storage()};
+        const auto storage{tx->make_storage()};
         const auto config{co_await storage->read_chain_config()};
         ensure(config.shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
 
@@ -393,7 +393,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v3(const nlohmann::json& requ
 #ifndef BUILD_COVERAGE
     try {
 #endif
-        const auto storage{tx->create_storage()};
+        const auto storage{tx->make_storage()};
         const auto config{co_await storage->read_chain_config()};
         ensure(config.shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
         ensure(config.cancun_time.has_value(), "execution layer has no Cancun timestamp in configuration");
@@ -448,7 +448,7 @@ Task<void> EngineRpcApi::handle_engine_new_payload_v4(const nlohmann::json& requ
 #ifndef BUILD_COVERAGE
     try {
 #endif
-        const auto storage{tx->create_storage()};
+        const auto storage{tx->make_storage()};
         const auto config{co_await storage->read_chain_config()};
         ensure(config.shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
         ensure(config.cancun_time.has_value(), "execution layer has no Cancun timestamp in configuration");
@@ -647,7 +647,7 @@ Task<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1(cons
 #ifndef BUILD_COVERAGE
     try {
 #endif
-        const auto storage{tx->create_storage()};
+        const auto storage{tx->make_storage()};
         const auto config{co_await storage->read_chain_config()};
         ensure(config.terminal_total_difficulty.has_value(), "execution layer does not have terminal total difficulty");
 
@@ -750,7 +750,7 @@ EngineRpcApi::ValidationError EngineRpcApi::validate_payload_attributes_v3(const
 
 Task<std::optional<silkworm::ChainConfig>> EngineRpcApi::read_chain_config() {
     auto tx = co_await database_->begin_transaction();
-    const auto storage{tx->create_storage()};
+    const auto storage{tx->make_storage()};
     auto config{co_await storage->read_chain_config()};
     co_await tx->close();
     co_return config;

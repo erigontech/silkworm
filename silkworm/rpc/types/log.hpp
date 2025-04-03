@@ -27,6 +27,8 @@ struct Log {
     uint32_t index{0};
     bool removed{false};
     std::optional<uint64_t> timestamp{std::nullopt};
+
+    std::string to_string() const;
 };
 
 using Logs = std::vector<Log>;

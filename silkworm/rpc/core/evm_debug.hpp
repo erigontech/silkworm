@@ -38,6 +38,8 @@ struct DebugConfig {
     bool disable_stack{false};
     bool no_refunds{false};
     std::optional<int32_t> tx_index;
+
+    std::string to_string() const;
 };
 
 std::string uint256_to_hex(const evmone::uint256& x);

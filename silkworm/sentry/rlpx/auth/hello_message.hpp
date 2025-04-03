@@ -60,7 +60,7 @@ class HelloMessage {
 
     bool contains_capability(const Capability& capability) const;
 
-    std::string capabilities_description();
+    std::string capabilities_to_string();
 
     uint16_t listen_port() const { return listen_port_; }
 

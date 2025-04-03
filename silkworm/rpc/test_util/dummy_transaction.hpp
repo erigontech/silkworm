@@ -61,7 +61,7 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
         co_return cursor_dup_sort_;
     }
 
-    std::shared_ptr<db::chain::ChainStorage> create_storage() override {
+    std::shared_ptr<db::chain::ChainStorage> make_storage() override {
         return std::make_shared<db::chain::RemoteChainStorage>(*this, ethdb::kv::make_backend_providers(backend_));
     }
 

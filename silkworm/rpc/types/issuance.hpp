@@ -17,6 +17,8 @@ struct Issuance {
     std::optional<std::string> total_issued;
     std::optional<std::string> total_burnt;
     std::optional<std::string> tips;
+
+    std::string to_string() const;
 };
 
 std::ostream& operator<<(std::ostream& out, const Issuance& issuance);

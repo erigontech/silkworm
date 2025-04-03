@@ -22,7 +22,7 @@ void decode_word_into_header(ByteView word, BlockHeader& header) {
     ensure(!word.empty(), [&]() { return "decode_word_into_header: first hash byte missing"; });
 
     // Skip hash first byte to obtain encoded header RLP data
-    ByteView encoded_header{word.data() + 1, word.length() - 1};
+    ByteView encoded_header{word.data() + 1, word.size() - 1};
 
     const auto decode_result = rlp::decode(encoded_header, header);
     success_or_throw(decode_result, "decode_word_into_header: rlp::decode error");

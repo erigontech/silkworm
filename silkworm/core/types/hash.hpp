@@ -23,11 +23,11 @@ class Hash : public evmc::bytes32 {
 
     Hash() = default;
     explicit Hash(ByteView bv) {
-        std::memcpy(bytes, bv.data(), length());
-        SILKWORM_ASSERT(bv.length() == length());
+        std::memcpy(bytes, bv.data(), size());
+        SILKWORM_ASSERT(bv.size() == size());
     }
 
-    static constexpr size_t length() { return sizeof(evmc::bytes32); }
+    static constexpr size_t size() { return sizeof(evmc::bytes32); }
 
     std::string to_hex() const { return silkworm::to_hex(*this); }
     static std::optional<Hash> from_hex(const std::string& hex) { return evmc::from_hex<Hash>(hex); }

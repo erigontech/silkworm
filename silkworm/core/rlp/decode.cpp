@@ -33,7 +33,7 @@ tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept {
     } else if (b < 0xC0) {
         from.remove_prefix(1);
         const size_t len_of_len{b - 0xB7u};
-        if (from.length() < len_of_len) {
+        if (from.size() < len_of_len) {
             return tl::unexpected{DecodingError::kInputTooShort};
         }
         uint64_t len{0};
@@ -53,7 +53,7 @@ tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept {
         from.remove_prefix(1);
         h.list = true;
         const size_t len_of_len{b - 0xF7u};
-        if (from.length() < len_of_len) {
+        if (from.size() < len_of_len) {
             return tl::unexpected{DecodingError::kInputTooShort};
         }
         uint64_t len{0};
@@ -67,7 +67,7 @@ tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept {
         }
     }
 
-    if (from.length() < h.payload_length) {
+    if (from.size() < h.payload_length) {
         return tl::unexpected{DecodingError::kInputTooShort};
     }
 

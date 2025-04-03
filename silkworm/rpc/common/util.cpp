@@ -10,10 +10,7 @@
 namespace silkworm {
 
 std::ostream& operator<<(std::ostream& out, const Account& account) {
-    out << "nonce: " << account.nonce;
-    out << " balance: " << account.balance;
-    out << " code_hash: 0x" << to_hex(account.code_hash);
-    out << " incarnation: " << account.incarnation;
+    out << account.to_string();
     return out;
 }
 

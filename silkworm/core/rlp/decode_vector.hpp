@@ -64,7 +64,7 @@ DecodingResult decode(ByteView& from, Leftover mode, Arg1& arg1, Arg2& arg2, Arg
     if (!header->list) {
         return tl::unexpected{DecodingError::kUnexpectedString};
     }
-    const uint64_t leftover{from.length() - header->payload_length};
+    const uint64_t leftover{from.size() - header->payload_length};
     if (mode != Leftover::kAllow && leftover) {
         return tl::unexpected{DecodingError::kInputTooLong};
     }
@@ -73,7 +73,7 @@ DecodingResult decode(ByteView& from, Leftover mode, Arg1& arg1, Arg2& arg2, Arg
         return res;
     }
 
-    if (from.length() != leftover) {
+    if (from.size() != leftover) {
         return tl::unexpected{DecodingError::kUnexpectedListElements};
     }
     return {};

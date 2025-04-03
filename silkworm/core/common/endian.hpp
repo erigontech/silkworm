@@ -86,7 +86,7 @@ ByteView to_big_compact(const intx::uint256& value);
 //! if the input is not compact kLeadingZero is returned.
 template <UnsignedIntegral T>
 static DecodingResult from_big_compact(ByteView data, T& out) {
-    if (data.length() > sizeof(T)) {
+    if (data.size() > sizeof(T)) {
         return tl::unexpected{DecodingError::kOverflow};
     }
 
@@ -100,7 +100,7 @@ static DecodingResult from_big_compact(ByteView data, T& out) {
     }
 
     auto* ptr{reinterpret_cast<uint8_t*>(&out)};
-    std::memcpy(ptr + (sizeof(T) - data.length()), &data[0], data.length());
+    std::memcpy(ptr + (sizeof(T) - data.size()), &data[0], data.size());
 
     out = intx::to_big_endian(out);
     return {};

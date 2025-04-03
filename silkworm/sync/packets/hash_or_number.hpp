@@ -15,7 +15,9 @@ namespace silkworm {
 // HashOrNumber is a variant of Hash and BlockNum
 // It uses struct in place of "using", to obtain a strong type and avoid overload resolution ambiguities
 // in the rlp encoding/decoding functions
-struct HashOrNumber : public std::variant<Hash, BlockNum> {};
+struct HashOrNumber : public std::variant<Hash, BlockNum> {
+    std::string to_string() const;
+};
 
 // HashOrNumber rlp encoding/decoding
 namespace rlp {
@@ -66,11 +68,19 @@ namespace rlp {
 }  // namespace rlp
 
 inline std::ostream& operator<<(std::ostream& os, const HashOrNumber& packet) {
+    os << packet.to_string();
+    return os;
+}
+
+inline std::string HashOrNumber::to_string() const {
+    const auto& packet = *this;
+    std::stringstream os;
+
     if (std::holds_alternative<Hash>(packet))
         os << std::get<Hash>(packet).to_hex();
     else
         os << std::get<BlockNum>(packet);
-    return os;
+    return os.str();
 }
 
 }  // namespace silkworm

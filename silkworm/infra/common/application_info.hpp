@@ -27,7 +27,7 @@ std::string get_node_name_from_build_info(const buildinfo* info);
 std::string make_client_id_from_build_info(const buildinfo& info);
 
 //! Assemble the build description using the Cable build information
-std::string get_description_from_build_info(const buildinfo* info);
+std::string build_info_to_string(const buildinfo* info);
 
 //! Create the application versioning information from the Cable build information
 ApplicationInfo make_application_info(const buildinfo* info);

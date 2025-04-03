@@ -71,7 +71,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
     const auto from_timestamp = static_cast<db::kv::api::Timestamp>(min_tx_num);
     const auto to_timestamp = static_cast<db::kv::api::Timestamp>(max_tx_num);
 
-    const auto chain_storage{tx_.create_storage()};
+    const auto chain_storage{tx_.make_storage()};
 
     db::kv::api::PaginatedStream<db::kv::api::Timestamp> paginated_stream;
     if (!topics.empty()) {

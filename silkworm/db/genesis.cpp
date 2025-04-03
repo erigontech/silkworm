@@ -50,7 +50,7 @@ std::pair<bool, std::vector<std::string>> validate_genesis_json(const nlohmann::
                             ret.second.emplace_back("Missing mixHash and or nonce member for ethash PoW chain");
                         } else {
                             auto mixhash = from_hex(genesis_json["mixHash"].get<std::string>());
-                            if (!mixhash.has_value() || mixhash->length() != kHashLength) {
+                            if (!mixhash.has_value() || mixhash->size() != kHashLength) {
                                 ret.second.emplace_back("mixHash member is not a valid hash hex string");
                             }
                             auto nonce = from_hex(genesis_json["nonce"].get<std::string>());
@@ -78,7 +78,7 @@ std::pair<bool, std::vector<std::string>> validate_genesis_json(const nlohmann::
                     }
 
                     auto address_bytes{from_hex(item.key())};
-                    if (!address_bytes.has_value() || address_bytes->length() != kAddressLength) {
+                    if (!address_bytes.has_value() || address_bytes->size() != kAddressLength) {
                         ret.second.emplace_back("Allocation for " + item.key() + " has invalid address");
                         continue;
                     }

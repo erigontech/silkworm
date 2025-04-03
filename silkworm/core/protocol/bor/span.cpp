@@ -17,7 +17,7 @@ std::optional<Span> get_current_span(EVM& evm, const evmc_address& validator_con
     system_txn.set_sender(kSystemAddress);
 
     const CallResult res{evm.execute(system_txn, kSystemCallGasLimit)};
-    if (res.status != EVMC_SUCCESS || res.data.length() != 32 * 3) {
+    if (res.status != EVMC_SUCCESS || res.data.size() != 32 * 3) {
         return std::nullopt;
     }
 

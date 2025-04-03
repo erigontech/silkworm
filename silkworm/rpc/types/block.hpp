@@ -23,13 +23,14 @@ struct Block {
     bool full_tx{false};
 
     uint64_t get_block_size() const;
+    std::string to_string() const;
 };
 
 std::ostream& operator<<(std::ostream& out, const Block& b);
 
 class BlockNumOrHash {
   public:
-    explicit BlockNumOrHash(const std::string& block_num_or_hash) { build(block_num_or_hash); }
+    explicit BlockNumOrHash(const std::string& block_num_or_hash) { parse(block_num_or_hash); }
     explicit BlockNumOrHash(BlockNum block_num) noexcept : value_{block_num} {}
 
     virtual ~BlockNumOrHash() noexcept = default;
@@ -64,13 +65,15 @@ class BlockNumOrHash {
         return is_tag() ? *std::get_if<std::string>(&value_) : "";
     }
 
+    std::string to_string() const;
+
   private:
-    void build(std::string const& block_num_or_hash);
+    void parse(std::string const& block_num_or_hash);
 
     std::variant<uint64_t, evmc::bytes32, std::string> value_;
 };
 
-std::ostream& operator<<(std::ostream& out, const BlockNumOrHash& b);
+std::ostream& operator<<(std::ostream& out, const BlockNumOrHash& block_num_or_hash);
 
 struct BlockDetails {
     uint64_t block_size;

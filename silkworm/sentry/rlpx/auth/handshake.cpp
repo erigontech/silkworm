@@ -70,11 +70,11 @@ Task<Handshake::HandshakeResult> Handshake::execute(SocketStream& stream) {
 
     HelloMessage::Capability required_capability{required_capability_};
     if (!hello_reply_message.contains_capability(required_capability)) {
-        throw CapabilityMismatchError(required_capability.to_string(), hello_reply_message.capabilities_description());
+        throw CapabilityMismatchError(required_capability.to_string(), hello_reply_message.capabilities_to_string());
     }
 
     SILK_DEBUG_M("sentry") << "rlpx::auth::Handshake success: peer Hello: " << hello_reply_message.client_id()
-                           << " with " << hello_reply_message.capabilities_description();
+                           << " with " << hello_reply_message.capabilities_to_string();
 
     message_stream.enable_compression();
 

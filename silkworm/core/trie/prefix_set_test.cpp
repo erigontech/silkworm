@@ -78,7 +78,7 @@ TEST_CASE("Prefix set - storage prefix") {
     Bytes key1{prefix1};
     key1.append(string_view_to_byte_view(keys[0].first));
     {
-        auto [contains, next_created]{ps.contains_and_next_marked(key1, prefix1.length())};
+        auto [contains, next_created]{ps.contains_and_next_marked(key1, prefix1.size())};
         REQUIRE(contains);
         REQUIRE(!next_created.empty());
         REQUIRE(std::memcmp(key1.data(), next_created.data(), 40) == 0);
@@ -86,7 +86,7 @@ TEST_CASE("Prefix set - storage prefix") {
 
     key1.assign(prefix1).append(string_view_to_byte_view(keys.back().first));
     {
-        auto [contains, next_created]{ps.contains_and_next_marked(key1, prefix1.length())};
+        auto [contains, next_created]{ps.contains_and_next_marked(key1, prefix1.size())};
         REQUIRE(contains);
         REQUIRE(next_created.empty());
     }

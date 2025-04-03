@@ -4,6 +4,7 @@
 #include "log.hpp"
 
 #include <iomanip>
+#include <sstream>
 
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/rpc/common/util.hpp>
@@ -11,6 +12,14 @@
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Log& log) {
+    out << log.to_string();
+    return out;
+}
+
+std::string Log::to_string() const {
+    const auto& log = *this;
+    std::stringstream out;
+
     out << "#topics: " << log.topics.size();
     out << " #data: " << log.data.size();
     out << " block_num: " << static_cast<uint32_t>(log.block_num);
@@ -24,7 +33,7 @@ std::ostream& operator<<(std::ostream& out, const Log& log) {
         out << std::hex << std::setw(2) << std::setfill('0') << int{b};
     }
     out << std::dec;
-    return out;
+    return out.str();
 }
 
 }  // namespace silkworm::rpc

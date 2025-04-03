@@ -36,7 +36,7 @@ Task<std::optional<uint64_t>> latest_block(db::kv::api::Service& service) {
 
     const auto db_transaction = co_await service.begin_transaction();
     try {
-        const auto chain_storage{db_transaction->create_storage()};
+        const auto chain_storage{db_transaction->make_storage()};
         db::kv::api::CoherentStateCache state_cache;
         const BlockReader block_reader{*chain_storage, *db_transaction};
         block_num = co_await block_reader.get_latest_block_num();

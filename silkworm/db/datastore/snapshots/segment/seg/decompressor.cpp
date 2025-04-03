@@ -56,6 +56,14 @@ void CodeWord::set_next(CodeWord* next) {
 }
 
 std::ostream& operator<<(std::ostream& out, const PatternTable& pt) {
+    out << pt.to_string();
+    return out;
+}
+
+std::string PatternTable::to_string() const {
+    const auto& pt = *this;
+    std::stringstream out;
+
     out << "Pattern Table:\n";
     out << "bit length: " << pt.bit_length_ << "\n";
     out << std::setfill('0');
@@ -69,7 +77,7 @@ std::ostream& operator<<(std::ostream& out, const PatternTable& pt) {
         }
     }
     out << std::dec;
-    return out;
+    return out.str();
 }
 
 //! Build the table of word distances in range (0, 512) for each power of 2 in use except 2^0
@@ -271,6 +279,14 @@ int PositionTable::build_tree(std::span<Position> positions, uint64_t highest_de
 }
 
 std::ostream& operator<<(std::ostream& out, const PositionTable& pt) {
+    out << pt.to_string();
+    return out;
+}
+
+std::string PositionTable::to_string() const {
+    const auto& pt = *this;
+    std::stringstream out;
+
     out << "Position Table:\n";
     out << "bit length: " << pt.bit_length_ << "\n";
     out << std::setfill('0');
@@ -286,7 +302,7 @@ std::ostream& operator<<(std::ostream& out, const PositionTable& pt) {
         }
     }
     out << std::dec;
-    return out;
+    return out.str();
 }
 
 class Decompressor::ReadModeGuard {

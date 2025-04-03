@@ -83,7 +83,7 @@ std::optional<BlockHeader> read_header(ROTxn& txn, ByteView key) {
         return std::nullopt;
     }
     BlockHeader header;
-    ByteView encoded_header{raw_header.data(), raw_header.length()};
+    ByteView encoded_header{raw_header.data(), raw_header.size()};
     success_or_throw(rlp::decode(encoded_header, header));
     return header;
 }
@@ -133,7 +133,7 @@ size_t read_headers(ROTxn& txn, BlockNum block_num, std::function<void(BlockHead
         [&process_func]([[maybe_unused]] ByteView key, ByteView raw_header) {
             if (raw_header.empty()) throw std::logic_error("empty header in table Headers");
             BlockHeader header;
-            ByteView encoded_header{raw_header.data(), raw_header.length()};
+            ByteView encoded_header{raw_header.data(), raw_header.size()};
             success_or_throw(rlp::decode(encoded_header, header));
             process_func(std::move(header));
         },
@@ -241,7 +241,7 @@ std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, ByteView key) {
 }
 
 void write_total_difficulty(RWTxn& txn, const Bytes& key, const intx::uint256& total_difficulty) {
-    SILKWORM_ASSERT(key.length() == sizeof(BlockNum) + kHashLength);
+    SILKWORM_ASSERT(key.size() == sizeof(BlockNum) + kHashLength);
     Bytes value{};
     rlp::encode(value, total_difficulty);
 
@@ -327,7 +327,7 @@ void write_transactions(RWTxn& txn, const std::vector<Transaction>& transactions
     for (const auto& transaction : transactions) {
         Bytes value{};
         rlp::encode(value, transaction);
-        mdbx::slice value_slice{value.data(), value.length()};
+        mdbx::slice value_slice{value.data(), value.size()};
         cursor->put(to_slice(key), &value_slice, MDBX_APPEND);
         ++base_id;
         endian::store_big_u64(key.data(), base_id);
@@ -433,7 +433,7 @@ size_t read_blocks(ROTxn& txn, BlockNum block_num, std::function<void(Block&)> p
             read_transactions(txn, body.base_txn_id + 1, body.txn_count - 2, block.transactions);
             // ...senders
             if (!block.transactions.empty() && read_senders) {
-                Bytes key_bytes{key.data(), key.length()};  // TODO(canepat) avoid unnecessary copy by changing read_senders API
+                Bytes key_bytes{key.data(), key.size()};  // TODO(canepat) avoid unnecessary copy by changing read_senders API
                 parse_senders(txn, key_bytes, block.transactions);
             }
             // ...header
@@ -611,9 +611,9 @@ std::vector<evmc::address> read_senders(ROTxn& txn, const Bytes& key) {
     std::vector<evmc::address> senders{};
     auto data_view{read_senders_raw(txn, key)};
     if (!data_view.empty()) {
-        SILKWORM_ASSERT(data_view.length() % kAddressLength == 0);
-        senders.resize(data_view.length() / kAddressLength);
-        std::memcpy(senders.data(), data_view.data(), data_view.length());
+        SILKWORM_ASSERT(data_view.size() % kAddressLength == 0);
+        senders.resize(data_view.size() / kAddressLength);
+        std::memcpy(senders.data(), data_view.data(), data_view.size());
     }
     return senders;
 }
@@ -624,8 +624,8 @@ void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out) 
     }
     auto data_view{read_senders_raw(txn, key)};
     if (!data_view.empty()) {
-        SILKWORM_ASSERT(data_view.length() % kAddressLength == 0);
-        SILKWORM_ASSERT(data_view.length() / kAddressLength == out.size());
+        SILKWORM_ASSERT(data_view.size() % kAddressLength == 0);
+        SILKWORM_ASSERT(data_view.size() / kAddressLength == out.size());
         auto addresses = reinterpret_cast<const evmc::address*>(data_view.data());
         size_t idx{0};
         for (auto& transaction : out) {
@@ -714,7 +714,7 @@ static std::optional<ByteView> historical_storage(ROTxn& txn, const evmc::addres
     }
 
     const ByteView k{from_slice(data.key)};
-    SILKWORM_ASSERT(k.length() == kAddressLength + kHashLength + sizeof(BlockNum));
+    SILKWORM_ASSERT(k.size() == kAddressLength + kHashLength + sizeof(BlockNum));
 
     if (k.substr(0, kAddressLength) != ByteView{address} ||
         k.substr(kAddressLength, kHashLength) != ByteView{location}) {
@@ -779,8 +779,8 @@ evmc::bytes32 read_storage(ROTxn& txn, const evmc::address& address, uint64_t in
     }
 
     evmc::bytes32 res{};
-    SILKWORM_ASSERT(val->length() <= kHashLength);
-    std::memcpy(res.bytes + kHashLength - val->length(), val->data(), val->length());
+    SILKWORM_ASSERT(val->size() <= kHashLength);
+    std::memcpy(res.bytes + kHashLength - val->size(), val->data(), val->size());
     return res;
 }
 

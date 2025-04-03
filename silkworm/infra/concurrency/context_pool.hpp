@@ -34,6 +34,8 @@ class Context {
     //! Stop the execution loop.
     void stop();
 
+    std::string to_string() const;
+
   protected:
     //! The unique scheduler identifier.
     size_t context_id_;

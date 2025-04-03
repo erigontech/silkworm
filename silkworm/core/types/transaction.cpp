@@ -404,14 +404,14 @@ namespace rlp {
             to.max_fee_per_blob_gas = 0;
             to.blob_versioned_hashes.clear();
 
-            const uint64_t leftover{from.length() - h->payload_length};
+            const uint64_t leftover{from.size() - h->payload_length};
             if (mode != Leftover::kAllow && leftover) {
                 return tl::unexpected{DecodingError::kInputTooLong};
             }
             if (DecodingResult res{legacy_decode_items(from, to)}; !res) {
                 return res;
             }
-            if (from.length() != leftover) {
+            if (from.size() != leftover) {
                 return tl::unexpected{DecodingError::kUnexpectedListElements};
             }
             return {};

@@ -39,14 +39,30 @@ void from_json(const nlohmann::json& json, TraceConfig& tc) {
 }
 
 std::ostream& operator<<(std::ostream& out, const TraceConfig& tc) {
+    out << tc.to_string();
+    return out;
+}
+
+std::string TraceConfig::to_string() const {
+    const auto& tc = *this;
+    std::stringstream out;
+
     out << "vmTrace: " << std::boolalpha << tc.vm_trace;
     out << " Trace: " << std::boolalpha << tc.trace;
     out << " stateDiff: " << std::boolalpha << tc.state_diff;
 
-    return out;
+    return out.str();
 }
 
 std::ostream& operator<<(std::ostream& out, const TraceFilter& tf) {
+    out << tf.to_string();
+    return out;
+}
+
+std::string TraceFilter::to_string() const {
+    const auto& tf = *this;
+    std::stringstream out;
+
     out << "from_block: " << std::dec << tf.from_block;
     out << ", to_block: " << std::dec << tf.to_block;
     if (!tf.from_addresses.empty()) {
@@ -65,7 +81,7 @@ std::ostream& operator<<(std::ostream& out, const TraceFilter& tf) {
     out << ", after: " << std::dec << tf.after;
     out << ", count: " << std::dec << tf.count;
 
-    return out;
+    return out.str();
 }
 
 void from_json(const nlohmann::json& json, TraceCall& tc) {
@@ -1418,13 +1434,13 @@ Task<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(c
 
     const auto call_result = co_await async_task(workers_.executor(), [&]() -> std::vector<TraceCallResult> {
         execution::StateFactory state_factory{tx_};
-        auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
+        auto state = state_factory.make(current_executor, chain_storage_, txn_id);
         IntraBlockState initial_ibs{*state};
 
         StateAddresses state_addresses(initial_ibs);
         std::shared_ptr<EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
-        auto curr_state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, txn_id);
+        auto curr_state = execution::StateFactory{tx_}.make(current_executor, chain_storage_, txn_id);
         EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         std::vector<TraceCallResult> trace_call_result(transactions.size());
@@ -1492,11 +1508,11 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
     }
 
     const auto trace_calls_result = co_await async_task(workers_.executor(), [&]() -> TraceManyCallResult {
-        auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
+        auto state = state_factory.make(current_executor, chain_storage_, txn_id);
         silkworm::IntraBlockState initial_ibs{*state};
         StateAddresses state_addresses(initial_ibs);
 
-        auto curr_state = state_factory.create_state(current_executor, chain_storage_, txn_id);
+        auto curr_state = state_factory.make(current_executor, chain_storage_, txn_id);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         std::shared_ptr<silkworm::EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
@@ -1557,10 +1573,10 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
     const auto txn_id = co_await tx_.user_txn_id_at(block_num);
 
     const auto deploy_result = co_await async_task(workers_.executor(), [&]() -> TraceDeployResult {
-        auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
+        auto state = state_factory.make(current_executor, chain_storage_, txn_id);
         silkworm::IntraBlockState initial_ibs{*state};
 
-        auto curr_state = state_factory.create_state(current_executor, chain_storage_, txn_id);
+        auto curr_state = state_factory.make(current_executor, chain_storage_, txn_id);
         EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         TraceDeployResult result;
@@ -1625,9 +1641,9 @@ Task<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const Tran
     const auto txn_id = co_await tx_.user_txn_id_at(block_num, gsl::narrow<uint32_t>(transaction_with_block.transaction.transaction_index));
 
     const auto trace_result = co_await async_task(workers_.executor(), [&]() -> TraceEntriesResult {
-        auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
+        auto state = state_factory.make(current_executor, chain_storage_, txn_id);
         silkworm::IntraBlockState initial_ibs{*state};
-        auto curr_state = state_factory.create_state(current_executor, chain_storage_, txn_id);
+        auto curr_state = state_factory.make(current_executor, chain_storage_, txn_id);
         EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         const auto entry_tracer = std::make_shared<trace::EntryTracer>(initial_ibs);
@@ -1654,10 +1670,10 @@ Task<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWi
     const auto txn_id = co_await tx_.user_txn_id_at(block_num, gsl::narrow<uint32_t>(transaction_with_block.transaction.transaction_index));
 
     const auto trace_error = co_await async_task(workers_.executor(), [&]() -> std::string {
-        auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
+        auto state = state_factory.make(current_executor, chain_storage_, txn_id);
         silkworm::IntraBlockState initial_ibs{*state};
 
-        auto curr_state = state_factory.create_state(current_executor, chain_storage_, txn_id);
+        auto curr_state = state_factory.make(current_executor, chain_storage_, txn_id);
 
         EVMExecutor executor{block, chain_config, workers_, curr_state};
 
@@ -1686,10 +1702,10 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
     const auto txn_id = co_await tx_.user_txn_id_at(block_num, gsl::narrow<uint32_t>(transaction_with_block.transaction.transaction_index));
 
     const auto trace_op_result = co_await async_task(workers_.executor(), [&]() -> TraceOperationsResult {
-        auto state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, txn_id);
+        auto state = execution::StateFactory{tx_}.make(current_executor, chain_storage_, txn_id);
         silkworm::IntraBlockState initial_ibs{*state};
 
-        auto curr_state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, txn_id);
+        auto curr_state = execution::StateFactory{tx_}.make(current_executor, chain_storage_, txn_id);
         EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         auto entry_tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
@@ -1716,10 +1732,10 @@ Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& b
     const auto txn_id = co_await tx_.user_txn_id_at(block_num);
 
     const bool result = co_await async_task(workers_.executor(), [&]() -> bool {
-        auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
+        auto state = state_factory.make(current_executor, chain_storage_, txn_id);
         silkworm::IntraBlockState initial_ibs{*state};
 
-        auto curr_state = execution::StateFactory{tx_}.create_state(current_executor, chain_storage_, txn_id);
+        auto curr_state = execution::StateFactory{tx_}.make(current_executor, chain_storage_, txn_id);
         EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         for (size_t i = 0; i < block.transactions.size(); ++i) {
@@ -1812,8 +1828,8 @@ Task<TraceCallResult> TraceCallExecutor::execute(
         txn_id = co_await tx_.user_txn_id_at(block_num, gsl::narrow<uint32_t>(transaction.transaction_index));
     }
 
-    auto state = state_factory.create_state(current_executor, chain_storage_, txn_id);
-    auto curr_state = state_factory.create_state(current_executor, chain_storage_, txn_id);
+    auto state = state_factory.make(current_executor, chain_storage_, txn_id);
+    auto curr_state = state_factory.make(current_executor, chain_storage_, txn_id);
     const auto trace_call_result = co_await async_task(workers_.executor(), [&]() -> TraceCallResult {
         Tracers tracers;
         silkworm::IntraBlockState initial_ibs{*state};

@@ -232,7 +232,7 @@ std::unique_ptr<::types::H1024> h1024_from_bytes(ByteView bytes) {
 std::unique_ptr<::types::H512> h512_from_string(std::string_view orig) {
     Bytes bytes(64, 0);
     uint8_t* data = bytes.data();
-    std::memcpy(data, orig.data(), orig.length() < 64 ? orig.length() : 64);
+    std::memcpy(data, orig.data(), orig.size() < 64 ? orig.size() : 64);
 
     auto hi_hi = std::make_unique<::types::H128>();
     auto hi_lo = std::make_unique<::types::H128>();

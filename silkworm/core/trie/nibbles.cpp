@@ -10,8 +10,8 @@ Bytes pack_nibbles(ByteView unpacked) {
         return {};
     }
 
-    size_t pos{unpacked.length() & 1};
-    Bytes out((unpacked.length() + pos) / 2, '\0');
+    size_t pos{unpacked.size() & 1};
+    Bytes out((unpacked.size() + pos) / 2, '\0');
     auto out_it{out.begin()};
     while (unpacked.size() > pos) {
         *out_it++ = static_cast<uint8_t>((unpacked[0] << 4) + unpacked[1]);
@@ -26,7 +26,7 @@ Bytes pack_nibbles(ByteView unpacked) {
 }
 
 Bytes unpack_nibbles(ByteView data) {
-    Bytes out(2 * data.length(), '\0');
+    Bytes out(2 * data.size(), '\0');
     size_t offset{0};
     for (const auto& b : data) {
         out[offset] = b >> 4;

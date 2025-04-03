@@ -8,8 +8,16 @@
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const ProtocolVersion& v) {
-    out << v.major << "." << v.minor << "." << v.patch;
+    out << v.to_string();
     return out;
+}
+
+std::string ProtocolVersion::to_string() const {
+    const auto& v = *this;
+    std::stringstream out;
+
+    out << v.major << "." << v.minor << "." << v.patch;
+    return out.str();
 }
 
 template <typename StubInterface>

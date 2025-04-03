@@ -656,11 +656,11 @@ TEST_CASE("Sync Stages") {
         {
             auto call_traces_cursor{txn.ro_cursor(table::kCallTraceSet)};
             REQUIRE(call_traces_cursor->size() == 2);
-            const auto call_traces_record1{call_traces_cursor->to_next(/*throw_notfound=*/false)};
+            const CursorResult call_traces_record1 = call_traces_cursor->to_next(/*throw_notfound=*/false);
             REQUIRE(call_traces_record1.done);
-            const auto call_traces_record2{call_traces_cursor->to_next(/*throw_notfound=*/false)};
+            const CursorResult call_traces_record2 = call_traces_cursor->to_next(/*throw_notfound=*/false);
             REQUIRE(call_traces_record2.done);
-            auto check_call_trace_record = [&](const auto record, const auto& address, bool is_sender, bool is_receiver) {
+            auto check_call_trace_record = [&](const CursorResult& record, const evmc::address& address, bool is_sender, bool is_receiver) {
                 const auto block_num = endian::load_big_u64(static_cast<const uint8_t*>(record.key.data()));
                 CHECK(block_num == 1);
                 const ByteView value{static_cast<const uint8_t*>(record.value.data()), record.value.length()};

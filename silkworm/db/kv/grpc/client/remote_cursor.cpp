@@ -36,7 +36,7 @@ Task<api::KeyValue> RemoteCursor::seek(ByteView key) {
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK);
     seek_message.set_cursor(cursor_id_);
-    seek_message.set_k(key.data(), key.length());
+    seek_message.set_k(key.data(), key.size());
     auto seek_pair = co_await write_and_read(seek_message);
     auto k = string_to_bytes(seek_pair.k());
     auto v = string_to_bytes(seek_pair.v());
@@ -50,7 +50,7 @@ Task<api::KeyValue> RemoteCursor::seek_exact(ByteView key) {
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK_EXACT);
     seek_message.set_cursor(cursor_id_);
-    seek_message.set_k(key.data(), key.length());
+    seek_message.set_k(key.data(), key.size());
     auto seek_pair = co_await write_and_read(seek_message);
     auto k = string_to_bytes(seek_pair.k());
     auto v = string_to_bytes(seek_pair.v());
@@ -124,8 +124,8 @@ Task<Bytes> RemoteCursor::seek_both(ByteView key, ByteView value) {
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK_BOTH);
     seek_message.set_cursor(cursor_id_);
-    seek_message.set_k(key.data(), key.length());
-    seek_message.set_v(value.data(), value.length());
+    seek_message.set_k(key.data(), key.size());
+    seek_message.set_v(value.data(), value.size());
     auto seek_pair = co_await write_and_read(seek_message);
     const auto k = string_to_bytes(seek_pair.k());
     const auto v = string_to_bytes(seek_pair.v());
@@ -139,8 +139,8 @@ Task<api::KeyValue> RemoteCursor::seek_both_exact(ByteView key, ByteView value) 
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK_BOTH_EXACT);
     seek_message.set_cursor(cursor_id_);
-    seek_message.set_k(key.data(), key.length());
-    seek_message.set_v(value.data(), value.length());
+    seek_message.set_k(key.data(), key.size());
+    seek_message.set_v(value.data(), value.size());
     auto seek_pair = co_await write_and_read(seek_message);
     auto k = string_to_bytes(seek_pair.k());
     auto v = string_to_bytes(seek_pair.v());

@@ -3,13 +3,21 @@
 
 #include "issuance.hpp"
 
+#include <sstream>
+
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Issuance& issuance) {
-    out << "block_reward: " << issuance.block_reward.value_or("null") << " "
-        << "ommer_reward: " << issuance.ommer_reward.value_or("null") << " "
-        << "issuance: " << issuance.issuance.value_or("null") << " ";
+    out << issuance.to_string();
     return out;
+}
+
+std::string Issuance::to_string() const {
+    std::stringstream out;
+    out << "block_reward: " << block_reward.value_or("null") << " "
+        << "ommer_reward: " << ommer_reward.value_or("null") << " "
+        << "issuance: " << issuance.value_or("null") << " ";
+    return out.str();
 }
 
 }  // namespace silkworm::rpc

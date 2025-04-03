@@ -19,8 +19,8 @@ namespace silkworm::trie {
 // See "Specification: Compact encoding of hex sequence with optional terminator"
 // at https://eth.wiki/fundamentals/patricia-tree
 static Bytes encode_path(ByteView nibbles, bool terminating) {
-    Bytes res(nibbles.length() / 2 + 1, '\0');
-    const bool odd{static_cast<bool>((nibbles.length() & 1u) != 0)};
+    Bytes res(nibbles.size() / 2 + 1, '\0');
+    const bool odd{static_cast<bool>((nibbles.size() & 1u) != 0)};
 
     res[0] = terminating ? 0x20 : 0x00;
     res[0] += odd ? 0x10 : 0x00;
@@ -51,7 +51,7 @@ ByteView HashBuilder::leaf_node_rlp(ByteView path, ByteView value) {
 ByteView HashBuilder::extension_node_rlp(ByteView path, ByteView child_ref) {
     Bytes encoded_path{encode_path(path, /*terminating=*/false)};
     rlp_buffer_.clear();
-    rlp::Header h{.list = true, .payload_length = rlp::length(encoded_path) + child_ref.length()};
+    rlp::Header h{.list = true, .payload_length = rlp::length(encoded_path) + child_ref.size()};
     rlp::encode_header(rlp_buffer_, h);
     rlp::encode(rlp_buffer_, encoded_path);
     rlp_buffer_.append(child_ref);
@@ -66,7 +66,7 @@ static Bytes wrap_hash(std::span<const uint8_t, kHashLength> hash) {
 }
 
 static Bytes node_ref(ByteView rlp) {
-    if (rlp.length() < kHashLength) {
+    if (rlp.size() < kHashLength) {
         return Bytes{rlp};
     }
     const ethash::hash256 hash{keccak256(rlp)};
@@ -116,7 +116,7 @@ evmc::bytes32 HashBuilder::root_hash(bool auto_finalize) {
 
     const Bytes& node_ref{stack_.back()};
     evmc::bytes32 res{};
-    if (node_ref.length() == kHashLength + 1) {
+    if (node_ref.size() == kHashLength + 1) {
         std::memcpy(res.bytes, &node_ref[1], kHashLength);
     } else {
         res = std::bit_cast<evmc_bytes32>(keccak256(node_ref));
@@ -133,7 +133,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
         const size_t preceding_len{groups_.empty() ? 0 : groups_.size() - 1};
         const size_t common_prefix_len{prefix_length(succeeding, current)};
         const size_t len{std::max(preceding_len, common_prefix_len)};
-        SILKWORM_ASSERT(len < current.length());
+        SILKWORM_ASSERT(len < current.size());
 
         // Add the digit immediately following the max common prefix
         const uint8_t extra_digit{current[len]};
@@ -142,9 +142,9 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
         }
         groups_[len] |= 1u << extra_digit;
 
-        if (tree_masks_.size() < current.length()) {
-            tree_masks_.resize(current.length());
-            hash_masks_.resize(current.length());
+        if (tree_masks_.size() < current.size()) {
+            tree_masks_.resize(current.size());
+            hash_masks_.resize(current.size());
         }
 
         size_t from{len};
@@ -161,10 +161,10 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
                 if (node_collector) {
                     if (is_in_db_trie_) {
                         // keep track of existing records in DB
-                        tree_masks_[current.length() - 1] |= 1u << current.back();
+                        tree_masks_[current.size() - 1] |= 1u << current.back();
                     }
                     // register myself in parent's bitmaps
-                    hash_masks_[current.length() - 1] |= 1u << current.back();
+                    hash_masks_[current.size() - 1] |= 1u << current.back();
                 }
                 build_extensions = true;
             }
@@ -178,7 +178,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
                 // DB trie can't use hash of an extension node
                 hash_masks_[from - 1] &= ~flag;
 
-                if (tree_masks_[current.length() - 1]) {
+                if (tree_masks_[current.size() - 1]) {
                     // Propagate tree_masks flag along the extension node
                     tree_masks_[from - 1] |= flag;
                 }
@@ -255,7 +255,7 @@ std::vector<Bytes> HashBuilder::branch_ref(uint16_t state_mask, uint16_t hash_ma
 
     for (size_t i{first_child_idx}, digit{0}; digit < 16; ++digit) {
         if (state_mask & (1u << digit)) {
-            h.payload_length += stack_[i++].length();
+            h.payload_length += stack_[i++].size();
         } else {
             h.payload_length += 1;
         }

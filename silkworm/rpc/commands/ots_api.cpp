@@ -64,7 +64,7 @@ Task<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohman
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         const BlockReader block_reader{*chain_storage, *tx};
 
         // Check if target block is the latest one: use local state cache (if any) for target transaction
@@ -110,7 +110,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         const BlockReader block_reader{*chain_storage, *tx};
 
         const auto block_num = co_await block_reader.get_block_num(block_id);
@@ -159,7 +159,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         if (block_with_hash) {
             const Block extended_block{block_with_hash, false};
@@ -208,7 +208,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         const BlockReader block_reader{*chain_storage, *tx};
 
         const auto block_num = co_await block_reader.get_block_num(block_id);
@@ -365,7 +365,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             reply = make_json_content(request, nlohmann::detail::value_t::null);
         }
 
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         auto canonical_body_provider = db::chain::canonical_body_provider_from_chain_storage(*chain_storage);
         const auto block_num_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, canonical_body_provider);
         if (block_num_opt) {
@@ -426,7 +426,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         const BlockReader block_reader{*chain_storage, *tx};
         BlockNum block_num = co_await block_reader.get_latest_block_num();
         const auto txn_number = co_await tx->user_txn_id_at(block_num);
@@ -585,7 +585,7 @@ Task<void> OtsRpcApi::handle_ots_trace_transaction(const nlohmann::json& request
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage{tx->create_storage()};
+        const auto chain_storage{tx->make_storage()};
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
@@ -631,7 +631,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& req
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage{tx->create_storage()};
+        const auto chain_storage{tx->make_storage()};
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
@@ -677,7 +677,7 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage{tx->create_storage()};
+        const auto chain_storage{tx->make_storage()};
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
@@ -739,7 +739,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json
     }
     auto tx = co_await database_->begin_transaction();
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         auto canonical_body_provider = db::chain::canonical_body_provider_from_chain_storage(*chain_storage);
 
         db::kv::api::Timestamp from_timestamp{-1};
@@ -792,7 +792,7 @@ Task<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json&
     auto tx = co_await database_->begin_transaction();
 
     try {
-        const auto chain_storage = tx->create_storage();
+        const auto chain_storage = tx->make_storage();
         auto canonical_body_provider = db::chain::canonical_body_provider_from_chain_storage(*chain_storage);
 
         db::kv::api::Timestamp from_timestamp{-1};

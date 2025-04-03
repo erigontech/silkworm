@@ -843,7 +843,6 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        receipt->block_hash = block.header.hash();
 
         reply = make_json_content(request, *receipt);
     } catch (const std::invalid_argument&) {

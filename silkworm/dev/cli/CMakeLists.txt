@@ -5,8 +5,9 @@ include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 find_package(Boost REQUIRED COMPONENTS headers)
 find_package(CLI11 REQUIRED)
+find_package(tomlplusplus REQUIRED)
 
-set(LIBS_PUBLIC silkworm_core silkworm_infra Boost::headers CLI11::CLI11)
+set(LIBS_PUBLIC silkworm_core silkworm_dev Boost::headers CLI11::CLI11 tomlplusplus::tomlplusplus)
 
 # cmake-format: off
 set(LIBS_PRIVATE
@@ -15,7 +16,7 @@ set(LIBS_PRIVATE
 # cmake-format: on
 
 silkworm_library(
-  silkworm_infra_cli
+  silkworm_dev_cli
   PUBLIC ${LIBS_PUBLIC}
   PRIVATE ${LIBS_PRIVATE}
 )

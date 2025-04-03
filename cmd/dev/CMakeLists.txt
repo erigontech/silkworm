@@ -30,18 +30,18 @@ target_link_libraries(check_senders PRIVATE silkworm_infra_cli silkworm_db)
 add_executable(check_tx_lookup "${SILKWORM_MAIN_DIR}/silkworm/db/cli/check_tx_lookup.cpp")
 target_link_libraries(check_tx_lookup PRIVATE silkworm_db CLI11::CLI11)
 
-add_executable(embed_toml "${SILKWORM_MAIN_DIR}/silkworm/infra/cli/embed_toml.cpp")
-target_link_libraries(embed_toml PRIVATE absl::strings CLI11::CLI11 tomlplusplus::tomlplusplus silkworm_infra)
+add_executable(embed_toml "${SILKWORM_MAIN_DIR}/silkworm/dev/cli/embed_toml.cpp")
+target_link_libraries(embed_toml PRIVATE absl::strings CLI11::CLI11 tomlplusplus::tomlplusplus silkworm_dev)
 
-add_executable(embed_json "${SILKWORM_MAIN_DIR}/silkworm/infra/cli/embed_json.cpp")
-target_link_libraries(embed_json PRIVATE CLI11::CLI11 Boost::headers silkworm_infra)
+add_executable(embed_json "${SILKWORM_MAIN_DIR}/silkworm/dev/cli/embed_json.cpp")
+target_link_libraries(embed_json PRIVATE CLI11::CLI11 Boost::headers silkworm_dev)
 
 add_executable(grpc_toolbox "${SILKWORM_MAIN_DIR}/silkworm/rpc/cli/grpc_toolbox.cpp")
 target_include_directories(grpc_toolbox PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(grpc_toolbox absl::flags_parse gRPC::grpc++ protobuf::libprotobuf silkworm_rpcdaemon)
 
-add_executable(kzg_g2_uncompress "${SILKWORM_MAIN_DIR}/silkworm/infra/cli/kzg_g2_uncompress.cpp")
-target_link_libraries(kzg_g2_uncompress silkworm_core blst::blst)
+add_executable(kzg_g2_uncompress "${SILKWORM_MAIN_DIR}/silkworm/dev/cli/kzg_g2_uncompress.cpp")
+target_link_libraries(kzg_g2_uncompress silkworm_dev blst::blst)
 
 add_executable(scan_txs "${SILKWORM_MAIN_DIR}/silkworm/db/cli/scan_txs.cpp")
 target_link_libraries(scan_txs PRIVATE silkworm_db CLI11::CLI11 absl::time)
@@ -54,3 +54,19 @@ target_link_libraries(db_toolbox PRIVATE silkworm_db silkworm_infra_cli CLI11::C
 
 add_executable(staged_pipeline "${SILKWORM_MAIN_DIR}/silkworm/node/cli/staged_pipeline.cpp")
 target_link_libraries(staged_pipeline PRIVATE silkworm_node silkworm_infra_cli CLI11::CLI11 magic_enum::magic_enum)
+
+if(MSVC)
+    add_link_options(/STACK:${SILKWORM_STACK_SIZE})
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    add_link_options(-Wl,-stack_size -Wl,${SILKWORM_STACK_SIZE})
+else()
+    add_link_options(-Wl,-z,stack-size=${SILKWORM_STACK_SIZE})
+endif()
+
+add_executable(state_transition "${SILKWORM_MAIN_DIR}/silkworm/dev/cli/runner.cpp")
+target_link_libraries(state_transition PRIVATE silkworm_dev)
+set(SILKWORM_DEV_CLI "${SILKWORM_MAIN_DIR}/silkworm/dev/cli")
+configure_file("${SILKWORM_DEV_CLI}/state_transition_sample1.json" ${CMAKE_CURRENT_BINARY_DIR}/state_transition_sample1.json COPYONLY)
+configure_file("${SILKWORM_DEV_CLI}/state_transition_sample2.json" ${CMAKE_CURRENT_BINARY_DIR}/state_transition_sample2.json COPYONLY)
+configure_file("${SILKWORM_DEV_CLI}/state_transition_sample3.json" ${CMAKE_CURRENT_BINARY_DIR}/state_transition_sample3.json COPYONLY)
+configure_file("${SILKWORM_DEV_CLI}/state_transition_sample4.json" ${CMAKE_CURRENT_BINARY_DIR}/state_transition_sample4.json COPYONLY)

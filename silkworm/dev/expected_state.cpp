@@ -7,10 +7,9 @@
 
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
-
-#include "silkworm/core/chain/config.hpp"
-#include "silkworm/core/common/test_util.hpp"
 
 namespace silkworm::cmd::state_transition {
 

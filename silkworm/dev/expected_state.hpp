@@ -8,7 +8,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "silkworm/core/common/test_util.hpp"
+#include <silkworm/core/common/test_util.hpp>
 
 namespace silkworm::cmd::state_transition {
 

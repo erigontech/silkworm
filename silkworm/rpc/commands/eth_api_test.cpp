@@ -82,13 +82,13 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_sendRawTransaction fails t
 }
 
 TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_feeHistory succeeds if request well-formed", "[rpc][api]") {
-    const nlohmann::json request = R"({"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["0x1","0x867A80",[25,75]]})"_json;
+    const nlohmann::json request = R"({"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["0x1","0x9",[25,75]]})"_json;
     std::string reply;
     run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
-        "result":{"baseFeePerBlobGas":["0x0","0x0"],"baseFeePerGas":["0x0","0x0"],"blobGasUsedRatio":[0.0],"gasUsedRatio":[0.0],"oldestBlock":"0x867a80","reward":[[]]}
+        "result":{"baseFeePerBlobGas":["0x0","0x0"],"baseFeePerGas":["0x122af097","0xfea74b1"],"blobGasUsedRatio":[0.0],"gasUsedRatio":[0.0042],"oldestBlock":"0x9","reward":[["0x1","0x1"]]}
     })"_json);
 }
 

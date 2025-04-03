@@ -100,6 +100,9 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
     const auto block_range = co_await resolve_block_range(newest_block, block_count, max_history);
 
     if (block_range.num_blocks == 0) {
+        if (block_range.error) {
+            fee_history.error = block_range.error.value();
+        }
         co_return fee_history;
     }
     fee_history.rewards.resize(block_range.num_blocks);
@@ -169,6 +172,11 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
 
 Task<BlockRange> FeeHistoryOracle::resolve_block_range(BlockNum newest_block, uint64_t block_count, uint64_t max_history) {
     const auto latest_block_num = co_await latest_block_provider_();
+    if (newest_block > latest_block_num) {
+        std::ostringstream oss;
+        oss << "request beyond head block: requested " << std::dec << newest_block << ", head " << latest_block_num;
+        co_return BlockRange{0, 0, oss.str()};
+    }
 
     if (max_history != 0) {
         // Limit retrieval to the given number of latest blocks
@@ -252,7 +260,7 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
     const auto last = --rewards_and_gas.end();
     auto sum_gas_used = index->second;
     for (const auto percentile : reward_percentiles) {
-        const uint64_t threshold_gas_used = (header.gas_used * static_cast<uint8_t>(percentile)) / 100;
+        const uint64_t threshold_gas_used = header.gas_used * static_cast<uint8_t>(percentile) / 100;
         while (sum_gas_used < threshold_gas_used && index != last) {
             ++index;
             sum_gas_used += index->second;

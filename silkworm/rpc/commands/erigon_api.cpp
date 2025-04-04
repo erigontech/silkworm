@@ -13,7 +13,6 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/core/block_reader.hpp>
-#include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/logs_walker.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/json/cache_validation_result.hpp>
@@ -141,7 +140,8 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::js
         }
 
         // Lookup and return the matching block
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
+        const BlockReader block_reader{*chain_storage, *tx};
+        const auto block_with_hash = co_await block_reader.read_block_by_number(*block_cache_, block_num);
         ensure(block_with_hash != nullptr, [&]() { return "block " + std::to_string(block_num) + " not found"; });
         const Block extended_block{block_with_hash, full_tx};
 
@@ -174,11 +174,10 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
 
     try {
         const auto chain_storage{tx->make_storage()};
-
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
+        const BlockReader reader{*chain_storage, *tx};
+        const auto block_with_hash = co_await reader.read_block_by_hash(*block_cache_, block_hash);
         if (!block_with_hash) {
-            const std::string error_msg = "block not found ";
-            SILK_ERROR << "erigon_get_block_receipts_by_block_hash: core::read_block_by_hash: " << error_msg << request.dump();
+            SILK_TRACE << "handle_erigon_get_block_receipts_by_block_hash block not found: " << request.dump();
             reply = make_json_content(request, {});
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
@@ -186,7 +185,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
         auto receipts{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_)};
         SILK_TRACE << "#receipts: " << receipts.size();
 
-        const auto block{block_with_hash->block};
+        const auto& block{block_with_hash->block};
         if (block.transactions.size() != receipts.size()) {
             SILK_ERROR << "erigon_get_block_receipts_by_block_hash: receipts size mismatch transaction size: " << request.dump();
             reply = make_json_content(request, {});
@@ -394,8 +393,8 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
 
     try {
         const auto chain_storage = tx->make_storage();
-
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
+        const BlockReader reader{*chain_storage, *tx};
+        const auto block_with_hash = co_await reader.read_block_by_hash(*block_cache_, block_hash);
         if (!block_with_hash) {
             reply = make_json_content(request, nullptr);
             co_await tx->close();  // RAII not (yet) available with coroutines

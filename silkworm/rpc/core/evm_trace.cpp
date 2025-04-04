@@ -23,9 +23,10 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/json/call.hpp>
 #include <silkworm/rpc/json/types.hpp>
+
+#include "block_reader.hpp"
 
 namespace silkworm::rpc::trace {
 
@@ -1776,9 +1777,10 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
     filter.after = trace_filter.after;
     filter.count = trace_filter.count;
 
-    auto block_num = trace_filter.from_block.number();
-    auto block_with_hash = co_await core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, trace_filter.from_block);
+    const BlockReader reader{storage, tx_};
+    auto block_with_hash = co_await reader.read_block_by_block_num_or_hash(block_cache_, trace_filter.from_block);
 
+    auto block_num = trace_filter.from_block.number();
     while (block_num <= trace_filter.to_block.number()) {
         if (!block_with_hash) {
             break;
@@ -1793,7 +1795,7 @@ Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, cons
         }
 
         ++block_num;
-        block_with_hash = co_await core::read_block_by_number(block_cache_, storage, block_num);
+        block_with_hash = co_await reader.read_block_by_number(block_cache_, block_num);
     }
 
     stream.close_array();

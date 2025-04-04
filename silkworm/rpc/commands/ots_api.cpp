@@ -20,7 +20,6 @@
 #include <silkworm/infra/common/async_binary_search.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/core/block_reader.hpp>
-#include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_trace.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/json/types.hpp>
@@ -114,7 +113,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
         const BlockReader block_reader{*chain_storage, *tx};
 
         const auto block_num = co_await block_reader.get_block_num(block_id);
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
+        const auto block_with_hash = co_await block_reader.read_block_by_number(*block_cache_, block_num);
         if (block_with_hash) {
             const Block extended_block{block_with_hash, false};
             const auto block_size = extended_block.get_block_size();
@@ -160,7 +159,8 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
 
     try {
         const auto chain_storage = tx->make_storage();
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
+        const BlockReader reader{*chain_storage, *tx};
+        const auto block_with_hash = co_await reader.read_block_by_hash(*block_cache_, block_hash);
         if (block_with_hash) {
             const Block extended_block{block_with_hash, false};
             const auto block_size = extended_block.get_block_size();
@@ -213,7 +213,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
 
         const auto block_num = co_await block_reader.get_block_num(block_id);
 
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
+        const auto block_with_hash = co_await block_reader.read_block_by_number(*block_cache_, block_num);
         if (block_with_hash) {
             const Block extended_block{block_with_hash, false};
             auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
@@ -542,7 +542,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
                 co_return;
             }
 
-            const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
+            const auto block_with_hash = co_await block_reader.read_block_by_number(*block_cache_, block_num);
 
             if (block_with_hash) {
                 trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
@@ -588,7 +588,8 @@ Task<void> OtsRpcApi::handle_ots_trace_transaction(const nlohmann::json& request
         const auto chain_storage{tx->make_storage()};
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
-        const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
+        BlockReader block_reader{*chain_storage, *tx};
+        const auto transaction_with_block = co_await block_reader.read_transaction_by_hash(*block_cache_, transaction_hash);
 
         if (!transaction_with_block.has_value()) {
             const auto error_msg = "transaction 0x" + silkworm::to_hex(transaction_hash) + " not found";
@@ -634,7 +635,8 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& req
         const auto chain_storage{tx->make_storage()};
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
-        const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
+        BlockReader block_reader{*chain_storage, *tx};
+        const auto transaction_with_block = co_await block_reader.read_transaction_by_hash(*block_cache_, transaction_hash);
 
         if (!transaction_with_block.has_value()) {
             const auto error_msg = "transaction 0x" + silkworm::to_hex(transaction_hash) + " not found";
@@ -680,7 +682,8 @@ Task<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& r
         const auto chain_storage{tx->make_storage()};
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
 
-        const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
+        BlockReader block_reader{*chain_storage, *tx};
+        const auto transaction_with_block = co_await block_reader.read_transaction_by_hash(*block_cache_, transaction_hash);
 
         if (!transaction_with_block.has_value()) {
             const auto error_msg = "transaction 0x" + silkworm::to_hex(transaction_hash) + " not found";

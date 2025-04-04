@@ -17,7 +17,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
@@ -354,7 +353,8 @@ void DebugTracer::write_log(const DebugLog& log) {
 }
 
 Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, BlockNum block_num) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, storage, block_num);
+    const BlockReader reader{storage, tx_};
+    const auto block_with_hash = co_await reader.read_block_by_number(block_cache_, block_num);
     if (!block_with_hash) {
         co_return;
     }
@@ -367,7 +367,8 @@ Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& 
 }
 
 Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& block_hash) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_hash(block_cache_, storage, block_hash);
+    const BlockReader reader{storage, tx_};
+    const auto block_with_hash = co_await reader.read_block_by_hash(block_cache_, block_hash);
     if (!block_with_hash) {
         co_return;
     }
@@ -381,7 +382,8 @@ Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& 
 }
 
 Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash& block_num_or_hash, const ChainStorage& storage, const Call& call, bool is_latest_block) {
-    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, block_num_or_hash);
+    const BlockReader reader{storage, tx_};
+    const auto block_with_hash = co_await reader.read_block_by_block_num_or_hash(block_cache_, block_num_or_hash);
     if (!block_with_hash) {
         co_return;
     }
@@ -409,7 +411,8 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash&
 }
 
 Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& tx_hash) {
-    const auto tx_with_block = co_await rpc::core::read_transaction_by_hash(block_cache_, storage, tx_hash);
+    const BlockReader reader{storage, tx_};
+    const auto tx_with_block = co_await reader.read_transaction_by_hash(block_cache_, tx_hash);
 
     if (!tx_with_block) {
         std::ostringstream oss;
@@ -429,7 +432,8 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
 }
 
 Task<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context, bool is_latest_block) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, context.block_num);
+    const BlockReader reader{storage, tx_};
+    const auto block_with_hash = co_await reader.read_block_by_block_num_or_hash(block_cache_, context.block_num);
     if (!block_with_hash) {
         co_return;
     }

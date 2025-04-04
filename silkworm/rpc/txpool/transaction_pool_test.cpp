@@ -6,7 +6,6 @@
 #include <string>
 #include <utility>
 
-#include <agrpc/test.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>

@@ -5,7 +5,10 @@
 
 #include <memory>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <agrpc/test.hpp>
+#pragma GCC diagnostic pop
 #include <gmock/gmock.h>
 
 #include <silkworm/infra/grpc/test_util/grpc_responder.hpp>

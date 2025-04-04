@@ -9,7 +9,7 @@ if(NOT CMAKE_MESSAGE_LOG_LEVEL)
   set(CMAKE_MESSAGE_LOG_LEVEL NOTICE)
 endif()
 
-add_subdirectory(mdbx-go/mdbxdist)
+add_subdirectory(mdbx-go/libmdbx)
 
 # restore the log verbosity
 if(CMAKE_MESSAGE_LOG_LEVEL_EMPTY)

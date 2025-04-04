@@ -28,6 +28,8 @@
 #include <silkworm/rpc/types/call.hpp>
 #include <silkworm/rpc/types/transaction.hpp>
 
+#include "block_reader.hpp"
+
 namespace silkworm::rpc::debug {
 
 using namespace db::chain;

@@ -5,15 +5,12 @@
 
 #include <string>
 
-#include <boost/endian/conversion.hpp>
-
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
 #include <silkworm/db/kv/txn_num.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/ethdb/cbor.hpp>
 

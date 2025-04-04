@@ -22,7 +22,6 @@
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/core/account_dumper.hpp>
 #include <silkworm/rpc/core/block_reader.hpp>
-#include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_debug.hpp>
 #include <silkworm/rpc/core/receipts.hpp>
 #include <silkworm/rpc/core/storage_walker.hpp>
@@ -216,8 +215,8 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
 
     try {
         const auto chain_storage = tx->make_storage();
-
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
+        const BlockReader reader{*chain_storage, *tx};
+        const auto block_with_hash = co_await reader.read_block_by_hash(*block_cache_, block_hash);
         if (!block_with_hash) {
             SILK_WARN << "debug_storage_range_at: block not found, hash: " << evmc::hex(block_hash);
             nlohmann::json result = {{"storage", nullptr}, {"nextKey", nullptr}};
@@ -295,8 +294,8 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
 
     try {
         const auto chain_storage = tx->make_storage();
-
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
+        const BlockReader reader{*chain_storage, *tx};
+        const auto block_with_hash = co_await reader.read_block_by_hash(*block_cache_, block_hash);
         if (!block_with_hash) {
             reply = make_json_content(request, nlohmann::detail::value_t::null);
             co_await tx->close();  // RAII not (yet) available with coroutines
@@ -712,7 +711,8 @@ Task<void> DebugRpcApi::handle_debug_get_raw_receipts(const nlohmann::json& requ
 
     try {
         const auto chain_storage = tx->make_storage();
-        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        BlockReader block_reader{*chain_storage, *tx};
+        const auto block_with_hash = co_await block_reader.read_block_by_block_num_or_hash(*block_cache_, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_content(request, nullptr);
             co_await tx->close();  // RAII not (yet) available with coroutines

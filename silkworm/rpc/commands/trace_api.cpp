@@ -13,7 +13,6 @@
 #include <silkworm/rpc/common/compatibility.hpp>
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/core/block_reader.hpp>
-#include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_trace.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/protocol/errors.hpp>
@@ -43,7 +42,7 @@ Task<void> TraceRpcApi::handle_trace_call(const nlohmann::json& request, nlohman
         const auto chain_storage = tx->make_storage();
         const BlockReader block_reader{*chain_storage, *tx};
 
-        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const auto block_with_hash = co_await block_reader.read_block_by_block_num_or_hash(*block_cache_, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, 100, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
@@ -90,8 +89,7 @@ Task<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nl
     try {
         const auto chain_storage = tx->make_storage();
         const BlockReader block_reader{*chain_storage, *tx};
-
-        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const auto block_with_hash = co_await block_reader.read_block_by_block_num_or_hash(*block_cache_, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, kInvalidParams, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
@@ -178,10 +176,9 @@ Task<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& reque
 
     try {
         const auto chain_storage = tx->make_storage();
-        const BlockReader block_reader{*chain_storage, *tx};  // always at latest block
-
-        const auto block_num = co_await block_reader.get_latest_block_num();
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, block_num);
+        const BlockReader block_reader{*chain_storage, *tx};
+        const auto block_num = co_await block_reader.get_latest_block_num();  // always at latest block
+        const auto block_with_hash = co_await block_reader.read_block_by_number(*block_cache_, block_num);
         if (!block_with_hash) {
             reply = make_json_error(request, kInvalidParams, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
@@ -226,9 +223,9 @@ Task<void> TraceRpcApi::handle_trace_replay_block_transactions(const nlohmann::j
 
     try {
         const auto chain_storage = tx->make_storage();
-        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const BlockReader block_reader{*chain_storage, *tx};
+        const auto block_with_hash = co_await block_reader.read_block_by_block_num_or_hash(*block_cache_, block_num_or_hash);
         if (block_with_hash) {
-            const BlockReader block_reader{*chain_storage, *tx};
             const bool is_latest_block = co_await block_reader.is_latest_block_num(block_with_hash->block.header.number);
 
             trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
@@ -267,7 +264,8 @@ Task<void> TraceRpcApi::handle_trace_replay_transaction(const nlohmann::json& re
 
     try {
         const auto chain_storage = tx->make_storage();
-        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
+        BlockReader block_reader{*chain_storage, *tx};
+        const auto tx_with_block = co_await block_reader.read_transaction_by_hash(*block_cache_, transaction_hash);
         if (!tx_with_block) {
             std::ostringstream oss;
             oss << "transaction " << silkworm::to_hex(transaction_hash, true) << " not found";
@@ -311,13 +309,13 @@ Task<void> TraceRpcApi::handle_trace_block(const nlohmann::json& request, nlohma
 
     try {
         const auto chain_storage = tx->make_storage();
-        const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(*block_cache_, *chain_storage, *tx, block_num_or_hash);
+        const BlockReader block_reader{*chain_storage, *tx};
+        const auto block_with_hash = co_await block_reader.read_block_by_block_num_or_hash(*block_cache_, block_num_or_hash);
         if (!block_with_hash) {
             reply = make_json_error(request, kInvalidParams, "block not found");
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        const BlockReader block_reader{*chain_storage, *tx};
         const bool is_latest_block = co_await block_reader.is_latest_block_num(block_with_hash->block.header.number);
 
         trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
@@ -409,8 +407,8 @@ Task<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann
 
     try {
         const auto chain_storage = tx->make_storage();
-
-        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
+        BlockReader block_reader{*chain_storage, *tx};
+        const auto tx_with_block = co_await block_reader.read_transaction_by_hash(*block_cache_, transaction_hash);
         if (!tx_with_block) {
             reply = make_json_content(request);
         } else {
@@ -455,7 +453,8 @@ Task<void> TraceRpcApi::handle_trace_transaction(const nlohmann::json& request, 
 
     try {
         const auto chain_storage = tx->make_storage();
-        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, *chain_storage, transaction_hash);
+        BlockReader block_reader{*chain_storage, *tx};
+        const auto tx_with_block = co_await block_reader.read_transaction_by_hash(*block_cache_, transaction_hash);
         if (!tx_with_block) {
             reply = make_json_content(request);
         } else {

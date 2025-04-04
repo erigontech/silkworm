@@ -14,7 +14,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/compatibility.hpp>
-#include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/core/override_state.hpp>
 #include <silkworm/rpc/json/types.hpp>
@@ -134,7 +133,7 @@ Task<CallManyResult> CallExecutor::execute(
     }
 
     const auto chain_config = co_await chain_storage->read_chain_config();
-    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(block_cache_, *chain_storage, transaction_, context.block_num);
+    const auto block_with_hash = co_await block_reader_.read_block_by_block_num_or_hash(block_cache_, context.block_num);
     if (!block_with_hash) {
         throw std::invalid_argument("read_block_by_block_num_or_hash: block not found");
     }

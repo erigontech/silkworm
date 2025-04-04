@@ -15,7 +15,7 @@
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/cached_chain.hpp>
+#include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/storage_walker.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
@@ -31,7 +31,8 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     DumpAccounts dump_accounts;
     const auto chain_storage = transaction_.make_storage();
 
-    const auto block_with_hash = co_await read_block_by_block_num_or_hash(cache, *chain_storage, transaction_, block_num_or_hash);
+    const BlockReader block_reader{*chain_storage, transaction_};
+    const auto block_with_hash = co_await block_reader.read_block_by_block_num_or_hash(cache, block_num_or_hash);
     if (!block_with_hash) {
         throw std::invalid_argument("dump_accounts: block not found");
     }

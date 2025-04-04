@@ -7,8 +7,8 @@
 
 #include <evmc/evmc.hpp>
 
+#include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/db/kv/api/transaction.hpp>
-#include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/types/block.hpp>
 #include <silkworm/rpc/types/dump_account.hpp>
 

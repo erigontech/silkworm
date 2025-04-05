@@ -44,7 +44,7 @@ Task<std::shared_ptr<Receipts>> get_receipts(db::kv::api::Transaction& tx,
     const auto receipts_optional = receipts_cache.get(block_with_hash.hash);
     if (receipts_optional) {
         hits_from_receipts_all_tx++;
-        //std::cout << "get receipt list from receipts vector CASH: " << hits_from_receipts_all_tx << "\n";
+        // std::cout << "get receipt list from receipts vector CASH: " << hits_from_receipts_all_tx << "\n";
         SILKWORM_ASSERT(*receipts_optional != nullptr);
         co_return (*receipts_optional);
     }
@@ -215,7 +215,7 @@ Task<std::shared_ptr<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     const auto receipt_optional = receipt_cache.get(transaction.hash());
     if (receipt_optional) {
         hits_from_receipt++;
-        //std::cout << "get single receipt from CASH: " << hits_from_receipt << "\n";
+        // std::cout << "get single receipt from CASH: " << hits_from_receipt << "\n";
         co_return *receipt_optional;
     }
 
@@ -223,7 +223,7 @@ Task<std::shared_ptr<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     if (receipts_optional) {
         hits_from_receipts_single_tx++;
         SILKWORM_ASSERT(tx_index < (*receipts_optional)->size() && (**receipts_optional)[tx_index]);
-        //std::cout << "get single receipt from receipts vector CASH: " << hits_from_receipts_single_tx << "\n";
+        // std::cout << "get single receipt from receipts vector CASH: " << hits_from_receipts_single_tx << "\n";
         auto receipts_ptr = *receipts_optional;
         co_return (*receipts_ptr)[tx_index];
     }

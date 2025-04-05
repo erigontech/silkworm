@@ -30,7 +30,7 @@ Task<PayloadStatus> RemoteExecutionEngine::new_payload(const NewPayloadRequest& 
 
     // Validations
     if (const auto result = validate_blob_hashes(*block, request.expected_blob_versioned_hashes); !result) {
-        co_return PayloadStatus{rpc::PayloadStatus::kInvalidStr, {}, result.error()};
+        co_return PayloadStatus{std::string{rpc::PayloadStatus::kInvalidStr}, {}, result.error()};
     }
 
     const Hash block_hash = block->header.hash();
@@ -54,13 +54,13 @@ Task<PayloadStatus> RemoteExecutionEngine::new_payload(const NewPayloadRequest& 
     const auto verification = co_await (execution_service_->validate_chain({*block_num, block_hash}) || concurrency::timeout(timeout));
 
     if (std::holds_alternative<ValidChain>(verification)) {  // VALID
-        co_return PayloadStatus{.status = PayloadStatus::kValidStr, .latest_valid_hash = block_hash};
+        co_return PayloadStatus{.status = std::string{PayloadStatus::kValidStr}, .latest_valid_hash = block_hash};
     } else if (std::holds_alternative<InvalidChain>(verification)) {  // INVALID
         const auto invalid_chain = std::get<InvalidChain>(verification);
-        co_return PayloadStatus{.status = PayloadStatus::kInvalidStr, .latest_valid_hash = invalid_chain.unwind_point.hash};
+        co_return PayloadStatus{.status = std::string{PayloadStatus::kInvalidStr}, .latest_valid_hash = invalid_chain.unwind_point.hash};
     } else {  // ERROR
         const auto validation_error = std::get<ValidationError>(verification);
-        co_return PayloadStatus{PayloadStatus::kInvalidStr, {}, validation_error.error};
+        co_return PayloadStatus{std::string{PayloadStatus::kInvalidStr}, {}, validation_error.error};
     }
 }
 

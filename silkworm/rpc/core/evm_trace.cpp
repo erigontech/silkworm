@@ -580,7 +580,7 @@ void push_memory_offset_len(std::uint8_t op_code, const evmone::uint256* stack, 
 }
 
 std::string to_string(intx::uint256 value) {
-    static constexpr const char* kPadding = "0x0000000000000000000000000000000000000000000000000000000000000000";
+    static constexpr std::string_view kPadding = "0x0000000000000000000000000000000000000000000000000000000000000000";
     const auto out = intx::to_string(value, 16);
     std::string padding = std::string{kPadding};
     return padding.substr(0, padding.size() - out.size()) + out;

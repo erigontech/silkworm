@@ -34,9 +34,9 @@ std::optional<std::string> Environment::get_start_at_stage() {
     return stage;
 }
 
-void Environment::set_start_at_stage(const std::string& stage_name) {
+void Environment::set_start_at_stage(std::string_view stage_name) {
     auto environment = boost::this_process::environment();
-    environment["START_AT_STAGE"] = stage_name;
+    environment["START_AT_STAGE"] = std::string{stage_name};
 }
 
 std::optional<std::string> Environment::get_stop_before_stage() {
@@ -50,9 +50,9 @@ std::optional<std::string> Environment::get_stop_before_stage() {
     return stage;
 }
 
-void Environment::set_stop_before_stage(const std::string& stage_name) {
+void Environment::set_stop_before_stage(std::string_view stage_name) {
     auto environment = boost::this_process::environment();
-    environment["STOP_BEFORE_STAGE"] = stage_name;
+    environment["STOP_BEFORE_STAGE"] = std::string{stage_name};
 }
 
 bool Environment::are_pre_verified_hashes_disabled() {
@@ -71,9 +71,9 @@ void Environment::set_pre_verified_hashes_disabled() {
     environment["DISABLE_PRE_VERIFIED_HASHES"] = "1";
 }
 
-std::string Environment::get(const std::string& var_name) {
+std::string Environment::get(std::string_view var_name) {
     auto environment = boost::this_process::environment();
-    const auto env_var = environment[var_name];
+    const auto env_var = environment[std::string{var_name}];
     return env_var.to_string();
 }
 

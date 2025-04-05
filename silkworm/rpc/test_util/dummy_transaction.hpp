@@ -53,11 +53,11 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
 
     Task<void> open() override { co_return; }
 
-    Task<std::shared_ptr<db::kv::api::Cursor>> cursor(const std::string& /*table*/) override {
+    Task<std::shared_ptr<db::kv::api::Cursor>> cursor(std::string_view /*table*/) override {
         co_return cursor_;
     }
 
-    Task<std::shared_ptr<db::kv::api::CursorDupSort>> cursor_dup_sort(const std::string& /*table*/) override {
+    Task<std::shared_ptr<db::kv::api::CursorDupSort>> cursor_dup_sort(std::string_view /*table*/) override {
         co_return cursor_dup_sort_;
     }
 

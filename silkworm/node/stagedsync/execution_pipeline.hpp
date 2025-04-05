@@ -30,7 +30,7 @@ using StageContainerFactory = std::function<StageContainer(SyncContext&)>;
 
 class ExecutionPipeline : public Stoppable {
   public:
-    using StageNames = std::vector<const char*>;
+    using StageNames = std::vector<std::string_view>;
     static StageNames stages_forward_order();
     static StageNames stages_unwind_order();
 

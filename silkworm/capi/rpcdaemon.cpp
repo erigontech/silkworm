@@ -26,10 +26,10 @@ static InterfaceLogSettings make_eth_ifc_log_settings(const struct SilkwormRpcIn
 }
 
 //! Build JSON-RPC endpoint from C settings
-static std::string parse_end_point(const char (&c_host)[SILKWORM_RPC_SETTINGS_HOST_SIZE], int port, const std::string& default_end_point) {
+static std::string parse_end_point(const char (&c_host)[SILKWORM_RPC_SETTINGS_HOST_SIZE], int port, std::string_view default_end_point) {
     auto host = std::string{c_host};
     if (host.empty() && port == 0) {
-        return kDefaultEth1EndPoint;
+        return std::string{default_end_point};
     }
     const auto semicolon_position{default_end_point.find(':')};
     SILKWORM_ASSERT(semicolon_position != std::string::npos);
@@ -37,7 +37,7 @@ static std::string parse_end_point(const char (&c_host)[SILKWORM_RPC_SETTINGS_HO
         host = default_end_point.substr(0, semicolon_position);
     }
     if (port == 0) {
-        port = std::stoi(default_end_point.substr(semicolon_position + 1));
+        port = std::stoi(std::string{default_end_point.substr(semicolon_position + 1)});
     }
     std::string eth_end_point{host + ":" + std::to_string(port)};
     return eth_end_point;

@@ -29,7 +29,7 @@ Task<void> StorageWalker::storage_range_at(
     increment(to);
 
     db::kv::api::DomainRangeRequest query{
-        .table = db::table::kStorageDomain,
+        .table = std::string{db::table::kStorageDomain},
         .from_key = from,
         .to_key = to,
         .timestamp = txn_number,

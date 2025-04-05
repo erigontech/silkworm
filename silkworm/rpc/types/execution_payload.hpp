@@ -95,11 +95,11 @@ struct NewPayloadRequest {
 
 //! PayloadStatusV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadstatusv1
 struct PayloadStatus {
-    static constexpr const char* kValidStr{"VALID"};
-    static constexpr const char* kInvalidStr{"INVALID"};
-    static constexpr const char* kSyncingStr{"SYNCING"};
-    static constexpr const char* kAcceptedStr{"ACCEPTED"};
-    static constexpr const char* kInvalidBlockHashStr{"INVALID_BLOCK_HASH"};
+    static constexpr std::string_view kValidStr{"VALID"};
+    static constexpr std::string_view kInvalidStr{"INVALID"};
+    static constexpr std::string_view kSyncingStr{"SYNCING"};
+    static constexpr std::string_view kAcceptedStr{"ACCEPTED"};
+    static constexpr std::string_view kInvalidBlockHashStr{"INVALID_BLOCK_HASH"};
 
     static const PayloadStatus kSyncing;
     static const PayloadStatus kAccepted;
@@ -112,9 +112,9 @@ struct PayloadStatus {
     std::string to_string() const;
 };
 
-inline const PayloadStatus PayloadStatus::kSyncing{.status = PayloadStatus::kSyncingStr};
-inline const PayloadStatus PayloadStatus::kAccepted{.status = PayloadStatus::kAcceptedStr};
-inline const PayloadStatus PayloadStatus::kInvalidBlockHash{.status = PayloadStatus::kInvalidBlockHashStr};
+inline const PayloadStatus PayloadStatus::kSyncing{.status = std::string{PayloadStatus::kSyncingStr}};
+inline const PayloadStatus PayloadStatus::kAccepted{.status = std::string{PayloadStatus::kAcceptedStr}};
+inline const PayloadStatus PayloadStatus::kInvalidBlockHash{.status = std::string{PayloadStatus::kInvalidBlockHashStr}};
 
 inline bool operator==(const PayloadStatus& lhs, const PayloadStatus& rhs) {
     return lhs.status == rhs.status;

@@ -49,9 +49,9 @@ using KvAndBtPaths = std::tuple<SnapshotPath, std::filesystem::path>;
 
 static const std::vector<KeyAndValue>& sample_kv_pairs() {
     static const std::vector<KeyAndValue> kKVPairs{
-        {*from_hex("0000000000000000000000000000000000000000"sv), *from_hex("000a0269024e3c8decd159600000"sv)},
-        {*from_hex("0000000000000000000000000000000000000004"sv), *from_hex("0008cf2fa48840ba8add0000"sv)},
-        {*from_hex("0000000000000000000000000000000000000008"sv), *from_hex("0008146c4643c28ed8200000"sv)},
+        {*from_hex("0000000000000000000000000000000000000000"), *from_hex("000a0269024e3c8decd159600000")},
+        {*from_hex("0000000000000000000000000000000000000004"), *from_hex("0008cf2fa48840ba8add0000")},
+        {*from_hex("0000000000000000000000000000000000000008"), *from_hex("0008146c4643c28ed8200000")},
     };
     return kKVPairs;
 }
@@ -122,27 +122,27 @@ TEST_CASE("BTreeIndex", "[snapshots][btree]") {
         // Seek using exact keys starting from the first one
         auto index_it = bt_index.seek(ByteView{}, kv_segment);
         REQUIRE(index_it);
-        REQUIRE(index_it->key() == *from_hex("0000000000000000000000000000000000000000"sv));
-        REQUIRE(index_it->value() == *from_hex("000a0269024e3c8decd159600000"sv));
+        REQUIRE(index_it->key() == *from_hex("0000000000000000000000000000000000000000"));
+        REQUIRE(index_it->value() == *from_hex("000a0269024e3c8decd159600000"));
         REQUIRE(index_it->data_index() == 0);
         REQUIRE(index_it->next());
-        REQUIRE(index_it->key() == *from_hex("0000000000000000000000000000000000000004"sv));
-        REQUIRE(index_it->value() == *from_hex("0008cf2fa48840ba8add0000"sv));
+        REQUIRE(index_it->key() == *from_hex("0000000000000000000000000000000000000004"));
+        REQUIRE(index_it->value() == *from_hex("0008cf2fa48840ba8add0000"));
         REQUIRE(index_it->data_index() == 1);
         REQUIRE(index_it->next());
-        REQUIRE(index_it->key() == *from_hex("0000000000000000000000000000000000000008"sv));
-        REQUIRE(index_it->value() == *from_hex("0008146c4643c28ed8200000"sv));
+        REQUIRE(index_it->key() == *from_hex("0000000000000000000000000000000000000008"));
+        REQUIRE(index_it->value() == *from_hex("0008146c4643c28ed8200000"));
         REQUIRE(index_it->data_index() == 2);
         REQUIRE(!index_it->next());
 
         // Seek using lower keys than existing ones
-        index_it = bt_index.seek(*from_hex("0000000000000000000000000000000000000003"sv), kv_segment);
-        REQUIRE(index_it->key() == *from_hex("0000000000000000000000000000000000000004"sv));
-        REQUIRE(index_it->value() == *from_hex("0008cf2fa48840ba8add0000"sv));
+        index_it = bt_index.seek(*from_hex("0000000000000000000000000000000000000003"), kv_segment);
+        REQUIRE(index_it->key() == *from_hex("0000000000000000000000000000000000000004"));
+        REQUIRE(index_it->value() == *from_hex("0008cf2fa48840ba8add0000"));
         REQUIRE(index_it->data_index() == 1);
-        index_it = bt_index.seek(*from_hex("0000000000000000000000000000000000000007"sv), kv_segment);
-        REQUIRE(index_it->key() == *from_hex("0000000000000000000000000000000000000008"sv));
-        REQUIRE(index_it->value() == *from_hex("0008146c4643c28ed8200000"sv));
+        index_it = bt_index.seek(*from_hex("0000000000000000000000000000000000000007"), kv_segment);
+        REQUIRE(index_it->key() == *from_hex("0000000000000000000000000000000000000008"));
+        REQUIRE(index_it->value() == *from_hex("0008146c4643c28ed8200000"));
         REQUIRE(index_it->data_index() == 2);
 
         // Seek beyond the last key

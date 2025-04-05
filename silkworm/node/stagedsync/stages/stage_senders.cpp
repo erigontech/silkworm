@@ -121,7 +121,7 @@ Stage::Result Senders::unwind(RWTxn& txn) {
         if (sw) {
             const auto [_, duration]{sw->lap()};
             log::Trace(log_prefix_,
-                       {"origin", table::kSenders.name,
+                       {"origin", table::kSenders.name_str(),
                         "erased", std::to_string(erased),
                         "in", StopWatch::format(duration)});
         }
@@ -216,7 +216,7 @@ Stage::Result Senders::prune(RWTxn& txn) {
         throw_if_stopping();
         if (sw) {
             const auto [_, duration]{sw->lap()};
-            log::Trace(log_prefix_, {"source", table::kSenders.name, "erased", std::to_string(erased), "in", StopWatch::format(duration)});
+            log::Trace(log_prefix_, {"source", table::kSenders.name_str(), "erased", std::to_string(erased), "in", StopWatch::format(duration)});
         }
         stages::write_stage_prune_progress(txn, stage_name_, forward_progress);
         txn.commit_and_renew();

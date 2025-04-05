@@ -13,12 +13,12 @@ namespace silkworm::db::kv::api {
 using namespace silkworm::datastore::kvdb;
 using datastore::kvdb::detail::slice_as_hex;
 
-Task<void> LocalCursor::open_cursor(const std::string& table_name, bool is_dup_sorted) {
+Task<void> LocalCursor::open_cursor(std::string_view table_name, bool is_dup_sorted) {
     const auto start_time = clock_time::now();
     SILK_DEBUG << "LocalCursor::open_cursor opening new cursor for table: " << table_name;
     db_cursor_ = PooledCursor{txn_,
                               MapConfig{
-                                  .name = table_name.c_str(),
+                                  .name = table_name,
                                   .value_mode = is_dup_sorted ? ::mdbx::value_mode::multi : ::mdbx::value_mode::single}};
     SILK_DEBUG << "LocalCursor::open_cursor [" << table_name << "] c=" << cursor_id_ << " t=" << clock_time::since(start_time);
     co_return;

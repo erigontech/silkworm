@@ -17,11 +17,11 @@
 namespace silkworm::snapshots {
 
 inline constexpr SmallMap<ChainId, std::span<const Entry>> kKnownConfigGeneratedEntries{
-    {*kKnownChainNameToId.find("mainnet"sv), {kMainnetSnapshots.data(), kMainnetSnapshots.size()}},
-    {*kKnownChainNameToId.find("sepolia"sv), {kSepoliaSnapshots.data(), kSepoliaSnapshots.size()}},
-    {*kKnownChainNameToId.find("holesky"sv), {kHoleskySnapshots.data(), kHoleskySnapshots.size()}},
-    {*kKnownChainNameToId.find("bor-mainnet"sv), {kBorMainnetSnapshots.data(), kBorMainnetSnapshots.size()}},
-    {*kKnownChainNameToId.find("amoy"sv), {kAmoySnapshots.data(), kAmoySnapshots.size()}},
+    {*kKnownChainNameToId.find("mainnet"), {kMainnetSnapshots.data(), kMainnetSnapshots.size()}},
+    {*kKnownChainNameToId.find("sepolia"), {kSepoliaSnapshots.data(), kSepoliaSnapshots.size()}},
+    {*kKnownChainNameToId.find("holesky"), {kHoleskySnapshots.data(), kHoleskySnapshots.size()}},
+    {*kKnownChainNameToId.find("bor-mainnet"), {kBorMainnetSnapshots.data(), kBorMainnetSnapshots.size()}},
+    {*kKnownChainNameToId.find("amoy"), {kAmoySnapshots.data(), kAmoySnapshots.size()}},
 };
 
 Config Config::lookup_known_config(

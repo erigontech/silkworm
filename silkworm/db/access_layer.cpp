@@ -891,10 +891,8 @@ void update_chain_config(RWTxn& txn, const ChainConfig& config) {
     cursor->upsert(to_slice(genesis_hash->bytes), mdbx::slice(config_data.data()));
 }
 
-static Bytes head_header_key() {
-    std::string table_name = table::kHeadHeader.name;
-    Bytes key{table_name.begin(), table_name.end()};
-    return key;
+static ByteView head_header_key() {
+    return string_view_to_byte_view(table::kHeadHeaderName);
 }
 
 void write_head_header_hash(RWTxn& txn, const evmc::bytes32& hash) {
@@ -903,7 +901,7 @@ void write_head_header_hash(RWTxn& txn, const evmc::bytes32& hash) {
 
 void write_head_header_hash(RWTxn& txn, const uint8_t (&hash)[kHashLength]) {
     auto target = txn.rw_cursor(table::kHeadHeader);
-    Bytes key = head_header_key();
+    ByteView key = head_header_key();
     auto skey = to_slice(key);
 
     target->upsert(skey, to_slice(hash));
@@ -911,7 +909,7 @@ void write_head_header_hash(RWTxn& txn, const uint8_t (&hash)[kHashLength]) {
 
 std::optional<evmc::bytes32> read_head_header_hash(ROTxn& txn) {
     auto cursor = txn.ro_cursor(table::kHeadHeader);
-    Bytes key = head_header_key();
+    ByteView key = head_header_key();
     auto skey = to_slice(key);
     auto data{cursor->find(skey, /*throw_notfound=*/false)};
     if (!data || data.value.length() != kHashLength) {
@@ -936,7 +934,7 @@ void delete_canonical_hash(RWTxn& txn, BlockNum block_num) {
     (void)hashes_cursor->erase(skey);
 }
 
-uint64_t increment_map_sequence(RWTxn& txn, const char* map_name, uint64_t increment) {
+uint64_t increment_map_sequence(RWTxn& txn, std::string_view map_name, uint64_t increment) {
     uint64_t current_value{read_map_sequence(txn, map_name)};
     if (increment) {
         auto target = txn.rw_cursor(table::kSequence);
@@ -949,7 +947,7 @@ uint64_t increment_map_sequence(RWTxn& txn, const char* map_name, uint64_t incre
     return current_value;
 }
 
-uint64_t read_map_sequence(ROTxn& txn, const char* map_name) {
+uint64_t read_map_sequence(ROTxn& txn, std::string_view map_name) {
     auto target = txn.ro_cursor(table::kSequence);
     mdbx::slice key(map_name);
     const auto data = target->find(key, /*throw_notfound=*/false);
@@ -962,7 +960,7 @@ uint64_t read_map_sequence(ROTxn& txn, const char* map_name) {
     return endian::load_big_u64(from_slice(data.value).data());
 }
 
-uint64_t reset_map_sequence(RWTxn& txn, const char* map_name, uint64_t new_sequence) {
+uint64_t reset_map_sequence(RWTxn& txn, std::string_view map_name, uint64_t new_sequence) {
     uint64_t current_sequence{read_map_sequence(txn, map_name)};
     if (new_sequence != current_sequence) {
         auto target = txn.rw_cursor(table::kSequence);
@@ -974,11 +972,11 @@ uint64_t reset_map_sequence(RWTxn& txn, const char* map_name, uint64_t new_seque
     return current_sequence;
 }
 
-static const std::string kHeadBlockHash = "headBlockHash";
-static const std::string kSafeBlockHash = "safeBlockHash";
-static const std::string kFinalizedBlockHash = "finalizedBlockHash";
+static constexpr std::string_view kHeadBlockHash = "headBlockHash";
+static constexpr std::string_view kSafeBlockHash = "safeBlockHash";
+static constexpr std::string_view kFinalizedBlockHash = "finalizedBlockHash";
 
-std::optional<evmc::bytes32> read_last_fcu_field(ROTxn& txn, const std::string& field) {
+std::optional<evmc::bytes32> read_last_fcu_field(ROTxn& txn, std::string_view field) {
     auto cursor = txn.ro_cursor(table::kLastForkchoice);
 
     Bytes key{field.begin(), field.end()};
@@ -991,7 +989,7 @@ std::optional<evmc::bytes32> read_last_fcu_field(ROTxn& txn, const std::string& 
     return to_bytes32(from_slice(data.value));
 }
 
-void write_last_fcu_field(RWTxn& txn, const std::string& field, const evmc::bytes32& hash) {
+void write_last_fcu_field(RWTxn& txn, std::string_view field, const evmc::bytes32& hash) {
     auto cursor = txn.rw_cursor(table::kLastForkchoice);
 
     Bytes key{field.begin(), field.end()};

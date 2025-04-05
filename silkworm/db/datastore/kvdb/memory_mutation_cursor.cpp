@@ -18,14 +18,14 @@ MemoryMutationCursor::MemoryMutationCursor(MemoryMutation& memory_mutation, cons
 }
 
 bool MemoryMutationCursor::is_table_cleared() const {
-    return memory_mutation_.is_table_cleared(config_.name);
+    return memory_mutation_.is_table_cleared(config_.name_str());
 }
 
 bool MemoryMutationCursor::is_entry_deleted(const Slice& key, const Slice& value) const {
     if (is_multi_value()) {
         return memory_mutation_.is_dup_deleted(config_.name, key, value);
     }
-    return memory_mutation_.is_entry_deleted(config_.name, key);
+    return memory_mutation_.is_entry_deleted(config_.name_str(), key);
 }
 
 void MemoryMutationCursor::bind(ROTxn& txn, const MapConfig& config) {
@@ -218,7 +218,7 @@ CursorResult MemoryMutationCursor::current(bool throw_notfound) const {
         return memory_cursor_->current(throw_notfound);
     }
 
-    if (!memory_mutation_.has_map(config_.name)) {
+    if (!memory_mutation_.has_map(config_.name_str())) {
         throw_error_nodata();
     }
 

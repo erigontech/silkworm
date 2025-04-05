@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include <silkworm/infra/concurrency/task.hpp>
 
@@ -39,9 +40,9 @@ class Transaction {
 
     virtual Task<void> open() = 0;
 
-    virtual Task<std::shared_ptr<Cursor>> cursor(const std::string& table) = 0;
+    virtual Task<std::shared_ptr<Cursor>> cursor(std::string_view table) = 0;
 
-    virtual Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) = 0;
+    virtual Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(std::string_view table) = 0;
 
     virtual bool is_local() const = 0;
 
@@ -49,11 +50,11 @@ class Transaction {
 
     virtual Task<void> close() = 0;
 
-    virtual Task<kv::api::KeyValue> get(const std::string& table, ByteView key) = 0;
+    virtual Task<kv::api::KeyValue> get(std::string_view table, ByteView key) = 0;
 
-    virtual Task<Bytes> get_one(const std::string& table, ByteView key) = 0;
+    virtual Task<Bytes> get_one(std::string_view table, ByteView key) = 0;
 
-    virtual Task<std::optional<Bytes>> get_both_range(const std::string& table, ByteView key, ByteView subkey) = 0;
+    virtual Task<std::optional<Bytes>> get_both_range(std::string_view table, ByteView key, ByteView subkey) = 0;
 
     // Temporarily here waiting for a better place
     virtual Task<TxnId> first_txn_num_in_block(BlockNum block_num) = 0;

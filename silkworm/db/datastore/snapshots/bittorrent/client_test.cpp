@@ -137,18 +137,18 @@ TEST_CASE("BitTorrentClient::add_info_hash", "[silkworm][snapshot][bittorrent]")
     TemporaryDirectory tmp_dir;
     BitTorrentSettings settings;
     settings.repository_path = tmp_dir.path();
-    static const std::string kTrackerUrl{"udp://127.0.0.1:1337/announce"};
+    static constexpr std::string_view kTrackerUrl{"udp://127.0.0.1:1337/announce"};
 
     SECTION("invalid info hash") {
         BitTorrentClient client{settings};
-        client.add_info_hash("test.seg", "df09957d8a28af3bc5137478885a8003677ca8", {kTrackerUrl});
+        client.add_info_hash("test.seg", "df09957d8a28af3bc5137478885a8003677ca8", {std::string{kTrackerUrl}});
         ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
     }
 
     SECTION("valid info hash") {
         BitTorrentClient client{settings};
-        client.add_info_hash("test.seg", "df09957d8a28af3bc5137478885a8003677ca878", {kTrackerUrl});
+        client.add_info_hash("test.seg", "df09957d8a28af3bc5137478885a8003677ca878", {std::string{kTrackerUrl}});
         ClientThread client_thread{client};
         CHECK_NOTHROW(client.stop());
     }

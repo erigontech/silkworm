@@ -35,12 +35,12 @@ MemoryDatabase::MemoryDatabase() : MemoryDatabase(TemporaryDirectory::get_unique
 MemoryOverlay::MemoryOverlay(
     const std::filesystem::path& tmp_dir,
     ROTxn* txn,
-    std::function<std::optional<MapConfig>(const std::string& map_name)> get_map_config,
-    std::string sequence_map_name)
+    std::function<std::optional<MapConfig>(std::string_view map_name)> get_map_config,
+    std::string_view sequence_map_name)
     : memory_db_(tmp_dir),
       txn_(txn),
       get_map_config_(std::move(get_map_config)),
-      sequence_map_name_(std::move(sequence_map_name)) {}
+      sequence_map_name_(sequence_map_name) {}
 
 void MemoryOverlay::update_txn(ROTxn* txn) {
     txn_ = txn;
@@ -50,7 +50,7 @@ void MemoryOverlay::update_txn(ROTxn* txn) {
     return memory_db_.start_rw_txn();
 }
 
-std::optional<MapConfig> MemoryOverlay::map_config(const std::string& map_name) {
+std::optional<MapConfig> MemoryOverlay::map_config(std::string_view map_name) {
     return get_map_config_(map_name);
 }
 
@@ -78,11 +78,12 @@ void MemoryMutation::reopen() {
     managed_txn_ = overlay_.start_rw_txn();
 }
 
-bool MemoryMutation::is_table_cleared(const std::string& table) const {
-    return cleared_tables_.contains(table);
+bool MemoryMutation::is_table_cleared(std::string_view table) const {
+    return cleared_tables_.contains(std::string{table});
 }
 
-bool MemoryMutation::is_entry_deleted(const std::string& table, const Slice& key) const {
+bool MemoryMutation::is_entry_deleted(std::string_view table_view, const Slice& key) const {
+    std::string table{table_view};
     if (!deleted_entries_.contains(table)) {
         return false;
     }
@@ -90,8 +91,8 @@ bool MemoryMutation::is_entry_deleted(const std::string& table, const Slice& key
     return deleted_slices.find(key) != deleted_slices.cend();
 }
 
-bool MemoryMutation::is_dup_deleted(const std::string& table, const Slice& key, const Slice& value) const {
-    auto const deleted_table = deleted_dups_.find(table);
+bool MemoryMutation::is_dup_deleted(std::string_view table, const Slice& key, const Slice& value) const {
+    auto const deleted_table = deleted_dups_.find(std::string{table});
     if (deleted_table == deleted_dups_.end()) {
         return false;
     }
@@ -105,8 +106,8 @@ bool MemoryMutation::is_dup_deleted(const std::string& table, const Slice& key, 
     return deleted_value != deleted_key->second.end();
 }
 
-bool MemoryMutation::has_map(const std::string& bucket_name) const {
-    return datastore::kvdb::has_map(*overlay_.external_txn(), bucket_name.c_str());
+bool MemoryMutation::has_map(std::string_view bucket_name) const {
+    return datastore::kvdb::has_map(*overlay_.external_txn(), bucket_name);
 }
 
 void MemoryMutation::update_txn(ROTxn* txn) {
@@ -130,35 +131,36 @@ std::unique_ptr<RWCursorDupSort> MemoryMutation::rw_cursor_dup_sort(const MapCon
 }
 
 bool MemoryMutation::erase(const MapConfig& config, const Slice& key) {
-    deleted_entries_[config.name][key] = true;
-    const auto handle{managed_txn_.open_map(config.name, config.key_mode, config.value_mode)};
+    deleted_entries_[config.name_str()][key] = true;
+    const auto handle{managed_txn_.open_map(config.name_str(), config.key_mode, config.value_mode)};
     return managed_txn_.erase(handle, key);
 }
 
 bool MemoryMutation::erase(const MapConfig& config, const Slice& key, const Slice& value) {
-    deleted_dups_[config.name][key][value] = true;
-    const auto handle{managed_txn_.open_map(config.name, config.key_mode, config.value_mode)};
+    deleted_dups_[config.name_str()][key][value] = true;
+    const auto handle{managed_txn_.open_map(config.name_str(), config.key_mode, config.value_mode)};
     return managed_txn_.erase(handle, key, value);
 }
 
 void MemoryMutation::upsert(const MapConfig& config, const Slice& key, const Slice& value) {
     if (static_cast<MDBX_db_flags_t>(config.value_mode) & MDBX_db_flags_t::MDBX_DUPSORT) {
         if (is_dup_deleted(config.name, key, value)) {
-            deleted_dups_[config.name][key].erase(value);
+            deleted_dups_[config.name_str()][key].erase(value);
         }
     } else {
-        if (is_entry_deleted(config.name, key)) {
-            deleted_entries_[config.name].erase(key);
+        if (is_entry_deleted(config.name_str(), key)) {
+            deleted_entries_[config.name_str()].erase(key);
         }
     }
 
-    const auto handle{managed_txn_.open_map(config.name, config.key_mode, config.value_mode)};
+    const auto handle{managed_txn_.open_map(config.name_str(), config.key_mode, config.value_mode)};
     managed_txn_.upsert(handle, key, value);
 }
 
-bool MemoryMutation::clear_table(const std::string& table) {
+bool MemoryMutation::clear_table(std::string_view table_view) {
+    std::string table{table_view};
     cleared_tables_[table] = true;
-    return managed_txn_.clear_map(table.c_str(), /*throw_if_absent=*/false);
+    return managed_txn_.clear_map(table, /*throw_if_absent=*/false);
 }
 
 void MemoryMutation::flush(RWTxn& rw_txn) {

@@ -719,18 +719,19 @@ Task<void> DebugRpcApi::handle_debug_get_raw_receipts(const nlohmann::json& requ
             co_return;
         }
 
-        auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_, /*extended_receipt_info=*/false);
+        auto receipts_ptr = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_, /*extended_receipt_info=*/false);
+        auto& receipts = *receipts_ptr;
         SILK_TRACE << "#receipts: " << receipts.size();
 
         std::vector<std::string> raw_receipts;
         for (auto& rpc_receipt : receipts) {
             silkworm::Receipt core_receipt{
-                .type = rpc_receipt.type,
-                .success = rpc_receipt.success,
-                .cumulative_gas_used = rpc_receipt.cumulative_gas_used,
-                .bloom = rpc_receipt.bloom,
+                .type = rpc_receipt->type,
+                .success = rpc_receipt->success,
+                .cumulative_gas_used = rpc_receipt->cumulative_gas_used,
+                .bloom = rpc_receipt->bloom,
             };
-            for (auto& log : rpc_receipt.logs) {
+            for (auto& log : rpc_receipt->logs) {
                 core_receipt.logs.push_back(silkworm::Log{
                     .address = log.address,
                     .topics = std::move(log.topics),

@@ -13,6 +13,6 @@ namespace silkworm::rpc {
 
 [[nodiscard]] bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Log>& logs);
 
-[[nodiscard]] bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Receipt>& receipts);
+[[nodiscard]] bool cbor_decode(const silkworm::Bytes& bytes, std::vector<std::shared_ptr<Receipt>>& receipts);
 
 }  // namespace silkworm::rpc

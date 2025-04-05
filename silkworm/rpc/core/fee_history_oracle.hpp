@@ -19,7 +19,7 @@ namespace silkworm::rpc::fee_history {
 
 using BlockHeaderProvider = std::function<Task<std::optional<silkworm::BlockHeader>>(BlockNum)>;
 using BlockProvider = std::function<Task<std::shared_ptr<silkworm::BlockWithHash>>(BlockNum)>;
-using ReceiptsProvider = std::function<Task<rpc::Receipts>(const BlockWithHash&)>;
+using ReceiptsProvider = std::function<Task<std::shared_ptr<rpc::Receipts>>(const BlockWithHash&)>;
 using LatestBlockProvider = std::function<Task<uint64_t>()>;
 
 using Rewards = std::vector<intx::uint256>;

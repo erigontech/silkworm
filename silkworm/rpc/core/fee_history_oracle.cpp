@@ -127,7 +127,7 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
             if (!block_fees.block) {
                 continue;
             }
-            block_fees.receipts = co_await receipts_provider_(*block_fees.block);
+            block_fees.receipts = *co_await receipts_provider_(*block_fees.block);
             block_fees.block_header = block_fees.block->block.header;
         } else {
             const auto block_header = co_await block_header_provider_(block_num);
@@ -252,7 +252,7 @@ Task<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vec
         auto& txn = block_fees.block->block.transactions[idx];
         const auto reward{txn.max_fee_per_gas >= block_fees.base_fee ? txn.effective_gas_price(block_fees.base_fee) - block_fees.base_fee
                                                                      : txn.max_priority_fee_per_gas};
-        rewards_and_gas.emplace_back(reward, block_fees.receipts[idx].gas_used);
+        rewards_and_gas.emplace_back(reward, block_fees.receipts[idx]->gas_used);
     }
     sort(rewards_and_gas.begin(), rewards_and_gas.end(), sort_by_reward);
 

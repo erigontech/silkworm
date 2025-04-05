@@ -182,7 +182,8 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        auto receipts{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_)};
+        auto receipts_ptr{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_)};
+        auto& receipts = *receipts_ptr;
         SILK_TRACE << "#receipts: " << receipts.size();
 
         const auto& block{block_with_hash->block};
@@ -194,7 +195,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_block_receipts_by_block_hash(const nl
         }
 
         for (size_t i{0}; i < block.transactions.size(); ++i) {
-            receipts[i].effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
+            receipts[i]->effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
         }
 
         reply = make_json_content(request, receipts);
@@ -400,13 +401,14 @@ Task<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& re
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
-        const auto receipts{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_)};
+        const auto receipts_ptr{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_)};
+        auto& receipts = *receipts_ptr;
         SILK_DEBUG << "receipts.size(): " << receipts.size();
         std::vector<Logs> logs{};
         logs.reserve(receipts.size());
         for (const auto& receipt : receipts) {
-            SILK_DEBUG << "receipt.logs.size(): " << receipt.logs.size();
-            logs.push_back(receipt.logs);
+            SILK_DEBUG << "receipt.logs.size(): " << receipt->logs.size();
+            logs.push_back(receipt->logs);
         }
         SILK_DEBUG << "logs.size(): " << logs.size();
 

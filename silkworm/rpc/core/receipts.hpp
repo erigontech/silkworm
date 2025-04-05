@@ -13,25 +13,25 @@
 
 namespace silkworm::rpc::core {
 
-Task<Receipts> get_receipts(db::kv::api::Transaction& tx,
-                            const silkworm::BlockWithHash& block_with_hash,
-                            const db::chain::ChainStorage& chain_storage,
-                            WorkerPool& workers,
-                            bool extended_receipt_info = true);
+Task<std::shared_ptr<Receipts>> get_receipts(db::kv::api::Transaction& tx,
+                                             const silkworm::BlockWithHash& block_with_hash,
+                                             const db::chain::ChainStorage& chain_storage,
+                                             WorkerPool& workers,
+                                             bool extended_receipt_info = true);
 
-Task<std::optional<Receipts>> read_receipts(db::kv::api::Transaction& tx, BlockNum block_num);
+Task<std::shared_ptr<Receipts>> read_receipts(db::kv::api::Transaction& tx, BlockNum block_num);
 
-Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx,
-                                                const silkworm::Block& block,
-                                                const db::chain::ChainStorage& chain_storage,
-                                                WorkerPool& workers);
+Task<std::shared_ptr<Receipts>> generate_receipts(db::kv::api::Transaction& tx,
+                                                  const silkworm::Block& block,
+                                                  const db::chain::ChainStorage& chain_storage,
+                                                  WorkerPool& workers);
 
-Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
-                                         const silkworm::Block& block,
-                                         TxnId txn_id,
-                                         uint32_t tx_index,
-                                         const silkworm::Transaction& transaction,
-                                         const db::chain::ChainStorage& chain_storage,
-                                         WorkerPool& workers);
+Task<std::shared_ptr<Receipt>> get_receipt(db::kv::api::Transaction& tx,
+                                           const silkworm::Block& block,
+                                           TxnId txn_id,
+                                           uint32_t tx_index,
+                                           const silkworm::Transaction& transaction,
+                                           const db::chain::ChainStorage& chain_storage,
+                                           WorkerPool& workers);
 
 }  // namespace silkworm::rpc::core

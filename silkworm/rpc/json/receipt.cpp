@@ -11,6 +11,10 @@
 
 namespace silkworm::rpc {
 
+void to_json(nlohmann::json& json, const std::shared_ptr<Receipt> receipt) {
+    json = *receipt;
+}
+
 void to_json(nlohmann::json& json, const Receipt& receipt) {
     json["blockHash"] = receipt.block_hash;
     json["blockNumber"] = to_quantity(receipt.block_num);
@@ -43,7 +47,7 @@ void to_json(nlohmann::json& json, const Receipt& receipt) {
     }
 }
 
-void from_json(const nlohmann::json& json, Receipt& receipt) {
+void from_json(const nlohmann::json& json, std::shared_ptr<Receipt>& receipt) {
     SILK_TRACE << "from_json<Receipt> json: " << json.dump();
     if (json.is_array()) {
         if (json.size() < 4) {
@@ -52,7 +56,8 @@ void from_json(const nlohmann::json& json, Receipt& receipt) {
         if (!json[0].is_number()) {
             throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: number expected in [0]"};
         }
-        receipt.type = json[0];
+        receipt = std::make_shared<Receipt>();
+        receipt->type = json[0];
 
         if (!json[1].is_null()) {
             throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: null expected in [1]"};
@@ -61,18 +66,19 @@ void from_json(const nlohmann::json& json, Receipt& receipt) {
         if (!json[2].is_number()) {
             throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: number expected in [2]"};
         }
-        receipt.success = json[2] == 1u;
+        receipt->success = json[2] == 1u;
 
         if (!json[3].is_number()) {
             throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: number expected in [3]"};
         }
-        receipt.cumulative_gas_used = json[3];
+        receipt->cumulative_gas_used = json[3];
     } else {
         if (!json.contains("success") || !json.contains("cumulative_gas_used")) {
             throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: missing entries in " + json.dump()};
         }
-        receipt.success = json.at("success").get<bool>();
-        receipt.cumulative_gas_used = json.at("cumulative_gas_used").get<uint64_t>();
+        receipt = std::make_shared<Receipt>();
+        receipt->success = json.at("success").get<bool>();
+        receipt->cumulative_gas_used = json.at("cumulative_gas_used").get<uint64_t>();
     }
 }
 

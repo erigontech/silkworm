@@ -243,7 +243,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
             }
 
             for (auto i = page_start; i < page_end; ++i) {
-                block_transactions.receipts.push_back(std::move(*(receipts->at(i))));
+                block_transactions.receipts.push_back(*(receipts->at(i)));
                 block_transactions.transactions.push_back(block_with_hash->block.transactions.at(i));
             }
 
@@ -920,7 +920,7 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
             continue;
         }
 
-        results.receipts.push_back(std::move(*receipt));
+        results.receipts.push_back(*receipt);
         results.transactions.push_back(std::move(*transaction));
         results.headers.push_back(block.header);
     }

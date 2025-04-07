@@ -80,6 +80,8 @@ Task<std::shared_ptr<Receipts>> get_receipts(db::kv::api::Transaction& tx,
         // The tx hash can be calculated by the tx content itself
         auto tx_hash{transactions[i].hash()};
         receipts[i]->tx_hash = to_bytes32(tx_hash.bytes);
+        receipts[i]->effective_gas_price = transactions[i].effective_gas_price(block_with_hash.block.header.base_fee_per_gas.value_or(0));
+
         receipts[i]->tx_index = static_cast<uint32_t>(i);
 
         receipts[i]->block_hash = block_hash;

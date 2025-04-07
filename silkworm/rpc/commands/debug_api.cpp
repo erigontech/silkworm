@@ -734,8 +734,8 @@ Task<void> DebugRpcApi::handle_debug_get_raw_receipts(const nlohmann::json& requ
             for (auto& log : rpc_receipt->logs) {
                 core_receipt.logs.push_back(silkworm::Log{
                     .address = log.address,
-                    .topics = std::move(log.topics),
-                    .data = std::move(log.data),
+                    .topics = log.topics,
+                    .data = log.data,
                 });
             }
 

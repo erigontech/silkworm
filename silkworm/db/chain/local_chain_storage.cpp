@@ -1,34 +1,19 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "local_chain_storage.hpp"
 
 #include <bit>
-#include <stdexcept>
 
 #include <silkworm/db/access_layer.hpp>
 
 namespace silkworm::db::chain {
 
+LocalChainStorage::LocalChainStorage(db::DataModel data_model, const ChainConfig& chain_config)
+    : data_model_{data_model}, chain_config_{chain_config} {}
+
 Task<ChainConfig> LocalChainStorage::read_chain_config() const {
-    const auto chain_config{data_model_.read_chain_config()};
-    if (!chain_config) {
-        throw std::runtime_error{"empty chain config data in storage"};
-    }
-    co_return *chain_config;
+    co_return chain_config_;
 }
 
 Task<BlockNum> LocalChainStorage::max_block_num() const {
@@ -120,16 +105,16 @@ Task<bool> LocalChainStorage::read_rlp_transactions(BlockNum block_num, const ev
 }
 
 Task<bool> LocalChainStorage::read_rlp_transaction(const evmc::bytes32& txn_hash, Bytes& rlp_tx) const {
-    auto block_num = data_model_.read_tx_lookup(txn_hash);
-    if (!block_num) {
+    auto result = data_model_.read_tx_lookup(txn_hash);
+    if (!result) {
         co_return false;
     }
-    auto block_hash = data_model_.read_canonical_header_hash(*block_num);
+    auto block_hash = data_model_.read_canonical_header_hash(result->first);
     if (!block_hash) {
         co_return false;
     }
     std::vector<Bytes> rlp_txs;
-    if (!co_await read_rlp_transactions(*block_num, *block_hash, rlp_txs)) {
+    if (!co_await read_rlp_transactions(result->first, *block_hash, rlp_txs)) {
         co_return false;
     }
     for (const auto& rlp : rlp_txs) {
@@ -145,7 +130,7 @@ Task<std::optional<intx::uint256>> LocalChainStorage::read_total_difficulty(cons
     co_return data_model_.read_total_difficulty(block_num, hash);
 }
 
-Task<std::optional<BlockNum>> LocalChainStorage::read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
+Task<std::optional<std::pair<BlockNum, TxnId>>> LocalChainStorage::read_block_num_by_transaction_hash(const evmc::bytes32& transaction_hash) const {
     co_return data_model_.read_tx_lookup(transaction_hash);
 }
 

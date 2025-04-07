@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include <chrono>
 #include <filesystem>
@@ -234,18 +221,18 @@ TEST_CASE("SnapshotRepository::find_block_num", "[silkworm][node][snapshot]") {
     TransactionBlockNumByTxnHashQuery query{repository};
 
     // known block 1'500'012 txn hash
-    auto block_num = query.exec(silkworm::Hash{from_hex("0x2224c39c930355233f11414e9f216f381c1f6b0c32fc77b192128571c2dc9eb9").value()});
-    CHECK(block_num.has_value());
-    CHECK(block_num.value() == 1'500'012);
+    auto result = query.exec(silkworm::Hash{from_hex("0x2224c39c930355233f11414e9f216f381c1f6b0c32fc77b192128571c2dc9eb9").value()});
+    CHECK(result.has_value());
+    CHECK(result->first == 1'500'012);
 
     // known block 1'500'012 txn hash
-    block_num = query.exec(silkworm::Hash{from_hex("0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f").value()});
-    CHECK(block_num.has_value());
-    CHECK(block_num.value() == 1'500'013);
+    result = query.exec(silkworm::Hash{from_hex("0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f").value()});
+    CHECK(result.has_value());
+    CHECK(result->first == 1'500'013);
 
     // unknown txn hash
-    block_num = query.exec(silkworm::Hash{from_hex("0x0000000000000000000000000000000000000000000000000000000000000000").value()});
-    // CHECK_FALSE(block_num.has_value());  // needs correct key check in index
+    result = query.exec(silkworm::Hash{from_hex("0x0000000000000000000000000000000000000000000000000000000000000000").value()});
+    // CHECK_FALSE(result.has_value());  // needs correct key check in index
 }
 #endif  // SILKWORM_SANITIZE
 

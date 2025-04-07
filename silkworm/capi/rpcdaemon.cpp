@@ -1,19 +1,7 @@
-/*
-   Copyright 2024 The Silkworm Authors
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
-
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/data_store.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/daemon.hpp>
@@ -113,8 +101,16 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* en
         *handle->state_repository_historical,
     };
 
+    if (!handle->chain_config) {
+        datastore::kvdb::ROTxnManaged ro_txn = handle->chaindata->access_ro().start_ro_tx();
+        handle->chain_config = db::read_chain_config(ro_txn);
+        if (!handle->chain_config) {
+            return SILKWORM_INVALID_SETTINGS;
+        }
+    }
+
     // Create the one-and-only Silkrpc daemon
-    handle->rpcdaemon = std::make_unique<rpc::Daemon>(daemon_settings, data_store);
+    handle->rpcdaemon = std::make_unique<rpc::Daemon>(daemon_settings, *handle->chain_config, data_store);
 
     // Check protocol version compatibility with Core Services
     if (!daemon_settings.skip_protocol_check) {

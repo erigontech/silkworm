@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "receipt.hpp"
 
@@ -27,6 +14,14 @@
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Receipt& r) {
+    out << r.to_string();
+    return out;
+}
+
+std::string Receipt::to_string() const {
+    const auto& r = *this;
+    std::stringstream out;
+
     out << " block_hash: " << to_hex(r.block_hash);
     out << " block_num: " << r.block_num;
     out << " contract_address: " << r.contract_address;
@@ -49,7 +44,7 @@ std::ostream& operator<<(std::ostream& out, const Receipt& r) {
     out << " tx_hash: " << to_hex(r.tx_hash);
     out << " tx_index: " << r.tx_index;
     out << " type: 0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(r.type) << std::dec;
-    return out;
+    return out.str();
 }
 
 Bloom bloom_from_logs(const Logs& logs) {

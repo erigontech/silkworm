@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "account_codec.hpp"
 
@@ -27,21 +14,21 @@ Bytes AccountCodec::encode_for_storage(const Account& account, bool omit_code_ha
     if (account.nonce != 0) {
         field_set |= 1;
         auto be{endian::to_big_compact(account.nonce)};
-        res.push_back(static_cast<uint8_t>(be.length()));
+        res.push_back(static_cast<uint8_t>(be.size()));
         res.append(be);
     }
 
     if (account.balance != 0) {
         field_set |= 2;
         auto be{endian::to_big_compact(account.balance)};
-        res.push_back(static_cast<uint8_t>(be.length()));
+        res.push_back(static_cast<uint8_t>(be.size()));
         res.append(be);
     }
 
     if (account.incarnation != 0) {
         field_set |= 4;
         auto be{endian::to_big_compact(account.incarnation)};
-        res.push_back(static_cast<uint8_t>(be.length()));
+        res.push_back(static_cast<uint8_t>(be.size()));
         res.append(be);
     }
 
@@ -60,17 +47,17 @@ size_t AccountCodec::encoding_length_for_storage(const Account& account) {
 
     if (account.nonce != 0) {
         auto be{endian::to_big_compact(account.nonce)};
-        len += 1 + be.length();
+        len += 1 + be.size();
     }
 
     if (account.balance != 0) {
         auto be{endian::to_big_compact(account.balance)};
-        len += 1 + be.length();
+        len += 1 + be.size();
     }
 
     if (account.incarnation != 0) {
         auto be{endian::to_big_compact(account.incarnation)};
-        len += 1 + be.length();
+        len += 1 + be.size();
     }
 
     if (account.code_hash != kEmptyHash) {
@@ -84,7 +71,7 @@ static tl::expected<uint8_t, DecodingError> validate_encoded_head(ByteView& enco
     if (encoded_payload.empty()) {
         return 0;
     }
-    if (encoded_payload[0] && encoded_payload.length() == 1) {
+    if (encoded_payload[0] && encoded_payload.size() == 1) {
         // Must be at least 2 bytes : field_set + len of payload
         return tl::unexpected{DecodingError::kInputTooShort};
     }
@@ -110,7 +97,7 @@ tl::expected<Account, DecodingError> AccountCodec::from_encoded_storage(ByteView
     for (int i{1}; i < 16; i *= 2) {
         if (*field_set & i) {
             uint8_t len = encoded_payload[pos++];
-            if (encoded_payload.length() < pos + len) {
+            if (encoded_payload.size() < pos + len) {
                 return tl::unexpected{DecodingError::kInputTooShort};
             }
             const auto encoded_value{encoded_payload.substr(pos, len)};
@@ -223,7 +210,7 @@ tl::expected<uint64_t, DecodingError> AccountCodec::incarnation_from_encoded_sto
     for (int i{1}; i < 8; i *= 2) {
         if (*field_set & i) {
             uint8_t len = encoded_payload[pos++];
-            if (encoded_payload.length() < pos + len) {
+            if (encoded_payload.size() < pos + len) {
                 return tl::unexpected{DecodingError::kInputTooShort};
             }
             switch (i) {

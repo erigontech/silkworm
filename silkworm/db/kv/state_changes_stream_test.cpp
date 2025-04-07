@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "state_changes_stream.hpp"
 
@@ -75,7 +62,9 @@ struct StateChangesStreamTest : public StateCacheTestBase {
 struct DirectStateChangesStreamTest : public StateChangesStreamTest {
     TemporaryDirectory tmp_dir;
     test_util::TestDataStore data_store{tmp_dir};
-    std::shared_ptr<api::DirectService> direct_service{std::make_shared<api::DirectService>(router, data_store->ref(), state_cache.get())};
+    ChainConfig chain_config;
+    std::shared_ptr<api::DirectService> direct_service{
+        std::make_shared<api::DirectService>(router, data_store->ref(), chain_config, state_cache.get())};
     api::DirectClient direct_client{direct_service};
     StateChangesStream stream{context_, direct_client};
 };
@@ -86,7 +75,7 @@ struct RemoteStateChangesStreamTest : public StateChangesStreamTest {
         [](BlockNum, HashAsSpan, bool, Block&) -> Task<bool> { co_return false; }};
     // We're not testing blocks here, so we don't care about proper block-number-from-txn-hash provider
     chain::BlockNumFromTxnHashProvider block_num_from_txn_hash_provider{
-        [](HashAsSpan) -> Task<std::optional<BlockNum>> { co_return 0; }};
+        [](HashAsSpan) -> Task<std::optional<std::pair<BlockNum, TxnId>>> { co_return std::make_pair(0, 0); }};
     chain::BlockNumFromBlockHashProvider block_num_from_block_hash_provider{
         [](HashAsSpan) -> Task<std::optional<BlockNum>> { co_return std::nullopt; }};
     chain::CanonicalBlockHashFromNumberProvider canonical_block_hash_from_number_provider{

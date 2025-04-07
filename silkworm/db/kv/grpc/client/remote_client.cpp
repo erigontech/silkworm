@@ -1,18 +1,5 @@
-/*
-   Copyright 2024 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "remote_client.hpp"
 
@@ -38,12 +25,12 @@ using Stub = proto::KV::StubInterface;
 
 class RemoteClientImpl final : public api::Service {
   public:
-    RemoteClientImpl(const rpc::ChannelFactory& create_channel,
+    RemoteClientImpl(const rpc::ChannelFactory& channel_factory,
                      agrpc::GrpcContext& grpc_context,
                      api::StateCache* state_cache,
                      chain::Providers providers,
                      rpc::DisconnectHook on_disconnect)
-        : channel_{create_channel()},
+        : channel_{channel_factory()},
           stub_{proto::KV::NewStub(channel_)},
           grpc_context_{grpc_context},
           state_cache_{state_cache},
@@ -147,12 +134,12 @@ class RemoteClientImpl final : public api::Service {
     std::chrono::milliseconds max_backoff_timeout_{rpc::kDefaultMaxBackoffReconnectTimeout};
 };
 
-RemoteClient::RemoteClient(const rpc::ChannelFactory& create_channel,
+RemoteClient::RemoteClient(const rpc::ChannelFactory& channel_factory,
                            agrpc::GrpcContext& grpc_context,
                            api::StateCache* state_cache,
                            chain::Providers providers,
                            rpc::DisconnectHook on_disconnect)
-    : p_impl_{std::make_shared<RemoteClientImpl>(create_channel,
+    : p_impl_{std::make_shared<RemoteClientImpl>(channel_factory,
                                                  grpc_context,
                                                  state_cache,
                                                  std::move(providers),

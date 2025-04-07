@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "remote_backend.hpp"
 
@@ -165,7 +152,7 @@ Task<bool> RemoteBackEnd::get_block(BlockNum block_num, const HashAsSpan& hash, 
     co_return true;
 }
 
-Task<std::optional<BlockNum>> RemoteBackEnd::get_block_num_from_txn_hash(const HashAsSpan& hash) {
+Task<std::optional<std::pair<BlockNum, TxnId>>> RemoteBackEnd::get_block_num_from_txn_hash(const HashAsSpan& hash) {
     const auto start_time = clock_time::now();
     ::remote::TxnLookupRequest request;
     request.set_allocated_txn_hash(h256_from_bytes(hash).release());
@@ -173,9 +160,11 @@ Task<std::optional<BlockNum>> RemoteBackEnd::get_block_num_from_txn_hash(const H
     if (reply.block_number() == 0) {
         co_return std::nullopt;
     }
-    auto block_num = reply.block_number();
-    SILK_TRACE << "RemoteBackEnd::get_block_num_from_txn_hash block_num=" << block_num << " t=" << clock_time::since(start_time);
-    co_return block_num;
+    const auto block_num = reply.block_number();
+    const TxnId txn_id = reply.tx_number();
+
+    SILK_TRACE << "RemoteBackEnd::get_block_num_from_txn_hash block_num=" << block_num << "  txn_id=" << txn_id << " t=" << clock_time::since(start_time);
+    co_return std::make_pair(block_num, txn_id);
 }
 
 Task<std::optional<BlockNum>> RemoteBackEnd::get_block_num_from_hash(const HashAsSpan& hash) {

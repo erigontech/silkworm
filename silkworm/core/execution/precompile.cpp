@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "precompile.hpp"
 
@@ -47,7 +34,7 @@
 namespace silkworm::precompile {
 
 static void right_pad(Bytes& str, const size_t min_size) noexcept {
-    if (str.length() < min_size) {
+    if (str.size() < min_size) {
         str.resize(min_size, '\0');
     }
 }
@@ -80,24 +67,24 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
 }
 
 uint64_t sha256_gas(ByteView input, evmc_revision) noexcept {
-    return 60 + 12 * num_words(input.length());
+    return 60 + 12 * num_words(input.size());
 }
 
 std::optional<Bytes> sha256_run(ByteView input) noexcept {
     Bytes out(32, 0);
     evmone::crypto::sha256(reinterpret_cast<std::byte*>(out.data()),
                            reinterpret_cast<const std::byte*>(input.data()),
-                           input.length());
+                           input.size());
     return out;
 }
 
 uint64_t rip160_gas(ByteView input, evmc_revision) noexcept {
-    return 600 + 120 * num_words(input.length());
+    return 600 + 120 * num_words(input.size());
 }
 
 std::optional<Bytes> rip160_run(ByteView input) noexcept {
     Bytes out(32, 0);
-    SILKWORM_ASSERT(input.length() <= std::numeric_limits<uint32_t>::max());
+    SILKWORM_ASSERT(input.size() <= std::numeric_limits<uint32_t>::max());
     evmone::crypto::ripemd160(reinterpret_cast<std::byte*>(&out[12]),
                               reinterpret_cast<const std::byte*>(input.data()),
                               input.size());
@@ -105,7 +92,7 @@ std::optional<Bytes> rip160_run(ByteView input) noexcept {
 }
 
 uint64_t id_gas(ByteView input, evmc_revision) noexcept {
-    return 15 + 3 * num_words(input.length());
+    return 15 + 3 * num_words(input.size());
 }
 
 std::optional<Bytes> id_run(ByteView input) noexcept {
@@ -153,7 +140,7 @@ uint64_t expmod_gas(ByteView input_view, evmc_revision rev) noexcept {
     input.erase(0, 3 * 32);
 
     intx::uint256 exp_head{0};  // first 32 bytes of the exponent
-    if (input.length() > base_len64) {
+    if (input.size() > base_len64) {
         input.erase(0, static_cast<size_t>(base_len64));
         right_pad(input, 3 * 32);
         if (exp_len64 < 32) {
@@ -420,15 +407,15 @@ std::optional<Bytes> bn_mul_run(ByteView input_view) noexcept {
 static constexpr size_t kSnarkvStride{192};
 
 uint64_t snarkv_gas(ByteView input, evmc_revision rev) noexcept {
-    uint64_t k{input.length() / kSnarkvStride};
+    uint64_t k{input.size() / kSnarkvStride};
     return rev >= EVMC_ISTANBUL ? 34'000 * k + 45'000 : 80'000 * k + 100'000;
 }
 
 std::optional<Bytes> snarkv_run(ByteView input) noexcept {
-    if (input.length() % kSnarkvStride != 0) {
+    if (input.size() % kSnarkvStride != 0) {
         return std::nullopt;
     }
-    size_t k{input.length() / kSnarkvStride};
+    size_t k{input.size() / kSnarkvStride};
 
     init_libff();
     using namespace libff;
@@ -461,7 +448,7 @@ std::optional<Bytes> snarkv_run(ByteView input) noexcept {
 }
 
 uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept {
-    if (input.length() < 4) {
+    if (input.size() < 4) {
         // blake2_f_run will fail anyway
         return 0;
     }
@@ -469,7 +456,7 @@ uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept {
 }
 
 std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
-    if (input.length() != 213) {
+    if (input.size() != 213) {
         return std::nullopt;
     }
     const uint8_t f{input[212]};
@@ -500,7 +487,7 @@ uint64_t point_evaluation_gas(ByteView, evmc_revision) noexcept {
 
 // https://eips.ethereum.org/EIPS/eip-4844#point-evaluation-precompile
 std::optional<Bytes> point_evaluation_run(ByteView input) noexcept {
-    if (input.length() != 192) {
+    if (input.size() != 192) {
         return std::nullopt;
     }
 

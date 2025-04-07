@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -24,6 +11,7 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <silkworm/db/chain/local_chain_storage.hpp>
 #include <silkworm/db/data_store.hpp>
 
 #include "base_transaction.hpp"
@@ -34,9 +22,10 @@ namespace silkworm::db::kv::api {
 
 class LocalTransaction : public BaseTransaction {
   public:
-    LocalTransaction(DataStoreRef data_store, StateCache* state_cache)
-        : BaseTransaction(state_cache),
+    LocalTransaction(DataStoreRef data_store, const ChainConfig& chain_config, StateCache* state_cache)
+        : BaseTransaction{state_cache},
           data_store_{std::move(data_store)},
+          chain_config_{chain_config},
           tx_{data_store_.chaindata.access_ro().start_ro_tx()} {}
 
     ~LocalTransaction() override = default;
@@ -53,7 +42,7 @@ class LocalTransaction : public BaseTransaction {
     bool is_local() const override { return true; }
     DataStoreRef data_store() const { return data_store_; }
 
-    std::shared_ptr<chain::ChainStorage> create_storage() override;
+    std::shared_ptr<chain::ChainStorage> make_storage() override;
 
     Task<TxnId> first_txn_num_in_block(BlockNum block_num) override;
 
@@ -105,6 +94,7 @@ class LocalTransaction : public BaseTransaction {
     std::map<std::string, std::shared_ptr<CursorDupSort>> dup_cursors_;
 
     DataStoreRef data_store_;
+    const ChainConfig& chain_config_;
     uint32_t last_cursor_id_{0};
     datastore::kvdb::ROTxnManaged tx_;
     uint64_t tx_id_{++next_tx_id_};

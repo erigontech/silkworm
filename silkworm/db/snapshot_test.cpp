@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include <utility>
 #include <vector>
@@ -180,21 +167,21 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
     // block 1'500'012: base_txn_id is 7'341'263, txn_count is 7
     auto transaction = txn_by_id.exec(7'341'269);  // known txn id in block 1'500'012
     CHECK(transaction.has_value());
-    auto block_num = block_num_by_txn_hash.exec(transaction->hash());
+    auto result = block_num_by_txn_hash.exec(transaction->hash());
 
-    CHECK(block_num.has_value());
-    CHECK(block_num.value() == 1'500'012);
+    CHECK(result.has_value());
+    CHECK(result->first == 1'500'012);
 
     // block 1'500'013: base_txn_id is 7'341'272, txn_count is 1
     transaction = txn_by_id.exec(7'341'272);  // known txn id in block 1'500'013
     CHECK(transaction.has_value());
-    block_num = block_num_by_txn_hash.exec(transaction->hash());
-    CHECK(block_num.has_value());
-    CHECK(block_num.value() == 1'500'013);
+    result = block_num_by_txn_hash.exec(transaction->hash());
+    CHECK(result.has_value());
+    CHECK(result->first == 1'500'013);
 
     // transaction hash not present in snapshot (first txn hash in block 1'500'014)
-    block_num = block_num_by_txn_hash.exec(0xfa496b4cd9748754a28c66690c283ec9429440eb8609998901216908ad1b48eb_bytes32);
-    CHECK_FALSE(block_num.has_value());
+    result = block_num_by_txn_hash.exec(0xfa496b4cd9748754a28c66690c283ec9429440eb8609998901216908ad1b48eb_bytes32);
+    CHECK_FALSE(result.has_value());
 }
 
 // https://etherscan.io/block/1500012

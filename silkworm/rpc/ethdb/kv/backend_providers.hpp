@@ -1,18 +1,5 @@
-/*
-   Copyright 2024 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -28,7 +15,7 @@ inline db::chain::BlockProvider block_provider(ethbackend::BackEnd* backend) {
 }
 
 inline db::chain::BlockNumFromTxnHashProvider block_num_from_txn_hash_provider(ethbackend::BackEnd* backend) {
-    return [backend](HashAsSpan hash) -> Task<std::optional<BlockNum>> {
+    return [backend](HashAsSpan hash) -> Task<std::optional<std::pair<BlockNum, TxnId>>> {
         co_return co_await backend->get_block_num_from_txn_hash(hash);
     };
 }

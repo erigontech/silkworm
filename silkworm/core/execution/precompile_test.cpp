@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "precompile.hpp"
 
@@ -270,7 +257,7 @@ TEST_CASE("POINT_EVALUATION") {
             "a421e229565952cfff4ef3517100a97da1d4fe57956fa50a442f92af03b1bf37adacc8ad4ed209b31287ea5bb94d9d06"
             "a444d6bb5aadc3ceb615b50d6606bd54bfe529f59247987cd1ab848d19de599a9052f1835fb0d0d44cf70183e19a68c9")};
     std::optional<Bytes> out{point_evaluation_run(in)};
-    REQUIRE((out && out->length() == 64));
+    REQUIRE((out && out->size() == 64));
     intx::uint256 field_elements_per_blob{intx::be::unsafe::load<intx::uint256>(out->data())};
     CHECK(field_elements_per_blob == 4096);
     intx::uint256 bls_modulus{intx::be::unsafe::load<intx::uint256>(out->data() + 32)};

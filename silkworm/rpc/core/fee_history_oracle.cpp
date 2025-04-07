@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "fee_history_oracle.hpp"
 
@@ -110,9 +97,12 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
 
     // Only process blocks if reward percentiles were requested
     const auto max_history = reward_percentiles.empty() ? kDefaultMaxHeaderHistory : kDefaultMaxBlockHistory;
-
     const auto block_range = co_await resolve_block_range(newest_block, block_count, max_history);
+
     if (block_range.num_blocks == 0) {
+        if (block_range.error) {
+            fee_history.error = block_range.error.value();
+        }
         co_return fee_history;
     }
     fee_history.rewards.resize(block_range.num_blocks);
@@ -125,6 +115,7 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
     auto first_missing = block_range.num_blocks;
     for (auto idx = block_range.num_blocks, next = oldest_block_num; idx > 0; --idx) {
         const auto block_num = ++next - 1;
+
         if (block_num > block_range.last_block_num) {
             continue;
         }
@@ -132,19 +123,11 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
         BlockFees block_fees{block_num};
 
         if (!reward_percentiles.empty()) {
-            if (block_num >= block_range.last_block->block.header.number) {
-                block_fees.block = block_range.last_block;
-                block_fees.receipts = co_await receipts_provider_(*block_fees.block);
-            } else {
-                const auto block_with_hash = co_await block_provider_(block_num);
-                if (!block_with_hash) {
-                    continue;
-                }
-                block_fees.block = block_with_hash;
-                if (!reward_percentiles.empty()) {
-                    block_fees.receipts = co_await receipts_provider_(*block_fees.block);
-                }
+            block_fees.block = co_await block_provider_(block_num);  // block_range.last_block;
+            if (!block_fees.block) {
+                continue;
             }
+            block_fees.receipts = co_await receipts_provider_(*block_fees.block);
             block_fees.block_header = block_fees.block->block.header;
         } else {
             const auto block_header = co_await block_header_provider_(block_num);
@@ -188,13 +171,14 @@ Task<FeeHistory> FeeHistoryOracle::fee_history(BlockNum newest_block,
 }
 
 Task<BlockRange> FeeHistoryOracle::resolve_block_range(BlockNum newest_block, uint64_t block_count, uint64_t max_history) {
-    const auto block_with_hash = co_await block_provider_(newest_block);
-    if (!block_with_hash) {
-        co_return BlockRange{0};
+    const auto latest_block_num = co_await latest_block_provider_();
+    if (newest_block > latest_block_num) {
+        std::ostringstream oss;
+        oss << "request beyond head block: requested " << std::dec << newest_block << ", head " << latest_block_num;
+        co_return BlockRange{0, 0, oss.str()};
     }
 
     if (max_history != 0) {
-        const auto latest_block_num = co_await latest_block_provider_();
         // Limit retrieval to the given number of latest blocks
         const auto too_old_count = latest_block_num - max_history - newest_block + block_count;
         if (too_old_count > 0) {
@@ -210,9 +194,7 @@ Task<BlockRange> FeeHistoryOracle::resolve_block_range(BlockNum newest_block, ui
     // Ensure not trying to retrieve before genesis
     block_count = std::min(block_count, newest_block + 1);
 
-    const auto receipts = co_await receipts_provider_(*block_with_hash);
-
-    co_return BlockRange{block_count, newest_block, block_with_hash, receipts};
+    co_return BlockRange{block_count, newest_block};
 }
 
 bool sort_by_reward(std::pair<intx::uint256, uint64_t>& p1, const std::pair<intx::uint256, uint64_t>& p2) {

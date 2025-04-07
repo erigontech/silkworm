@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "evmc_bytes32.hpp"
 
@@ -27,7 +14,7 @@ namespace silkworm {
 evmc::bytes32 to_bytes32(ByteView bytes) {
     evmc::bytes32 out;
     if (!bytes.empty()) {
-        size_t n{std::min(bytes.length(), kHashLength)};
+        size_t n{std::min(bytes.size(), kHashLength)};
         std::memcpy(out.bytes + kHashLength - n, bytes.data(), n);
     }
     return out;

@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include <blst.h>
 
@@ -42,7 +29,7 @@ int main() {
     static const Bytes kKzgSetupG2{*from_hex(
         "b5bfd7dd8cdeb128843bc287230af38926187075cbfbefa81009a2ce615ac53d2914e5870cb452d2afaaab24f3499f72185cbfee53492714734429b7b38608e23926c911cceceac9a36851477ba4c60b087041de621000edc98edada20c1def2")};
 
-    SILKWORM_ASSERT(kKzgSetupG2.length() == 96);
+    SILKWORM_ASSERT(kKzgSetupG2.size() == 96);
 
     blst_p2_affine g2_affine;
     SILKWORM_ASSERT(blst_p2_uncompress(&g2_affine, kKzgSetupG2.data()) == BLST_SUCCESS);

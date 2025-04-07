@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "evm_debug.hpp"
 
@@ -30,7 +17,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/util.hpp>
-#include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/json/types.hpp>
 
@@ -55,6 +41,14 @@ void from_json(const nlohmann::json& json, DebugConfig& tc) {
 }
 
 std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
+    out << tc.to_string();
+    return out;
+}
+
+std::string DebugConfig::to_string() const {
+    const auto& tc = *this;
+    std::stringstream out;
+
     out << "disableStorage: " << std::boolalpha << tc.disable_storage;
     out << " disableMemory: " << std::boolalpha << tc.disable_memory;
     out << " disableStack: " << std::boolalpha << tc.disable_stack;
@@ -63,7 +57,7 @@ std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
         out << " TxIndex: " << std::dec << tc.tx_index.value();
     }
 
-    return out;
+    return out.str();
 }
 
 std::string uint256_to_hex(const evmone::uint256& x) {
@@ -359,7 +353,8 @@ void DebugTracer::write_log(const DebugLog& log) {
 }
 
 Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, BlockNum block_num) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, storage, block_num);
+    const BlockReader reader{storage, tx_};
+    const auto block_with_hash = co_await reader.read_block_by_number(block_cache_, block_num);
     if (!block_with_hash) {
         co_return;
     }
@@ -372,7 +367,8 @@ Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& 
 }
 
 Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& block_hash) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_hash(block_cache_, storage, block_hash);
+    const BlockReader reader{storage, tx_};
+    const auto block_with_hash = co_await reader.read_block_by_hash(block_cache_, block_hash);
     if (!block_with_hash) {
         co_return;
     }
@@ -386,7 +382,8 @@ Task<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& 
 }
 
 Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash& block_num_or_hash, const ChainStorage& storage, const Call& call, bool is_latest_block) {
-    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, block_num_or_hash);
+    const BlockReader reader{storage, tx_};
+    const auto block_with_hash = co_await reader.read_block_by_block_num_or_hash(block_cache_, block_num_or_hash);
     if (!block_with_hash) {
         co_return;
     }
@@ -414,7 +411,8 @@ Task<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumOrHash&
 }
 
 Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& tx_hash) {
-    const auto tx_with_block = co_await rpc::core::read_transaction_by_hash(block_cache_, storage, tx_hash);
+    const BlockReader reader{storage, tx_};
+    const auto tx_with_block = co_await reader.read_transaction_by_hash(block_cache_, tx_hash);
 
     if (!tx_with_block) {
         std::ostringstream oss;
@@ -434,7 +432,8 @@ Task<void> DebugExecutor::trace_transaction(json::Stream& stream, const ChainSto
 }
 
 Task<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context, bool is_latest_block) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_block_num_or_hash(block_cache_, storage, tx_, context.block_num);
+    const BlockReader reader{storage, tx_};
+    const auto block_with_hash = co_await reader.read_block_by_block_num_or_hash(block_cache_, context.block_num);
     if (!block_with_hash) {
         co_return;
     }
@@ -464,7 +463,7 @@ Task<void> DebugExecutor::execute(json::Stream& stream, const ChainStorage& stor
     const auto txn_id = co_await tx_.user_txn_id_at(block_num);
 
     co_await async_task(workers_.executor(), [&]() -> void {
-        auto state = state_factory.create_state(current_executor, storage, txn_id);
+        auto state = state_factory.make(current_executor, storage, txn_id);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         bool refunds = !config_.no_refunds;
@@ -540,7 +539,7 @@ Task<void> DebugExecutor::execute(
 
     co_await async_task(workers_.executor(), [&]() {
         execution::StateFactory state_factory{tx_};
-        const auto state = state_factory.create_state(current_executor, storage, txn_id);
+        const auto state = state_factory.make(current_executor, storage, txn_id);
 
         EVMExecutor executor{block, chain_config, workers_, state};
 
@@ -612,7 +611,7 @@ Task<void> DebugExecutor::execute(
     }
 
     co_await async_task(workers_.executor(), [&]() {
-        auto state = state_factory.create_state(current_executor, storage, txn_id);
+        auto state = state_factory.make(current_executor, storage, txn_id);
         EVMExecutor executor{block, chain_config, workers_, state};
 
         for (const auto& bundle : bundles) {

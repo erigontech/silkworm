@@ -23,6 +23,7 @@ debug_traceBlockByNumber/test_26,\
 debug_traceBlockByNumber/test_27,\
 debug_traceBlockByNumber/test_28,\
 debug_traceCall/test_21,\
+debug_traceCall/test_22,\
 debug_traceTransaction/test_25,\
 debug_traceTransaction/test_36,\
 debug_traceTransaction/test_62,\

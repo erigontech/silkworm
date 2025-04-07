@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -32,13 +19,13 @@ class ByteView : public evmc::bytes_view {
 
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
     constexpr ByteView(const evmc::bytes_view& other) noexcept
-        : evmc::bytes_view{other.data(), other.length()} {}
+        : evmc::bytes_view{other.data(), other.size()} {}
 
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
-    ByteView(const Bytes& str) noexcept : evmc::bytes_view{str.data(), str.length()} {}
+    ByteView(const Bytes& str) noexcept : evmc::bytes_view{str.data(), str.size()} {}
 
-    constexpr ByteView(const uint8_t* data, size_type length) noexcept
-        : evmc::bytes_view{data, length} {}
+    constexpr ByteView(const uint8_t* data, size_type size) noexcept
+        : evmc::bytes_view{data, size} {}
 
     template <size_t N>
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
@@ -55,6 +42,10 @@ class ByteView : public evmc::bytes_view {
         : evmc::bytes_view{span.data(), span.size()} {}
 
     bool is_null() const noexcept { return data() == nullptr; }
+
+  private:
+    // see code style P28
+    using evmc::bytes_view::length;
 };
 
 template <size_t Extent>

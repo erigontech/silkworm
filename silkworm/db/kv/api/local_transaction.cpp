@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "local_transaction.hpp"
 
@@ -136,9 +123,10 @@ Task<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cursor(const std::str
     co_return cursor;
 }
 
-std::shared_ptr<chain::ChainStorage> LocalTransaction::create_storage() {
+std::shared_ptr<chain::ChainStorage> LocalTransaction::make_storage() {
     // The calling thread *must* be the *same* which created this LocalTransaction instance
-    return std::make_shared<chain::LocalChainStorage>(DataModel{tx_, data_store_.blocks_repository});
+    return std::make_shared<chain::LocalChainStorage>(
+        DataModel{tx_, data_store_.blocks_repository}, chain_config_);
 }
 
 Task<TxnId> LocalTransaction::first_txn_num_in_block(BlockNum block_num) {

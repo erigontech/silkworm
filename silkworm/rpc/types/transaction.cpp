@@ -1,22 +1,10 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "transaction.hpp"
 
 #include <iomanip>
+#include <sstream>
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/types/address.hpp>
@@ -24,12 +12,19 @@
 #include <silkworm/rpc/common/util.hpp>
 
 namespace silkworm::rpc {
-
 intx::uint256 Transaction::effective_gas_price() const {
     return silkworm::Transaction::effective_gas_price(block_base_fee_per_gas.value_or(0));
 }
 
 std::ostream& operator<<(std::ostream& out, const Transaction& t) {
+    out << t.to_string();
+    return out;
+}
+
+std::string Transaction::to_string() const {
+    const auto& t = *this;
+    std::stringstream out;
+
     out << " #access_list: " << t.access_list.size();
     out << " #authorizations: " << t.authorizations.size();
     out << " block_hash: " << to_hex(t.block_hash);
@@ -65,10 +60,12 @@ std::ostream& operator<<(std::ostream& out, const Transaction& t) {
     out << " type: 0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(t.type);
     out << " value: " << silkworm::to_hex(silkworm::endian::to_big_compact(t.value));
     out << std::dec;
-    return out;
+    return out.str();
 }
 
-std::ostream& operator<<(std::ostream& out, const silkworm::Transaction& t) {
+std::string core_transaction_to_string(const silkworm::Transaction& t) {
+    std::stringstream out;
+
     out << " #access_list: " << t.access_list.size();
     out << " #authorizations: " << t.authorizations.size();
     if (t.chain_id) {
@@ -99,6 +96,11 @@ std::ostream& operator<<(std::ostream& out, const silkworm::Transaction& t) {
     out << " type: 0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(t.type) << std::dec;
     out << " value: " << silkworm::to_hex(silkworm::endian::to_big_compact(t.value));
 
+    return out.str();
+}
+
+std::ostream& operator<<(std::ostream& out, const silkworm::Transaction& t) {
+    out << core_transaction_to_string(t);
     return out;
 }
 

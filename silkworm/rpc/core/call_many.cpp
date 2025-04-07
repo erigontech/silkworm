@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "call_many.hpp"
 
@@ -27,7 +14,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
 #include <silkworm/rpc/common/compatibility.hpp>
-#include <silkworm/rpc/core/cached_chain.hpp>
 #include <silkworm/rpc/core/evm_executor.hpp>
 #include <silkworm/rpc/core/override_state.hpp>
 #include <silkworm/rpc/json/types.hpp>
@@ -44,7 +30,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig& c
                                                   boost::asio::any_io_executor& this_executor) {
     CallManyResult result;
     const auto& block = block_with_hash->block;
-    auto state = execution::StateFactory{transaction_}.create_state(this_executor, storage, txn_id);
+    auto state = execution::StateFactory{transaction_}.make(this_executor, storage, txn_id);
     EVMExecutor executor{block, config, workers_, std::make_shared<state::OverrideState>(*state, accounts_overrides)};
 
     uint64_t timeout = opt_timeout.value_or(5000);
@@ -130,7 +116,7 @@ Task<CallManyResult> CallExecutor::execute(
     const SimulationContext& context,
     const AccountsOverrides& accounts_overrides,
     std::optional<std::uint64_t> timeout) {
-    const auto chain_storage{transaction_.create_storage()};
+    const auto chain_storage{transaction_.make_storage()};
 
     uint16_t count{0};
     bool empty = true;
@@ -147,7 +133,7 @@ Task<CallManyResult> CallExecutor::execute(
     }
 
     const auto chain_config = co_await chain_storage->read_chain_config();
-    const auto block_with_hash = co_await core::read_block_by_block_num_or_hash(block_cache_, *chain_storage, transaction_, context.block_num);
+    const auto block_with_hash = co_await block_reader_.read_block_by_block_num_or_hash(block_cache_, context.block_num);
     if (!block_with_hash) {
         throw std::invalid_argument("read_block_by_block_num_or_hash: block not found");
     }

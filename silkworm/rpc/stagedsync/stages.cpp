@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "stages.hpp"
 
@@ -29,8 +16,8 @@ Task<BlockNum> get_sync_stage_progress(db::kv::api::Transaction& tx, const Bytes
     if (value.empty()) {
         co_return 0;
     }
-    if (value.length() < 8) {
-        throw std::runtime_error("data too short, expected 8 got " + std::to_string(value.length()));
+    if (value.size() < 8) {
+        throw std::runtime_error("data too short, expected 8 got " + std::to_string(value.size()));
     }
     BlockNum block_num = endian::load_big_u64(value.substr(0, 8).data());
     co_return block_num;

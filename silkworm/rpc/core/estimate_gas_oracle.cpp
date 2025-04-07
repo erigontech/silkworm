@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "estimate_gas_oracle.hpp"
 
@@ -81,7 +68,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
     execution::StateFactory state_factory{transaction_};
 
     auto exec_result = co_await async_task(workers_.executor(), [&]() -> ExecutionResult {
-        auto state = state_factory.create_state(this_executor, storage_, txn_id);
+        auto state = state_factory.make(this_executor, storage_, txn_id);
 
         ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
         silkworm::Transaction transaction{call.to_transaction()};

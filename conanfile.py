@@ -1,16 +1,5 @@
-#    Copyright 2023 The Silkworm Authors
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#        http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
+# Copyright 2025 The Silkworm Authors
+# SPDX-License-Identifier: Apache-2.0
 
 from conan import ConanFile
 
@@ -35,7 +24,9 @@ class SilkwormRecipe(ConanFile):
         self.requires('boost/1.83.0', override=True)
         self.requires('cli11/2.2.0')
         self.requires('gmp/6.2.1')
-        self.requires('grpc/1.67.1', override=True)
+        # fix to an older recipe revision due to missing binary packages for the latest revision
+        # see https://github.com/conan-io/conan-center-index/issues/26959
+        self.requires('grpc/1.67.1#c214ddb4e04e8d9a44d3a100defc9706', override=True)
         self.requires('gtest/1.12.1')
         self.requires('jwt-cpp/0.6.0')
         self.requires('libtorrent/2.0.10')
@@ -47,6 +38,7 @@ class SilkwormRecipe(ConanFile):
         self.requires('spdlog/1.12.0')
         self.requires('sqlitecpp/3.3.0')
         self.requires('tomlplusplus/3.3.0')
+        self.requires('libdeflate/1.23')
 
     def configure(self):
         self.options['asio-grpc'].local_allocator = 'boost_container'

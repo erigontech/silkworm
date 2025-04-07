@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "util.hpp"
 
@@ -66,7 +53,7 @@ ByteView zeroless_view(ByteView data) {
 
 std::string to_hex(ByteView bytes, bool with_prefix) {
     static constexpr const char* kHexDigits{"0123456789abcdef"};
-    std::string out(bytes.length() * 2 + (with_prefix ? 2 : 0), '\0');
+    std::string out(bytes.size() * 2 + (with_prefix ? 2 : 0), '\0');
     char* dest{&out[0]};
     if (with_prefix) {
         *dest++ = '0';
@@ -217,7 +204,7 @@ std::string human_size(uint64_t bytes, const char* unit) {
 }
 
 size_t prefix_length(ByteView a, ByteView b) {
-    size_t len{std::min(a.length(), b.length())};
+    size_t len{std::min(a.size(), b.size())};
     for (size_t i{0}; i < len; ++i) {
         if (a[i] != b[i]) {
             return i;

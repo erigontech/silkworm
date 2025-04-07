@@ -1,20 +1,9 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "execution_payload.hpp"
+
+#include <sstream>
 
 #include <silkworm/core/types/address.hpp>
 #include <silkworm/core/types/evmc_bytes32.hpp>
@@ -23,6 +12,14 @@
 namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload) {
+    out << payload.to_string();
+    return out;
+}
+
+std::string ExecutionPayload::to_string() const {
+    const auto& payload = *this;
+    std::stringstream out;
+
     auto bloom_bytes{silkworm::ByteView(&payload.logs_bloom[0], 256)};
     out << "version: " << payload.version
         << " block_num: " << payload.block_num
@@ -41,10 +38,18 @@ std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload) {
     if (payload.withdrawals) {
         out << " #withdrawals: " << payload.withdrawals->size();
     }
-    return out;
+    return out.str();
 }
 
 std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status) {
+    out << payload_status.to_string();
+    return out;
+}
+
+std::string PayloadStatus::to_string() const {
+    const auto& payload_status = *this;
+    std::stringstream out;
+
     out << "status: " << payload_status.status;
     if (payload_status.latest_valid_hash) {
         out << " latest_valid_hash: " << to_hex(*payload_status.latest_valid_hash);
@@ -52,17 +57,33 @@ std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status)
     if (payload_status.validation_error) {
         out << " validation_error: " << *payload_status.validation_error;
     }
-    return out;
+    return out.str();
 }
 
 std::ostream& operator<<(std::ostream& out, const ForkChoiceState& fork_choice_state) {
-    out << "head_block_hash: " << to_hex(fork_choice_state.head_block_hash)
-        << " safe_block_hash: " << to_hex(fork_choice_state.safe_block_hash)
-        << " finalized_block_hash: " << to_hex(fork_choice_state.finalized_block_hash);
+    out << fork_choice_state.to_string();
     return out;
 }
 
+std::string ForkChoiceState::to_string() const {
+    const auto& fork_choice_state = *this;
+    std::stringstream out;
+
+    out << "head_block_hash: " << to_hex(fork_choice_state.head_block_hash)
+        << " safe_block_hash: " << to_hex(fork_choice_state.safe_block_hash)
+        << " finalized_block_hash: " << to_hex(fork_choice_state.finalized_block_hash);
+    return out.str();
+}
+
 std::ostream& operator<<(std::ostream& out, const PayloadAttributes& attributes) {
+    out << attributes.to_string();
+    return out;
+}
+
+std::string PayloadAttributes::to_string() const {
+    const auto& attributes = *this;
+    std::stringstream out;
+
     out << "version: " << attributes.version
         << " timestamp: " << attributes.timestamp
         << " prev_randao: " << to_hex(attributes.prev_randao)
@@ -70,38 +91,78 @@ std::ostream& operator<<(std::ostream& out, const PayloadAttributes& attributes)
     if (attributes.withdrawals) {
         out << " #withdrawals: " << attributes.withdrawals->size();
     }
-    return out;
+    return out.str();
 }
 
 std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedRequest& fcu_request) {
+    out << fcu_request.to_string();
+    return out;
+}
+
+std::string ForkChoiceUpdatedRequest::to_string() const {
+    const auto& fcu_request = *this;
+    std::stringstream out;
+
     out << fcu_request.fork_choice_state;
     if (fcu_request.payload_attributes) {
         out << " " << *fcu_request.payload_attributes;
     }
-    return out;
+    return out.str();
 }
 
 std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedReply& fcu_reply) {
+    out << fcu_reply.to_string();
+    return out;
+}
+
+std::string ForkChoiceUpdatedReply::to_string() const {
+    const auto& fcu_reply = *this;
+    std::stringstream out;
+
     out << fcu_reply.payload_status;
     if (fcu_reply.payload_id) {
         out << " payload_id: " << *fcu_reply.payload_id;
     }
-    return out;
+    return out.str();
 }
 
 std::ostream& operator<<(std::ostream& out, const TransitionConfiguration& transition_configuration) {
+    out << transition_configuration.to_string();
+    return out;
+}
+
+std::string TransitionConfiguration::to_string() const {
+    const auto& transition_configuration = *this;
+    std::stringstream out;
+
     out << "terminal_total_difficulty: " << transition_configuration.terminal_total_difficulty
         << " terminal_block_hash: " << to_hex(transition_configuration.terminal_block_hash)
         << " terminal_block_num: " << transition_configuration.terminal_block_num;
-    return out;
+    return out.str();
 }
 
 std::ostream& operator<<(std::ostream& out, const ExecutionPayloadAndValue& pv) {
-    out << "payload: " << pv.payload << " block_value: " << pv.block_value;
+    out << pv.to_string();
     return out;
 }
 
+std::string ExecutionPayloadAndValue::to_string() const {
+    const auto& pv = *this;
+    std::stringstream out;
+
+    out << "payload: " << pv.payload << " block_value: " << pv.block_value;
+    return out.str();
+}
+
 std::ostream& operator<<(std::ostream& out, const ExecutionPayloadBody& body) {
+    out << body.to_string();
+    return out;
+}
+
+std::string ExecutionPayloadBody::to_string() const {
+    const auto& body = *this;
+    std::stringstream out;
+
     if (body.transactions) {
         out << "#transactions: " << body.transactions->size();
         if (body.withdrawals) {
@@ -110,7 +171,7 @@ std::ostream& operator<<(std::ostream& out, const ExecutionPayloadBody& body) {
     } else {
         out << "null";
     }
-    return out;
+    return out.str();
 }
 
 }  // namespace silkworm::rpc

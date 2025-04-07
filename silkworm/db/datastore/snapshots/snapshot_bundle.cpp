@@ -1,18 +1,5 @@
-/*
-   Copyright 2024 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "snapshot_bundle.hpp"
 
@@ -87,7 +74,7 @@ static datastore::EntityMap<bloom_filter::BloomFilter> open_existence_indexes(
     for (auto& [name, path] : make_snapshot_paths(Schema::SnapshotFileDef::Format::kExistenceIndex, entity, dir_path, range)) {
         SILK_TRACE << "make_existence_indexes opens " << name.to_string() << " at " << path.filename();
         SILKWORM_ASSERT(salt);
-        results.emplace(name, bloom_filter::BloomFilter{path.path(), bloom_filter::BloomFilterKeyHasher{*salt}});
+        results.emplace(name, bloom_filter::BloomFilter{path.path(), KeyHasher{*salt}});
     }
     return results;
 }

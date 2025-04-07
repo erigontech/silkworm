@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "daemon.hpp"
 
@@ -22,6 +9,7 @@
 
 #include <filesystem>
 #include <stdexcept>
+#include <utility>
 
 #include <boost/asio/signal_set.hpp>
 #include <boost/asio/version.hpp>
@@ -134,6 +122,7 @@ int Daemon::run(const DaemonSettings& settings) {
 
         // Activate the local chaindata and snapshot access (if required)
         std::optional<db::DataStore> data_store;
+        std::optional<ChainConfig> chain_config;
         if (settings.datadir) {
             DataDirectory data_dir{*settings.datadir};
 
@@ -151,7 +140,7 @@ int Daemon::run(const DaemonSettings& settings) {
             // At startup check that chain configuration is valid
             datastore::kvdb::ROTxnManaged ro_txn = data_store->chaindata().access_ro().start_ro_tx();
             db::DataModel data_access = db::DataModelFactory{data_store->ref()}(ro_txn);
-            if (const auto chain_config{data_access.read_chain_config()}; !chain_config) {
+            if (chain_config = data_access.read_chain_config(); !chain_config) {
                 throw std::runtime_error{"invalid chain configuration"};
             }
         }
@@ -159,6 +148,7 @@ int Daemon::run(const DaemonSettings& settings) {
         // Create the one-and-only Silkrpc daemon
         Daemon rpc_daemon{
             settings,
+            chain_config,
             data_store ? std::make_optional(data_store->ref()) : std::nullopt,
         };
 
@@ -227,9 +217,11 @@ ChannelFactory Daemon::make_channel_factory(const DaemonSettings& settings) {
 
 Daemon::Daemon(
     DaemonSettings settings,
+    std::optional<ChainConfig> chain_config,
     std::optional<db::DataStoreRef> data_store)
     : settings_(std::move(settings)),
-      create_channel_{make_channel_factory(settings_)},
+      chain_config_{std::move(chain_config)},
+      channel_factory_{make_channel_factory(settings_)},
       context_pool_{settings_.context_pool_settings.num_contexts},
       worker_pool_{settings_.num_workers},
       data_store_{std::move(data_store)} {
@@ -257,7 +249,7 @@ Daemon::Daemon(
 }
 
 void Daemon::add_private_services() {
-    auto grpc_channel = create_channel_();
+    auto grpc_channel = channel_factory_();
 
     // Add the private state to each execution context
     for (size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
@@ -301,13 +293,13 @@ std::unique_ptr<db::kv::api::Client> Daemon::make_kv_client(rpc::ClientContext& 
     auto* backend{must_use_private_service<rpc::ethbackend::BackEnd>(ioc)};
     if (remote) {
         return std::make_unique<db::kv::grpc::client::RemoteClient>(
-            create_channel_, grpc_context, state_cache, ethdb::kv::make_backend_providers(backend));
+            channel_factory_, grpc_context, state_cache, ethdb::kv::make_backend_providers(backend));
     }
     // TODO(canepat) finish implementation and clean-up composition of objects here
     db::kv::api::StateChangeRunner runner{ioc.get_executor()};
     db::kv::api::ServiceRouter router{runner.state_changes_calls_channel()};
     return std::make_unique<db::kv::api::DirectClient>(
-        std::make_shared<db::kv::api::DirectService>(router, *data_store_, state_cache));
+        std::make_shared<db::kv::api::DirectService>(router, *data_store_, *chain_config_, state_cache));
 }
 
 void Daemon::add_execution_services(const std::vector<std::shared_ptr<engine::ExecutionEngine>>& engines) {
@@ -322,7 +314,7 @@ void Daemon::add_execution_services(const std::vector<std::shared_ptr<engine::Ex
 }
 
 DaemonChecklist Daemon::run_checklist() {
-    const auto core_service_channel{create_channel_()};
+    const auto core_service_channel{channel_factory_()};
 
     const auto kv_protocol_check{wait_for_kv_protocol_check(core_service_channel)};
     const auto ethbackend_protocol_check{wait_for_ethbackend_protocol_check(core_service_channel)};

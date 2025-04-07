@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "trie_cursor.hpp"
 
@@ -84,7 +71,7 @@ TrieCursor::TrieCursor(datastore::kvdb::ROCursor& db_cursor, PrefixSet* changed,
 TrieCursor::MoveOperationResult TrieCursor::to_prefix(ByteView prefix) {
     // 0 bytes for TrieAccounts
     // 40 bytes (hashed address + incarnation) for TrieStorage
-    if (size_t len{prefix.length()}; len != 0 && len != db::kHashedStoragePrefixLength) {
+    if (size_t len{prefix.size()}; len != 0 && len != db::kHashedStoragePrefixLength) {
         throw std::invalid_argument("Invalid prefix len : expected (0 || 40) whilst got " + std::to_string(len));
     }
     prefix_.assign(prefix);
@@ -106,7 +93,7 @@ TrieCursor::MoveOperationResult TrieCursor::to_prefix(ByteView prefix) {
     // This also returns the first "created" account in "that" trie
     bool has_changes{changed_list_ == nullptr};  // Full regeneration: everything is changed
     if (!has_changes) {
-        std::tie(has_changes, next_created_) = changed_list_->contains_and_next_marked(prefix_, prefix_.length());
+        std::tie(has_changes, next_created_) = changed_list_->contains_and_next_marked(prefix_, prefix_.size());
     }
 
     // Lookup for a root node
@@ -230,7 +217,7 @@ bool TrieCursor::db_seek(ByteView seek_key) {
     }
 
     ByteView db_cursor_key = datastore::kvdb::from_slice(data.key);  // Save db_cursor_ key ...
-    db_cursor_key.remove_prefix(prefix_.length());                   // ... and remove prefix_ so we have node key
+    db_cursor_key.remove_prefix(prefix_.size());                     // ... and remove prefix_ so we have node key
     if (seek_key.empty() && !db_cursor_key.empty()) {
         // Note ! an empty seek_key means we're looking for a root node with empty key which does not exist
         return false;
@@ -254,7 +241,7 @@ void TrieCursor::db_delete(SubNode& node) {
 bool TrieCursor::consume(SubNode& node) {
     if (node.has_hash()) {
         buffer_.assign(prefix_).append(node.full_key());
-        auto [has_changes, next_created]{changed_list_->contains_and_next_marked(buffer_, prefix_.length())};
+        auto [has_changes, next_created]{changed_list_->contains_and_next_marked(buffer_, prefix_.size())};
         if (!has_changes) {
             skip_state_ = skip_state_ && key_is_before(buffer_, next_created_);
             std::swap(next_created_, next_created);

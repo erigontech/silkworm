@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -61,16 +48,17 @@ std::optional<std::string_view> get_opcode_name(std::uint8_t opcode) noexcept;
 }  // namespace silkworm
 
 inline auto hash_of(const silkworm::ByteView& bytes) {
-    return ethash::keccak256(bytes.data(), bytes.length());
+    return ethash::keccak256(bytes.data(), bytes.size());
 }
 
 inline auto hash_of_transaction(const silkworm::Transaction& txn) {
     silkworm::Bytes txn_rlp{};
     silkworm::rlp::encode(txn_rlp, txn, /*wrap_eip2718_into_string=*/false);
-    return ethash::keccak256(txn_rlp.data(), txn_rlp.length());
+    return ethash::keccak256(txn_rlp.data(), txn_rlp.size());
 }
 
 namespace boost::asio {
+
 inline std::ostream& operator<<(std::ostream& out, const const_buffer& buffer) {
     out << std::string{static_cast<const char*>(buffer.data()), buffer.size()};
     return out;
@@ -82,4 +70,5 @@ inline std::ostream& operator<<(std::ostream& out, const std::vector<const_buffe
     }
     return out;
 }
+
 }  // namespace boost::asio

@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -58,7 +45,9 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
         Schema::RepositoryDef schema,
         datastore::StepToTimestampConverter step_converter,
         std::optional<uint32_t> index_salt,
-        std::unique_ptr<IndexBuildersFactory> index_builders_factory);
+        std::unique_ptr<IndexBuildersFactory> index_builders_factory,
+        std::optional<DomainGetLatestCaches> domain_caches,
+        std::optional<InvertedIndexSeekCaches> inverted_index_caches);
 
     SnapshotRepository(SnapshotRepository&&) = default;
     SnapshotRepository& operator=(SnapshotRepository&&) noexcept = delete;
@@ -78,6 +67,9 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
 
     //! Replace bundles whose ranges are contained within the given bundle
     void replace_snapshot_bundles(SnapshotBundle bundle);
+
+    DomainGetLatestCache* domain_get_latest_cache(const datastore::EntityName& name) const override;
+    InvertedIndexSeekCache* inverted_index_seek_cache(const datastore::EntityName& name) const override;
 
     size_t bundles_count() const override;
 
@@ -143,6 +135,10 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
     //! Full snapshot bundles ordered by block_from
     std::shared_ptr<Bundles> bundles_;
     std::unique_ptr<std::mutex> bundles_mutex_;
+
+    //! Cache for D/II values across all bundles
+    std::optional<DomainGetLatestCaches> domain_caches_;
+    std::optional<InvertedIndexSeekCaches> inverted_index_caches_;
 };
 
 }  // namespace silkworm::snapshots

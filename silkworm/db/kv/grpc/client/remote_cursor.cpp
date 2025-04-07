@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "remote_cursor.hpp"
 
@@ -49,7 +36,7 @@ Task<api::KeyValue> RemoteCursor::seek(ByteView key) {
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK);
     seek_message.set_cursor(cursor_id_);
-    seek_message.set_k(key.data(), key.length());
+    seek_message.set_k(key.data(), key.size());
     auto seek_pair = co_await write_and_read(seek_message);
     auto k = string_to_bytes(seek_pair.k());
     auto v = string_to_bytes(seek_pair.v());
@@ -63,7 +50,7 @@ Task<api::KeyValue> RemoteCursor::seek_exact(ByteView key) {
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK_EXACT);
     seek_message.set_cursor(cursor_id_);
-    seek_message.set_k(key.data(), key.length());
+    seek_message.set_k(key.data(), key.size());
     auto seek_pair = co_await write_and_read(seek_message);
     auto k = string_to_bytes(seek_pair.k());
     auto v = string_to_bytes(seek_pair.v());
@@ -137,8 +124,8 @@ Task<Bytes> RemoteCursor::seek_both(ByteView key, ByteView value) {
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK_BOTH);
     seek_message.set_cursor(cursor_id_);
-    seek_message.set_k(key.data(), key.length());
-    seek_message.set_v(value.data(), value.length());
+    seek_message.set_k(key.data(), key.size());
+    seek_message.set_v(value.data(), value.size());
     auto seek_pair = co_await write_and_read(seek_message);
     const auto k = string_to_bytes(seek_pair.k());
     const auto v = string_to_bytes(seek_pair.v());
@@ -152,8 +139,8 @@ Task<api::KeyValue> RemoteCursor::seek_both_exact(ByteView key, ByteView value) 
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK_BOTH_EXACT);
     seek_message.set_cursor(cursor_id_);
-    seek_message.set_k(key.data(), key.length());
-    seek_message.set_v(value.data(), value.length());
+    seek_message.set_k(key.data(), key.size());
+    seek_message.set_v(value.data(), value.size());
     auto seek_pair = co_await write_and_read(seek_message);
     auto k = string_to_bytes(seek_pair.k());
     auto v = string_to_bytes(seek_pair.v());

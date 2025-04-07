@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "block.hpp"
 
@@ -90,7 +77,7 @@ namespace rlp {
         rlp_head.payload_length += length(header.gas_used);                                // gas_used
         rlp_head.payload_length += length(header.timestamp);                               // timestamp
         if (exclude_extra_data_sig) {
-            const auto extra_data_no_signature = header.extra_data.substr(0, header.extra_data.length() - protocol::kExtraSealSize);
+            const auto extra_data_no_signature = header.extra_data.substr(0, header.extra_data.size() - protocol::kExtraSealSize);
             rlp_head.payload_length += length(extra_data_no_signature);  // extra_data -signature
         } else {
             rlp_head.payload_length += length(header.extra_data);  // extra_data
@@ -141,8 +128,8 @@ namespace rlp {
         encode(to, header.gas_used);
         encode(to, header.timestamp);
         if (exclude_extra_data_sig) {
-            SILKWORM_ASSERT(header.extra_data.length() >= protocol::kExtraSealSize);
-            const ByteView extra_data_no_signature{header.extra_data.data(), header.extra_data.length() - protocol::kExtraSealSize};
+            SILKWORM_ASSERT(header.extra_data.size() >= protocol::kExtraSealSize);
+            const ByteView extra_data_no_signature{header.extra_data.data(), header.extra_data.size() - protocol::kExtraSealSize};
             encode(to, extra_data_no_signature);
         } else {
             encode(to, header.extra_data);
@@ -179,7 +166,7 @@ namespace rlp {
         if (!rlp_head->list) {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
-        const uint64_t leftover{from.length() - rlp_head->payload_length};
+        const uint64_t leftover{from.size() - rlp_head->payload_length};
         if (mode != Leftover::kAllow && leftover) {
             return tl::unexpected{DecodingError::kInputTooLong};
         }
@@ -204,7 +191,7 @@ namespace rlp {
             return res;
         }
 
-        if (from.length() > leftover) {
+        if (from.size() > leftover) {
             to.base_fee_per_gas = 0;
             if (DecodingResult res{decode(from, *to.base_fee_per_gas, Leftover::kAllow)}; !res) {
                 return res;
@@ -213,7 +200,7 @@ namespace rlp {
             to.base_fee_per_gas = std::nullopt;
         }
 
-        if (from.length() > leftover) {
+        if (from.size() > leftover) {
             to.withdrawals_root = evmc::bytes32{};
             if (DecodingResult res{decode(from, *to.withdrawals_root, Leftover::kAllow)}; !res) {
                 return res;
@@ -222,7 +209,7 @@ namespace rlp {
             to.withdrawals_root = std::nullopt;
         }
 
-        if (from.length() > leftover) {
+        if (from.size() > leftover) {
             to.blob_gas_used = 0;
             to.excess_blob_gas = 0;
             to.parent_beacon_block_root = evmc::bytes32{};
@@ -237,7 +224,7 @@ namespace rlp {
             to.parent_beacon_block_root = std::nullopt;
         }
 
-        if (from.length() > leftover) {
+        if (from.size() > leftover) {
             to.requests_hash = evmc::bytes32{};
             if (DecodingResult res{decode(from, *to.requests_hash, Leftover::kAllow)}; !res) {
                 return res;
@@ -246,7 +233,7 @@ namespace rlp {
             to.requests_hash = std::nullopt;
         }
 
-        if (from.length() != leftover) {
+        if (from.size() != leftover) {
             return tl::unexpected{DecodingError::kUnexpectedListElements};
         }
         return {};
@@ -284,7 +271,7 @@ namespace rlp {
         if (!rlp_head->list) {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
-        const uint64_t leftover{from.length() - rlp_head->payload_length};
+        const uint64_t leftover{from.size() - rlp_head->payload_length};
         if (mode != Leftover::kAllow && leftover) {
             return tl::unexpected{DecodingError::kInputTooLong};
         }
@@ -294,7 +281,7 @@ namespace rlp {
         }
 
         to.withdrawals = std::nullopt;
-        if (from.length() > leftover) {
+        if (from.size() > leftover) {
             std::vector<Withdrawal> withdrawals;
             if (DecodingResult res{decode(from, withdrawals, Leftover::kAllow)}; !res) {
                 return res;
@@ -302,7 +289,7 @@ namespace rlp {
             to.withdrawals = withdrawals;
         }
 
-        if (from.length() != leftover) {
+        if (from.size() != leftover) {
             return tl::unexpected{DecodingError::kUnexpectedListElements};
         }
         return {};
@@ -316,7 +303,7 @@ namespace rlp {
         if (!rlp_head->list) {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
-        const uint64_t leftover{from.length() - rlp_head->payload_length};
+        const uint64_t leftover{from.size() - rlp_head->payload_length};
         if (mode != Leftover::kAllow && leftover) {
             return tl::unexpected{DecodingError::kInputTooLong};
         }
@@ -326,7 +313,7 @@ namespace rlp {
         }
 
         to.withdrawals = std::nullopt;
-        if (from.length() > leftover) {
+        if (from.size() > leftover) {
             std::vector<Withdrawal> withdrawals;
             if (DecodingResult res{decode(from, withdrawals, Leftover::kAllow)}; !res) {
                 return res;
@@ -334,7 +321,7 @@ namespace rlp {
             to.withdrawals = withdrawals;
         }
 
-        if (from.length() != leftover) {
+        if (from.size() != leftover) {
             return tl::unexpected{DecodingError::kUnexpectedListElements};
         }
         return {};

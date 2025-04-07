@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -366,7 +353,7 @@ class DataModel {
     //! Read the RLP encoded block transactions at specified block_num
     [[nodiscard]] bool read_rlp_transactions(BlockNum block_num, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const;
 
-    std::optional<BlockNum> read_tx_lookup(const evmc::bytes32& tx_hash) const;
+    std::optional<std::pair<BlockNum, TxnId>> read_tx_lookup(const evmc::bytes32& tx_hash) const;
 
     //! Read total difficulty at specified block_num
     std::optional<intx::uint256> read_total_difficulty(BlockNum block_num, const evmc::bytes32& hash) const;
@@ -384,8 +371,8 @@ class DataModel {
     bool is_body_in_snapshot(BlockNum block_num) const;
     bool read_rlp_transactions_from_snapshot(BlockNum block_num, std::vector<Bytes>& rlp_txs) const;
     bool read_transactions_from_snapshot(BlockNum block_num, uint64_t base_txn_id, uint64_t txn_count, std::vector<Transaction>& txs) const;
-    std::optional<BlockNum> read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const;
-    std::optional<BlockNum> read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const;
+    std::optional<std::pair<BlockNum, TxnId>> read_tx_lookup_from_db(const evmc::bytes32& tx_hash) const;
+    std::optional<std::pair<BlockNum, TxnId>> read_tx_lookup_from_snapshot(const evmc::bytes32& tx_hash) const;
 
     ROTxn& txn_;
     const snapshots::SnapshotRepositoryROAccess& repository_;

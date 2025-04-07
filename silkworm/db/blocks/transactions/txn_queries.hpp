@@ -1,18 +1,5 @@
-/*
-   Copyright 2024 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -50,11 +37,12 @@ class TransactionBlockNumByTxnHashSegmentQuery {
         : TransactionBlockNumByTxnHashSegmentQuery{
               make(db::blocks::BundleDataRef{*bundle})} {}
 
-    std::optional<BlockNum> exec(const Hash& hash) {
+    std::optional<std::pair<BlockNum, TxnId>> exec(const Hash& hash) {
         // Lookup the entire txn to check that the retrieved txn hash matches (no way to know if key exists in MPHF)
-        const auto transaction = cross_check_query_.exec(hash);
-        auto result = transaction ? index_.lookup_by_key(hash) : std::nullopt;
-        return result;
+        const auto cross_check_result = cross_check_query_.exec(hash);
+        const auto result = cross_check_result ? index_.lookup_by_key(hash) : std::nullopt;
+        if (!result) return std::nullopt;
+        return std::pair<BlockNum, TxnId>{*result, cross_check_result->timestamp};
     }
 
     static TransactionBlockNumByTxnHashSegmentQuery make(db::blocks::BundleDataRef bundle) {

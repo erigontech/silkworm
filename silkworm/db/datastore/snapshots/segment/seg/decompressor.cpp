@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "decompressor.hpp"
 
@@ -69,6 +56,14 @@ void CodeWord::set_next(CodeWord* next) {
 }
 
 std::ostream& operator<<(std::ostream& out, const PatternTable& pt) {
+    out << pt.to_string();
+    return out;
+}
+
+std::string PatternTable::to_string() const {
+    const auto& pt = *this;
+    std::stringstream out;
+
     out << "Pattern Table:\n";
     out << "bit length: " << pt.bit_length_ << "\n";
     out << std::setfill('0');
@@ -82,7 +77,7 @@ std::ostream& operator<<(std::ostream& out, const PatternTable& pt) {
         }
     }
     out << std::dec;
-    return out;
+    return out.str();
 }
 
 //! Build the table of word distances in range (0, 512) for each power of 2 in use except 2^0
@@ -284,6 +279,14 @@ int PositionTable::build_tree(std::span<Position> positions, uint64_t highest_de
 }
 
 std::ostream& operator<<(std::ostream& out, const PositionTable& pt) {
+    out << pt.to_string();
+    return out;
+}
+
+std::string PositionTable::to_string() const {
+    const auto& pt = *this;
+    std::stringstream out;
+
     out << "Position Table:\n";
     out << "bit length: " << pt.bit_length_ << "\n";
     out << std::setfill('0');
@@ -299,7 +302,7 @@ std::ostream& operator<<(std::ostream& out, const PositionTable& pt) {
         }
     }
     out << std::dec;
-    return out;
+    return out.str();
 }
 
 class Decompressor::ReadModeGuard {

@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "snapshot_repository.hpp"
 
@@ -40,7 +27,9 @@ SnapshotRepository::SnapshotRepository(
     Schema::RepositoryDef schema,
     StepToTimestampConverter step_converter,
     std::optional<uint32_t> index_salt,
-    std::unique_ptr<IndexBuildersFactory> index_builders_factory)
+    std::unique_ptr<IndexBuildersFactory> index_builders_factory,
+    std::optional<DomainGetLatestCaches> domain_caches,
+    std::optional<InvertedIndexSeekCaches> inverted_index_caches)
     : name_(std::move(name)),
       dir_path_(std::move(dir_path)),
       schema_(std::move(schema)),
@@ -48,7 +37,9 @@ SnapshotRepository::SnapshotRepository(
       index_salt_(index_salt),
       index_builders_factory_(std::move(index_builders_factory)),
       bundles_(std::make_shared<Bundles>()),
-      bundles_mutex_(std::make_unique<std::mutex>()) {
+      bundles_mutex_(std::make_unique<std::mutex>()),
+      domain_caches_{std::move(domain_caches)},
+      inverted_index_caches_{std::move(inverted_index_caches)} {
     if (open) reopen_folder();
 }
 
@@ -70,6 +61,18 @@ void SnapshotRepository::replace_snapshot_bundles(SnapshotBundle bundle) {
     bundles->insert_or_assign(key, std::make_shared<SnapshotBundle>(std::move(bundle)));
 
     bundles_ = bundles;
+}
+
+DomainGetLatestCache* SnapshotRepository::domain_get_latest_cache(const datastore::EntityName& name) const {
+    if (!domain_caches_) return nullptr;
+    if (!domain_caches_->contains(name)) return nullptr;
+    return domain_caches_->at(name).get();
+}
+
+InvertedIndexSeekCache* SnapshotRepository::inverted_index_seek_cache(const datastore::EntityName& name) const {
+    if (!inverted_index_caches_) return nullptr;
+    if (!inverted_index_caches_->contains(name)) return nullptr;
+    return inverted_index_caches_->at(name).get();
 }
 
 size_t SnapshotRepository::bundles_count() const {

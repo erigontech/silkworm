@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "intrinsic_gas.hpp"
 
@@ -41,7 +28,7 @@ intx::uint128 intrinsic_gas(const UnsignedTransaction& txn, const evmc_revision 
     // EIP-7702 Set EOA account code
     gas += txn.authorizations.size() * fee::kPerEmptyAccountCost;
 
-    const uint64_t data_len{txn.data.length()};
+    const uint64_t data_len{txn.data.size()};
     if (data_len == 0) {
         return gas;
     }
@@ -63,7 +50,7 @@ intx::uint128 intrinsic_gas(const UnsignedTransaction& txn, const evmc_revision 
 // EIP-7623: Increase calldata cost
 uint64_t floor_cost(const UnsignedTransaction& txn) noexcept {
     const uint64_t zero_bytes = static_cast<uint64_t>(std::ranges::count(txn.data, 0));
-    const uint64_t non_zero_bytes{txn.data.length() - zero_bytes};
+    const uint64_t non_zero_bytes{txn.data.size() - zero_bytes};
     return fee::kGTransaction + (zero_bytes + non_zero_bytes * 4) * fee::kTotalCostFloorPerToken;
 }
 

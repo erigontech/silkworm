@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include <iterator>
 
@@ -51,9 +38,9 @@ TEST_CASE("HashBuilder1") {
 
     Bytes branch_payload;
     branch_payload.push_back(rlp::kEmptyStringCode);  // nibble 0
-    rlp::encode_header(branch_payload, {.list = true, .payload_length = leaf1_payload.length()});
+    rlp::encode_header(branch_payload, {.list = true, .payload_length = leaf1_payload.size()});
     branch_payload.append(leaf1_payload);
-    rlp::encode_header(branch_payload, {.list = true, .payload_length = leaf2_payload.length()});
+    rlp::encode_header(branch_payload, {.list = true, .payload_length = leaf2_payload.size()});
     branch_payload.append(leaf2_payload);
 
     // nibbles 3 to 15 plus nil value
@@ -62,10 +49,10 @@ TEST_CASE("HashBuilder1") {
     }
 
     Bytes branch_rlp;
-    const rlp::Header branch_head{/*list=*/true, branch_payload.length()};
+    const rlp::Header branch_head{/*list=*/true, branch_payload.size()};
     rlp::encode_header(branch_rlp, branch_head);
     branch_rlp.append(branch_payload);
-    REQUIRE(branch_rlp.length() < kHashLength);
+    REQUIRE(branch_rlp.size() < kHashLength);
 
     // odd extension
     const Bytes encoded_path{*from_hex("1000000000000000000000000000000000000000000000000000000000000000")};
@@ -75,10 +62,10 @@ TEST_CASE("HashBuilder1") {
     extension_payload.append(branch_rlp);
 
     Bytes extension_rlp;
-    const rlp::Header extension_head{/*list=*/true, extension_payload.length()};
+    const rlp::Header extension_head{/*list=*/true, extension_payload.size()};
     rlp::encode_header(extension_rlp, extension_head);
     extension_rlp.append(extension_payload);
-    REQUIRE(extension_rlp.length() >= kHashLength);
+    REQUIRE(extension_rlp.size() >= kHashLength);
 
     const ethash::hash256 hash{keccak256(extension_rlp)};
     const auto root_hash{hb.root_hash()};
@@ -110,15 +97,15 @@ TEST_CASE("HashBuilder2") {
 
     // leaf node 0
     Bytes rlp1_0{*from_hex("c882206f84") + val0};
-    REQUIRE(rlp1_0.length() < kHashLength);
+    REQUIRE(rlp1_0.size() < kHashLength);
 
     // leaf node 1
     Bytes rlp1_1{*from_hex("cb84206f6f6485") + val1};
-    REQUIRE(rlp1_1.length() < kHashLength);
+    REQUIRE(rlp1_1.size() < kHashLength);
 
     // branch node
     Bytes rlp1_2{*from_hex("e480808080") + rlp1_0 + *from_hex("8080") + rlp1_1 + *from_hex("808080808080808080")};
-    REQUIRE(rlp1_2.length() >= kHashLength);
+    REQUIRE(rlp1_2.size() >= kHashLength);
 
     evmc::bytes32 hash1_2;
     std::memcpy(hash1_2.bytes, keccak256(rlp1_2).bytes, kHashLength);

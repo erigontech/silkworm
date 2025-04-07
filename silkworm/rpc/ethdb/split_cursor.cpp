@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "split_cursor.hpp"
 
@@ -56,7 +43,7 @@ bool SplitCursor::match_key(const ByteView& key) {
     if (match_bytes_ == 0) {
         return true;
     }
-    if (key.length() < match_bytes_) {
+    if (key.size() < match_bytes_) {
         return false;
     }
     if (first_bytes_ != key.substr(0, match_bytes_ - 1)) {
@@ -77,10 +64,10 @@ SplittedKeyValue SplitCursor::split_key_value(const KeyValue& kv) {
 
     SplittedKeyValue skv{key.substr(0, part1_end_)};
 
-    if (key.length() > part2_start_) {
+    if (key.size() > part2_start_) {
         skv.key2 = kv.key.substr(part2_start_, part3_start_ - part2_start_);
     }
-    if (key.length() > part3_start_) {
+    if (key.size() > part3_start_) {
         skv.key3 = kv.key.substr(part3_start_);
     }
 
@@ -127,7 +114,7 @@ bool SplitCursorDupSort::match_key(const ByteView& key) {
     if (match_bytes_ == 0) {
         return true;
     }
-    if (key.length() < match_bytes_) {
+    if (key.size() < match_bytes_) {
         return false;
     }
     if (first_bytes_ != key.substr(0, match_bytes_ - 1)) {

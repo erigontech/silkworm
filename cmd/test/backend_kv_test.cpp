@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include <chrono>
 #include <condition_variable>
@@ -51,12 +38,22 @@ struct UnaryStats {
     uint64_t completed_count{0};
     uint64_t ok_count{0};
     uint64_t ko_count{0};
+
+    std::string to_string() const;
 };
 
-inline std::ostream& operator<<(std::ostream& out, const UnaryStats& stats) {
+std::ostream& operator<<(std::ostream& out, const UnaryStats& stats) {
+    out << stats.to_string();
+    return out;
+}
+
+std::string UnaryStats::to_string() const {
+    const UnaryStats& stats = *this;
+    std::stringstream out;
+
     out << "started=" << stats.started_count << " completed=" << stats.completed_count
         << " [OK=" << stats.ok_count << " KO=" << stats.ko_count << "]";
-    return out;
+    return out.str();
 }
 
 class AsyncCall {
@@ -143,13 +140,23 @@ struct ServerStreamingStats {
     uint64_t cancelled_count{0};
     uint64_t ok_count{0};
     uint64_t ko_count{0};
+
+    std::string to_string() const;
 };
 
-inline std::ostream& operator<<(std::ostream& out, const ServerStreamingStats& stats) {
+std::ostream& operator<<(std::ostream& out, const ServerStreamingStats& stats) {
+    out << stats.to_string();
+    return out;
+}
+
+std::string ServerStreamingStats::to_string() const {
+    const auto& stats = *this;
+    std::stringstream out;
+
     out << "started=" << stats.started_count << " received=" << stats.received_count
         << " completed=" << stats.completed_count << " cancelled=" << stats.cancelled_count
         << " [OK=" << stats.ok_count << " KO=" << stats.ko_count << "]";
-    return out;
+    return out.str();
 }
 
 template <typename Reply>
@@ -273,12 +280,22 @@ struct BidirectionalStreamingStats {
     uint64_t completed_count{0};
     uint64_t ok_count{0};
     uint64_t ko_count{0};
+
+    std::string to_string() const;
 };
 
 std::ostream& operator<<(std::ostream& out, const BidirectionalStreamingStats& stats) {
+    out << stats.to_string();
+    return out;
+}
+
+std::string BidirectionalStreamingStats::to_string() const {
+    const auto& stats = *this;
+    std::stringstream out;
+
     out << "started=" << stats.started_count << " sent=" << stats.sent_count << " received=" << stats.received_count
         << " completed=" << stats.completed_count << " [OK=" << stats.ok_count << " KO=" << stats.ko_count << "]";
-    return out;
+    return out.str();
 }
 
 template <typename Request, typename Reply>
@@ -662,11 +679,19 @@ class AsyncKvVersionCall : public AsyncUnaryCall<
 };
 
 namespace remote {
-inline std::ostream& operator<<(std::ostream& out, const Pair& kv_pair) {
+
+std::string pair_to_string(const Pair& kv_pair) {
+    std::stringstream out;
     out << "k=" << silkworm::to_hex(silkworm::Bytes(kv_pair.k().begin(), kv_pair.k().end()))
         << " v= " << silkworm::to_hex(silkworm::Bytes(kv_pair.v().begin(), kv_pair.v().end()));
+    return out.str();
+}
+
+std::ostream& operator<<(std::ostream& out, const Pair& kv_pair) {
+    out << pair_to_string(kv_pair);
     return out;
 }
+
 }  // namespace remote
 
 class AsyncTxCall

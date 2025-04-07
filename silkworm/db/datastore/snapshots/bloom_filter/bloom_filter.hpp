@@ -1,18 +1,5 @@
-/*
-   Copyright 2024 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -23,7 +10,7 @@
 #include <optional>
 #include <vector>
 
-#include "bloom_filter_key_hasher.hpp"
+#include "../common/key_hasher.hpp"
 
 namespace silkworm::snapshots::bloom_filter {
 
@@ -33,7 +20,7 @@ class BloomFilter {
   public:
     explicit BloomFilter(
         std::filesystem::path path,
-        std::optional<BloomFilterKeyHasher> data_key_hasher = std::nullopt);
+        std::optional<KeyHasher> data_key_hasher = std::nullopt);
     BloomFilter();
     BloomFilter(uint64_t max_key_count, double p);
 
@@ -70,7 +57,7 @@ class BloomFilter {
     std::filesystem::path path_;
 
     //! Data key hasher
-    std::optional<BloomFilterKeyHasher> data_key_hasher_;
+    std::optional<KeyHasher> data_key_hasher_;
 
     //! The number of bits that the bitmap should be able to track
     uint64_t bits_count_;

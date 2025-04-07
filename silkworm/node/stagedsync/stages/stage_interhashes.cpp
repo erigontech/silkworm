@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "stage_interhashes.hpp"
 
@@ -413,10 +400,10 @@ trie::PrefixSet InterHashes::collect_storage_changes(RWTxn& txn, BlockNum from, 
 
             auto unpacked_location{trie::unpack_nibbles(hashed_location.bytes)};
             std::memcpy(&hashed_key[kHashedStoragePrefixLength], unpacked_location.data(),
-                        unpacked_location.length());
-            auto ret_item{ByteView(hashed_key.data(), kHashedStoragePrefixLength + unpacked_location.length())};
+                        unpacked_location.size());
+            auto ret_item{ByteView(hashed_key.data(), kHashedStoragePrefixLength + unpacked_location.size())};
 
-            ret.insert(ret_item, changeset_value_view.length() == kHashLength);
+            ret.insert(ret_item, changeset_value_view.size() == kHashLength);
             changeset_data = storage_changeset->to_current_next_multi(/*throw_notfound=*/false);
         }
 

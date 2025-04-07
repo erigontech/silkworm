@@ -1,35 +1,21 @@
-/*
-   Copyright 2023 The Silkworm Authors
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+#pragma once
 
 #include <iostream>
 #include <memory>
 #include <stdexcept>
 
-#include <ethash/keccak.hpp>
 #include <nlohmann/json.hpp>
 
-#include "cmd/state-transition/expected_state.hpp"
-#include "silkworm/core/common/bytes_to_string.hpp"
-#include "silkworm/core/execution/execution.hpp"
-#include "silkworm/core/protocol/rule_set.hpp"
-#include "silkworm/core/rlp/encode_vector.hpp"
-#include "silkworm/core/state/in_memory_state.hpp"
-#include "silkworm/sentry/common/ecc_key_pair.hpp"
+#include <silkworm/core/execution/execution.hpp>
+#include <silkworm/core/state/in_memory_state.hpp>
+
+#include "expected_state.hpp"
 
 namespace silkworm::cmd::state_transition {
+
 class StateTransition {
   private:
     nlohmann::json test_data_;
@@ -59,4 +45,5 @@ class StateTransition {
     void validate_transition(const Receipt& receipt, const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const InMemoryState& state);
     void run();
 };
+
 }  // namespace silkworm::cmd::state_transition

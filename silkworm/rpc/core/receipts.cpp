@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "receipts.hpp"
 
@@ -174,7 +161,7 @@ Task<std::optional<Receipts>> generate_receipts(db::kv::api::Transaction& tx,
     const auto txn_id = co_await tx.user_txn_id_at(block_num);
 
     const auto receipts = co_await async_task(workers.executor(), [&]() -> Receipts {
-        auto state = state_factory.create_state(current_executor, chain_storage, txn_id);
+        auto state = state_factory.make(current_executor, chain_storage, txn_id);
 
         EVMExecutor executor{block, chain_config, workers, state};
 
@@ -214,7 +201,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     execution::StateFactory state_factory{tx};
 
     auto new_receipt = co_await async_task(workers.executor(), [&]() -> Receipt {
-        auto state = state_factory.create_state(current_executor, chain_storage, txn_id);
+        auto state = state_factory.make(current_executor, chain_storage, txn_id);
 
         EVMExecutor executor{block, chain_config, workers, state};
 
@@ -240,7 +227,7 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     db::state::VarintSnapshotsDecoder varint;
     Word value1{std::move(result.value)};
     varint.decode_word(value1);
-    auto first_cumulative_gas_used_in_tx = varint.value;
+    const auto first_cumulative_gas_used_in_tx = varint.value;
 
     db::kv::api::GetAsOfRequest query_first_log_index{
         .table = db::table::kReceiptDomain,
@@ -260,6 +247,17 @@ Task<std::optional<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     new_receipt.from = transaction.sender();
     new_receipt.to = transaction.to;
     new_receipt.type = transaction.type;
+    new_receipt.block_num = block.header.number;
+    new_receipt.block_hash = block.header.hash();
+    new_receipt.tx_hash = transaction.hash();
+    new_receipt.tx_index = tx_index;
+    new_receipt.effective_gas_price = transaction.effective_gas_price(block.header.base_fee_per_gas.value_or(0));
+
+    // When tx receiver is not set, compute contract address depending on tx sender and its nonce
+    const auto sender = transaction.sender();
+    if (!transaction.to && sender) {
+        new_receipt.contract_address = create_address(*sender, transaction.nonce);
+    }
 
     for (auto& curr_log : new_receipt.logs) {
         curr_log.block_num = block.header.number;

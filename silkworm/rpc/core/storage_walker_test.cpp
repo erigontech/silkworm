@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "storage_walker.hpp"
 
@@ -194,7 +181,7 @@ class DummyTransaction : public BaseTransaction {
         co_return cursor;
     }
 
-    std::shared_ptr<ChainStorage> create_storage() override {
+    std::shared_ptr<ChainStorage> make_storage() override {
         return nullptr;
     }
 
@@ -289,7 +276,7 @@ TEST_CASE("StorageWalker::storage_range_at") {
     nlohmann::json storage({});
     StorageWalker::StorageCollector collector = [&](const silkworm::ByteView key, const silkworm::ByteView sec_key, const silkworm::ByteView value) {
         auto val = silkworm::to_hex(value);
-        val.insert(0, 64 - val.length(), '0');
+        val.insert(0, 64 - val.size(), '0');
         storage["0x" + silkworm::to_hex(sec_key)] = {{"key", "0x" + silkworm::to_hex(key)}, {"value", "0x" + val}};
 
         return true;

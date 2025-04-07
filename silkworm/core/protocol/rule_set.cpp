@@ -1,22 +1,10 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "rule_set.hpp"
 
 #include <algorithm>
+#include <sstream>
 
 #include <silkworm/core/common/empty_hashes.hpp>
 #include <silkworm/core/common/overloaded.hpp>
@@ -213,7 +201,7 @@ ValidationResult RuleSet::validate_block_header(const BlockHeader& header, const
 }
 
 ValidationResult RuleSet::validate_extra_data(const BlockHeader& header) const {
-    if (header.extra_data.length() > kMaxExtraDataBytes) {
+    if (header.extra_data.size() > kMaxExtraDataBytes) {
         return ValidationResult::kExtraDataTooLong;
     }
     return ValidationResult::kOk;
@@ -282,6 +270,26 @@ RuleSetPtr rule_set_factory(const ChainConfig& chain_config) {
         rule_set = std::make_unique<MergeRuleSet>(std::move(rule_set), chain_config);
     }
     return rule_set;
+}
+
+std::ostream& operator<<(std::ostream& out, const BlockReward& reward) {
+    out << reward.to_string();
+    return out;
+}
+
+std::string BlockReward::to_string() const {
+    const auto& reward = *this;
+    std::stringstream out;
+
+    out << "miner_reward: " << intx::to_string(reward.miner) << " ommer_rewards: [";
+    for (size_t i{0}; i < reward.ommers.size(); ++i) {
+        out << intx::to_string(reward.ommers[i]);
+        if (i != reward.ommers.size() - 1) {
+            out << " ";
+        }
+    }
+    out << "]";
+    return out.str();
 }
 
 }  // namespace silkworm::protocol

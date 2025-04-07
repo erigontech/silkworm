@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -51,15 +38,23 @@ class BlockReader {
     BlockReader(const BlockReader&) = delete;
     BlockReader& operator=(const BlockReader&) = delete;
 
+    Task<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, BlockNum block_num) const;
+
+    Task<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const evmc::bytes32& block_hash) const;
+
+    Task<std::shared_ptr<BlockWithHash>> read_block_by_block_num_or_hash(BlockCache& cache, const BlockNumOrHash& block_num_or_hash) const;
+
+    Task<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const evmc::bytes32& transaction_hash) const;
+
     Task<void> read_balance_changes(BlockCache& cache, const BlockNumOrHash& block_num_or_hash, BalanceChanges& balance_changes) const;
 
     Task<bool> is_latest_block_num(BlockNum block_num) const;
 
-    Task<BlockNum> get_block_num_by_tag(const std::string& block_id) const;
+    Task<BlockNum> get_block_num_by_tag(std::string_view block_id) const;
 
-    Task<std::pair<BlockNum, bool>> get_block_num(const std::string& block_id, bool latest_required) const;
+    Task<std::pair<BlockNum, bool>> get_block_num(std::string_view block_id, bool latest_required) const;
 
-    Task<BlockNum> get_block_num(const std::string& block_id) const;
+    Task<BlockNum> get_block_num(std::string_view block_id) const;
 
     Task<std::pair<BlockNum, bool>> get_block_num(const BlockNumOrHash& block_num_or_hash) const;
 

@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "connection.hpp"
 
@@ -36,6 +23,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
+#include <silkworm/rpc/http/deflater.hpp>
 
 namespace silkworm::rpc::http {
 
@@ -315,7 +303,7 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
 
             co_await compress(content, compressed_content);
 
-            res.content_length(compressed_content.length());
+            res.content_length(compressed_content.size());
             res.body() = std::move(compressed_content);
         } else {
             // Any negative response or positive response w/o compression
@@ -477,13 +465,9 @@ std::string Connection::get_date_time() {
 }
 
 Task<void> Connection::compress(const std::string& clear_data, std::string& compressed_data) {
-    boost::iostreams::filtering_ostream out;
     co_await async_task(workers_.executor(), [&]() -> void {
-#ifndef SILKWORM_SANITIZE
-        out.push(boost::iostreams::gzip_compressor());
-#endif
-        out.push(boost::iostreams::back_inserter(compressed_data));
-        boost::iostreams::copy(boost::make_iterator_range(clear_data), out);
+        Deflater deflater;
+        deflater.compress(clear_data, compressed_data);
     });
 }
 

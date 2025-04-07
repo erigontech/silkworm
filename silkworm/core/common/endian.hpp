@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -99,7 +86,7 @@ ByteView to_big_compact(const intx::uint256& value);
 //! if the input is not compact kLeadingZero is returned.
 template <UnsignedIntegral T>
 static DecodingResult from_big_compact(ByteView data, T& out) {
-    if (data.length() > sizeof(T)) {
+    if (data.size() > sizeof(T)) {
         return tl::unexpected{DecodingError::kOverflow};
     }
 
@@ -113,7 +100,7 @@ static DecodingResult from_big_compact(ByteView data, T& out) {
     }
 
     auto* ptr{reinterpret_cast<uint8_t*>(&out)};
-    std::memcpy(ptr + (sizeof(T) - data.length()), &data[0], data.length());
+    std::memcpy(ptr + (sizeof(T) - data.size()), &data[0], data.size());
 
     out = intx::to_big_endian(out);
     return {};

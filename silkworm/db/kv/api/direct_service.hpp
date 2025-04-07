@@ -1,23 +1,11 @@
-/*
-   Copyright 2024 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <silkworm/db/data_store.hpp>
 
+#include "local_transaction.hpp"
 #include "service.hpp"
 #include "service_router.hpp"
 
@@ -27,7 +15,7 @@ namespace silkworm::db::kv::api {
 //! This is used both client-side by 'direct' (i.e. no-gRPC) implementation and server-side by gRPC server.
 class DirectService : public Service {
   public:
-    DirectService(ServiceRouter router, DataStoreRef data_store, StateCache* state_cache);
+    DirectService(ServiceRouter router, DataStoreRef data_store, const ChainConfig& chain_config, StateCache* state_cache);
     ~DirectService() override = default;
 
     DirectService(const DirectService&) = delete;
@@ -51,6 +39,9 @@ class DirectService : public Service {
 
     //! The data store
     DataStoreRef data_store_;
+
+    //! The chain configuration
+    const ChainConfig& chain_config_;
 
     //! The local state cache built upon incoming state changes
     StateCache* state_cache_;

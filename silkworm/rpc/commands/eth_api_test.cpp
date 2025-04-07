@@ -1,18 +1,5 @@
-/*
-   Copyright 2023 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
@@ -95,13 +82,13 @@ TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_sendRawTransaction fails t
 }
 
 TEST_CASE_METHOD(test_util::RpcApiE2ETest, "unit: eth_feeHistory succeeds if request well-formed", "[rpc][api]") {
-    const nlohmann::json request = R"({"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["0x1","0x867A80",[25,75]]})"_json;
+    const nlohmann::json request = R"({"jsonrpc":"2.0","id":1,"method":"eth_feeHistory","params":["0x1","0x9",[25,75]]})"_json;
     std::string reply;
     run<&test_util::RequestHandlerForTest::request_and_create_reply>(request, reply);
     CHECK(nlohmann::json::parse(reply) == R"({
         "jsonrpc":"2.0",
         "id":1,
-        "result":{"gasUsedRatio":null,"oldestBlock":"0x0", "blobGasUsedRatio":null}
+        "result":{"baseFeePerBlobGas":["0x0","0x0"],"baseFeePerGas":["0x122af097","0xfea74b1"],"blobGasUsedRatio":[0.0],"gasUsedRatio":[0.0042],"oldestBlock":"0x9","reward":[["0x1","0x1"]]}
     })"_json);
 }
 

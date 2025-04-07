@@ -1,18 +1,5 @@
-/*
-   Copyright 2022 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
+// Copyright 2025 The Silkworm Authors
+// SPDX-License-Identifier: Apache-2.0
 
 #include "util.hpp"
 
@@ -31,10 +18,10 @@ using datastore::kvdb::from_slice;
 using datastore::kvdb::to_slice;
 
 Bytes storage_prefix(ByteView address, uint64_t incarnation) {
-    SILKWORM_ASSERT(address.length() == kAddressLength || address.length() == kHashLength);
-    Bytes res(address.length() + kIncarnationLength, '\0');
-    std::memcpy(&res[0], address.data(), address.length());
-    endian::store_big_u64(&res[address.length()], incarnation);
+    SILKWORM_ASSERT(address.size() == kAddressLength || address.size() == kHashLength);
+    Bytes res(address.size() + kIncarnationLength, '\0');
+    std::memcpy(&res[0], address.data(), address.size());
+    endian::store_big_u64(&res[address.size()], incarnation);
     return res;
 }
 
@@ -71,7 +58,7 @@ std::tuple<BlockNum, evmc::bytes32> split_block_key(ByteView key) {
 
     ByteView hash_part = key.substr(sizeof(BlockNum));
     evmc::bytes32 hash;
-    std::memcpy(hash.bytes, hash_part.data(), hash_part.length());
+    std::memcpy(hash.bytes, hash_part.data(), hash_part.size());
 
     return {block_num, hash};
 }
@@ -148,8 +135,8 @@ std::tuple<ByteView, uint32_t> split_log_topic_key(const mdbx::slice& key) {
 
 std::pair<Bytes, Bytes> changeset_to_plainstate_format(const ByteView key, ByteView value) {
     if (key.size() == sizeof(BlockNum)) {
-        if (value.length() < kAddressLength) {
-            throw std::runtime_error("Invalid value length " + std::to_string(value.length()) +
+        if (value.size() < kAddressLength) {
+            throw std::runtime_error("Invalid value length " + std::to_string(value.size()) +
                                      " for account changeset in " + std::string(__FUNCTION__));
         }
         // AccountChangeSet
@@ -157,9 +144,9 @@ std::pair<Bytes, Bytes> changeset_to_plainstate_format(const ByteView key, ByteV
         const Bytes previous_value{value.substr(kAddressLength)};
         return {address, previous_value};
     }
-    if (key.length() == sizeof(BlockNum) + kPlainStoragePrefixLength) {
-        if (value.length() < kHashLength) {
-            throw std::runtime_error("Invalid value length " + std::to_string(value.length()) +
+    if (key.size() == sizeof(BlockNum) + kPlainStoragePrefixLength) {
+        if (value.size() < kHashLength) {
+            throw std::runtime_error("Invalid value length " + std::to_string(value.size()) +
                                      " for storage changeset in " + std::string(__FUNCTION__));
         }
 
@@ -170,7 +157,7 @@ std::pair<Bytes, Bytes> changeset_to_plainstate_format(const ByteView key, ByteV
         value.remove_prefix(kHashLength);
         return {full_key, Bytes(value)};
     }
-    throw std::runtime_error("Invalid key length " + std::to_string(key.length()) + " in " + std::string(__FUNCTION__));
+    throw std::runtime_error("Invalid key length " + std::to_string(key.size()) + " in " + std::string(__FUNCTION__));
 }
 
 std::optional<ByteView> find_value_suffix(datastore::kvdb::ROCursorDupSort& table, ByteView key, ByteView value_prefix) {
@@ -181,7 +168,7 @@ std::optional<ByteView> find_value_suffix(datastore::kvdb::ROCursorDupSort& tabl
     }
 
     ByteView res{from_slice(data.value)};
-    res.remove_prefix(value_prefix.length());
+    res.remove_prefix(value_prefix.size());
     return res;
 }
 
@@ -191,9 +178,9 @@ void upsert_storage_value(datastore::kvdb::RWCursorDupSort& state_cursor, ByteVi
     }
     new_value = zeroless_view(new_value);
     if (!new_value.empty()) {
-        Bytes new_db_value(location.length() + new_value.length(), '\0');
-        std::memcpy(&new_db_value[0], location.data(), location.length());
-        std::memcpy(&new_db_value[location.length()], new_value.data(), new_value.length());
+        Bytes new_db_value(location.size() + new_value.size(), '\0');
+        std::memcpy(&new_db_value[0], location.data(), location.size());
+        std::memcpy(&new_db_value[location.size()], new_value.data(), new_value.size());
         state_cursor.upsert(to_slice(storage_prefix), to_slice(new_db_value));
     }
 }

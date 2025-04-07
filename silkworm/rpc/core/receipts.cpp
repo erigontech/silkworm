@@ -121,7 +121,7 @@ Task<std::shared_ptr<Receipts>> get_receipts(db::kv::api::Transaction& tx,
         }
     }
 
-    //std::cout << "add receipts into CASH: " << " hash: " << silkworm::to_hex(block_with_hash.hash) << "\n";
+    // std::cout << "add receipts into CASH: " << " hash: " << silkworm::to_hex(block_with_hash.hash) << "\n";
     receipts_cache.insert(block_with_hash.hash, receipts_ptr);
     co_return receipts_ptr;
 }
@@ -226,7 +226,7 @@ Task<std::shared_ptr<Receipt>> get_receipt(db::kv::api::Transaction& tx,
     if (receipts_optional) {
         hits_from_receipts_single_tx++;
         SILKWORM_ASSERT(tx_index < (*receipts_optional)->size() && (**receipts_optional)[tx_index]);
-        std::cout << "get single receipt from receipts vector CASH: " << hits_from_receipts_single_tx <<  " block-hash: " << silkworm::to_hex(block.header.hash()) << "\n";
+        std::cout << "get single receipt from receipts vector CASH: " << hits_from_receipts_single_tx << " block-hash: " << silkworm::to_hex(block.header.hash()) << "\n";
         auto receipts_ptr = *receipts_optional;
         co_return (*receipts_ptr)[tx_index];
     }
@@ -304,7 +304,7 @@ Task<std::shared_ptr<Receipt>> get_receipt(db::kv::api::Transaction& tx,
         curr_log.removed = false;
     }
 
-    //std::cout << "add single receipt to CASH: " <<  " tx-hash: " << silkworm::to_hex(transaction.hash()) << " tx_index: " << tx_index << " logs.size(): " <<  new_receipt->logs.size() << "\n";
+    // std::cout << "add single receipt to CASH: " <<  " tx-hash: " << silkworm::to_hex(transaction.hash()) << " tx_index: " << tx_index << " logs.size(): " <<  new_receipt->logs.size() << "\n";
     receipt_cache.insert(transaction.hash(), new_receipt);
     co_return new_receipt;
 }

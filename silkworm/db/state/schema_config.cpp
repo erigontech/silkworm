@@ -3,6 +3,8 @@
 
 #include "schema_config.hpp"
 
+#include <array>
+
 #include <silkworm/infra/common/environment.hpp>
 
 #include "state_index_builders_factory.hpp"
@@ -72,12 +74,14 @@ datastore::kvdb::Schema::DatabaseDef make_state_database_schema() {
 static constexpr size_t kDefaultDomainCacheSize = 10'000;
 static constexpr size_t kDefaultInvertedIndexCacheSize = 4'096;
 
-static constexpr const char* kDomainCacheEnvVar = "D_LRU_CACHE_SIZE";
-static constexpr const char* kInvertedIndexCacheEnvVar = "II_LRU_CACHE_SIZE";
+// 1. std::array instead of const char* because MSVC is stricter on non-type template parameters passed by reference
+// 2. explicit std::array template arguments to avoid incorrect CTAD as std::array<const char*, 1>
+static constexpr std::array<const char, 17> kDomainCacheEnvVar{"D_LRU_CACHE_SIZE"};
+static constexpr std::array<const char, 18> kInvertedIndexCacheEnvVar{"II_LRU_CACHE_SIZE"};
 
 template <typename Cache, const auto& env_var_name, size_t default_size>
 static size_t cache_size() {
-    const auto cache_size_var = Environment::get(env_var_name);
+    const auto cache_size_var = Environment::get(env_var_name.data());
     return cache_size_var.empty() ? default_size : std::stoul(cache_size_var);
 }
 

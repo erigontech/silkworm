@@ -15,7 +15,7 @@ namespace silkworm::rpc {
 
 class ReceiptCache {
   public:
-    explicit ReceiptCache(size_t capacity = 1024, bool shared_cache = true)
+    explicit ReceiptCache(size_t capacity = 1024 * 1000, bool shared_cache = true)
         : receipt_cache_(capacity, shared_cache) {}
 
     std::optional<std::shared_ptr<Receipt>> get(const evmc::bytes32& key) {

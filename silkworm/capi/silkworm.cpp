@@ -732,12 +732,23 @@ SILKWORM_EXPORT int silkworm_block_exec_end(SilkwormHandle handle, MDBX_txn* mdb
         return SILKWORM_INVALID_MDBX_TXN;
     }
 
-    auto unmanaged_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_tx};
-    auto unmanaged_env = silkworm::datastore::kvdb::EnvUnmanaged{::mdbx_txn_env(mdbx_tx)};
-    auto chain_db = db::DataStore::make_chaindata_database(std::move(unmanaged_env));
-    auto db_ref = chain_db.ref();
-
     SILKWORM_ASSERT(std::size(handle->receipts_in_current_block) == std::size(handle->transactions_in_current_block));
+
+    auto unmanaged_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_in_mem_temp_tx};
+    auto rw_cursor = unmanaged_tx.rw_cursor(db::table::kBlockReceipts);
+    uint64_t receipt_idx = 0;
+    for (const auto& receipt : handle->receipts_in_current_block) {
+        Bytes rlp_encoded;
+        rlp::encode(rlp_encoded, receipt);
+
+        Bytes key(sizeof(int64_t), '\0');
+
+        endian::store_big_u64(key.data(), receipt_idx);
+
+        rw_cursor->insert(datastore::kvdb::Slice(key), datastore::kvdb::Slice(rlp_encoded));
+
+        receipt_idx++;
+    }
 
     return SILKWORM_OK;
 }

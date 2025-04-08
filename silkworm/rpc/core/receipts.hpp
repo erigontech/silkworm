@@ -34,4 +34,6 @@ Task<std::shared_ptr<Receipt>> get_receipt(db::kv::api::Transaction& tx,
                                            const db::chain::ChainStorage& chain_storage,
                                            WorkerPool& workers);
 
+Task<std::shared_ptr<Receipts>> get_cached_receipts(const evmc::bytes32& hash);
+
 }  // namespace silkworm::rpc::core

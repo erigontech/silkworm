@@ -32,6 +32,15 @@ static int hits_from_receipt = 0;
 static int hits_from_receipts_single_tx = 0;
 static int hits_from_receipts_all_tx = 0;
 
+Task<std::shared_ptr<Receipts>> get_cached_receipts(const evmc::bytes32& hash) {
+    const auto receipts_optional = receipts_cache.get(hash);
+    if (receipts_optional) {
+        SILKWORM_ASSERT(*receipts_optional != nullptr);
+        co_return (*receipts_optional);
+    }
+    co_return nullptr;
+}
+
 Task<std::shared_ptr<Receipts>> get_receipts(db::kv::api::Transaction& tx,
                                              const silkworm::BlockWithHash& block_with_hash,
                                              const db::chain::ChainStorage& chain_storage,

@@ -58,10 +58,11 @@ static std::vector<std::string> parse_cors_domains(
 //! Build whole RPC daemon settings from their C representation
 static DaemonSettings make_daemon_settings(SilkwormHandle handle, const struct SilkwormRpcSettings& settings) {
     const auto jwt_path{parse_path(settings.jwt_file_path)};
+    const auto& common = handle->common;
     return {
-        .log_settings = handle->log_settings,
+        .log_settings = common.log_settings,
         .eth_ifc_log_settings = make_eth_ifc_log_settings(settings.eth_if_log_settings),
-        .context_pool_settings = handle->context_pool_settings,
+        .context_pool_settings = common.context_pool_settings,
         .eth_end_point = parse_end_point(settings.eth_api_host, settings.eth_api_port, kDefaultEth1EndPoint),
         .engine_end_point = "",  // disable end-point for Engine RPC API
         .eth_api_spec = std::string{settings.eth_api_spec},

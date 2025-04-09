@@ -123,3 +123,5 @@ else()
     add_link_options(-fsanitize=safe-stack)
   endif()
 endif()
+
+add_compile_definitions(SILKWORM_CAPI_COMPONENT)

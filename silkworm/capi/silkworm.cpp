@@ -39,7 +39,6 @@
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/rpc/daemon.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
@@ -240,12 +239,10 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
             .num_contexts = settings->num_contexts > 0 ? settings->num_contexts : silkworm::concurrency::kDefaultNumContexts,
         },
         .data_dir_path = std::move(data_dir_path),
-        .node_settings = {},
         .blocks_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(blocks_repository)),
         .state_repository_latest = std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository_latest)),
         .state_repository_historical = std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository_historical)),
         .rpcdaemon = {},
-        .execution_engine = {},
         .sentry_thread = {},
         .sentry_stop_signal = {},
     };

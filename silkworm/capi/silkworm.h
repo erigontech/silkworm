@@ -292,64 +292,9 @@ SILKWORM_EXPORT int silkworm_sentry_start(SilkwormHandle handle, const struct Si
  */
 SILKWORM_EXPORT int silkworm_sentry_stop(SilkwormHandle handle) SILKWORM_NOEXCEPT;
 
-//! Silkworm Fork Validator configuration options
-struct SilkwormForkValidatorSettings {
-    size_t batch_size;                    // Batch size to use in stages
-    size_t etl_buffer_size;               // Buffer size for ETL operations
-    uint32_t sync_loop_throttle_seconds;  // Minimum interval amongst sync cycle
-    bool stop_before_senders_stage;       // Stop before senders stage
-};
-
 struct SilkwormBytes32 {
     uint8_t bytes[32];
 };
-
-/**
- * \brief Start Silkworm fork validator.
- * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
- * \param[in] mdbx_env An valid MDBX environment.
- * \param[in] settings The Fork Validator configuration settings.
- */
-SILKWORM_EXPORT int silkworm_start_fork_validator(SilkwormHandle handle, MDBX_env* mdbx_env, const struct SilkwormForkValidatorSettings* settings) SILKWORM_NOEXCEPT;
-
-/**
- * \brief Stop Silkworm fork validator.
- * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
- */
-SILKWORM_EXPORT int silkworm_stop_fork_validator(SilkwormHandle handle) SILKWORM_NOEXCEPT;
-
-#define SILKWORM_FORK_VALIDATOR_ERROR_LENGTH 256
-#define SILKWORM_FORK_VALIDATOR_RESULT_STATUS_SUCCESS 0
-#define SILKWORM_FORK_VALIDATOR_RESULT_STATUS_BAD_BLOCK 1
-#define SILKWORM_FORK_VALIDATOR_RESULT_STATUS_TOO_FAR_AWAY 2
-#define SILKWORM_FORK_VALIDATOR_RESULT_STATUS_MISSING_SEGMENT 3
-#define SILKWORM_FORK_VALIDATOR_RESULT_STATUS_INVALID 4
-#define SILKWORM_FORK_VALIDATOR_RESULT_STATUS_BUSY 5
-
-struct SilkwormForkValidatorValidationResult {
-    size_t execution_status;
-    struct SilkwormBytes32 last_valid_hash;
-    char error_message[SILKWORM_FORK_VALIDATOR_ERROR_LENGTH];
-};
-
-/**
- * \brief Verify a chain with the fork validator.
- * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
- * \param[in] head_hash_bytes The hash of the head block.
- * \param[out] result The validation result.
- * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
- */
-SILKWORM_EXPORT int silkworm_fork_validator_verify_chain(SilkwormHandle handle, struct SilkwormBytes32 head_hash_bytes, struct SilkwormForkValidatorValidationResult* result) SILKWORM_NOEXCEPT;
-
-/**
- * \brief Update the fork choice of the validator.
- * \param[in] handle A valid Silkworm instance handle, got with silkworm_init.
- * \param[in] head_hash_bytes The hash of the head block.
- * \param[in] finalized_hash_bytes The hash of the finalized block (optional).
- * \param[in] safe_hash_bytes The hash of the safe block (optional).
- * \return SILKWORM_OK (=0) on success, a non-zero error value on failure.
- */
-SILKWORM_EXPORT int silkworm_fork_validator_fork_choice_update(SilkwormHandle handle, struct SilkwormBytes32 head_hash_bytes, struct SilkwormBytes32 finalized_hash_bytes, struct SilkwormBytes32 safe_hash_bytes) SILKWORM_NOEXCEPT;
 
 /**
  * \brief Execute a batch of blocks and push changes to the given database transaction. No data is commited.

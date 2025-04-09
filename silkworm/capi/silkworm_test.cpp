@@ -21,7 +21,6 @@
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/environment.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
 
 #include "instance.hpp"
 
@@ -191,35 +190,6 @@ struct SilkwormLibrary {
 
     int stop_rpcdaemon() const {
         return silkworm_stop_rpcdaemon(handle_);
-    }
-
-    int start_fork_validator(MDBX_env* env, const SilkwormForkValidatorSettings* settings) const {
-        return silkworm_start_fork_validator(handle_, env, settings);
-    }
-
-    int stop_fork_validator() const {
-        return silkworm_stop_fork_validator(handle_);
-    }
-
-    int fork_validator_verify_chain(silkworm::Hash head_hash) const {
-        SilkwormBytes32 head_hash_bytes{};
-        std::memcpy(head_hash_bytes.bytes, head_hash.bytes, 32);
-
-        auto result = std::make_unique<SilkwormForkValidatorValidationResult>();
-
-        return silkworm_fork_validator_verify_chain(handle_, head_hash_bytes, result.get());
-    }
-
-    int execution_engine_fork_choice_update(silkworm::Hash head_hash, silkworm::Hash finalized_hash, silkworm::Hash safe_hash) const {
-        SilkwormBytes32 head_hash_bytes{}, finalized_hash_bytes{}, safe_hash_bytes{};
-        std::memcpy(head_hash_bytes.bytes, head_hash.bytes, 32);
-        std::memcpy(finalized_hash_bytes.bytes, finalized_hash.bytes, 32);
-        std::memcpy(safe_hash_bytes.bytes, safe_hash.bytes, 32);
-        return silkworm_fork_validator_fork_choice_update(handle_, head_hash_bytes, finalized_hash_bytes, safe_hash_bytes);
-    }
-
-    silkworm::stagedsync::ExecutionEngine& execution_engine() const {
-        return *(handle_->execution_engine);
     }
 
   private:
@@ -1145,123 +1115,6 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_stop_rpcdaemon", "[capi]") {
     SECTION("already started") {
         REQUIRE(silkworm_lib.start_rpcdaemon(env, &kValidRpcSettings) == SILKWORM_OK);
         CHECK(silkworm_lib.stop_rpcdaemon() == SILKWORM_OK);
-    }
-}
-
-static SilkwormForkValidatorSettings make_fork_validator_settings_for_test() {
-    SilkwormForkValidatorSettings settings{
-        .batch_size = 512 * 1024 * 1024,
-        .etl_buffer_size = 256 * 1024 * 1024,
-        .sync_loop_throttle_seconds = 0,
-        .stop_before_senders_stage = true,
-    };
-
-    return settings;
-}
-
-static const SilkwormForkValidatorSettings kValidForkValidatorSettings{make_fork_validator_settings_for_test()};
-
-TEST_CASE_METHOD(CApiTest, "CAPI silkworm_fork_validator", "[capi]") {
-    // Use Silkworm as a library with silkworm_init/silkworm_fini automated by RAII
-    SilkwormLibrary silkworm_lib{env_path()};
-
-    SECTION("invalid handle") {
-        // We purposely do not call silkworm_init to provide a null handle
-        SilkwormHandle handle{nullptr};
-        CHECK(silkworm_start_fork_validator(handle, env, &kValidForkValidatorSettings) == SILKWORM_INVALID_HANDLE);
-    }
-
-    SECTION("invalid settings") {
-        CHECK(silkworm_lib.start_fork_validator(env, nullptr) == SILKWORM_INVALID_SETTINGS);
-    }
-
-    SECTION("starts fork validator with valid settings") {
-        CHECK(silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings) == SILKWORM_OK);
-        REQUIRE(silkworm_lib.stop_fork_validator() == SILKWORM_OK);
-    }
-
-    SECTION("validates chain") {
-        silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings);
-
-        auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
-        CHECK(current_head_id.block_num == 9);
-        CHECK(current_head_id.hash != Hash{});
-        auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.block_num, current_head_id.hash).value();
-        auto new_block = silkworm::test_util::generate_sample_child_blocks(current_head);
-        auto new_block_hash = new_block->header.hash();
-
-        auto insert_block_success = silkworm_lib.execution_engine().insert_block(new_block);
-        CHECK(insert_block_success);
-
-        auto result = silkworm_lib.fork_validator_verify_chain(new_block_hash);
-        CHECK(result == SILKWORM_OK);
-    }
-
-    SECTION("validates multiple chains") {
-        silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings);
-
-        auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
-        CHECK(current_head_id.block_num == 9);
-        CHECK(current_head_id.hash != Hash{});
-        auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.block_num, current_head_id.hash).value();
-
-        auto new_block1 = silkworm::test_util::generate_sample_child_blocks(current_head);
-        auto insert_block_success = silkworm_lib.execution_engine().insert_block(new_block1);
-        CHECK(insert_block_success);
-
-        auto new_block2 = silkworm::test_util::generate_sample_child_blocks(current_head);
-        insert_block_success = silkworm_lib.execution_engine().insert_block(new_block2);
-        CHECK(insert_block_success);
-
-        auto result = silkworm_lib.fork_validator_verify_chain(new_block1->header.hash());
-        CHECK(result == SILKWORM_OK);
-
-        result = silkworm_lib.fork_validator_verify_chain(new_block2->header.hash());
-        CHECK(result == SILKWORM_OK);
-    }
-
-    SECTION("executes fork choice update") {
-        silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings);
-
-        auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
-        auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.block_num, current_head_id.hash).value();
-        auto new_block = silkworm::test_util::generate_sample_child_blocks(current_head);
-        auto new_block_hash = new_block->header.hash();
-
-        silkworm_lib.execution_engine().insert_block(new_block);
-        silkworm_lib.fork_validator_verify_chain(new_block_hash);
-
-        auto result = silkworm_lib.execution_engine_fork_choice_update(new_block_hash, silkworm::Hash{}, silkworm::Hash{});
-        CHECK(result == SILKWORM_OK);
-
-        auto headers = silkworm_lib.execution_engine().get_last_headers(1);
-        CHECK(headers.size() == 1);
-        CHECK(headers[0].hash() == new_block_hash);
-    }
-
-    SECTION("executes fork choice update with final and safe blocks") {
-        silkworm_lib.start_fork_validator(env, &kValidForkValidatorSettings);
-
-        auto const current_head_id = silkworm_lib.execution_engine().last_finalized_block();
-        auto const current_head = silkworm_lib.execution_engine().get_header(current_head_id.block_num, current_head_id.hash).value();
-        auto new_block = silkworm::test_util::generate_sample_child_blocks(current_head);
-        auto new_block_hash = new_block->header.hash();
-
-        silkworm_lib.execution_engine().insert_block(new_block);
-        silkworm_lib.fork_validator_verify_chain(new_block_hash);
-
-        auto result = silkworm_lib.execution_engine_fork_choice_update(new_block_hash, new_block_hash, new_block_hash);
-        CHECK(result == SILKWORM_OK);
-
-        auto headers = silkworm_lib.execution_engine().get_last_headers(1);
-        CHECK(headers.size() == 1);
-        CHECK(headers[0].hash() == new_block_hash);
-
-        auto final_header = silkworm_lib.execution_engine().last_finalized_block();
-        CHECK(final_header.block_num == new_block->header.number);
-
-        auto safe_header = silkworm_lib.execution_engine().last_safe_block();
-        CHECK(safe_header.block_num == new_block->header.number);
     }
 }
 

@@ -7,6 +7,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
@@ -15,8 +16,6 @@
 #include <silkworm/rpc/common/util.hpp>
 #include <silkworm/rpc/json/types.hpp>
 #include <silkworm/rpc/stagedsync/stages.hpp>
-
-#include "silkworm/db/access_layer.hpp"
 
 namespace silkworm::rpc {
 

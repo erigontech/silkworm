@@ -62,7 +62,7 @@ Task<void> ErigonRpcApi::handle_erigon_get_balance_changes_in_block(const nlohma
 
         BlockReader block_reader{*chain_storage, *tx};
         BalanceChanges balance_changes;
-        co_await block_reader.read_balance_changes( block_num_or_hash, balance_changes);
+        co_await block_reader.read_balance_changes(block_num_or_hash, balance_changes);
 
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;

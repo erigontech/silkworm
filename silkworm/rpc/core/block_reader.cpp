@@ -116,7 +116,7 @@ Task<std::optional<TransactionWithBlock>> BlockReader::read_transaction_by_hash(
 }
 
 Task<void> BlockReader::read_balance_changes(const BlockNumOrHash& block_num_or_hash, BalanceChanges& balance_changes) const {
-    const auto [block_num, is_latest]  = co_await get_block_num(block_num_or_hash);
+    const auto [block_num, is_latest] = co_await get_block_num(block_num_or_hash);
 
     SILK_TRACE << "read_balance_changes: block_num: " << block_num;
 

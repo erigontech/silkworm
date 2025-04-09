@@ -45,13 +45,13 @@ Task<std::shared_ptr<Receipts>> get_receipts(db::kv::api::Transaction& tx,
         co_return std::make_shared<Receipts>();
     }
 
-    const auto cached_receipts = receipts_cache.get(block_with_hash.hash);
+    const evmc::bytes32 block_hash = block_with_hash.hash;
+    const BlockNum block_num = block_with_hash.block.header.number;
+
+    const auto cached_receipts = receipts_cache.get(block_hash);
     if (cached_receipts != nullptr) {
         co_return (cached_receipts);
     }
-
-    const evmc::bytes32 block_hash = block_with_hash.hash;
-    const BlockNum block_num = block_with_hash.block.header.number;
 
     // Try to read receipts from storage, if not present regenerate them
     auto receipts_ptr = co_await read_receipts(tx, block_num);
@@ -61,6 +61,7 @@ Task<std::shared_ptr<Receipts>> get_receipts(db::kv::api::Transaction& tx,
             co_return std::make_shared<Receipts>();
         }
     }
+
     auto& receipts = *receipts_ptr;
 
     const auto& transactions = block_with_hash.block.transactions;
@@ -186,19 +187,19 @@ Task<std::shared_ptr<Receipts>> generate_receipts(db::kv::api::Transaction& tx,
         EVMExecutor executor{block, chain_config, workers, state};
 
         auto receipts = std::make_shared<Receipts>();
+        receipts->reserve(transactions.size());
         uint64_t cumulative_gas_used{0};
 
         for (size_t index = 0; index < transactions.size(); ++index) {
+            auto& transaction = transactions[index];
             auto receipt = std::make_shared<Receipt>();
 
-            const silkworm::Transaction& transaction{block.transactions[index]};
             auto result = executor.call_with_receipt(transaction, *receipt, {}, /*refund=*/true, /*gas_bailout=*/false);
 
             cumulative_gas_used += receipt->gas_used;
             receipt->cumulative_gas_used = cumulative_gas_used;
-            receipts->push_back(receipt);
-
             executor.reset();
+            receipts->push_back(receipt);
         }
         return receipts;
     });

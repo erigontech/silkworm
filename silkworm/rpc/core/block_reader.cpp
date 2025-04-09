@@ -7,6 +7,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/address.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/kv/state_reader.hpp>
 #include <silkworm/db/state/account_codec.hpp>
 #include <silkworm/db/tables.hpp>
@@ -113,19 +114,14 @@ Task<std::optional<TransactionWithBlock>> BlockReader::read_transaction_by_hash(
     co_return std::nullopt;
 }
 
-Task<void> BlockReader::read_balance_changes(BlockCache& cache, const BlockNumOrHash& block_num_or_hash, BalanceChanges& balance_changes) const {
-    const auto block_with_hash = co_await read_block_by_block_num_or_hash(cache, block_num_or_hash);
-    if (!block_with_hash) {
-        throw std::invalid_argument("read_balance_changes: block not found");
-    }
-    const auto block_num = block_with_hash->block.header.number;
+Task<void> BlockReader::read_balance_changes(const BlockNumOrHash& block_num_or_hash, BalanceChanges& balance_changes) const {
+    const auto [block_num, is_latest] = co_await get_block_num(block_num_or_hash);
 
     SILK_TRACE << "read_balance_changes: block_num: " << block_num;
 
     const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_num);
     const auto end_txn_number = co_await transaction_.first_txn_num_in_block(block_num + 1);
 
-    const bool is_latest = co_await is_latest_block_num(block_num);
     std::optional<TxnId> txn_id;
     if (!is_latest) {
         txn_id = co_await transaction_.user_txn_id_at(block_num + 1);

@@ -46,7 +46,7 @@ class BlockReader {
 
     Task<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const evmc::bytes32& transaction_hash) const;
 
-    Task<void> read_balance_changes(BlockCache& cache, const BlockNumOrHash& block_num_or_hash, BalanceChanges& balance_changes) const;
+    Task<void> read_balance_changes(const BlockNumOrHash& block_num_or_hash, BalanceChanges& balance_changes) const;
 
     Task<bool> is_latest_block_num(BlockNum block_num) const;
 

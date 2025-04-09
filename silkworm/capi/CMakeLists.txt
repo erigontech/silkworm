@@ -13,8 +13,8 @@ set(PRIVATE_LIBS
     Microsoft.GSL::GSL
     silkworm_core
     silkworm_db
+    silkworm_execution
     silkworm_sentry
-    silkworm_node
     silkworm_rpcdaemon
 )
 
@@ -47,4 +47,4 @@ set_target_properties(${TARGET} PROPERTIES LINK_OPTIONS "${LINK_OPTIONS}")
 
 add_subdirectory(cli)
 
-target_link_libraries(silkworm_capi_static_test PRIVATE silkworm_db_test_util silkworm_node)
+target_link_libraries(silkworm_capi_static_test PRIVATE silkworm_db_test_util)

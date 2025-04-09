@@ -3,6 +3,8 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
+add_subdirectory(common)
+
 set(TARGET silkworm_capi)
 
 find_package(Microsoft.GSL REQUIRED)
@@ -11,6 +13,7 @@ set(PUBLIC_LIBS "")
 set(PRIVATE_LIBS
     glaze::glaze
     Microsoft.GSL::GSL
+    silkworm_capi_common
     silkworm_core
     silkworm_db
     silkworm_execution

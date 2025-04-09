@@ -182,12 +182,12 @@ Task<std::shared_ptr<Receipts>> generate_receipts(db::kv::api::Transaction& tx,
     const auto txn_id = co_await tx.user_txn_id_at(block_num);
 
     const auto generated_receipts = co_await async_task(workers.executor(), [&]() -> std::shared_ptr<Receipts> {
-        auto state = state_factory.make(current_executor, chain_storage, txn_id);
-
-        EVMExecutor executor{block, chain_config, workers, state};
-
         auto receipts = std::make_shared<Receipts>();
         receipts->reserve(transactions.size());
+
+        auto state = state_factory.make(current_executor, chain_storage, txn_id);
+        EVMExecutor executor{block, chain_config, workers, state};
+
         uint64_t cumulative_gas_used{0};
 
         for (size_t index = 0; index < transactions.size(); ++index) {
@@ -198,8 +198,8 @@ Task<std::shared_ptr<Receipts>> generate_receipts(db::kv::api::Transaction& tx,
 
             cumulative_gas_used += receipt->gas_used;
             receipt->cumulative_gas_used = cumulative_gas_used;
-            executor.reset();
             receipts->push_back(receipt);
+            executor.reset();
         }
         return receipts;
     });

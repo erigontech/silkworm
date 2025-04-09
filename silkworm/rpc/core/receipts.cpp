@@ -29,10 +29,9 @@ ReceiptCache receipt_cache;
 ReceiptsCache receipts_cache;
 
 Task<std::shared_ptr<Receipts>> get_cached_receipts(const evmc::bytes32& hash) {
-    const auto receipts_optional = receipts_cache.get(hash);
-    if (receipts_optional) {
-        SILKWORM_ASSERT(*receipts_optional != nullptr);
-        co_return (*receipts_optional);
+    const auto receipts = receipts_cache.get(hash);
+    if (receipts != nullptr) {
+        co_return (receipts);
     }
     co_return nullptr;
 }
@@ -46,10 +45,9 @@ Task<std::shared_ptr<Receipts>> get_receipts(db::kv::api::Transaction& tx,
         co_return std::make_shared<Receipts>();
     }
 
-    const auto receipts_optional = receipts_cache.get(block_with_hash.hash);
-    if (receipts_optional) {
-        SILKWORM_ASSERT(*receipts_optional != nullptr);
-        co_return (*receipts_optional);
+    const auto cached_receipts = receipts_cache.get(block_with_hash.hash);
+    if (cached_receipts != nullptr) {
+        co_return (cached_receipts);
     }
 
     const evmc::bytes32 block_hash = block_with_hash.hash;
@@ -217,16 +215,15 @@ Task<std::shared_ptr<Receipt>> get_receipt(db::kv::api::Transaction& tx,
                                            WorkerPool& workers) {
     using Word = snapshots::Decoder::Word;
 
-    const auto receipt_optional = receipt_cache.get(transaction.hash());
-    if (receipt_optional) {
-        co_return *receipt_optional;
+    const auto tx_receipt = receipt_cache.get(transaction.hash());
+    if (tx_receipt != nullptr) {
+        co_return tx_receipt;
     }
 
-    const auto receipts_optional = receipts_cache.get(block.header.hash());
-    if (receipts_optional) {
-        SILKWORM_ASSERT(tx_index < (*receipts_optional)->size() && (**receipts_optional)[tx_index]);
-        auto receipts_ptr = *receipts_optional;
-        co_return (*receipts_ptr)[tx_index];
+    const auto receipts = receipts_cache.get(block.header.hash());
+    if (receipts != nullptr) {
+        SILKWORM_ASSERT(tx_index < receipts->size() && (*receipts)[tx_index] != nullptr);
+        co_return (*receipts)[tx_index];
     }
 
     const auto chain_config = co_await chain_storage.read_chain_config();

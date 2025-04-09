@@ -13,13 +13,20 @@
 
 namespace silkworm::rpc {
 
+inline constexpr uint kReceiptCacheLimit = 1024 * 1000;
+inline constexpr uint kReceiptsCacheLimit = 1024;
+
 class ReceiptCache {
   public:
-    explicit ReceiptCache(size_t capacity = 1024 * 1000, bool shared_cache = true)
+    explicit ReceiptCache(size_t capacity = kReceiptCacheLimit, bool shared_cache = true)
         : receipt_cache_(capacity, shared_cache) {}
 
-    std::optional<std::shared_ptr<Receipt>> get(const evmc::bytes32& key) {
-        return receipt_cache_.get_as_copy(key);
+    std::shared_ptr<Receipt> get(const evmc::bytes32& key) {
+        auto result = receipt_cache_.get_as_copy(key);
+        if (result) {
+            return *result;
+        }
+        return nullptr;
     }
 
     void insert(const evmc::bytes32& key, const std::shared_ptr<Receipt>& block) {
@@ -32,11 +39,15 @@ class ReceiptCache {
 
 class ReceiptsCache {
   public:
-    explicit ReceiptsCache(size_t capacity = 1024, bool shared_cache = true)
+    explicit ReceiptsCache(size_t capacity = kReceiptsCacheLimit, bool shared_cache = true)
         : receipts_cache_(capacity, shared_cache) {}
 
-    std::optional<std::shared_ptr<Receipts>> get(const evmc::bytes32& key) {
-        return receipts_cache_.get_as_copy(key);
+    std::shared_ptr<Receipts> get(const evmc::bytes32& key) {
+        auto result = receipts_cache_.get_as_copy(key);
+        if (result) {
+            return *result;
+        }
+        return nullptr;
     }
 
     void insert(const evmc::bytes32& key, const std::shared_ptr<Receipts>& receipt) {

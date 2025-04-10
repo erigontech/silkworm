@@ -44,9 +44,9 @@
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 
-#include "common.hpp"
 #include "common/parse_path.hpp"
 #include "instance.hpp"
+#include "make_log_settings.hpp"
 
 using namespace std::chrono_literals;
 using namespace silkworm;

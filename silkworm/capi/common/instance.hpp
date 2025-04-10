@@ -7,6 +7,10 @@
 
 #include "common_component.hpp"
 
+namespace silkworm::rpc {
+class Daemon;
+}
+
 namespace silkworm::sentry::capi {
 struct Component;
 }
@@ -15,6 +19,7 @@ namespace capi_todo {
 
 struct SilkwormInstance {
     silkworm::capi::CommonComponent common;
+    std::unique_ptr<silkworm::rpc::Daemon> rpcdaemon;
     std::unique_ptr<silkworm::sentry::capi::Component> sentry;
 
     SilkwormInstance();

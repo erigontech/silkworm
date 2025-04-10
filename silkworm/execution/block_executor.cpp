@@ -1,11 +1,12 @@
 // Copyright 2025 The Silkworm Authors
 // SPDX-License-Identifier: Apache-2.0
 
+#include "block_executor.hpp"
+
 #include <tuple>
 
 #include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/execution/processor.hpp>
-#include <silkworm/node/execution/block/block_executor.hpp>
 
 namespace silkworm::execution::block {
 

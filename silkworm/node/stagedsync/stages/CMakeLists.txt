@@ -14,7 +14,6 @@ set(LIBS_PUBLIC
     ethash::keccak
     evmc
     secp256k1
-    silkworm_block_execution
     silkworm_core
     silkworm_db
     silkworm_datastore_etl
@@ -26,6 +25,7 @@ set(LIBS_PRIVATE
     absl::btree
     magic_enum::magic_enum
     Microsoft.GSL::GSL
+    silkworm_execution
 )
 # cmake-format: on
 

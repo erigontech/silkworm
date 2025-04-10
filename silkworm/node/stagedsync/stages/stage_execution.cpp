@@ -15,10 +15,10 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/state/account_codec.hpp>
+#include <silkworm/execution/block_executor.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/node/execution/block/block_executor.hpp>
 
 namespace silkworm::stagedsync {
 

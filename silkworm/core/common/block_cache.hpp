@@ -20,7 +20,7 @@ class BlockCache {
         : block_cache_(capacity, shared_cache) {}
 
     std::shared_ptr<BlockWithHash> get(const evmc::bytes32& key) {
-        auto result= block_cache_.get_as_copy(key);
+        auto result = block_cache_.get_as_copy(key);
         if (result) {
             return *result;
         }

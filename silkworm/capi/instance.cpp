@@ -3,6 +3,7 @@
 
 #include "common/instance.hpp"
 
+#include <silkworm/db/capi/component.hpp>
 #include <silkworm/rpc/daemon.hpp>
 #include <silkworm/sentry/capi/component.hpp>
 

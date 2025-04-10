@@ -12,7 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include <absl/strings/str_split.h>
 #include <boost/thread/scoped_thread.hpp>
 #include <gsl/util>
 #include <nlohmann/json.hpp>
@@ -26,6 +25,8 @@
 #include <silkworm/db/blocks/schema_config.hpp>
 #include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/capi/component.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx_version.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/stages.hpp>
@@ -66,36 +67,6 @@ struct ExecutionProgress {
     size_t processed_gas{0};
     float batch_progress_perc{0.0};
 };
-
-//! Kind of match to perform between Erigon and Silkworm libmdbx versions
-enum class MdbxVersionCheck : uint8_t {
-    kNone,      /// no check at all
-    kExact,     /// git-describe versions must match perfectly
-    kSemantic,  /// compare semantic versions (<M1.m1.p1> == <M2.m2.p2>)
-};
-
-static bool is_compatible_mdbx_version(std::string_view their_version, std::string_view our_version, MdbxVersionCheck check) {
-    SILK_TRACE << "is_compatible_mdbx_version their_version: " << their_version << " our_version: " << our_version;
-    bool compatible{false};
-    switch (check) {
-        case MdbxVersionCheck::kNone: {
-            compatible = true;
-        } break;
-        case MdbxVersionCheck::kExact: {
-            compatible = their_version == our_version;
-        } break;
-        case MdbxVersionCheck::kSemantic: {
-            const std::vector<std::string> their_version_parts = absl::StrSplit(std::string(their_version), '.');
-            const std::vector<std::string> our_version_parts = absl::StrSplit(std::string(our_version), '.');
-            compatible = (their_version_parts.size() >= 3) &&
-                         (our_version_parts.size() >= 3) &&
-                         (their_version_parts[0] == our_version_parts[0]) &&
-                         (their_version_parts[1] == our_version_parts[1]) &&
-                         (their_version_parts[2] == our_version_parts[2]);
-        }
-    }
-    return compatible;
-}
 
 //! Generate log arguments for Silkworm library version
 static log::Args log_args_for_version() {
@@ -191,6 +162,8 @@ class SignalHandlerGuard {
 static bool is_initialized{false};
 
 SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormSettings* settings) SILKWORM_NOEXCEPT {
+    using namespace datastore::kvdb;
+
     if (!handle) {
         return SILKWORM_INVALID_HANDLE;
     }
@@ -235,14 +208,17 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
         snapshots_dir_path,
         /* open = */ false,
         settings->state_repo_index_salt);
+    db::capi::Component db{
+        .blocks_repository = std::move(blocks_repository),
+        .state_repository_latest = std::move(state_repository_latest),
+        .state_repository_historical = std::move(state_repository_historical),
+        .chaindata = {},
+    };
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
-    *handle = new ::SilkwormInstance{
-        .blocks_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(blocks_repository)),
-        .state_repository_latest = std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository_latest)),
-        .state_repository_historical = std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository_historical)),
-    };
+    *handle = new ::SilkwormInstance{};
     (*handle)->common = std::move(common);
+    (*handle)->db = std::make_unique<db::capi::Component>(std::move(db));
 
     log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
 
@@ -253,10 +229,6 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
                 "state_repo_index_salt", std::to_string(settings->state_repo_index_salt)}};
 
     return SILKWORM_OK;
-}
-
-SILKWORM_EXPORT const char* silkworm_libmdbx_version() SILKWORM_NOEXCEPT {
-    return ::mdbx::get_version().git.describe;
 }
 
 class BlockProvider {
@@ -348,8 +320,9 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
 
     try {
         auto txn = datastore::kvdb::RWTxnUnmanaged{mdbx_txn};
+        db::DataModel da_layer{txn, handle->db->blocks_repository};
 
-        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->blocks_repository})};
+        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(da_layer)};
         state_buffer.set_memory_limit(batch_size);
 
         const size_t max_batch_size{batch_size};
@@ -358,7 +331,6 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
         BlockNum block_num{start_block};
         BlockNum batch_start_block_num{start_block};
         BlockNum last_block_num = 0;
-        db::DataModel da_layer{txn, *handle->blocks_repository};
 
         AnalysisCache analysis_cache{execution::block::BlockExecutor::kDefaultAnalysisCacheSize};
         execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets};
@@ -464,28 +436,21 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 
     try {
         // Wrap MDBX env into an internal *unmanaged* env, i.e. MDBX env is only used but its lifecycle is untouched
-        datastore::kvdb::EnvUnmanaged unmanaged_env{mdbx_env};
-        const auto env_path = unmanaged_env.get_path();
-        handle->chaindata = std::make_unique<datastore::kvdb::DatabaseUnmanaged>(
-            db::DataStore::make_chaindata_database(std::move(unmanaged_env)));
-        auto& chaindata = *handle->chaindata;
+        if (!handle->db->chaindata) {
+            handle->db->chaindata = std::make_unique<datastore::kvdb::DatabaseUnmanaged>(
+                db::DataStore::make_chaindata_database(datastore::kvdb::EnvUnmanaged{mdbx_env}));
+        }
+        auto& chaindata = *handle->db->chaindata;
+        db::DataModelFactory data_model_factory = handle->db->data_model_factory();
 
         datastore::kvdb::RWAccess rw_access = chaindata.access_rw();
         auto txn = rw_access.start_rw_tx();
 
-        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->blocks_repository})};
+        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(data_model_factory(txn))};
         state_buffer.set_memory_limit(batch_size);
 
         BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
         [[maybe_unused]] auto _ = gsl::finally([&block_buffer] { block_buffer.terminate_and_release_all(); });
-
-        db::DataStoreRef data_store{
-            chaindata.ref(),
-            *handle->blocks_repository,
-            *handle->state_repository_latest,
-            *handle->state_repository_historical,
-        };
-        db::DataModelFactory data_model_factory{std::move(data_store)};
 
         BlockProvider block_provider{
             &block_buffer,
@@ -556,7 +521,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
             txn.commit_and_renew();
             const auto elapsed_time_and_duration = sw.stop();
             log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
-                      log_args_for_exec_commit(elapsed_time_and_duration.second, env_path));
+                      log_args_for_exec_commit(elapsed_time_and_duration.second, (*rw_access).get_path()));
 
             if (last_executed_block) {
                 *last_executed_block = last_block_num;
@@ -600,13 +565,8 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
         *blob_gas_used = 0;
     }
 
-    if (!handle->blocks_repository) {
-        SILK_ERROR << "Blocks repository not found";
-        return SILKWORM_INVALID_HANDLE;
-    }
-
-    if (!handle->state_repository_latest) {
-        SILK_ERROR << "State repository latest not found";
+    if (!handle->db) {
+        SILK_ERROR << "Database component not initialized";
         return SILKWORM_INVALID_HANDLE;
     }
 
@@ -625,8 +585,8 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
         txn_id,
         unmanaged_tx,
         db_ref,
-        *handle->blocks_repository,
-        *handle->state_repository_latest,
+        handle->db->blocks_repository,
+        handle->db->state_repository_latest,
     };
     if (!handle->chain_config) {
         handle->chain_config = db::read_chain_config(unmanaged_tx);
@@ -771,8 +731,8 @@ SILKWORM_EXPORT int silkworm_block_exec_end(SilkwormHandle handle, MDBX_txn* mdb
             txn_id,
             unmanaged_tx,
             db_ref,
-            *handle->blocks_repository,
-            *handle->state_repository_latest,
+            handle->db->blocks_repository,
+            handle->db->state_repository_latest,
         };
 
         const auto log_index = handle->executions_in_block[index].log_index;
@@ -785,9 +745,6 @@ SILKWORM_EXPORT int silkworm_block_exec_end(SilkwormHandle handle, MDBX_txn* mdb
 
 SILKWORM_EXPORT int silkworm_fini(SilkwormHandle handle) SILKWORM_NOEXCEPT {
     if (!handle) {
-        return SILKWORM_INVALID_HANDLE;
-    }
-    if (!handle->blocks_repository) {
         return SILKWORM_INVALID_HANDLE;
     }
     delete handle;

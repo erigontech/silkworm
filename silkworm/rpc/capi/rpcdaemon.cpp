@@ -7,6 +7,7 @@
 #include <silkworm/capi/common/parse_path.hpp>
 #include <silkworm/capi/instance.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/capi/component.hpp>
 #include <silkworm/db/data_store.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/daemon.hpp>
@@ -93,17 +94,12 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* en
         return SILKWORM_INVALID_SETTINGS;
     }
 
-    if (!handle->chaindata) {
-        handle->chaindata = std::make_unique<datastore::kvdb::DatabaseUnmanaged>(
+    if (!handle->db->chaindata) {
+        handle->db->chaindata = std::make_unique<datastore::kvdb::DatabaseUnmanaged>(
             db::DataStore::make_chaindata_database(datastore::kvdb::EnvUnmanaged{env}));
     }
 
-    db::DataStoreRef data_store{
-        handle->chaindata->ref(),
-        *handle->blocks_repository,
-        *handle->state_repository_latest,
-        *handle->state_repository_historical,
-    };
+    db::DataStoreRef data_store = handle->db->data_store();
 
     datastore::kvdb::ROTxnManaged ro_txn = data_store.chaindata.access_ro().start_ro_tx();
     auto chain_config = db::read_chain_config(ro_txn);

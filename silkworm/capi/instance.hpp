@@ -10,20 +10,7 @@
 
 #include "common/instance.hpp"
 
-namespace silkworm::snapshots {
-class SnapshotRepository;
-}  // namespace silkworm::snapshots
-
-namespace silkworm::datastore::kvdb {
-class DatabaseUnmanaged;
-}  // namespace silkworm::datastore::kvdb
-
 struct SilkwormInstance : public capi_todo::SilkwormInstance {
-    std::unique_ptr<silkworm::datastore::kvdb::DatabaseUnmanaged> chaindata;
-    std::unique_ptr<silkworm::snapshots::SnapshotRepository> blocks_repository;
-    std::unique_ptr<silkworm::snapshots::SnapshotRepository> state_repository_latest;
-    std::unique_ptr<silkworm::snapshots::SnapshotRepository> state_repository_historical;
-
     std::optional<silkworm::ChainConfig> chain_config;
 
     // TODO: This has to be changed and encapsulated by a proper block caching state

@@ -21,7 +21,6 @@
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 #include <silkworm/rpc/test_util/mock_back_end.hpp>
 #include <silkworm/rpc/test_util/mock_estimate_gas_oracle.hpp>
-#include <silkworm/rpc/types/block.hpp>
 
 namespace silkworm::rpc {
 

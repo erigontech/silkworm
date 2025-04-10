@@ -14,10 +14,6 @@ namespace silkworm::snapshots {
 class SnapshotRepository;
 }  // namespace silkworm::snapshots
 
-namespace silkworm::rpc {
-class Daemon;
-}  // namespace silkworm::rpc
-
 namespace silkworm::datastore::kvdb {
 class DatabaseUnmanaged;
 }  // namespace silkworm::datastore::kvdb
@@ -27,7 +23,6 @@ struct SilkwormInstance : public capi_todo::SilkwormInstance {
     std::unique_ptr<silkworm::snapshots::SnapshotRepository> blocks_repository;
     std::unique_ptr<silkworm::snapshots::SnapshotRepository> state_repository_latest;
     std::unique_ptr<silkworm::snapshots::SnapshotRepository> state_repository_historical;
-    std::unique_ptr<silkworm::rpc::Daemon> rpcdaemon;
 
     std::optional<silkworm::ChainConfig> chain_config;
 

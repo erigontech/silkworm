@@ -37,6 +37,7 @@ set(SILKWORM_RPCDAEMON_PRIVATE_LIBRARIES
     cpp_base64
     evmc::instructions
     roaring::roaring
+    silkworm_capi_common
     silkworm_execution
 )
 # cmake-format: on

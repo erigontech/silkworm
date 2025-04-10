@@ -486,7 +486,7 @@ class TraceCallExecutor {
     Task<std::vector<TraceCallResult>> trace_block_transactions(const silkworm::Block& block, const TraceConfig& config, bool is_latest_block = false);
     Task<TraceCallResult> trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config, bool is_latest_block = false);
     Task<TraceManyCallResult> trace_calls(const silkworm::Block& block, const std::vector<TraceCall>& calls, bool is_latest_block = false);
-    Task<TraceDeployResult> trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address);
+    Task<TraceDeployResult> trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address, const silkworm::Transaction& transaction, TxnId creation_txn_id);
     Task<TraceCallResult> trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config);
     Task<std::vector<Trace>> trace_transaction(const silkworm::BlockWithHash& block, const rpc::Transaction& transaction, bool gas_bailout);
     Task<TraceEntriesResult> trace_transaction_entries(const TransactionWithBlock& transaction_with_block);

@@ -1561,11 +1561,10 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
     co_return trace_calls_result;
 }
 
-Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address) {
+Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address, const silkworm::Transaction& transaction, TxnId creation_txn_id) {
     auto block_num = block.header.number;
-    const auto& transactions = block.transactions;
 
-    SILK_TRACE << "trace_deploy_transaction: block_num: " << std::dec << block_num << " #txns: " << transactions.size();
+    SILK_DEBUG << "trace_deploy_transaction: block_num: " << std::dec << block_num << " transaction.hash: " << silkworm::to_hex(transaction.hash());
 
     const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
@@ -1577,22 +1576,17 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
         auto state = state_factory.make(current_executor, chain_storage_, txn_id);
         silkworm::IntraBlockState initial_ibs{*state};
 
-        auto curr_state = state_factory.make(current_executor, chain_storage_, txn_id);
+        auto curr_state = state_factory.make(current_executor, chain_storage_, creation_txn_id);
         EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         TraceDeployResult result;
 
         auto create_tracer = std::make_shared<trace::CreateTracer>(contract_address, initial_ibs);
         Tracers tracers{create_tracer};
-        for (size_t index = 0; index < transactions.size(); ++index) {
-            const silkworm::Transaction& transaction{block.transactions[index]};
-            executor.call(transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
-            executor.reset();
-            if (create_tracer->found()) {
-                result.transaction_hash = transaction.hash();
-                result.contract_creator = transaction.sender();
-                break;
-            }
+        executor.call(transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+        if (create_tracer->found()) {
+            result.transaction_hash = transaction.hash();
+            result.contract_creator = transaction.sender();
         }
         return result;
     });
@@ -1870,10 +1864,6 @@ Task<TraceCallResult> TraceCallExecutor::execute(
 }
 
 void CreateTracer::on_execution_start(evmc_revision, const evmc_message& msg, evmone::bytes_view code) noexcept {
-    if (found_) {
-        return;
-    }
-    auto sender = evmc::address{msg.sender};
     auto recipient = evmc::address{msg.recipient};
     auto code_address = evmc::address{msg.code_address};
 
@@ -1887,7 +1877,6 @@ void CreateTracer::on_execution_start(evmc_revision, const evmc_message& msg, ev
                << " create: " << create
                << ", msg.depth: " << msg.depth
                << ", msg.kind: " << msg.kind
-               << ", sender: " << sender
                << ", recipient: " << recipient << " (created: " << create << ")"
                << ", code_address: " << code_address
                << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))

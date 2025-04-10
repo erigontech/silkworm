@@ -1,18 +1,20 @@
 // Copyright 2025 The Silkworm Authors
 // SPDX-License-Identifier: Apache-2.0
 
+#include "rpcdaemon.h"
+
+#include <silkworm/capi/common/instance.hpp>
+#include <silkworm/capi/common/parse_path.hpp>
+#include <silkworm/capi/instance.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/data_store.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/daemon.hpp>
 #include <silkworm/rpc/settings.hpp>
 
-#include "common.hpp"
-#include "instance.hpp"
-#include "silkworm.h"
-
 using namespace silkworm;
 using namespace silkworm::rpc;
+using namespace silkworm::capi;
 
 //! Build interface log settings for ETH JSON-RPC from their C representation
 static InterfaceLogSettings make_eth_ifc_log_settings(const struct SilkwormRpcInterfaceLogSettings settings) {
@@ -91,9 +93,10 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* en
         return SILKWORM_INVALID_SETTINGS;
     }
 
-    auto daemon_settings = make_daemon_settings(handle, *settings);
-    handle->chaindata = std::make_unique<datastore::kvdb::DatabaseUnmanaged>(
-        db::DataStore::make_chaindata_database(datastore::kvdb::EnvUnmanaged{env}));
+    if (!handle->chaindata) {
+        handle->chaindata = std::make_unique<datastore::kvdb::DatabaseUnmanaged>(
+            db::DataStore::make_chaindata_database(datastore::kvdb::EnvUnmanaged{env}));
+    }
 
     db::DataStoreRef data_store{
         handle->chaindata->ref(),
@@ -102,16 +105,15 @@ SILKWORM_EXPORT int silkworm_start_rpcdaemon(SilkwormHandle handle, MDBX_env* en
         *handle->state_repository_historical,
     };
 
-    if (!handle->chain_config) {
-        datastore::kvdb::ROTxnManaged ro_txn = handle->chaindata->access_ro().start_ro_tx();
-        handle->chain_config = db::read_chain_config(ro_txn);
-        if (!handle->chain_config) {
-            return SILKWORM_INVALID_SETTINGS;
-        }
+    datastore::kvdb::ROTxnManaged ro_txn = data_store.chaindata.access_ro().start_ro_tx();
+    auto chain_config = db::read_chain_config(ro_txn);
+    if (!chain_config) {
+        return SILKWORM_INVALID_SETTINGS;
     }
 
     // Create the one-and-only Silkrpc daemon
-    handle->rpcdaemon = std::make_unique<rpc::Daemon>(daemon_settings, *handle->chain_config, data_store);
+    auto daemon_settings = make_daemon_settings(handle, *settings);
+    handle->rpcdaemon = std::make_unique<rpc::Daemon>(daemon_settings, std::move(chain_config), data_store);
 
     // Check protocol version compatibility with Core Services
     if (!daemon_settings.skip_protocol_check) {

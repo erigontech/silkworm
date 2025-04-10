@@ -31,4 +31,6 @@ typedef struct SilkwormInstance* SilkwormHandle;
 
 #include "errors.h"
 
+#define SILKWORM_PATH_SIZE 260
+
 #endif  // SILKWORM_CAPI_PREAMBLE_H_

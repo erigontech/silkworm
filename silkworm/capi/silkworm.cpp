@@ -44,10 +44,12 @@
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 
 #include "common.hpp"
+#include "common/parse_path.hpp"
 #include "instance.hpp"
 
 using namespace std::chrono_literals;
 using namespace silkworm;
+using namespace silkworm::capi;
 
 static constexpr size_t kMaxBlockBufferSize{100};
 static constexpr size_t kMaxPrefetchedBlocks{10'240};
@@ -239,7 +241,6 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
         .blocks_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(blocks_repository)),
         .state_repository_latest = std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository_latest)),
         .state_repository_historical = std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository_historical)),
-        .rpcdaemon = {},
     };
     (*handle)->common = std::move(common);
 

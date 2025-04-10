@@ -3,11 +3,9 @@
 
 #pragma once
 
-#include <filesystem>
-
 #include <silkworm/infra/common/log.hpp>
 
-#include "silkworm.h"
+#include "log_level.h"
 
 //! Build log configuration matching Erigon log format w/ custom verbosity level
 silkworm::log::Settings make_log_settings(SilkwormLogLevel c_log_level);

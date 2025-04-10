@@ -19,8 +19,12 @@ class BlockCache {
     explicit BlockCache(size_t capacity = 1024, bool shared_cache = true)
         : block_cache_(capacity, shared_cache) {}
 
-    std::optional<std::shared_ptr<BlockWithHash>> get(const evmc::bytes32& key) {
-        return block_cache_.get_as_copy(key);
+    std::shared_ptr<BlockWithHash> get(const evmc::bytes32& key) {
+        auto result = block_cache_.get_as_copy(key);
+        if (result) {
+            return *result;
+        }
+        return nullptr;
     }
 
     void insert(const evmc::bytes32& key, const std::shared_ptr<BlockWithHash>& block) {

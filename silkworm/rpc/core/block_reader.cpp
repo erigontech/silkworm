@@ -40,7 +40,7 @@ Task<std::shared_ptr<BlockWithHash>> BlockReader::read_block_by_number(BlockCach
     }
     const auto cached_block = cache.get(*block_hash);
     if (cached_block) {
-        co_return cached_block.value();
+        co_return cached_block;
     }
     const auto block_with_hash = std::make_shared<BlockWithHash>();
     const auto block_found = co_await chain_storage_.read_block(block_hash->bytes, block_num, /*read_senders=*/true, block_with_hash->block);
@@ -59,7 +59,7 @@ Task<std::shared_ptr<BlockWithHash>> BlockReader::read_block_by_number(BlockCach
 Task<std::shared_ptr<BlockWithHash>> BlockReader::read_block_by_hash(BlockCache& cache, const evmc::bytes32& block_hash) const {
     const auto cached_block = cache.get(block_hash);
     if (cached_block) {
-        co_return cached_block.value();
+        co_return cached_block;
     }
     const auto block_with_hash = std::make_shared<BlockWithHash>();
     const auto block_num = co_await chain_storage_.read_block_num(block_hash);

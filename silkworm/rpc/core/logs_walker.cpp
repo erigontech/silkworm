@@ -168,16 +168,20 @@ Task<void> LogsWalker::get_logs(BlockNum start,
 
         SILK_DEBUG << "Got transaction: block_num: " << tnx_nums->block_num << ", txn_index: " << tnx_nums->txn_index.value();
 
+        filtered_chunk_logs.clear();
+
         // ERIGON3 compatibility: erigon_getLatestLogs overwrites log index
         if (options.overwrite_log_index) {
             uint32_t log_index{0};
-            for (auto& log : receipt->logs) {
+            auto local_receipt = *receipt;
+            for (auto& log : local_receipt.logs) {
                 log.index = log_index++;
             }
+            filter_logs(local_receipt.logs, addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
+        } else {
+            filter_logs(receipt->logs, addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
         }
 
-        filtered_chunk_logs.clear();
-        filter_logs(receipt->logs, addresses, topics, filtered_chunk_logs, options.log_count == 0 ? 0 : options.log_count - log_count);
         SILK_DEBUG << "filtered #logs: " << filtered_chunk_logs.size();
         if (filtered_chunk_logs.empty()) {
             continue;

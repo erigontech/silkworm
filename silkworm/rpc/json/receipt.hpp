@@ -9,7 +9,9 @@
 
 namespace silkworm::rpc {
 
+void to_json(nlohmann::json& json, const std::shared_ptr<Receipt> receipt);
 void to_json(nlohmann::json& json, const Receipt& receipt);
+void from_json(const nlohmann::json& json, std::shared_ptr<Receipt>& receipt);
 void from_json(const nlohmann::json& json, Receipt& receipt);
 
 }  // namespace silkworm::rpc

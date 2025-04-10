@@ -17,24 +17,13 @@
 #include "rpcdaemon.h"
 #include "sentry.h"
 #endif
+#include "log_level.h"
 
 #if __cplusplus
 extern "C" {
 #endif
 
 #define SILKWORM_GIT_VERSION_SIZE 32
-
-//! Silkworm library logging level
-//! \note using anonymous C99 enum is the most portable way to pass enum in Cgo
-typedef enum {  // NOLINT(performance-enum-size)
-    SILKWORM_LOG_NONE,
-    SILKWORM_LOG_CRITICAL,
-    SILKWORM_LOG_ERROR,
-    SILKWORM_LOG_WARNING,
-    SILKWORM_LOG_INFO,
-    SILKWORM_LOG_DEBUG,
-    SILKWORM_LOG_TRACE
-} SilkwormLogLevel;
 
 //! Silkworm library general configuration options
 struct SilkwormSettings {

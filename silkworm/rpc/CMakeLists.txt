@@ -35,6 +35,7 @@ set(SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES
 # cmake-format: off
 set(SILKWORM_RPCDAEMON_PRIVATE_LIBRARIES
     absl::strings
+    cpp_base64
     evmc::instructions
     roaring::roaring
     silkworm_execution

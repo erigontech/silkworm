@@ -284,7 +284,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         auto key = db::code_domain_key(sender);
 
         db::kv::api::IndexRangeRequest query{
-            .table = db::table::kAccountsHistoryIdx,
+            .table = std::string{db::table::kAccountsHistoryIdx},
             .key = key,
             .from_timestamp = -1,
             .to_timestamp = -1,
@@ -304,7 +304,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             }
             SILK_DEBUG << "count: " << count << ", txnId: " << txn_id;
             db::kv::api::HistoryPointRequest hpq{
-                .table = db::table::kAccountDomain,
+                .table = std::string{db::table::kAccountDomain},
                 .key = key,
                 .timestamp = *value};
             auto result = co_await tx->history_seek(std::move(hpq));
@@ -339,7 +339,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
 
             SILK_DEBUG << "searching for txnId: " << txn_id << ", i: " << i;
             db::kv::api::HistoryPointRequest hpq{
-                .table = db::table::kAccountDomain,
+                .table = std::string{db::table::kAccountDomain},
                 .key = key,
                 .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)};
             auto result = co_await tx->history_seek(std::move(hpq));
@@ -446,7 +446,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         // so as a result we'll have small range of blocks for binary search or full scan.
         const auto key = db::code_domain_key(contract_address);
         db::kv::api::IndexRangeRequest query{
-            .table = db::table::kAccountsHistoryIdx,
+            .table = std::string{db::table::kAccountsHistoryIdx},
             .key = key,
             .from_timestamp = 0,
             .to_timestamp = -1,
@@ -466,7 +466,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             SILK_DEBUG << "txn_id:" << txn_id << ", count: " << count;
 
             db::kv::api::HistoryPointRequest hpq{
-                .table = db::table::kAccountDomain,
+                .table = std::string{db::table::kAccountDomain},
                 .key = key,
                 .timestamp = *value};
             auto result = co_await tx->history_seek(std::move(hpq));
@@ -499,7 +499,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             auto txn_id = i + prev_txn_id;
 
             db::kv::api::HistoryPointRequest hpq{
-                .table = db::table::kAccountDomain,
+                .table = std::string{db::table::kAccountDomain},
                 .key = key,
                 .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)};
             auto result = co_await tx->history_seek(std::move(hpq));
@@ -837,7 +837,7 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     bool ascending, uint64_t page_size) {
     const auto key = db::code_domain_key(address);
     db::kv::api::IndexRangeRequest query_to{
-        .table = db::table::kTracesToIdx,
+        .table = std::string{db::table::kTracesToIdx},
         .key = key,
         .from_timestamp = from_timestamp,
         .to_timestamp = -1,
@@ -845,7 +845,7 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     auto paginated_result_to = co_await tx.index_range(std::move(query_to));
 
     db::kv::api::IndexRangeRequest query_from{
-        .table = db::table::kTracesFromIdx,
+        .table = std::string{db::table::kTracesFromIdx},
         .key = key,
         .from_timestamp = from_timestamp,
         .to_timestamp = -1,

@@ -16,9 +16,9 @@
 
 namespace {
 #ifdef _WIN32
-const char* kInvalidArgumentMessage = "invalid argument";
+static constexpr std::string_view kInvalidArgumentMessage = "invalid argument";
 #else
-const char* kInvalidArgumentMessage = "Invalid argument";
+static constexpr std::string_view kInvalidArgumentMessage = "Invalid argument";
 #endif
 }  // namespace
 
@@ -157,7 +157,7 @@ TEST_CASE("decode receipts from incorrect bytes", "[rpc][ethdb][cbor]") {
     const Bytes b1 = *silkworm::from_hex("81");
     CHECK_THROWS(cbor_decode(b1, receipts));
     const Bytes b2 = *silkworm::from_hex("83808040");
-    CHECK_THROWS_MATCHES(cbor_decode(b2, receipts), std::system_error, Message("Receipt CBOR: missing entries: "s + kInvalidArgumentMessage));
+    CHECK_THROWS_MATCHES(cbor_decode(b2, receipts), std::system_error, Message("Receipt CBOR: missing entries: " + std::string{kInvalidArgumentMessage}));
 }
 
 }  // namespace silkworm::rpc

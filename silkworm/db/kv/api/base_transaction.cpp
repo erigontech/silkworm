@@ -8,7 +8,7 @@
 
 namespace silkworm::db::kv::api {
 
-Task<KeyValue> BaseTransaction::get(const std::string& table, ByteView key) {
+Task<KeyValue> BaseTransaction::get(std::string_view table, ByteView key) {
     const auto new_cursor = co_await cursor(table);
     SILK_TRACE << "BaseTransaction::get cursor_id: " << new_cursor->cursor_id();
     const auto kv_pair = co_await new_cursor->seek(key);
@@ -16,7 +16,7 @@ Task<KeyValue> BaseTransaction::get(const std::string& table, ByteView key) {
     co_return kv_pair;
 }
 
-Task<silkworm::Bytes> BaseTransaction::get_one(const std::string& table, ByteView key) {
+Task<silkworm::Bytes> BaseTransaction::get_one(std::string_view table, ByteView key) {
     const auto new_cursor = co_await cursor(table);
     SILK_TRACE << "BaseTransaction::get_one cursor_id: " << new_cursor->cursor_id();
     const auto kv_pair = co_await new_cursor->seek_exact(key);
@@ -24,7 +24,7 @@ Task<silkworm::Bytes> BaseTransaction::get_one(const std::string& table, ByteVie
     co_return kv_pair.value;
 }
 
-Task<std::optional<Bytes>> BaseTransaction::get_both_range(const std::string& table, ByteView key, ByteView subkey) {
+Task<std::optional<Bytes>> BaseTransaction::get_both_range(std::string_view table, ByteView key, ByteView subkey) {
     const auto new_cursor = co_await cursor_dup_sort(table);
     SILK_TRACE << "BaseTransaction::get_both_range cursor_id: " << new_cursor->cursor_id();
     const auto value{co_await new_cursor->seek_both(key, subkey)};

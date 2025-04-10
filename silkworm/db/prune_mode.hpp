@@ -16,11 +16,11 @@ inline constexpr BlockNum kFullImmutabilityThreshold{90'000};
 // TODO(Andrea) Prune mode persistence (as in Erigon) is excessively convoluted
 // Need refactoring when/if Erigon db compatibility can be broken
 
-inline constexpr const char* kPruneModeHistoryKey{"pruneHistory"};
-inline constexpr const char* kPruneModeReceiptsKey{"pruneReceipts"};
-inline constexpr const char* kPruneModeSendersKey{"pruneSenders"};
-inline constexpr const char* kPruneModeTxIndexKey{"pruneTxIndex"};
-inline constexpr const char* kPruneModeCallTracesKey{"pruneCallTraces"};
+inline constexpr std::string_view kPruneModeHistoryKey{"pruneHistory"};
+inline constexpr std::string_view kPruneModeReceiptsKey{"pruneReceipts"};
+inline constexpr std::string_view kPruneModeSendersKey{"pruneSenders"};
+inline constexpr std::string_view kPruneModeTxIndexKey{"pruneTxIndex"};
+inline constexpr std::string_view kPruneModeCallTracesKey{"pruneCallTraces"};
 
 using PruneDistance = std::optional<BlockNum>;   // for 'older' type
 using PruneThreshold = std::optional<BlockNum>;  // for 'before' type

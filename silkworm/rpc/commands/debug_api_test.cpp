@@ -37,9 +37,6 @@ using PaginatedKV = db::kv::api::PaginatedSequencePair<Bytes, Bytes>;
 using PaginatorKV = PaginatedKV::Paginator;
 using PageResultKV = PaginatedKV::PageResult;
 
-static const nlohmann::json kEmpty;
-static const std::string kZeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
-
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("DebugRpcApi") {
     boost::asio::io_context ioc;
@@ -151,7 +148,7 @@ TEST_CASE("get_modified_accounts") {
                 co_return 20;
             }));
         db::kv::api::HistoryRangeRequest request{
-            .table = db::table::kAccountDomain,
+            .table = std::string{db::table::kAccountDomain},
             .from_timestamp = static_cast<db::kv::api::Timestamp>(0),
             .to_timestamp = static_cast<db::kv::api::Timestamp>(19),
             .ascending_order = true};

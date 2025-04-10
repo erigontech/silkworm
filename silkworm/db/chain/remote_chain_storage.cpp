@@ -253,7 +253,7 @@ Task<std::optional<Transaction>> RemoteChainStorage::read_transaction_by_idx_in_
 }
 
 Task<std::pair<std::optional<BlockHeader>, std::optional<Hash>>> RemoteChainStorage::read_head_header_and_hash() const {
-    const auto value = co_await tx_.get_one(table::kHeadHeaderName, string_to_bytes(table::kHeadHeaderName));
+    const auto value = co_await tx_.get_one(table::kHeadHeaderName, string_view_to_byte_view(table::kHeadHeaderName));
     if (value.empty()) {
         throw std::runtime_error{"empty head header hash value in read_head_header_hash"};
     }

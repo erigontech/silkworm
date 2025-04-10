@@ -37,9 +37,9 @@ namespace silkworm::snapshots::bittorrent {
 //! \details The user code should probably run the `execute_loop` method in a dedicated thread.
 class BitTorrentClient : public ActiveComponent {
   public:
-    static constexpr const char* kSessionFileName{".session"};
-    static constexpr const char* kResumeDirName{".resume"};
-    static constexpr const char* kResumeFileExt{".resume"};
+    static constexpr std::string_view kSessionFileName{".session"};
+    static constexpr std::string_view kResumeDirName{".resume"};
+    static constexpr std::string_view kResumeFileExt{".resume"};
 
     using FileCallback = void(const std::filesystem::path&);
     using StatsCallback = void(lt::span<const int64_t> counters);

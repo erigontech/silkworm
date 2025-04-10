@@ -11,12 +11,12 @@
 
 namespace silkworm::rpc::json_rpc {
 
-static const std::string kRequestFieldJsonRpc{"jsonrpc"};
-static const std::string kRequestFieldId{"id"};
-static const std::string kRequestFieldMethod{"method"};
-static const std::string kRequestFieldParameters{"params"};
+static constexpr std::string_view kRequestFieldJsonRpc{"jsonrpc"};
+static constexpr std::string_view kRequestFieldId{"id"};
+static constexpr std::string_view kRequestFieldMethod{"method"};
+static constexpr std::string_view kRequestFieldParameters{"params"};
 static const std::string kRequestRequiredFields{
-    kRequestFieldJsonRpc + "," + kRequestFieldId + "," + kRequestFieldMethod + "," + kRequestFieldParameters};
+    std::string{kRequestFieldJsonRpc} + "," + std::string{kRequestFieldId} + "," + std::string{kRequestFieldMethod} + "," + std::string{kRequestFieldParameters}};
 
 void Validator::load_specification() {
     const auto spec = nlohmann::json::parse(kSpecificationJson, nullptr, /*allow_exceptions=*/false);

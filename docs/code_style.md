@@ -332,6 +332,8 @@ Bad:
 	static const std::string kHeadBlockHash = "headBlockHash";
 	constexpr std::string_view kTorrentExtension{".torrent"sv};
 
+Exception: `sv` suffix must be used for embedding zero bytes (`'\0'`) within the string_view.
+
 ### P24 tmp vs temp naming convention
 
 The word "temporary" should be abbreviated as `tmp`, not `temp`.

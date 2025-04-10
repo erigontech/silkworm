@@ -101,7 +101,7 @@ class TemporarySnapshotFile {
   public:
     TemporarySnapshotFile(
         const std::filesystem::path& tmp_dir,
-        const std::string& filename,
+        std::string_view filename,
         const SnapshotHeader& header = {},
         const SnapshotBody& body = {})
         : TemporarySnapshotFile{
@@ -111,7 +111,7 @@ class TemporarySnapshotFile {
 
     TemporarySnapshotFile(
         const std::filesystem::path& tmp_dir,
-        const std::string& filename,
+        std::string_view filename,
         ByteView data)
         : TemporarySnapshotFile{
               parse_path_or_die(tmp_dir, filename),
@@ -141,10 +141,10 @@ class TemporarySnapshotFile {
 
     static SnapshotPath parse_path_or_die(
         const std::filesystem::path& tmp_dir,
-        const std::string& filename) {
+        std::string_view filename) {
         auto path = SnapshotPath::parse(tmp_dir / filename);
         if (!path)
-            throw std::runtime_error{"TemporarySnapshotFile: invalid snapshot filename: " + filename};
+            throw std::runtime_error{"TemporarySnapshotFile: invalid snapshot filename: " + std::string{filename}};
         return std::move(*path);
     }
 
@@ -189,7 +189,7 @@ inline const BlockNumRange kSampleSnapshotBlockRange{1'500'012, 1'500'014};
 //! At least 2 blocks are required because RecSplit key set must have at least *2* keys
 class SampleHeaderSnapshotFile : public TemporarySnapshotFile {
   public:
-    static constexpr const char* kHeadersSnapshotFileName{"v1-001500-001501-headers.seg"};
+    static constexpr std::string_view kHeadersSnapshotFileName{"v1-001500-001501-headers.seg"};
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleHeaderSnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)
@@ -233,7 +233,7 @@ class SampleHeaderSnapshotFile : public TemporarySnapshotFile {
 //! Sample Bodies snapshot file: it contains the mainnet block bodies in range [1'500'012, 1'500'013]
 class SampleBodySnapshotFile : public TemporarySnapshotFile {
   public:
-    static constexpr const char* kBodiesSnapshotFileName{"v1-001500-001501-bodies.seg"};
+    static constexpr std::string_view kBodiesSnapshotFileName{"v1-001500-001501-bodies.seg"};
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleBodySnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)
@@ -276,7 +276,7 @@ class SampleBodySnapshotFile : public TemporarySnapshotFile {
 //! Sample Transactions snapshot file: it contains the mainnet block transactions in range [1'500'012, 1'500'013]
 class SampleTransactionSnapshotFile : public TemporarySnapshotFile {
   public:
-    static constexpr const char* kTransactionsSnapshotFileName{"v1-001500-001501-transactions.seg"};
+    static constexpr std::string_view kTransactionsSnapshotFileName{"v1-001500-001501-transactions.seg"};
 
     //! This ctor lets you pass any snapshot content and is used to produce broken snapshots
     SampleTransactionSnapshotFile(const std::filesystem::path& tmp_dir, std::string_view hex)

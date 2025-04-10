@@ -13,10 +13,10 @@
 
 namespace silkworm::rpc::stages {
 
-inline const Bytes kHeaders = string_to_bytes(db::stages::kHeadersKey);
-inline const Bytes kExecution = string_to_bytes(db::stages::kExecutionKey);
-inline const Bytes kFinish = string_to_bytes(db::stages::kFinishKey);
+inline const ByteView kHeaders = string_view_to_byte_view(db::stages::kHeadersKey);
+inline const ByteView kExecution = string_view_to_byte_view(db::stages::kExecutionKey);
+inline const ByteView kFinish = string_view_to_byte_view(db::stages::kFinishKey);
 
-Task<BlockNum> get_sync_stage_progress(db::kv::api::Transaction& tx, const Bytes& stage_key);
+Task<BlockNum> get_sync_stage_progress(db::kv::api::Transaction& tx, ByteView stage_key);
 
 }  // namespace silkworm::rpc::stages

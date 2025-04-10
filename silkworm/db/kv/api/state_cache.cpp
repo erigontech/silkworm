@@ -351,7 +351,7 @@ Task<std::optional<Bytes>> CoherentStateCache::get_code(StateVersionId version_i
 
     ++code_miss_count_;
 
-    const GetLatestResult result = co_await tx.get_latest({.table = db::table::kCodeDomain, .key = kv.key});
+    const GetLatestResult result = co_await tx.get_latest({.table = std::string{db::table::kCodeDomain}, .key = kv.key});
     if (!result.success) {
         co_return std::nullopt;
     }

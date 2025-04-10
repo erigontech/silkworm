@@ -683,7 +683,7 @@ ABSL_FLAG(std::string, key, "", "key as hex string w/o leading 0x");
 ABSL_FLAG(std::string, seekkey, "", "seek key as hex string w/o leading 0x");
 ABSL_FLAG(std::string, subkey, "", "subkey as hex string w/o leading 0x");
 ABSL_FLAG(std::string, tool, "", "gRPC remote interface tool name as string");
-ABSL_FLAG(std::string, target, kDefaultPrivateApiAddr, "Silkworm location as string <address>:<port>");
+ABSL_FLAG(std::string, target, std::string{kDefaultPrivateApiAddr}, "Silkworm location as string <address>:<port>");
 ABSL_FLAG(std::string, table, "", "database table name as string");
 ABSL_FLAG(int, limit, -1, "max number of items returned by Temporal KV range queries");
 ABSL_FLAG(std::string, from_key, "", "start lookup key as hex string w/o leading 0x");

@@ -33,7 +33,7 @@ class WebSeedClientForTest : public WebSeedClient {
 
 //! Content for manifest file containing one torrent file
 static constexpr std::string_view kValidManifestContent{
-    "v1-010000-010500-bodies.seg.torrent\n"sv};
+    "v1-010000-010500-bodies.seg.torrent\n"};
 
 //! Hexadecimal content for torrent file 'v1-010000-010500-bodies.seg'
 static constexpr std::string_view kValidTorrentContent{
@@ -55,14 +55,14 @@ static constexpr std::string_view kValidTorrentContent{
     "4fd98b8b83d1f5cced97afeb955f4be33aadab9ea8297899a6e81eaf0613d91a"
     "85f5e6028eb05726651320c3e2b8070b98aa6052610de5bcc1cacd6b818b02ed"
     "5f22b6e32a4d3e97d7889eeee487689e4a0116651aecba0609813b273ee92392"
-    "7a9c3103df62ab058f6565"sv};
+    "7a9c3103df62ab058f6565"};
 static const std::string kValidTorrentContentAscii{test_util::ascii_from_hex(kValidTorrentContent)};
 
 struct WebSessionMock : public WebSession {
     MOCK_METHOD((Task<WebSession::StringResponse>), https_get, (const urls::url&, std::string_view, const WebSession::HeaderFields&), (const, override));
 };
 
-static const std::string kErigon2Snapshots{"https://erigon2-v1-snapshots-mainnet.erigon.network"};
+static constexpr std::string_view kErigon2Snapshots{"https://erigon2-v1-snapshots-mainnet.erigon.network"};
 static boost::urls::url make_e2_snapshots_provider_url() {
     return boost::urls::url{kErigon2Snapshots};
 }
@@ -74,7 +74,7 @@ TEST_CASE("WebSeedClient::WebSeedClient", "[db][snapshot][bittorrent]") {
 TEST_CASE("WebSeedClient::discover_torrents", "[db][snapshot][bittorrent]") {
     test_util::TaskRunner task_runner;
     static const Whitelist kWhitelist = {{"v1-010000-010500-bodies.seg", "542b3f77a2f3c4b9d8a4085d838bdd1b14043f3b"}};
-    WebSeedClientForTest ws_client{std::make_unique<WebSessionMock>(), {kErigon2Snapshots}, kWhitelist};
+    WebSeedClientForTest ws_client{std::make_unique<WebSessionMock>(), {std::string{kErigon2Snapshots}}, kWhitelist};
     auto& session = dynamic_cast<WebSessionMock&>(ws_client.web_session());
 
     SECTION("empty") {
@@ -116,7 +116,7 @@ TEST_CASE("WebSeedClient::discover_torrents", "[db][snapshot][bittorrent]") {
 }
 
 TEST_CASE("WebSeedClient::validate_torrent_file", "[db][snapshot][bittorrent]") {
-    WebSeedClientForTest client{{kErigon2Snapshots}, {{"v1-010000-010500-bodies.seg", "542b3f77a2f3c4b9d8a4085d838bdd1b14043f3b"}}};
+    WebSeedClientForTest client{{std::string{kErigon2Snapshots}}, {{"v1-010000-010500-bodies.seg", "542b3f77a2f3c4b9d8a4085d838bdd1b14043f3b"}}};
     CHECK(client.validate_torrent_file(make_e2_snapshots_provider_url(), "v1-010000-010500-bodies.seg.torrent", kValidTorrentContentAscii));
 
     CHECK_THROWS_AS(client.validate_torrent_file(make_e2_snapshots_provider_url(), "v1-010000-010500-bodies.seg.torrent", ""), boost::system::system_error);
@@ -129,7 +129,7 @@ TEST_CASE("WebSeedClient::is_whitelisted", "[db][snapshot][bittorrent]") {
         {"v1-010000-010500-headers.seg", "080d0cd1613831820c8f5e48715d68643f48054a"},
         {"v1-010000-010500-transactions.seg", "8151bbc8b6635465760af6ebcfd630c9679b31a5"},
     };
-    WebSeedClientForTest client{{kErigon2Snapshots}, kWhitelist};
+    WebSeedClientForTest client{{std::string{kErigon2Snapshots}}, kWhitelist};
 
     CHECK(client.is_whitelisted("v1-010000-010500-bodies.seg", "542b3f77a2f3c4b9d8a4085d838bdd1b14043f3b"));
     CHECK(client.is_whitelisted("v1-010000-010500-headers.seg", "080d0cd1613831820c8f5e48715d68643f48054a"));

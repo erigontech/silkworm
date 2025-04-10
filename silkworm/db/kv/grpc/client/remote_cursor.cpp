@@ -12,7 +12,7 @@
 
 namespace silkworm::db::kv::grpc::client {
 
-Task<void> RemoteCursor::open_cursor(const std::string& table_name, bool is_dup_sorted) {
+Task<void> RemoteCursor::open_cursor(std::string_view table_name, bool is_dup_sorted) {
     const auto start_time = clock_time::now();
     if (cursor_id_ == 0) {
         SILK_DEBUG << "RemoteCursor::open_cursor opening new cursor for table: " << table_name;

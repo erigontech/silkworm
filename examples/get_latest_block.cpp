@@ -28,7 +28,7 @@ using namespace silkworm;
 using namespace silkworm::db;
 using namespace silkworm::rpc;
 
-ABSL_FLAG(std::string, target, kDefaultPrivateApiAddr, "server location as string <address>:<port>");
+ABSL_FLAG(std::string, target, std::string{kDefaultPrivateApiAddr}, "server location as string <address>:<port>");
 // ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging level");
 
 Task<std::optional<uint64_t>> latest_block(db::kv::api::Service& service) {

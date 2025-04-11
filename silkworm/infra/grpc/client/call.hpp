@@ -12,9 +12,13 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <agrpc/detail/rpc.hpp>
 #include <agrpc/grpc_context.hpp>
 #include <agrpc/rpc.hpp>
+#pragma GCC diagnostic pop
+
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <grpcpp/grpcpp.h>

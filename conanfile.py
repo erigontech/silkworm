@@ -19,7 +19,6 @@ class SilkwormRecipe(ConanFile):
             return
 
         self.requires('abseil/20240116.2', override=True)
-        self.requires('asio-grpc/2.9.2')
         self.requires('benchmark/1.6.1')
         self.requires('boost/1.83.0', override=True)
         self.requires('cli11/2.2.0')
@@ -41,8 +40,6 @@ class SilkwormRecipe(ConanFile):
         self.requires('libdeflate/1.23')
 
     def configure(self):
-        self.options['asio-grpc'].local_allocator = 'boost_container'
-
         if (self.settings.os == 'Linux') and (self.settings.compiler == 'clang'):
             self.options['grpc'].with_libsystemd = False
 

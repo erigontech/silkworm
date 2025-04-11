@@ -3,7 +3,11 @@
 
 #include "kv_calls.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <agrpc/asio_grpc.hpp>
+#pragma GCC diagnostic pop
 #include <boost/asio/as_tuple.hpp>
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>

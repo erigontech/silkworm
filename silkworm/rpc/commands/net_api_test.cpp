@@ -3,7 +3,6 @@
 
 #include "net_api.hpp"
 
-#include <agrpc/test.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <grpcpp/grpcpp.h>
 

@@ -16,8 +16,6 @@ namespace silkworm::rpc {
 Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block, std::optional<TxnId> txn_id) {
     SILK_DEBUG << "EstimateGasOracle::estimate_gas called";
 
-    const auto block_num = block.header.number;
-
     uint64_t hi = 0;
     uint64_t lo;
 
@@ -25,12 +23,8 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         SILK_DEBUG << "Set gas limit using call args: " << call.gas.value_or(0);
         hi = call.gas.value();
     } else {
-        const auto header = co_await block_header_provider_(block_num);
-        if (!header) {
-            co_return 0;
-        }
-        hi = header->gas_limit;
-        SILK_DEBUG << "Set gas limit using block: " << header->gas_limit;
+        hi = block.header.gas_limit;
+        SILK_DEBUG << "Set gas limit using block: " << block.header.gas_limit;
     }
 
     if (hi > kGasCap) {
@@ -75,6 +69,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
 
         auto state_overrides = std::make_shared<state::OverrideState>(*state, accounts_overrides_);
         EVMExecutor executor{block, config_, workers_, state_overrides};
+        // First try with highest gas possible
         transaction.gas_limit = hi;
         result = try_execution(executor, transaction);
         if (!result.success()) {
@@ -86,7 +81,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
         // We want to ensure that the gas used doesn't fall below this
         auto true_gas = result.gas_used.value_or(0);
         uint64_t refund = result.gas_refund.value_or(0);
-        lo = std::min(true_gas + refund - 1, kTxGas - 1);
+        lo = std::max(true_gas + refund - 1, kTxGas - 1);
 
         SILK_DEBUG << "hi: " << hi << ", lo: " << lo;
 
@@ -96,10 +91,7 @@ Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silk
             auto mid = (hi + lo) / 2;
             transaction.gas_limit = mid;
             result = try_execution(curr_executor, transaction);
-            if (result.pre_check_error_code) {
-                break;
-            }
-            if (!result.success() || result.gas_used.value_or(0) < true_gas) {
+            if (result.pre_check_error_code == PreCheckErrorCode::kIntrinsicGasTooLow || result.status_code != evmc_status_code::EVMC_SUCCESS || result.gas_used.value_or(0) < true_gas) {
                 lo = mid;
             } else {
                 hi = mid;

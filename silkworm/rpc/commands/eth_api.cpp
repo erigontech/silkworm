@@ -905,16 +905,12 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
         }
         const auto block = block_with_hash->block;
 
-        rpc::BlockHeaderProvider block_header_provider = [&chain_storage](BlockNum block_num) {
-            return chain_storage->read_canonical_header(block_num);
-        };
-
         rpc::AccountReader account_reader = [&](const evmc::address& address, std::optional<TxnId> txn_id) -> Task<std::optional<Account>> {
             StateReader state_reader{*tx, txn_id};  // always at latest block
             co_return co_await state_reader.read_account(address);
         };
 
-        rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, chain_config, workers_, *tx, *chain_storage, accounts_overrides};
+        rpc::EstimateGasOracle estimate_gas_oracle{account_reader, chain_config, workers_, *tx, *chain_storage, accounts_overrides};
         const auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, block, /*txn_id=*/std::nullopt);
 
         reply = make_json_content(request, to_quantity(estimated_gas));

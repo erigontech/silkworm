@@ -1321,20 +1321,30 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
 
     try {
         const auto chain_storage{tx->make_storage()};
-        const BlockReader block_reader{*chain_storage, *tx};
-        const auto block_with_hash = co_await block_reader.read_block_by_block_num_or_hash(*block_cache_, block_num_or_hash);
-        if (!block_with_hash) {
+        BlockReader block_reader{*chain_storage, *tx};
+        BlockNum block_num;
+
+        if (block_num_or_hash.is_number()) {  // NOLINT(bugprone-branch-clone)
+            block_num = block_num_or_hash.number();
+        }
+        /* else if (block_num_or_hash.is_tag()) {
+            [block_num, is_latest] = co_await block_reader.get_block_num(block_num_or_hash.tag(), true);
+        } */
+
+        auto header = co_await block_reader.read_header(block_num);
+        if (!header) {
             reply = make_json_content(request, {});
             co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
+        silkworm::Block block{.header = std::move(*header)};
 
         const auto chain_config = co_await chain_storage->read_chain_config();
-        const bool is_latest_block = co_await block_reader.get_latest_executed_block_num() == block_with_hash->block.header.number;
+        const bool is_latest_block = co_await block_reader.get_latest_executed_block_num() == block.header.number;
 
         std::optional<TxnId> txn_id;
         if (!is_latest_block) {
-            txn_id = co_await tx->user_txn_id_at(block_with_hash->block.header.number + 1);
+            txn_id = co_await tx->user_txn_id_at(block.header.number + 1);
         }
 
         StateReader state_reader{*tx, txn_id};
@@ -1365,12 +1375,12 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
 
         Tracers tracers{tracer};
         auto txn = call.to_transaction(std::nullopt, nonce);
-        AccessList saved_access_list = call.access_list;
+        AccessList saved_create_access_list = call.access_list;
 
         execution::StateFactory state_factory{*tx};
         while (true) {
             const auto execution_result = co_await EVMExecutor::call(
-                chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&](auto& io_executor, std::optional<TxnId> curr_txn_id, auto& storage) {
+                chain_config, *chain_storage, workers_, block, txn, txn_id, [&](auto& io_executor, std::optional<TxnId> curr_txn_id, auto& storage) {
                     return state_factory.make(io_executor, storage, curr_txn_id);
                 },
                 tracers, /* refund */ true, /* gasBailout */ false);
@@ -1379,22 +1389,23 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                 reply = make_json_error(request, kServerError, execution_result.pre_check_error.value());
                 break;
             }
-            const AccessList& current_access_list = tracer->get_access_list();
-            if (saved_access_list == current_access_list) {
+            const AccessList& current_create_access_list = tracer->get_access_list();
+            if (saved_create_access_list == current_create_access_list) {
                 AccessListResult access_list_result;
                 access_list_result.gas_used = txn.gas_limit - execution_result.gas_left;
                 if (!execution_result.success()) {
                     access_list_result.error = execution_result.error_message(false /* full_error */);
                 }
                 if (optimize_gas) {
-                    tracer->optimize_gas(*call.from, to, block_with_hash->block.header.beneficiary);
+                    tracer->optimize_gas(*call.from, to, block.header.beneficiary);
                 }
-                access_list_result.access_list = current_access_list;
+                access_list_result.access_list = tracer->get_access_list();
                 reply = make_json_content(request, access_list_result);
                 break;
             }
-            txn = call.to_transaction(current_access_list, nonce);
-            saved_access_list = current_access_list;
+            auto access_list = tracer->get_access_list();
+            txn = call.to_transaction(access_list, nonce);
+            saved_create_access_list = current_create_access_list;
         }
     } catch (const std::invalid_argument&) {
         reply = make_json_content(request, {});

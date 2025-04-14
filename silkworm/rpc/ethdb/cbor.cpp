@@ -171,14 +171,14 @@ bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Log>& logs) {
     return decode_success;
 }
 
-bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Receipt>& receipts) {
+bool cbor_decode(const silkworm::Bytes& bytes, std::vector<std::shared_ptr<Receipt>>& receipts) {
     if (bytes.empty()) {
         return false;
     }
     auto json = nlohmann::json::from_cbor(bytes);
     SILK_TRACE << "cbor_decode<std::vector<Receipt>> json: " << json.dump();
     if (json.is_array()) {
-        receipts = json.get<std::vector<Receipt>>();
+        receipts = json.get<std::vector<std::shared_ptr<Receipt>>>();
         return true;
     }
     if (json.is_null()) {

@@ -846,7 +846,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
             co_return;
         }
 
-        reply = make_json_content(request, *receipt);
+        reply = make_json_content(request, receipt);
     } catch (const std::invalid_argument&) {
         reply = make_json_content(request, {});
     } catch (const std::exception& e) {
@@ -2245,13 +2245,14 @@ Task<void> EthereumRpcApi::handle_eth_get_block_receipts(const nlohmann::json& r
         const auto block_num = co_await block_reader.get_block_num(block_num_or_hash);
         const auto block_with_hash = co_await block_reader.read_block_by_number(*block_cache_, block_num.first);
         if (block_with_hash) {
-            auto receipts{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_)};
+            auto receipts_ptr{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_)};
+            auto& receipts = *receipts_ptr;
             SILK_TRACE << "#receipts: " << receipts.size();
 
             const auto& block{block_with_hash->block};
             if (receipts.size() == block.transactions.size()) {
                 for (size_t i{0}; i < block.transactions.size(); ++i) {
-                    receipts[i].effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
+                    receipts[i]->effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
                 }
                 reply = make_json_content(request, receipts);
             } else {

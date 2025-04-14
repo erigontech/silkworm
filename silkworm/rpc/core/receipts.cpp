@@ -108,10 +108,10 @@ Task<std::shared_ptr<Receipts>> get_receipts(db::kv::api::Transaction& tx,
             receipts[i]->gas_used = receipts[i]->cumulative_gas_used - receipts[i - 1]->cumulative_gas_used;
         }
 
-        receipts[i].from = transactions[i].sender();
-        receipts[i].to = transactions[i].to;
-        receipts[i].type = transactions[i].type;
-        receipts[i].effective_gas_price = transactions[i].effective_gas_price(header.base_fee_per_gas.value_or(0));
+        receipts[i]->from = transactions[i].sender();
+        receipts[i]->to = transactions[i].to;
+        receipts[i]->type = transactions[i].type;
+        receipts[i]->effective_gas_price = transactions[i].effective_gas_price(header.base_fee_per_gas.value_or(0));
 
         // The derived fields of receipt are taken from block and transaction
         for (size_t j{0}; j < receipts[i]->logs.size(); ++j) {

@@ -171,7 +171,34 @@ void AccessListTracer::dump(const std::string& user_string, const CreateAccessLi
 bool AccessListTracer::compare(const CreateAccessList& acl1, const CreateAccessList& acl2) {
     SILK_LOG << "compare:" << acl1.size() << " " << acl2.size();
 
-    return acl1 == acl2;
+        if (acl1.size() != acl2.size()) {
+            return false;
+        }
+        for (const auto& pair : acl1) {
+            const evmc::address& address = pair.first;
+            const CreateAccessListEntry& entry_1 = pair.second;
+
+            auto it = acl2.find(address);
+            if (it == acl2.end()) {
+                return false;
+            }
+
+            const CreateAccessListEntry& entry_2 = it->second;
+
+            if (entry_1.storage_keys.size() != entry_2.storage_keys.size()) {
+                return false;
+            }
+
+            for (const auto& storage_pair : entry_1.storage_keys) {
+                const evmc::bytes32& storage_key = storage_pair.first;
+
+                auto it_storage = entry_2.storage_keys.find(storage_key);
+                if (it_storage == entry_2.storage_keys.end()) {
+                    return false;
+                }
+            }
+        }
+        return true;
 }
 
 bool AccessListTracer::is_created_contract(const evmc::address& address) {

@@ -65,13 +65,13 @@ public:
     AccessList access_list_;
 };
 
-//inline bool operator!=(const CreateAccessList& acl1, const CreateAccessList& acl2) {
-//    return !AccessListTracer::compare(acl1, acl2);
-//}
+inline bool operator!=(const CreateAccessList& acl1, const CreateAccessList& acl2) {
+    return !AccessListTracer::compare(acl1, acl2);
+}
 
-//inline bool operator==(const CreateAccessList& acl1, const CreateAccessList& acl2) {
-  //  return AccessListTracer::compare(acl1, acl2);
- //   return acl1 == acl2;
-//}
+inline bool operator==(const CreateAccessList& acl1, const CreateAccessList& acl2) {
+    return AccessListTracer::compare(acl1, acl2);
+    //return acl1 == acl2;
+}
 
 }  // namespace silkworm::rpc

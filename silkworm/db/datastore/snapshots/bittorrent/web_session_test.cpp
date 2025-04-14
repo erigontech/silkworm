@@ -44,7 +44,7 @@ using tcp = boost::asio::ip::tcp;
 
 // See also: https://github.com/boostorg/beast/blob/develop/example/common/server_certificate.hpp
 
-static const std::string kServerCert =
+static constexpr std::string_view kServerCert =
     "-----BEGIN CERTIFICATE-----\n"
     "MIIDlTCCAn2gAwIBAgIUOLxr3q7Wd/pto1+2MsW4fdRheCIwDQYJKoZIhvcNAQEL\n"
     "BQAwWjELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAkNBMRQwEgYDVQQHDAtMb3MgQW5n\n"
@@ -70,7 +70,7 @@ static const std::string kServerCert =
 
 //! Load a signed certificate into the ssl context and configure it for use with a server.
 inline void load_server_certificate(boost::asio::ssl::context& ctx) {
-    static const std::string kServerKey =
+    static constexpr std::string_view kServerKey =
         "-----BEGIN PRIVATE KEY-----\n"
         "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCz0GwgnxSBhygx\n"
         "BdhTHGx5LDLIJSuIDJ6nMwZFvAjdhLnB/vOTLppr5MKxqQHEpYdyDYGD1noBoz4T\n"
@@ -100,7 +100,7 @@ inline void load_server_certificate(boost::asio::ssl::context& ctx) {
         "nOMOU6XI4lO9Xge/QDEN4Y2R\n"
         "-----END PRIVATE KEY-----\n";
 
-    static const std::string kDhParameters =
+    static constexpr std::string_view kDhParameters =
         "-----BEGIN DH PARAMETERS-----\n"
         "MIIBCAKCAQEArzQc5mpm0Fs8yahDeySj31JZlwEphUdZ9StM2D8+Fo7TMduGtSi+\n"
         "/HRWVwHcTFAgrxVdm+dl474mOUqqaz4MpzIb6+6OVfWHbQJmXPepZKyu4LgUPvY/\n"
@@ -494,7 +494,7 @@ class Server : public std::enable_shared_from_this<Server> {
 };
 
 struct WebSessionTest : public test_util::ContextTestBase {
-    WebSession session{kServerCert};
+    WebSession session{std::string{kServerCert}};
 };
 
 TEST_CASE_METHOD(WebSessionTest, "WebSession::https_get", "[db][snapshot][bittorrent]") {

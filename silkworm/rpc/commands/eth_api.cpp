@@ -108,7 +108,7 @@ Task<void> EthereumRpcApi::handle_eth_syncing(const nlohmann::json& request, nlo
 
             syncing_data.current_block = to_quantity(current_block_num);
             syncing_data.max_block = to_quantity(max_block_num);
-            for (const char* stage_name : silkworm::db::stages::kAllStages) {
+            for (std::string_view stage_name : silkworm::db::stages::kAllStages) {
                 StageData current_stage;
                 current_stage.stage_name = stage_name;
                 current_stage.block_num = to_quantity(co_await stages::get_sync_stage_progress(*tx, string_to_bytes(current_stage.stage_name)));
@@ -846,7 +846,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
             co_return;
         }
 
-        reply = make_json_content(request, *receipt);
+        reply = make_json_content(request, receipt);
     } catch (const std::invalid_argument&) {
         reply = make_json_content(request, {});
     } catch (const std::exception& e) {
@@ -905,16 +905,12 @@ Task<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request
         }
         const auto block = block_with_hash->block;
 
-        rpc::BlockHeaderProvider block_header_provider = [&chain_storage](BlockNum block_num) {
-            return chain_storage->read_canonical_header(block_num);
-        };
-
         rpc::AccountReader account_reader = [&](const evmc::address& address, std::optional<TxnId> txn_id) -> Task<std::optional<Account>> {
             StateReader state_reader{*tx, txn_id};  // always at latest block
             co_return co_await state_reader.read_account(address);
         };
 
-        rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, chain_config, workers_, *tx, *chain_storage, accounts_overrides};
+        rpc::EstimateGasOracle estimate_gas_oracle{account_reader, chain_config, workers_, *tx, *chain_storage, accounts_overrides};
         const auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, block, /*txn_id=*/std::nullopt);
 
         reply = make_json_content(request, to_quantity(estimated_gas));
@@ -2245,13 +2241,14 @@ Task<void> EthereumRpcApi::handle_eth_get_block_receipts(const nlohmann::json& r
         const auto block_num = co_await block_reader.get_block_num(block_num_or_hash);
         const auto block_with_hash = co_await block_reader.read_block_by_number(*block_cache_, block_num.first);
         if (block_with_hash) {
-            auto receipts{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_)};
+            auto receipts_ptr{co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_)};
+            auto& receipts = *receipts_ptr;
             SILK_TRACE << "#receipts: " << receipts.size();
 
             const auto& block{block_with_hash->block};
             if (receipts.size() == block.transactions.size()) {
                 for (size_t i{0}; i < block.transactions.size(); ++i) {
-                    receipts[i].effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
+                    receipts[i]->effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
                 }
                 reply = make_json_content(request, receipts);
             } else {

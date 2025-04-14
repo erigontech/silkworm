@@ -325,8 +325,8 @@ DaemonChecklist Daemon::run_checklist() {
 }
 
 void Daemon::start() {
-    auto make_rpc_server = [this](const std::string& end_point,
-                                  const std::string& api_spec,
+    auto make_rpc_server = [this](std::string_view end_point,
+                                  std::string_view api_spec,
                                   boost::asio::io_context& ioc,
                                   std::optional<std::string> jwt_secret,
                                   InterfaceLogSettings ilog_settings) {

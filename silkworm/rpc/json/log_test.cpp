@@ -16,9 +16,9 @@
 
 namespace {
 #ifdef _WIN32
-constexpr const char* kInvalidArgumentMessage = "invalid argument";
+static constexpr std::string_view kInvalidArgumentMessage = "invalid argument";
 #else
-constexpr const char* kInvalidArgumentMessage = "Invalid argument";
+static constexpr std::string_view kInvalidArgumentMessage = "Invalid argument";
 #endif
 }  // namespace
 
@@ -62,17 +62,17 @@ TEST_CASE("shortest hex for 4206337", "[rpc][to_json]") {
 
 TEST_CASE("deserialize wrong size log", "[rpc][from_json]") {
     const auto j1 = nlohmann::json::from_cbor(*silkworm::from_hex("80"));
-    CHECK_THROWS_MATCHES(j1.get<Log>(), std::system_error, Message("Log CBOR: missing entries: "s + kInvalidArgumentMessage));
+    CHECK_THROWS_MATCHES(j1.get<Log>(), std::system_error, Message("Log CBOR: missing entries: " + std::string{kInvalidArgumentMessage}));
     const auto j2 = nlohmann::json::from_cbor(*silkworm::from_hex("81540000000000000000000000000000000000000000"));
-    CHECK_THROWS_MATCHES(j2.get<Log>(), std::system_error, Message("Log CBOR: missing entries: "s + kInvalidArgumentMessage));
+    CHECK_THROWS_MATCHES(j2.get<Log>(), std::system_error, Message("Log CBOR: missing entries: " + std::string{kInvalidArgumentMessage}));
     const auto j3 = nlohmann::json::from_cbor(*silkworm::from_hex("8254000000000000000000000000000000000000000080"));
-    CHECK_THROWS_MATCHES(j3.get<Log>(), std::system_error, Message("Log CBOR: missing entries: "s + kInvalidArgumentMessage));
+    CHECK_THROWS_MATCHES(j3.get<Log>(), std::system_error, Message("Log CBOR: missing entries: " + std::string{kInvalidArgumentMessage}));
     const auto j4 = nlohmann::json::from_cbor(*silkworm::from_hex("83808040"));
-    CHECK_THROWS_MATCHES(j4.get<Log>(), std::system_error, Message("Log CBOR: binary expected in [0]: "s + kInvalidArgumentMessage));
+    CHECK_THROWS_MATCHES(j4.get<Log>(), std::system_error, Message("Log CBOR: binary expected in [0]: " + std::string{kInvalidArgumentMessage}));
     const auto j5 = nlohmann::json::from_cbor(*silkworm::from_hex("835400000000000000000000000000000000000000004040"));
-    CHECK_THROWS_MATCHES(j5.get<Log>(), std::system_error, Message("Log CBOR: array expected in [1]: "s + kInvalidArgumentMessage));
+    CHECK_THROWS_MATCHES(j5.get<Log>(), std::system_error, Message("Log CBOR: array expected in [1]: " + std::string{kInvalidArgumentMessage}));
     const auto j6 = nlohmann::json::from_cbor(*silkworm::from_hex("835400000000000000000000000000000000000000008080"));
-    CHECK_THROWS_MATCHES(j6.get<Log>(), std::system_error, Message("Log CBOR: binary or null expected in [2]: "s + kInvalidArgumentMessage));
+    CHECK_THROWS_MATCHES(j6.get<Log>(), std::system_error, Message("Log CBOR: binary or null expected in [2]: " + std::string{kInvalidArgumentMessage}));
 }
 
 TEST_CASE("deserialize empty array log", "[rpc][from_json]") {

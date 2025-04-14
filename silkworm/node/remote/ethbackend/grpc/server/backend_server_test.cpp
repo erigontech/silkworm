@@ -90,8 +90,8 @@ class BackEndClient {
 };
 
 constexpr uint64_t kTestSentryPeerCount = 10;
-constexpr const char* kTestSentryNodeId{"24bfa2cdce7c6a41184fa0809ad8d76969b7280952e9aa46179d90cfbab90f7d2b004928f0364389a1aa8d5166281f2ff7568493c1f719e8f6148ef8cf8af42d"};
-constexpr const char* kTestSentryNodeClientId{"MockSentryClient"};
+constexpr std::string_view kTestSentryNodeId{"24bfa2cdce7c6a41184fa0809ad8d76969b7280952e9aa46179d90cfbab90f7d2b004928f0364389a1aa8d5166281f2ff7568493c1f719e8f6148ef8cf8af42d"};
+constexpr std::string_view kTestSentryNodeClientId{"MockSentryClient"};
 
 class MockSentryClient
     : public std::enable_shared_from_this<MockSentryClient>,
@@ -116,11 +116,11 @@ class MockSentryClient
     Task<NodeInfos> node_infos() override {
         const std::string ip_str = "1.2.3.4";
         const uint16_t port = 50555;
-        const std::string node_url_str = std::string("enode://") + kTestSentryNodeId + "@" + ip_str + ":" + std::to_string(port);
+        const std::string node_url_str = std::string("enode://") + std::string{kTestSentryNodeId} + "@" + ip_str + ":" + std::to_string(port);
 
         silkworm::sentry::api::NodeInfo info = {
             silkworm::sentry::EnodeUrl{node_url_str},
-            kTestSentryNodeClientId,
+            std::string{kTestSentryNodeClientId},
             boost::asio::ip::tcp::endpoint{boost::asio::ip::make_address(ip_str), port},
             port,
         };
@@ -166,7 +166,7 @@ class MockSentryClient
 };
 
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
-const std::string kTestAddressUri{"localhost:12345"};
+constexpr std::string_view kTestAddressUri{"localhost:12345"};
 
 const silkworm::datastore::kvdb::MapConfig kTestMap{"TestTable"};
 const silkworm::datastore::kvdb::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
@@ -215,7 +215,7 @@ struct BackEndE2ETest {
     explicit BackEndE2ETest(
         const NodeSettings& options = {}) {
         std::shared_ptr<grpc::Channel> channel =
-            grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
+            grpc::CreateChannel(std::string{kTestAddressUri}, grpc::InsecureChannelCredentials());
         ethbackend_stub = remote::ETHBACKEND::NewStub(channel);
         backend_client = std::make_unique<BackEndClient>(ethbackend_stub.get());
 

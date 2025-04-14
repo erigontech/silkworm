@@ -11,6 +11,10 @@
 
 namespace silkworm::rpc {
 
+void to_json(nlohmann::json& json, const std::shared_ptr<Receipt> receipt) {
+    json = *receipt;
+}
+
 void to_json(nlohmann::json& json, const Receipt& receipt) {
     json["blockHash"] = receipt.block_hash;
     json["blockNumber"] = to_quantity(receipt.block_num);
@@ -43,6 +47,11 @@ void to_json(nlohmann::json& json, const Receipt& receipt) {
     }
 }
 
+void from_json(const nlohmann::json& json, std::shared_ptr<Receipt>& receipt) {
+    receipt = std::make_shared<Receipt>();
+    *receipt = json;
+}
+
 void from_json(const nlohmann::json& json, Receipt& receipt) {
     SILK_TRACE << "from_json<Receipt> json: " << json.dump();
     if (json.is_array()) {
@@ -52,6 +61,7 @@ void from_json(const nlohmann::json& json, Receipt& receipt) {
         if (!json[0].is_number()) {
             throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: number expected in [0]"};
         }
+        receipt = Receipt();
         receipt.type = json[0];
 
         if (!json[1].is_null()) {
@@ -71,6 +81,7 @@ void from_json(const nlohmann::json& json, Receipt& receipt) {
         if (!json.contains("success") || !json.contains("cumulative_gas_used")) {
             throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: missing entries in " + json.dump()};
         }
+        receipt = Receipt();
         receipt.success = json.at("success").get<bool>();
         receipt.cumulative_gas_used = json.at("cumulative_gas_used").get<uint64_t>();
     }

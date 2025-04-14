@@ -189,9 +189,9 @@ static mdbx::cursor::move_operation move_operation(CursorMoveDirection direction
 
 ::mdbx::map_handle open_map(::mdbx::txn& tx, const MapConfig& config) {
     if (tx.is_readonly()) {
-        return tx.open_map(config.name, config.key_mode, config.value_mode);
+        return tx.open_map(config.name_str(), config.key_mode, config.value_mode);
     }
-    return tx.create_map(config.name, config.key_mode, config.value_mode);
+    return tx.create_map(config.name_str(), config.key_mode, config.value_mode);
 }
 
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config) {
@@ -558,7 +558,7 @@ bool PooledCursor::erase(const Slice& key, const Slice& value) {
     return ::mdbx::cursor::erase(key, value);
 }
 
-bool has_map(::mdbx::txn& tx, const char* map_name) {
+bool has_map(::mdbx::txn& tx, std::string_view map_name) {
     try {
         ::mdbx::map_handle main_map{1};
         auto main_cursor{tx.open_cursor(main_map)};

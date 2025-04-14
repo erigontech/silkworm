@@ -29,7 +29,7 @@ static constexpr std::array kAllEth1Namespaces{
 //! Compute the maximum number of chars in comma-separated list of all API namespaces
 static const size_t kApiNamespaceListMaxChars{
     std::accumulate(kAllEth1Namespaces.cbegin(), kAllEth1Namespaces.cend(), 0, [](size_t sum, auto s) {
-        return sum + std::strlen(s);
+        return sum + s.length();
     }) +
     kAllEth1Namespaces.size() - 1};
 

@@ -48,10 +48,10 @@ TEST_CASE("connection creation", "[rpc][http][connection]") {
 
 static constexpr std::string_view kSampleJWTKey{
     "NTNv7j0TuYARvmNMmWXo6fKvM4o6nv/aUi9ryX38ZH+L1bkrnD1ObOQ8JAUmHCBq7Iy7otZcyAagBLHVKvvYaIpmMuxmARQ97jUVG16Jkpkp1wXO"
-    "PsrF9zwew6TpczyHkHgX5EuLg2MeBuiT/qJACs1J0apruOOJCg/gOtkjB4c="sv};
+    "PsrF9zwew6TpczyHkHgX5EuLg2MeBuiT/qJACs1J0apruOOJCg/gOtkjB4c="};
 static constexpr std::string_view kSampleJWTBearer{
     "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUs"
-    "ImlhdCI6MTcxMzUxNDQ3MCwiZXhwIjoxNzEzNTE4MDcwfQ.IBKIdE8Bcto9cwGSkr6mqylBLvfcPZZyDOyZMWYtEaQ"sv};
+    "ImlhdCI6MTcxMzUxNDQ3MCwiZXhwIjoxNzEzNTE4MDcwfQ.IBKIdE8Bcto9cwGSkr6mqylBLvfcPZZyDOyZMWYtEaQ"};
 
 static std::string create_and_sign_jwt_token(auto&& jwt_secret, bool include_issued_at = true) {
     auto token_builder{jwt::create()};

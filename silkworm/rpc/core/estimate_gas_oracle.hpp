@@ -23,7 +23,6 @@ namespace silkworm::rpc {
 inline constexpr std::uint64_t kTxGas = 21'000;
 inline constexpr std::uint64_t kGasCap = 50'000'000;
 
-using BlockHeaderProvider = std::function<Task<std::optional<silkworm::BlockHeader>>(uint64_t)>;
 using AccountReader = std::function<Task<std::optional<silkworm::Account>>(const evmc::address&, std::optional<TxnId> txn_id)>;
 
 struct EstimateGasException : public std::exception {
@@ -60,15 +59,13 @@ struct EstimateGasException : public std::exception {
 
 class EstimateGasOracle {
   public:
-    explicit EstimateGasOracle(const BlockHeaderProvider& block_header_provider,
-                               const AccountReader& account_reader,
+    explicit EstimateGasOracle(const AccountReader& account_reader,
                                const silkworm::ChainConfig& config,
                                WorkerPool& workers,
                                db::kv::api::Transaction& tx,
                                const ChainStorage& chain_storage,
                                AccountsOverrides& accounts_overrides)
-        : block_header_provider_(block_header_provider),
-          account_reader_{account_reader},
+        : account_reader_{account_reader},
           config_{config},
           workers_{workers},
           transaction_{tx},
@@ -87,7 +84,6 @@ class EstimateGasOracle {
   private:
     void throw_exception(ExecutionResult& result);
 
-    const BlockHeaderProvider& block_header_provider_;
     const AccountReader& account_reader_;
     const silkworm::ChainConfig& config_;
     WorkerPool& workers_;

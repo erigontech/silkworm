@@ -25,16 +25,16 @@ class MockTransaction : public kv::api::Transaction {
     MOCK_METHOD(uint64_t, tx_id, (), (const, override));
     MOCK_METHOD(uint64_t, view_id, (), (const, override));
     MOCK_METHOD((Task<void>), open, (), (override));
-    MOCK_METHOD((Task<std::shared_ptr<kv::api::Cursor>>), cursor, (const std::string&), (override));
-    MOCK_METHOD((Task<std::shared_ptr<kv::api::CursorDupSort>>), cursor_dup_sort, (const std::string&), (override));
+    MOCK_METHOD((Task<std::shared_ptr<kv::api::Cursor>>), cursor, (std::string_view), (override));
+    MOCK_METHOD((Task<std::shared_ptr<kv::api::CursorDupSort>>), cursor_dup_sort, (std::string_view), (override));
     bool is_local() const override { return false; }
     MOCK_METHOD((std::shared_ptr<chain::ChainStorage>), make_storage, (), (override));
     MOCK_METHOD((Task<TxnId>), first_txn_num_in_block, (BlockNum), (override));
     MOCK_METHOD((Task<void>), close, (), (override));
-    MOCK_METHOD((Task<kv::api::KeyValue>), get, (const std::string&, ByteView), (override));
-    MOCK_METHOD((Task<Bytes>), get_one, (const std::string&, ByteView), (override));
+    MOCK_METHOD((Task<kv::api::KeyValue>), get, (std::string_view, ByteView), (override));
+    MOCK_METHOD((Task<Bytes>), get_one, (std::string_view, ByteView), (override));
     MOCK_METHOD((Task<std::optional<Bytes>>), get_both_range,
-                (const std::string&, ByteView, ByteView), (override));
+                (std::string_view, ByteView, ByteView), (override));
     MOCK_METHOD((Task<kv::api::GetLatestResult>), get_latest, (kv::api::GetLatestRequest), (override));
     MOCK_METHOD((Task<kv::api::GetAsOfResult>), get_as_of, (kv::api::GetAsOfRequest), (override));
     MOCK_METHOD((Task<kv::api::HistoryPointResult>), history_seek, (kv::api::HistoryPointRequest), (override));

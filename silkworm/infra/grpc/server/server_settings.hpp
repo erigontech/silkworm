@@ -12,7 +12,7 @@
 
 namespace silkworm::rpc {
 
-inline constexpr const char* kDefaultAddressUri{"localhost:9090"};
+inline constexpr std::string_view kDefaultAddressUri{"localhost:9090"};
 
 //! Configuration settings for private (i.e. internal) API gRPC server
 struct ServerSettings {

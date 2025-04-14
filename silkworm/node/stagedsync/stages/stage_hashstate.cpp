@@ -57,12 +57,12 @@ Stage::Result HashState::forward(RWTxn& txn) {
 
         if (!previous_progress || segment_width > stages::kLargeBlockSegmentWorthRegen) {
             // Clear any previous contents
-            SILK_INFO_M(log_prefix_, {"clearing", table::kHashedAccounts.name});
-            txn->clear_map(table::kHashedAccounts.name);
-            SILK_INFO_M(log_prefix_, {"clearing", table::kHashedStorage.name});
-            txn->clear_map(table::kHashedStorage.name);
-            SILK_INFO_M(log_prefix_, {"clearing", table::kHashedCodeHash.name});
-            txn->clear_map(table::kHashedCodeHash.name);
+            SILK_INFO_M(log_prefix_, {"clearing", table::kHashedAccounts.name_str()});
+            txn->clear_map(table::kHashedAccounts.name_str());
+            SILK_INFO_M(log_prefix_, {"clearing", table::kHashedStorage.name_str()});
+            txn->clear_map(table::kHashedStorage.name_str());
+            SILK_INFO_M(log_prefix_, {"clearing", table::kHashedCodeHash.name_str()});
+            txn->clear_map(table::kHashedCodeHash.name_str());
             txn.commit_and_renew();
 
             success_or_throw(hash_from_plainstate(txn));

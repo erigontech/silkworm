@@ -25,7 +25,7 @@ using db::kv::api::CursorDupSort;
 using db::kv::api::KeyValue;
 
 static const nlohmann::json kEmpty;
-static const std::string kZeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
+static constexpr std::string_view kZeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
 #ifdef TEST_DISABLED
 static const evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 #endif
@@ -38,7 +38,7 @@ class DummyCursor : public CursorDupSort {
         return 0;
     }
 
-    Task<void> open_cursor(const std::string& table_name, bool /*is_dup_sorted*/) override {
+    Task<void> open_cursor(std::string_view table_name, bool /*is_dup_sorted*/) override {
         table_name_ = table_name;
         table_ = json_.value(table_name_, kEmpty);
         itr_ = table_.end();
@@ -167,14 +167,14 @@ class DummyTransaction : public BaseTransaction {
         co_return;
     }
 
-    Task<std::shared_ptr<Cursor>> cursor(const std::string& table) override {
+    Task<std::shared_ptr<Cursor>> cursor(std::string_view table) override {
         auto cursor = std::make_unique<DummyCursor>(json_);
         co_await cursor->open_cursor(table, false);
 
         co_return cursor;
     }
 
-    Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override {
+    Task<std::shared_ptr<CursorDupSort>> cursor_dup_sort(std::string_view table) override {
         auto cursor = std::make_unique<DummyCursor>(json_);
         co_await cursor->open_cursor(table, true);
 

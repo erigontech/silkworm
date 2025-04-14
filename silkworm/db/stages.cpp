@@ -11,7 +11,7 @@ namespace silkworm::db::stages {
 
 using namespace silkworm::datastore::kvdb;
 
-static BlockNum get_stage_data(ROTxn& txn, const char* stage_name, const MapConfig& domain,
+static BlockNum get_stage_data(ROTxn& txn, std::string_view stage_name, const MapConfig& domain,
                                const char* key_prefix = nullptr) {
     if (!is_known_stage(stage_name)) {
         throw std::invalid_argument("Unknown stage name " + std::string(stage_name));
@@ -37,7 +37,7 @@ static BlockNum get_stage_data(ROTxn& txn, const char* stage_name, const MapConf
     }
 }
 
-static void set_stage_data(RWTxn& txn, const char* stage_name, uint64_t block_num, const MapConfig& domain,
+static void set_stage_data(RWTxn& txn, std::string_view stage_name, uint64_t block_num, const MapConfig& domain,
                            const char* key_prefix = nullptr) {
     if (!is_known_stage(stage_name)) {
         throw std::invalid_argument("Unknown stage name");
@@ -60,26 +60,26 @@ static void set_stage_data(RWTxn& txn, const char* stage_name, uint64_t block_nu
     }
 }
 
-BlockNum read_stage_progress(ROTxn& txn, const char* stage_name) {
+BlockNum read_stage_progress(ROTxn& txn, std::string_view stage_name) {
     return get_stage_data(txn, stage_name, silkworm::db::table::kSyncStageProgress);
 }
 
-BlockNum read_stage_prune_progress(ROTxn& txn, const char* stage_name) {
+BlockNum read_stage_prune_progress(ROTxn& txn, std::string_view stage_name) {
     return get_stage_data(txn, stage_name, silkworm::db::table::kSyncStageProgress, "prune_");
 }
 
-void write_stage_progress(RWTxn& txn, const char* stage_name, BlockNum block_num) {
+void write_stage_progress(RWTxn& txn, std::string_view stage_name, BlockNum block_num) {
     set_stage_data(txn, stage_name, block_num, silkworm::db::table::kSyncStageProgress);
 }
 
-void write_stage_prune_progress(RWTxn& txn, const char* stage_name, BlockNum block_num) {
+void write_stage_prune_progress(RWTxn& txn, std::string_view stage_name, BlockNum block_num) {
     set_stage_data(txn, stage_name, block_num, silkworm::db::table::kSyncStageProgress, "prune_");
 }
 
-bool is_known_stage(const char* name) {
-    if (strlen(name)) {
+bool is_known_stage(std::string_view stage_name) {
+    if (!stage_name.empty()) {
         for (auto stage : kAllStages) {
-            if (strcmp(stage, name) == 0) {
+            if (stage == stage_name) {
                 return true;
             }
         }

@@ -45,14 +45,14 @@ Task<void> RemoteTransaction::open() {
     view_id_ = tx_id_view_id_pair.view_id();
 }
 
-Task<std::shared_ptr<api::Cursor>> RemoteTransaction::cursor(const std::string& table) {
+Task<std::shared_ptr<api::Cursor>> RemoteTransaction::cursor(std::string_view table) {
     if (!start_called_) {
         throw boost::system::system_error{rpc::to_system_code(::grpc::StatusCode::INTERNAL)};
     }
     co_return co_await get_cursor(table, false);
 }
 
-Task<std::shared_ptr<api::CursorDupSort>> RemoteTransaction::cursor_dup_sort(const std::string& table) {
+Task<std::shared_ptr<api::CursorDupSort>> RemoteTransaction::cursor_dup_sort(std::string_view table) {
     if (!start_called_) {
         throw boost::system::system_error{rpc::to_system_code(::grpc::StatusCode::INTERNAL)};
     }
@@ -73,7 +73,8 @@ Task<void> RemoteTransaction::close() {
     view_id_ = 0;
 }
 
-Task<std::shared_ptr<api::CursorDupSort>> RemoteTransaction::get_cursor(const std::string& table, bool is_cursor_dup_sort) {
+Task<std::shared_ptr<api::CursorDupSort>> RemoteTransaction::get_cursor(std::string_view table_view, bool is_cursor_dup_sort) {
+    std::string table{table_view};
     if (is_cursor_dup_sort) {
         const auto cursor_it = dup_cursors_.find(table);
         if (cursor_it != dup_cursors_.end()) {

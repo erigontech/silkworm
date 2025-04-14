@@ -11,7 +11,7 @@
 
 namespace silkworm::rpc::commands {
 
-RpcApiTable::RpcApiTable(const std::string& api_spec) {
+RpcApiTable::RpcApiTable(std::string_view api_spec) {
     build_handlers(api_spec);
 }
 
@@ -39,18 +39,18 @@ std::optional<RpcApiTable::HandleStream> RpcApiTable::find_stream_handler(const 
     return handle_method_pair->second;
 }
 
-void RpcApiTable::build_handlers(const std::string& api_spec) {
+void RpcApiTable::build_handlers(std::string_view api_spec) {
     size_t start = 0;
     size_t end = api_spec.find(kApiSpecSeparator);
     while (end != std::string::npos) {
         add_handlers(api_spec.substr(start, end - start));
-        start = end + std::strlen(kApiSpecSeparator);
+        start = end + kApiSpecSeparator.length();
         end = api_spec.find(kApiSpecSeparator, start);
     }
     add_handlers(api_spec.substr(start, end));
 }
 
-void RpcApiTable::add_handlers(const std::string& api_namespace) {
+void RpcApiTable::add_handlers(std::string_view api_namespace) {
     if (api_namespace == kAdminApiNamespace) {
         add_admin_handlers();
     } else if (api_namespace == kDebugApiNamespace) {

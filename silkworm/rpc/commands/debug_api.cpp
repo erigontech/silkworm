@@ -310,7 +310,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
 
         const auto min_tx_num = co_await tx->first_txn_num_in_block(block_with_hash->block.header.number);
         db::kv::api::GetAsOfRequest query_account{
-            .table = db::table::kAccountDomain,
+            .table = std::string{db::table::kAccountDomain},
             .key = db::account_domain_key(address),
             .timestamp = static_cast<db::kv::api::Timestamp>(min_tx_num + tx_index + 1),
         };
@@ -335,7 +335,7 @@ Task<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, n
             json_result["codeHash"] = account->code_hash;
 
             db::kv::api::GetAsOfRequest query_code{
-                .table = db::table::kCodeDomain,
+                .table = std::string{db::table::kCodeDomain},
                 .key = db::account_domain_key(address),
                 .timestamp = static_cast<db::kv::api::Timestamp>(min_tx_num + tx_index),
             };
@@ -643,7 +643,7 @@ Task<std::set<evmc::address>> get_modified_accounts(db::kv::api::Transaction& tx
     const auto end_txn_number = co_await tx.first_txn_num_in_block(end_block_num == start_block_num ? end_block_num + 1 : end_block_num) - 1;
 
     db::kv::api::HistoryRangeRequest query{
-        .table = db::table::kAccountDomain,
+        .table = std::string{db::table::kAccountDomain},
         .from_timestamp = static_cast<db::kv::api::Timestamp>(start_txn_number),
         .to_timestamp = static_cast<db::kv::api::Timestamp>(end_txn_number),
         .ascending_order = true};
@@ -719,22 +719,23 @@ Task<void> DebugRpcApi::handle_debug_get_raw_receipts(const nlohmann::json& requ
             co_return;
         }
 
-        auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_, /*extended_receipt_info=*/false);
+        auto receipts_ptr = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_, /*extended_receipt_info=*/false);
+        auto& receipts = *receipts_ptr;
         SILK_TRACE << "#receipts: " << receipts.size();
 
         std::vector<std::string> raw_receipts;
         for (auto& rpc_receipt : receipts) {
             silkworm::Receipt core_receipt{
-                .type = rpc_receipt.type,
-                .success = rpc_receipt.success,
-                .cumulative_gas_used = rpc_receipt.cumulative_gas_used,
-                .bloom = rpc_receipt.bloom,
+                .type = rpc_receipt->type,
+                .success = rpc_receipt->success,
+                .cumulative_gas_used = rpc_receipt->cumulative_gas_used,
+                .bloom = rpc_receipt->bloom,
             };
-            for (auto& log : rpc_receipt.logs) {
+            for (auto& log : rpc_receipt->logs) {
                 core_receipt.logs.push_back(silkworm::Log{
                     .address = log.address,
-                    .topics = std::move(log.topics),
-                    .data = std::move(log.data),
+                    .topics = log.topics,
+                    .data = log.data,
                 });
             }
 

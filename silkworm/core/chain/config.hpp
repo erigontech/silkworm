@@ -140,20 +140,20 @@ constinit extern const ChainConfig kAmoyConfig;
 
 //! \brief Known chain names mapped to their respective chain IDs
 inline constexpr SmallMap<std::string_view, ChainId> kKnownChainNameToId{
-    {"amoy"sv, 80002},
-    {"bor-mainnet"sv, 137},
-    {"holesky"sv, 17000},
-    {"mainnet"sv, 1},
-    {"sepolia"sv, 11155111},
+    {"amoy", 80002},
+    {"bor-mainnet", 137},
+    {"holesky", 17000},
+    {"mainnet", 1},
+    {"sepolia", 11155111},
 };
 
 //! \brief Known chain IDs mapped to their respective chain configs
 inline constexpr SmallMap<ChainId, const ChainConfig*> kKnownChainConfigs{
-    {*kKnownChainNameToId.find("mainnet"sv), &kMainnetConfig},
-    {*kKnownChainNameToId.find("amoy"sv), &kAmoyConfig},
-    {*kKnownChainNameToId.find("bor-mainnet"sv), &kBorMainnetConfig},
-    {*kKnownChainNameToId.find("holesky"sv), &kHoleskyConfig},
-    {*kKnownChainNameToId.find("sepolia"sv), &kSepoliaConfig},
+    {*kKnownChainNameToId.find("mainnet"), &kMainnetConfig},
+    {*kKnownChainNameToId.find("amoy"), &kAmoyConfig},
+    {*kKnownChainNameToId.find("bor-mainnet"), &kBorMainnetConfig},
+    {*kKnownChainNameToId.find("holesky"), &kHoleskyConfig},
+    {*kKnownChainNameToId.find("sepolia"), &kSepoliaConfig},
 };
 
 }  // namespace silkworm

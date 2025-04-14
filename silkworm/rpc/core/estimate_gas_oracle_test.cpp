@@ -59,22 +59,16 @@ TEST_CASE("estimate gas") {
     WorkerPool workers{1};
 
     intx::uint256 balance{1'000'000'000};
-
-    silkworm::BlockHeader block_header;
-    block_header.gas_limit = kTxGas * 2;
-
     silkworm::Account account{0, balance};
-
-    BlockHeaderProvider block_header_provider = [&block_header](BlockNum /*block_num*/) -> Task<std::optional<BlockHeader>> {
-        co_return block_header;
-    };
 
     AccountReader account_reader = [&account](const evmc::address& /*address*/, std::optional<TxnId> /* txn_id */) -> Task<std::optional<silkworm::Account>> {
         co_return account;
     };
 
     Call call;
-    const silkworm::Block block;
+    silkworm::Block block;
+    block.header.gas_limit = kTxGas * 2;
+
     const silkworm::ChainConfig& config{kMainnetConfig};
     RemoteDatabaseTest remote_db_test;
     test::BackEndMock backend;
@@ -85,7 +79,7 @@ TEST_CASE("estimate gas") {
                                                                         providers);
     const db::chain::RemoteChainStorage storage{*tx, std::move(providers)};
     AccountsOverrides accounts_overrides;
-    MockEstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, config, workers, *tx, storage, accounts_overrides};
+    MockEstimateGasOracle estimate_gas_oracle{account_reader, config, workers, *tx, storage, accounts_overrides};
 
     SECTION("Call empty, always fails but success in first step") {
         ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
@@ -111,17 +105,15 @@ TEST_CASE("estimate gas") {
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block, 244087591818874), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
-        // CHECK(estimate_gas == kTxGas * 2);
-        CHECK(estimate_gas == 0xa40f);
-        // 0xa40f == 42000 (0xa410)
+        CHECK(estimate_gas == 0xa40e);
     }
 
     SECTION("Call empty, always succeeds") {
         ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
-        EXPECT_CALL(estimate_gas_oracle, try_execution(_, _)).Times(15).WillRepeatedly(Return(expect_result_ok));
+        EXPECT_CALL(estimate_gas_oracle, try_execution(_, _)).Times(16).WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block, 244087591818874), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
-        CHECK(estimate_gas == kTxGas);
+        CHECK(estimate_gas == 0);
     }
 
     SECTION("Call empty, fails first call") {
@@ -145,7 +137,7 @@ TEST_CASE("estimate gas") {
         ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
         ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_OUT_OF_GAS};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _))
-            .Times(16)
+            .Times(17)
             .WillOnce(Return(expect_result_ok))
             .WillOnce(Return(expect_result_fail))
             .WillOnce(Return(expect_result_ok))
@@ -163,7 +155,7 @@ TEST_CASE("estimate gas") {
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block, 244087591818874), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
-        CHECK(estimate_gas == 0x88b8);
+        CHECK(estimate_gas == 0x6d61);
     }
 
     SECTION("Call empty, alternatively succeeds and fails with intrinsic") {
@@ -174,7 +166,21 @@ TEST_CASE("estimate gas") {
         ExecutionResult expect_result_fail{.status_code = evmc_status_code::EVMC_OUT_OF_GAS};
         try {
             EXPECT_CALL(estimate_gas_oracle, try_execution(_, _))
-                .Times(2)
+                .Times(16)
+                .WillOnce(Return(expect_result_ok))
+                .WillOnce(Return(expect_result_fail_pre_check))
+                .WillOnce(Return(expect_result_ok))
+                .WillOnce(Return(expect_result_fail_pre_check))
+                .WillOnce(Return(expect_result_ok))
+                .WillOnce(Return(expect_result_fail_pre_check))
+                .WillOnce(Return(expect_result_ok))
+                .WillOnce(Return(expect_result_fail_pre_check))
+                .WillOnce(Return(expect_result_ok))
+                .WillOnce(Return(expect_result_fail_pre_check))
+                .WillOnce(Return(expect_result_ok))
+                .WillOnce(Return(expect_result_fail_pre_check))
+                .WillOnce(Return(expect_result_ok))
+                .WillOnce(Return(expect_result_fail_pre_check))
                 .WillOnce(Return(expect_result_ok))
                 .WillOnce(Return(expect_result_fail_pre_check));
             auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block, 244087591818874), boost::asio::use_future);
@@ -215,19 +221,19 @@ TEST_CASE("estimate gas") {
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block, 244087591818874), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
-        CHECK(estimate_gas == 0x1481f);
+        CHECK(estimate_gas == 0x1481e);
     }
 
     SECTION("Call with gas, always succeeds") {
         call.gas = kTxGas * 4;
         ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _))
-            .Times(16)
+            .Times(17)
             .WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block, 244087591818874), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
-        CHECK(estimate_gas == kTxGas);
+        CHECK(estimate_gas == 0);
     }
 
     SECTION("Call with gas_price, gas not capped") {
@@ -237,7 +243,7 @@ TEST_CASE("estimate gas") {
         call.gas_price = intx::uint256{10'000};
 
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _))
-            .Times(15)
+            .Times(16)
             .WillOnce(Return(expect_result_ok))
             .WillOnce(Return(expect_result_ok))
             .WillOnce(Return(expect_result_ok))
@@ -248,6 +254,7 @@ TEST_CASE("estimate gas") {
             .WillOnce(Return(expect_result_fail))
             .WillOnce(Return(expect_result_fail))
             .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_ok))
             .WillOnce(Return(expect_result_ok))
             .WillOnce(Return(expect_result_ok))
             .WillOnce(Return(expect_result_ok))
@@ -256,7 +263,7 @@ TEST_CASE("estimate gas") {
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block, 244087591818874), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
-        CHECK(estimate_gas == 0x546f);
+        CHECK(estimate_gas == 0x4ce);
     }
 
     SECTION("Call with gas_price, gas capped") {
@@ -266,7 +273,7 @@ TEST_CASE("estimate gas") {
         call.gas_price = intx::uint256{40'000};
 
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _))
-            .Times(13)
+            .Times(16)
             .WillOnce(Return(expect_result_ok))
             .WillOnce(Return(expect_result_ok))
             .WillOnce(Return(expect_result_fail))
@@ -277,13 +284,16 @@ TEST_CASE("estimate gas") {
             .WillOnce(Return(expect_result_fail))
             .WillOnce(Return(expect_result_ok))
             .WillOnce(Return(expect_result_ok))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
             .WillOnce(Return(expect_result_fail))
             .WillOnce(Return(expect_result_fail))
             .WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block, 244087591818874), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
-        CHECK(estimate_gas == 0x5847);
+        CHECK(estimate_gas == 0x2717);
     }
 
     SECTION("Call with gas_price and value, gas not capped") {
@@ -314,7 +324,7 @@ TEST_CASE("estimate gas") {
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block, 244087591818874), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
-        CHECK(estimate_gas == 0x7b0a);
+        CHECK(estimate_gas == 0x5205);
     }
 
     SECTION("Call with gas_price and value, gas capped") {
@@ -325,9 +335,12 @@ TEST_CASE("estimate gas") {
         call.value = intx::uint256{500'000'000};
 
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _))
-            .Times(13)
+            .Times(16)
             .WillOnce(Return(expect_result_ok))
             .WillOnce(Return(expect_result_ok))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
             .WillOnce(Return(expect_result_fail))
             .WillOnce(Return(expect_result_fail))
             .WillOnce(Return(expect_result_fail))
@@ -342,7 +355,7 @@ TEST_CASE("estimate gas") {
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block, 244087591818874), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
-        CHECK(estimate_gas == 0x59d6);
+        CHECK(estimate_gas == 0x30d2);
     }
 
     SECTION("Call gas above allowance, always succeeds, gas capped") {
@@ -352,18 +365,18 @@ TEST_CASE("estimate gas") {
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block, 244087591818874), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
-        CHECK(estimate_gas == kTxGas);
+        CHECK(estimate_gas == 0);
     }
 
     SECTION("Call gas below minimum, always succeeds") {
         ExecutionResult expect_result_ok{.status_code = evmc_status_code::EVMC_SUCCESS};
         call.gas = kTxGas / 2;
 
-        EXPECT_CALL(estimate_gas_oracle, try_execution(_, _)).Times(15).WillRepeatedly(Return(expect_result_ok));
+        EXPECT_CALL(estimate_gas_oracle, try_execution(_, _)).Times(16).WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block, 244087591818874), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
-        CHECK(estimate_gas == kTxGas);
+        CHECK(estimate_gas == 0);
     }
 
     SECTION("Call with too high value, exception") {

@@ -136,7 +136,7 @@ void AccessListTracer::add_address(const evmc::address& address) {
     }
     silkworm::AccessListEntry item;
     item.account = address;
-    access_list_.push_back(item);
+    access_list_.push_back(std::move(item));
 }
 
 void AccessListTracer::dump(const std::string& user_string, const AccessList& acl) {

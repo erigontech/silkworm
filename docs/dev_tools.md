@@ -18,25 +18,25 @@ The `check_log_indices` tool is a command-line utility to check the consistency 
 Check only log address index from block 0 up to block 2'000'000
 
 ```
-cmd/dev/check_log_indices --to 2000000 --index address
+check_log_indices --to 2000000 --index address
 ```
 
 Check only log topic index for block 2'000'000
 
 ```
-cmd/dev/check_log_indices --from 2000000 --to 2000000 --index topic
+check_log_indices --from 2000000 --to 2000000 --index topic
 ```
 
 Check both log address and topic indices for block 17'500'000
 
 ```
-cmd/dev/check_log_indices --from 17500000 --to 17500000
+check_log_indices --from 17500000 --to 17500000
 ```
 
 Check both log address and topic indices from block 17'000'000 up to the tip (beware: long-running)
 
 ```
-cmd/dev/check_log_indices --from 17000000
+check_log_indices --from 17000000
 ```
 
 ## Snapshots
@@ -61,7 +61,7 @@ The `snapshots` tool is a collection of small utilities and benchmark tests for 
 
 ```
 Snapshots toolbox
-Usage: cmd/snapshots [OPTIONS]
+Usage: snapshots [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
@@ -114,94 +114,56 @@ Currently available tools are:
 Download one snapshot from its magnet link and put it in torrent folder:
 
 ```
-cmd/dev/snapshots --tool download --magnet "magnet:?xt=urn:btih:83112dec4bec180cff67e01d6345c88c3134fd26&dn=v1-014500-015000-transactions.seg&tr=udp%3a%2f%2ftracker.opentrackr.org%3a1337%2fannounce&tr=udp%3a%2f%2f9.rarbg.com%3a2810%2fannounce&tr=udp%3a%2f%2ftracker.openbittorrent.com%3a6969%2fannounce&tr=http%3a%2f%2ftracker.openbittorrent.com%3a80%2fannounce&tr=https%3a%2f%2fopentracker.i2p.rocks%3a443%2fannounce&tr=udp%3a%2f%2fopen.stealth.si%3a80%2fannounce&tr=udp%3a%2f%2ftracker.torrent.eu.org%3a451%2fannounce&tr=udp%3a%2f%2ftracker.tiny-vps.com%3a6969%2fannounce&tr=udp%3a%2f%2ftracker.pomf.se%3a80%2fannounce&tr=udp%3a%2f%2ftracker.dler.org%3a6969%2fannounce&tr=udp%3a%2f%2fopen.demonii.com%3a1337%2fannounce&tr=udp%3a%2f%2fexplodie.org%3a6969%2fannounce&tr=udp%3a%2f%2fexodus.desync.com%3a6969%2fannounce&tr=https%3a%2f%2ftracker.nanoha.org%3a443%2fannounce&tr=https%3a%2f%2ftracker.lilithraws.org%3a443%2fannounce&tr=https%3a%2f%2ftr.burnabyhighstar.com%3a443%2fannounce&tr=http%3a%2f%2ftracker.mywaifu.best%3a6969%2fannounce&tr=http%3a%2f%2fbt.okmp3.ru%3a2710%2fannounce&tr=udp%3a%2f%2fzecircle.xyz%3a6969%2fannounce&tr=udp%3a%2f%2fyahor.ftp.sh%3a6969%2fannounce"
+snapshots --tool download --magnet "magnet:?xt=urn:btih:83112dec4bec180cff67e01d6345c88c3134fd26&dn=v1-014500-015000-transactions.seg&tr=udp%3a%2f%2ftracker.opentrackr.org%3a1337%2fannounce&tr=udp%3a%2f%2f9.rarbg.com%3a2810%2fannounce&tr=udp%3a%2f%2ftracker.openbittorrent.com%3a6969%2fannounce&tr=http%3a%2f%2ftracker.openbittorrent.com%3a80%2fannounce&tr=https%3a%2f%2fopentracker.i2p.rocks%3a443%2fannounce&tr=udp%3a%2f%2fopen.stealth.si%3a80%2fannounce&tr=udp%3a%2f%2ftracker.torrent.eu.org%3a451%2fannounce&tr=udp%3a%2f%2ftracker.tiny-vps.com%3a6969%2fannounce&tr=udp%3a%2f%2ftracker.pomf.se%3a80%2fannounce&tr=udp%3a%2f%2ftracker.dler.org%3a6969%2fannounce&tr=udp%3a%2f%2fopen.demonii.com%3a1337%2fannounce&tr=udp%3a%2f%2fexplodie.org%3a6969%2fannounce&tr=udp%3a%2f%2fexodus.desync.com%3a6969%2fannounce&tr=https%3a%2f%2ftracker.nanoha.org%3a443%2fannounce&tr=https%3a%2f%2ftracker.lilithraws.org%3a443%2fannounce&tr=https%3a%2f%2ftr.burnabyhighstar.com%3a443%2fannounce&tr=http%3a%2f%2ftracker.mywaifu.best%3a6969%2fannounce&tr=http%3a%2f%2fbt.okmp3.ru%3a2710%2fannounce&tr=udp%3a%2f%2fzecircle.xyz%3a6969%2fannounce&tr=udp%3a%2f%2fyahor.ftp.sh%3a6969%2fannounce"
 ```
 
 Download all snapshots from the magnet links contained in magnet file and put them in torrent folder:
 
 ```
-cmd/dev/snapshots --tool download --magnet_file .magnet_links --log.verbosity debug --active_downloads 3
+snapshots --tool download --magnet_file .magnet_links --log.verbosity debug --active_downloads 3
 ```
 
 Count how many block headers are present in header snapshots under torrent folder:
 
 ```
-cmd/dev/snapshots --tool count_headers --repetitions 1 --log.verbosity info
+snapshots --tool count_headers --repetitions 1 --log.verbosity info
 ```
 
 Create indexes for target snapshot under torrent folder:
 
 ```
-cmd/dev/snapshots --tool create_index --file v1-000000-000500-headers.seg --log.verbosity info
+snapshots --tool create_index --file v1-000000-000500-headers.seg --log.verbosity info
 ```
 
 Search block header by number in one snapshot
 
 ```
-cmd/dev/snapshots --tool lookup_header --snapshot_file v1-001500-002000-headers.seg --number 1500013
+snapshots --tool lookup_header --snapshot_file v1-001500-002000-headers.seg --number 1500013
 ```
 
 Search block body by number in all snapshots
 
 ```
-cmd/dev/snapshots --tool lookup_body --number 1500012
+snapshots --tool lookup_body --number 1500012
 ```
 
 Search block body by number in one snapshot
 
 ```
-cmd/dev/snapshots --tool lookup_body --snapshot_file v1-001500-002000-bodies.seg --number 1500012
+snapshots --tool lookup_body --snapshot_file v1-001500-002000-bodies.seg --number 1500012
 ```
 
 Search transaction by hash in all snapshots
 
 ```
-cmd/dev/snapshots --tool lookup_txn --hash 0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f
+snapshots --tool lookup_txn --hash 0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f
 ```
 
 Search transaction by hash or by progressive identifier in one snapshot
 
 ```
-cmd/dev/snapshots --tool lookup_txn --snapshot_file v1-001500-002000-transactions.seg --hash 0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f
-cmd/dev/snapshots --tool lookup_txn --snapshot_file v1-001500-002000-transactions.seg --number 7341272
-```
-
-## Database Toolbox
-
-### Overview
-
-Silkworm keeps recent chain data in MDBX database for faster access.
-
-### The `db_toolbox` tool
-
-The `db_toolbox` tool is a collection of utilities to perform operations on Silkworm MDBX database.
-
-#### Synopsis
-
-#### Examples
-
-Dump the database table layout and stats
-
-```
-cmd/dev/db_toolbox --datadir ~/Library/Silkworm/ tables
-```
-
-Dump the progress of sync stages (i.e. content of SyncStage table)
-
-```
-cmd/dev/db_toolbox --datadir ~/Library/Silkworm/ stages
-```
-
-Clear content (i.e. delete all the rows) in LogAddressIndex and LogTopicIndex tables
-
-```
-cmd/dev/db_toolbox --datadir ~/Library/Silkworm/ --exclusive clear --names LogAddressIndex LogTopicIndex
-```
-
-Reset the LogIndex stage progress to zero
-
-```
-cmd/dev/db_toolbox --datadir ~/Library/Silkworm/ --exclusive stage-set --name LogIndex --block 0
+snapshots --tool lookup_txn --snapshot_file v1-001500-002000-transactions.seg --hash 0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f
+snapshots --tool lookup_txn --snapshot_file v1-001500-002000-transactions.seg --number 7341272
 ```
 
 ## gRPC Toolbox
@@ -221,18 +183,18 @@ The `db_toolbox` tool is a collection of utilities to query the KV/ETHBACKEND gR
 Print the number of timestamps in which the specified account has changed state
 
 ```
-cmd/dev/grpc_toolbox kv_index_range --table AccountsHistoryIdx --key 0x616a3E55a20dD54CC9fBb63D8333D89c275c9D90
+grpc_toolbox kv_index_range --table AccountsHistoryIdx --key 0x616a3E55a20dD54CC9fBb63D8333D89c275c9D90
 ```
 
 Print the first 10 changes in account state history using verbose mode (i.e. print keys and values)
 
 ```
-cmd/dev/grpc_toolbox kv_history_range --table AccountsHistory --limit 10 --verbose
+grpc_toolbox kv_history_range --table AccountsHistory --limit 10 --verbose
 ```
 
 Print the first 10 changes in account state for the specified key range using verbose mode (i.e. print keys and values)
 
 ```
-cmd/dev/grpc_toolbox kv_domain_range --table accounts --from_key 0x616a3E55a20dD54CC9fBb63D8333D89c275c9D90 \
+grpc_toolbox kv_domain_range --table accounts --from_key 0x616a3E55a20dD54CC9fBb63D8333D89c275c9D90 \
 --to_key 0x716a3E55a20dD54CC9fBb63D8333D89c275c9D90 --timestamp 100000000 --limit 10 --verbose
 ```

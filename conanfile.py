@@ -58,7 +58,7 @@ class SilkwormRecipe(ConanFile):
         self.options['boost'].asio_no_deprecated = True
 
         if self.settings.os == 'Macos':
-            cmake_osx_deployment_target = '10.14'
+            cmake_osx_deployment_target = '15.0'
             os_version_min_flag = f'-mmacosx-version-min={cmake_osx_deployment_target}'
             self.options['boost'].extra_b2_flags = f'cxxflags="{os_version_min_flag}" linkflags="{os_version_min_flag}"'
 

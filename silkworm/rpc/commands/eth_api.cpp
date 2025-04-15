@@ -1375,7 +1375,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                 reply = make_json_error(request, kServerError, execution_result.pre_check_error.value());
                 break;
             }
-            const AccessList& current_access_list = tracer->get_access_list();
+            AccessList current_access_list = tracer->get_access_list();
             if (saved_access_list == current_access_list) {
                 AccessListResult access_list_result;
                 access_list_result.gas_used = txn.gas_limit - execution_result.gas_left;
@@ -1383,14 +1383,14 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                     access_list_result.error = execution_result.error_message(false /* full_error */);
                 }
                 if (optimize_gas) {
-                    tracer->optimize_gas(*call.from, to, block_with_hash->block.header.beneficiary);
+                    tracer->optimize_gas(current_access_list, *call.from, to, block_with_hash->block.header.beneficiary);
                 }
-                access_list_result.access_list = current_access_list;
+                access_list_result.access_list = std::move(current_access_list);
                 reply = make_json_content(request, access_list_result);
                 break;
             }
             txn = call.to_transaction(current_access_list, nonce);
-            saved_access_list = current_access_list;
+            saved_access_list = std::move(current_access_list);
         }
     } catch (const std::invalid_argument&) {
         reply = make_json_content(request, {});

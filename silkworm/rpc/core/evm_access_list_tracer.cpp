@@ -42,7 +42,8 @@ void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* st
                << "}";
 
     if (is_storage_opcode(opcode) && stack_height >= 1) {
-        const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
+        evmc::bytes32 address;
+        intx::be::store(address.bytes, stack_top[0]);
         if (!exclude(recipient, execution_state.rev)) {
             add_storage(recipient, address);
             if (!is_created_contract(recipient)) {
@@ -202,26 +203,26 @@ void AccessListTracer::use_address_on_old_contract(const evmc::address& address)
 // some addresses (like sender, recipient, block producer, and created contracts)
 // are considered warm already, so we can save by adding these to the access list
 // only if we are adding a lot of their respective storage slots as well
-void AccessListTracer::optimize_gas(const evmc::address& from, const evmc::address& to, const evmc::address& coinbase) {
-    optimize_warm_address_in_access_list(from);
-    optimize_warm_address_in_access_list(to);
-    optimize_warm_address_in_access_list(coinbase);
+void AccessListTracer::optimize_gas(AccessList& access_list, const evmc::address& from, const evmc::address& to, const evmc::address& coinbase) {
+    optimize_warm_address_in_access_list(access_list, from);
+    optimize_warm_address_in_access_list(access_list, to);
+    optimize_warm_address_in_access_list(access_list, coinbase);
     for (const auto& [address, _] : created_contracts_) {
         if (!used_before_creation_.contains(address)) {
-            optimize_warm_address_in_access_list(address);
+            optimize_warm_address_in_access_list(access_list, address);
         }
     }
 }
 
-void AccessListTracer::optimize_warm_address_in_access_list(const evmc::address& address) {
-    for (auto it = access_list_.begin();
-         it != access_list_.end();
+void AccessListTracer::optimize_warm_address_in_access_list(AccessList& access_list, const evmc::address& address) {
+    for (auto it = access_list.begin();
+         it != access_list.end();
          ++it) {
         if (it->account == address) {
             // https://eips.ethereum.org/EIPS/eip-2930#charging-less-for-accesses-in-the-access-list
             size_t access_list_saving_per_slot = evmone::instr::cold_sload_cost - evmone::instr::warm_storage_read_cost - kTxAccessListStorageKeyGas;
             if (access_list_saving_per_slot * it->storage_keys.size() <= kTxAccessListAddressGas) {
-                access_list_.erase(it);
+                access_list.erase(it);
                 return;
             }
         }

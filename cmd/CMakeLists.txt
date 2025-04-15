@@ -15,11 +15,6 @@ if(NOT SILKWORM_CORE_ONLY)
     find_package(mimalloc REQUIRED)
   endif()
 
-  # Development utility tools
-  add_subdirectory(dev)
-
-  # Silkworm runnable components
-
   # [=] "all-in-one" Silkworm component
   # cmake-format: off
   set(SILKWORM_LIBRARIES

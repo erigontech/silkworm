@@ -11,6 +11,7 @@
 #include <evmone/instructions.hpp>
 #include <evmone/instructions_traits.hpp>
 #include <intx/intx.hpp>
+#include <openssl/obj_mac.h>
 
 #include <silkworm/core/execution/precompile.hpp>
 #include <silkworm/core/types/address.hpp>
@@ -108,6 +109,13 @@ inline bool AccessListTracer::exclude(const evmc::address& address, evmc_revisio
     return (precompile::is_precompile(address, rev));
 }
 
+
+void AccessListTracer::add_address(const evmc::address& address) {
+    SILK_DEBUG << "add_address:" << address;
+    CreateAccessListEntry entry;
+    create_access_list_.emplace(address, std::move(entry));
+}
+
 void AccessListTracer::add_storage(const evmc::address& address, const evmc::bytes32& storage) {
     SILK_DEBUG << "add_storage:" << address << " storage: " << to_hex(storage);
     auto it = create_access_list_.find(address);
@@ -127,33 +135,24 @@ void AccessListTracer::add_storage(const evmc::address& address, const evmc::byt
     }
 }
 
-void AccessListTracer::add_address(const evmc::address& address) {
-    SILK_DEBUG << "add_address:" << address;
-    auto it = create_access_list_.find(address);
-    if (it == create_access_list_.end()) {
-        SILK_DEBUG << "add_address: new address: " << address;
-        CreateAccessListEntry entry;
-        create_access_list_.emplace(address, std::move(entry));
-    }
-}
+ AccessList AccessListTracer::get_access_list() const {
+    AccessList access_list;
 
-void AccessListTracer::convert_access_list() {
-    access_list_.clear();
-    access_list_.reserve(create_access_list_.size());
-    for (const auto &pair : create_access_list_) {
+    access_list.reserve(create_access_list_.size());
+    for (const auto& pair : create_access_list_) {
         const evmc::address& account = pair.first;
-        const CreateAccessListEntry& create_entry = pair.second;
+        const auto& [storage_keys] = pair.second;
 
-        silkworm::AccessListEntry entry;
-        entry.account = account;
+        silkworm::AccessListEntry entry{account};
 
-       entry.storage_keys.reserve(create_entry.storage_keys.size());
-        for (const auto &storage_pair : create_entry.storage_keys) {
+       entry.storage_keys.reserve(storage_keys.size());
+        for (const auto& storage_pair : storage_keys) {
             entry.storage_keys.push_back(storage_pair.first);
         }
 
-        access_list_.push_back(std::move(entry));
+        access_list.push_back(std::move(entry));
     }
+    return access_list;
 }
 
 void AccessListTracer::dump(const std::string& user_string, const CreateAccessList& acl) {
@@ -177,24 +176,24 @@ bool AccessListTracer::compare(const CreateAccessList& acl1, const CreateAccessL
         }
         for (const auto& pair : acl1) {
             const evmc::address& address = pair.first;
-            const CreateAccessListEntry& entry_1 = pair.second;
+            const CreateAccessListEntry& entry_first_acl = pair.second;
 
             auto it = acl2.find(address);
             if (it == acl2.end()) {
                 return false;
             }
 
-            const CreateAccessListEntry& entry_2 = it->second;
+            const CreateAccessListEntry& entry_second_acl = it->second;
 
-            if (entry_1.storage_keys.size() != entry_2.storage_keys.size()) {
+            if (entry_first_acl.storage_keys.size() != entry_second_acl.storage_keys.size()) {
                 return false;
             }
 
-            for (const auto& storage_pair : entry_1.storage_keys) {
+            for (const auto& storage_pair : entry_first_acl.storage_keys) {
                 const evmc::bytes32& storage_key = storage_pair.first;
 
-                auto it_storage = entry_2.storage_keys.find(storage_key);
-                if (it_storage == entry_2.storage_keys.end()) {
+                auto it_storage = entry_second_acl.storage_keys.find(storage_key);
+                if (it_storage == entry_second_acl.storage_keys.end()) {
                     return false;
                 }
             }
@@ -221,27 +220,29 @@ void AccessListTracer::use_address_on_old_contract(const evmc::address& address)
 // some addresses (like sender, recipient, block producer, and created contracts)
 // are considered warm already, so we can save by adding these to the access list
 // only if we are adding a lot of their respective storage slots as well
-void AccessListTracer::optimize_gas(const evmc::address& from, const evmc::address& to, const evmc::address& coinbase) {
-    optimize_warm_address_in_access_list(from);
-    optimize_warm_address_in_access_list(to);
-    optimize_warm_address_in_access_list(coinbase);
+void AccessListTracer::optimize_gas(AccessList& access_list, const evmc::address& from, const evmc::address& to, const evmc::address& coinbase) {
+    optimize_warm_address_in_access_list(access_list, from);
+    optimize_warm_address_in_access_list(access_list, to);
+    optimize_warm_address_in_access_list(access_list, coinbase);
     for (const auto& [address, _] : created_contracts_) {
         if (!used_before_creation_.contains(address)) {
-            optimize_warm_address_in_access_list(address);
+            optimize_warm_address_in_access_list(access_list, address);
         }
     }
 }
 
-void AccessListTracer::optimize_warm_address_in_access_list(const evmc::address& address) {
-
-    auto it = create_access_list_.find(address);
-    if (it == create_access_list_.end()) {
-        return;
-    }
-    // https://eips.ethereum.org/EIPS/eip-2930#charging-less-for-accesses-in-the-access-list
-    size_t access_list_saving_per_slot = evmone::instr::cold_sload_cost - evmone::instr::warm_storage_read_cost - kTxAccessListStorageKeyGas;
-    if (access_list_saving_per_slot * it->second.storage_keys.size() <= kTxAccessListAddressGas) {
-        create_access_list_.erase(it);
+void AccessListTracer::optimize_warm_address_in_access_list(AccessList& access_list,  const evmc::address& address) {
+    for (auto it = access_list.begin();
+        it != access_list.end();
+        ++it) {
+        if (it->account == address) {
+            // https://eips.ethereum.org/EIPS/eip-2930#charging-less-for-accesses-in-the-access-list
+            size_t access_list_saving_per_slot = evmone::instr::cold_sload_cost - evmone::instr::warm_storage_read_cost - kTxAccessListStorageKeyGas;
+            if (access_list_saving_per_slot * it->storage_keys.size() <= kTxAccessListAddressGas) {
+                access_list.erase(it);
+                return;
+            }
+        }
     }
 }
 

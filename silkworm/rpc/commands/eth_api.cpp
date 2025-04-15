@@ -1368,9 +1368,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
         AccessList saved_access_list = call.access_list;
 
         execution::StateFactory state_factory{*tx};
-        int index = 0;
         while (true) {
-            index ++;
             const auto execution_result = co_await EVMExecutor::call(
                 chain_config, *chain_storage, workers_, block_with_hash->block, txn, txn_id, [&](auto& io_executor, std::optional<TxnId> curr_txn_id, auto& storage) {
                     return state_factory.make(io_executor, storage, curr_txn_id);
@@ -1381,7 +1379,7 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                 reply = make_json_error(request, kServerError, execution_result.pre_check_error.value());
                 break;
             }
-            const AccessList& current_access_list = tracer->get_access_list();
+            AccessList current_access_list = tracer->get_access_list();
             if (saved_access_list == current_access_list) {
                 AccessListResult access_list_result;
                 access_list_result.gas_used = txn.gas_limit - execution_result.gas_left;
@@ -1389,15 +1387,14 @@ Task<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& r
                     access_list_result.error = execution_result.error_message(false /* full_error */);
                 }
                 if (optimize_gas) {
-                    tracer->optimize_gas(*call.from, to, block_with_hash->block.header.beneficiary);
+                    tracer->optimize_gas(current_access_list, *call.from, to, block_with_hash->block.header.beneficiary);
                 }
                 access_list_result.access_list = current_access_list;
                 reply = make_json_content(request, access_list_result);
-                //std::cout << "Index=" << index << std::endl;
                 break;
             }
             txn = call.to_transaction(current_access_list, nonce);
-            saved_access_list = current_access_list;
+            saved_access_list = std::move(current_access_list);
         }
     } catch (const std::invalid_argument&) {
         reply = make_json_content(request, {});

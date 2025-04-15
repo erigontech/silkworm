@@ -42,7 +42,8 @@ void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* st
                << "}";
 
     if (is_storage_opcode(opcode) && stack_height >= 1) {
-        const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
+        evmc::bytes32 address;
+        intx::be::store(address.bytes, stack_top[0]);
         if (!exclude(recipient, execution_state.rev)) {
             add_storage(recipient, address);
             if (!is_created_contract(recipient)) {

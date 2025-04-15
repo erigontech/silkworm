@@ -775,8 +775,6 @@ SILKWORM_EXPORT int silkworm_block_exec_end(SilkwormHandle handle, MDBX_txn* mdb
         const auto log_index = handle->executions_in_block[index].log_index;
         const auto blob_gas_used = handle->executions_in_block[index].blob_gas_used;
         state.insert_receipt(receipt, log_index, blob_gas_used);
-
-        index++;
     }
 
     return SILKWORM_OK;

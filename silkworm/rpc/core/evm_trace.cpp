@@ -1713,45 +1713,6 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
     co_return trace_op_result;
 }
 
-Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& block_with_hash,
-                                                const evmc::address& address, uint64_t block_size,
-                                                const std::vector<Receipt>& receipts,
-                                                TransactionsWithReceipts& results) {
-    auto& block = block_with_hash.block;
-    auto block_num = block.header.number;
-    auto& hash = block_with_hash.hash;
-
-    const auto chain_config = co_await chain_storage_.read_chain_config();
-    auto current_executor = co_await boost::asio::this_coro::executor;
-    execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await tx_.user_txn_id_at(block_num);
-
-    const bool result = co_await async_task(workers_.executor(), [&]() -> bool {
-        auto state = state_factory.make(current_executor, chain_storage_, txn_id);
-        silkworm::IntraBlockState initial_ibs{*state};
-
-        auto curr_state = execution::StateFactory{tx_}.make(current_executor, chain_storage_, txn_id);
-        EVMExecutor executor{block, chain_config, workers_, curr_state};
-
-        for (size_t i = 0; i < block.transactions.size(); ++i) {
-            auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
-            Tracers tracers{tracer};
-            const auto& txn = block.transactions.at(i);
-            executor.call(txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
-
-            if (tracer->found()) {
-                const BlockDetails block_details{block_size, hash, block.header, block.transactions.size(), block.ommers};
-                results.transactions.push_back(txn);
-                results.receipts.push_back(receipts.at(i));
-                results.blocks.push_back(block_details);
-            }
-        }
-        return result;
-    });
-
-    co_return result;
-}
-
 Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream& stream) {
     SILK_TRACE << "TraceCallExecutor::trace_filter: filter " << trace_filter;
 

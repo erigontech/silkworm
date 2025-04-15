@@ -123,7 +123,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
             const auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
             const auto chain_config = co_await chain_storage->read_chain_config();
             const IssuanceDetails issuance = get_issuance(chain_config, *block_with_hash);
-            const intx::uint256 total_fees = get_block_fees(*block_with_hash, *receipts);
+            const intx::uint256 total_fees = get_block_fees(*receipts);
             const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
             reply = make_json_content(request, block_details_response);
         } else {
@@ -170,7 +170,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
             const auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
             const auto chain_config = co_await chain_storage->read_chain_config();
             const IssuanceDetails issuance = get_issuance(chain_config, *block_with_hash);
-            const intx::uint256 total_fees = get_block_fees(*block_with_hash, *receipts);
+            const intx::uint256 total_fees = get_block_fees(*receipts);
             const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
             reply = make_json_content(request, block_details_response);
         } else {
@@ -952,15 +952,10 @@ IssuanceDetails OtsRpcApi::get_issuance(const silkworm::ChainConfig& config, con
     return issuance;
 }
 
-intx::uint256 OtsRpcApi::get_block_fees(const silkworm::BlockWithHash& block, const std::vector<std::shared_ptr<Receipt>>& receipts) {
+intx::uint256 OtsRpcApi::get_block_fees(const std::vector<std::shared_ptr<Receipt>>& receipts) {
     intx::uint256 fees = 0;
     for (const auto& receipt : receipts) {
-        auto& txn = block.block.transactions[receipt->tx_index];
-
-        intx::uint256 base_fee = block.block.header.base_fee_per_gas.value_or(0);
-        const auto effective_gas_price = txn.effective_gas_price(base_fee);
-
-        fees += effective_gas_price * receipt->gas_used;
+        fees += receipt->effective_gas_price * receipt->gas_used;
     }
     return fees;
 }

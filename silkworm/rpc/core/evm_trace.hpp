@@ -492,9 +492,6 @@ class TraceCallExecutor {
     Task<TraceEntriesResult> trace_transaction_entries(const TransactionWithBlock& transaction_with_block);
     Task<std::string> trace_transaction_error(const TransactionWithBlock& transaction_with_block);
     Task<TraceOperationsResult> trace_operations(const TransactionWithBlock& transaction_with_block);
-    Task<bool> trace_touch_block(const silkworm::BlockWithHash& block_with_hash, const evmc::address& address,
-                                 uint64_t block_size, const std::vector<Receipt>& receipts, TransactionsWithReceipts& results);
-
     Task<void> trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream& stream);
 
   private:

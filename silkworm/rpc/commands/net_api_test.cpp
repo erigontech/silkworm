@@ -4,6 +4,7 @@
 #include "net_api.hpp"
 
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <agrpc/asio_grpc.hpp>
 #pragma GCC diagnostic pop

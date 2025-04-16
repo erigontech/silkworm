@@ -28,8 +28,11 @@ void decode_word_into_header(ByteView word, BlockHeader& header) {
     success_or_throw(decode_result, "decode_word_into_header: rlp::decode error");
 }
 
-void check_sanity_of_header_with_metadata(const BlockHeader& header, datastore::StepRange step_range) {
-    auto block_num_range = db::blocks::kStepToBlockNumConverter.timestamp_range_from_step_range(step_range);
+void check_sanity_of_header_with_metadata(
+    const BlockHeader& header,
+    datastore::StepRange step_range,
+    const datastore::StepToTimestampConverter& step_converter) {
+    auto block_num_range = step_converter.timestamp_range_from_step_range(step_range);
     BlockNum block_from = block_num_range.start;
     BlockNum block_to = block_num_range.end;
     ensure((header.number >= block_from) && (header.number < block_to), [&]() {

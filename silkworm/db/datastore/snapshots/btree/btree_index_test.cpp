@@ -101,7 +101,7 @@ TEST_CASE("BTreeIndex", "[snapshots][btree]") {
     const auto [kv_file_path, bt_file_path] = sample_3_keys_kv_and_bt_files(tmp_dir);
 
     // Open the KV and BT index files
-    segment::KVSegmentFileReader kv_segment{kv_file_path, seg::CompressionKind::kNone};
+    segment::KVSegmentFileReader kv_segment{kv_file_path, {}, seg::CompressionKind::kNone};
     BTreeIndex bt_index{bt_file_path};
     bt_index.warmup_if_empty_or_check(kv_segment);
     REQUIRE(bt_index.key_count() == 3);

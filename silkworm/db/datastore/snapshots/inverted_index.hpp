@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "elias_fano/elias_fano_decoder.hpp"
+#include "inverted_index_ts_list_codec.hpp"
 #include "rec_split/accessor_index.hpp"
 #include "segment/kv_segment_reader.hpp"
 
@@ -14,8 +14,8 @@ struct InvertedIndex {
     const rec_split::AccessorIndex& accessor_index;
 
     template <DecoderConcept TKeyDecoder>
-    segment::KVSegmentReader<TKeyDecoder, elias_fano::EliasFanoDecoder> kv_segment_reader() {
-        return segment::KVSegmentReader<TKeyDecoder, elias_fano::EliasFanoDecoder>{kv_segment};
+    segment::KVSegmentReader<TKeyDecoder, InvertedIndexTimestampListDecoder> kv_segment_reader() {
+        return segment::KVSegmentReader<TKeyDecoder, InvertedIndexTimestampListDecoder>{kv_segment};
     }
 };
 

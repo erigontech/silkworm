@@ -10,6 +10,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 
@@ -114,9 +115,7 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
         CHECK(to_hex(ef_bytes) == to_expected_hex(ef_test.offsets.size() - 1, ef_test.expected_u, ef_test.expected_data));
 
         // Decode monotone ascending integer sequence from Elias-Fano representation and compare with original
-        constexpr size_t kParamsSize{2 * sizeof(uint64_t)};  // count + u length in bytes
-        std::span<uint8_t> data{ef_bytes.data() + kParamsSize, ef_bytes.size() - kParamsSize};
-        EliasFanoList32 ef_list_copy{ef_test.offsets.size(), ef_test.expected_u - 1, data};
+        EliasFanoList32 ef_list_copy = EliasFanoList32::from_encoded_data(ef_bytes);
         for (uint64_t i{0}; i < ef_test.offsets.size(); ++i) {
             const uint64_t x = ef_list_copy.at(i);
             CHECK(x == ef_test.offsets[i]);
@@ -150,6 +149,19 @@ TEST_CASE("EliasFanoList32::seek", "[silkworm][recsplit][elias_fano]") {
     CHECK(ef_list.seek(20, true) == SeekResult{7, 19});
     CHECK(ef_list.seek(62, true) == SeekResult{offsets.size() - 1, 62});
     CHECK(ef_list.seek(70, true) == SeekResult{offsets.size() - 1, 62});
+}
+
+TEST_CASE("EliasFanoList32::from_encoded_data") {
+    EliasFanoList32Builder expected_list{3, 3};
+    expected_list.add_offset(1);
+    expected_list.add_offset(2);
+    expected_list.add_offset(3);
+    expected_list.build();
+    std::stringstream expected_list_stream;
+    expected_list_stream << expected_list;
+    const Bytes expected_list_bytes = string_to_bytes(expected_list_stream.str());
+
+    CHECK(EliasFanoList32::from_encoded_data(expected_list_bytes) == expected_list.as_view());
 }
 
 }  // namespace silkworm::snapshots::elias_fano

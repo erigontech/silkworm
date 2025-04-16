@@ -18,6 +18,7 @@
 
 #include <silkworm/capi/silkworm.h>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/blocks/step_block_num_converter.hpp>
 #include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/infra/cli/common.hpp>
@@ -319,7 +320,7 @@ int build_indexes(SilkwormHandle handle, const BuildIndexesSettings& settings, c
         if (!snapshot_path.has_value())
             throw std::runtime_error("Invalid snapshot path");
 
-        segment::SegmentFileReader& segment = segments.emplace_back(*snapshot_path);
+        segment::SegmentFileReader& segment = segments.emplace_back(*snapshot_path, db::blocks::kStepToBlockNumConverter);
 
         auto mmf = new SilkwormMemoryMappedFile{
             .file_path = make_path(*snapshot_path),

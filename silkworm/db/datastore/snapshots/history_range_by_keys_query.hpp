@@ -40,7 +40,7 @@ struct HistoryRangeByKeysSegmentQuery {
         datastore::Timestamp timestamp,
         bool ascending,
         Bytes key_data,
-        const elias_fano::EliasFanoList32& key_timestamps) const {
+        const InvertedIndexTimestampList& key_timestamps) const {
         SILKWORM_ASSERT(ascending);  // descending is not implemented
 
         // find the first key timestamp within the ts_range
@@ -66,7 +66,7 @@ struct HistoryRangeByKeysSegmentQuery {
         auto ii_reader = entity_.inverted_index.kv_segment_reader<RawDecoder<Bytes>>();
         auto begin_it = offset ? ii_reader.seek(*offset) : ii_reader.end();
 
-        auto lookup_kv_pair_func = [query = *this, timestamp, ascending](std::pair<Bytes&, elias_fano::EliasFanoList32&> ii_entry) {
+        auto lookup_kv_pair_func = [query = *this, timestamp, ascending](std::pair<Bytes&, InvertedIndexTimestampList&>&& ii_entry) {
             return query.lookup_kv_pair(timestamp, ascending, std::move(ii_entry.first), ii_entry.second);
         };
 

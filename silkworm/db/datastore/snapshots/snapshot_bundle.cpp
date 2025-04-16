@@ -29,13 +29,14 @@ static datastore::EntityMap<SnapshotPath> make_snapshot_paths(
 static datastore::EntityMap<SegmentFileReader> open_segments(
     const Schema::EntityDef& entity,
     const std::filesystem::path& dir_path,
-    StepRange range) {
+    StepRange range,
+    datastore::StepToTimestampConverter step_converter) {
     datastore::EntityMap<SegmentFileReader> results;
     for (auto& [name, anyDef] : entity.files()) {
         if (anyDef->format() != Schema::SnapshotFileDef::Format::kSegment) continue;
         auto& def = dynamic_cast<const Schema::SegmentDef&>(*anyDef);
         auto path = def.make_path(dir_path, range);
-        results.emplace(name, SegmentFileReader{std::move(path), std::nullopt, def.compression_enabled()});
+        results.emplace(name, SegmentFileReader{std::move(path), step_converter, std::nullopt, def.compression_enabled()});
     }
     return results;
 }
@@ -43,13 +44,14 @@ static datastore::EntityMap<SegmentFileReader> open_segments(
 static datastore::EntityMap<KVSegmentFileReader> open_kv_segments(
     const Schema::EntityDef& entity,
     const std::filesystem::path& dir_path,
-    StepRange range) {
+    StepRange range,
+    datastore::StepToTimestampConverter step_converter) {
     datastore::EntityMap<KVSegmentFileReader> results;
     for (auto& [name, anyDef] : entity.files()) {
         if (anyDef->format() != Schema::SnapshotFileDef::Format::kKVSegment) continue;
         auto& def = dynamic_cast<const Schema::KVSegmentDef&>(*anyDef);
         auto path = def.make_path(dir_path, range);
-        results.emplace(name, KVSegmentFileReader{std::move(path), def.compression_kind()});
+        results.emplace(name, KVSegmentFileReader{std::move(path), step_converter, def.compression_kind()});
     }
     return results;
 }
@@ -97,13 +99,14 @@ SnapshotBundleData open_bundle_data(
     StepRange step_range,
     std::optional<uint32_t> index_salt) {
     SnapshotBundleData data;
+    StepToTimestampConverter step_converter = schema.make_step_converter();
     for (auto& [name, entity_schema_ptr] : schema.entities()) {
         auto& entity_schema = *entity_schema_ptr;
         data.entities.emplace(
             name,
             SnapshotBundleEntityData{
-                open_segments(entity_schema, dir_path, step_range),
-                open_kv_segments(entity_schema, dir_path, step_range),
+                open_segments(entity_schema, dir_path, step_range, step_converter),
+                open_kv_segments(entity_schema, dir_path, step_range, step_converter),
                 open_accessor_indexes(entity_schema, dir_path, step_range),
                 open_existence_indexes(entity_schema, dir_path, step_range, index_salt),
                 open_btree_indexes(entity_schema, dir_path, step_range),

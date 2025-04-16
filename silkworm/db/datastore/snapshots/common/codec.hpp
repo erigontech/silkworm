@@ -6,6 +6,10 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
 
+namespace silkworm::datastore {
+struct StepToTimestampConverter;
+}  // namespace silkworm::datastore
+
 namespace silkworm::snapshots {
 
 class SnapshotPath;
@@ -24,7 +28,8 @@ struct Decoder {
     virtual ~Decoder() = default;
     using Word = BytesOrByteView;
     virtual void decode_word(Word& word) = 0;  // this allows word to be moved after decoding
-    virtual void check_sanity_with_metadata(const SnapshotPath& /*path*/) {}
+    virtual void decode_word_with_metadata(const SnapshotPath& /*path*/, const datastore::StepToTimestampConverter& /*step_converter*/) {}
+    virtual void check_sanity_with_metadata(const SnapshotPath& /*path*/, const datastore::StepToTimestampConverter& /*step_converter*/) {}
 };
 
 template <class TDecoder>

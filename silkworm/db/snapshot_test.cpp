@@ -12,6 +12,7 @@
 #include "blocks/bodies/body_queries.hpp"
 #include "blocks/headers/header_index.hpp"
 #include "blocks/headers/header_queries.hpp"
+#include "blocks/step_block_num_converter.hpp"
 #include "blocks/transactions/txn_index.hpp"
 #include "blocks/transactions/txn_queries.hpp"
 #include "blocks/transactions/txn_segment_word_codec.hpp"
@@ -27,11 +28,12 @@ using namespace rec_split;
 using namespace segment;
 
 static const SnapshotPath kValidHeadersSegmentPath{*SnapshotPath::parse("v1-014500-015000-headers.seg")};
+static constexpr datastore::StepToTimestampConverter kStepConverter = db::blocks::kStepToBlockNumConverter;
 
 TEST_CASE("Snapshot::open", "[silkworm][node][snapshot][snapshot]") {
     TemporaryDirectory tmp_dir;
     test::TemporarySnapshotFile tmp_snapshot_file{tmp_dir.path(), kValidHeadersSegmentPath.filename(), test::SnapshotHeader{}};
-    SegmentFileReader snapshot{tmp_snapshot_file.path()};
+    SegmentFileReader snapshot{tmp_snapshot_file.path(), kStepConverter};
     CHECK(snapshot.path() == tmp_snapshot_file.path());
     CHECK(snapshot.fs_path() == tmp_snapshot_file.path().path());
 }
@@ -39,7 +41,7 @@ TEST_CASE("Snapshot::open", "[silkworm][node][snapshot][snapshot]") {
 TEST_CASE("Snapshot::for_each_item", "[silkworm][node][snapshot][snapshot]") {
     TemporaryDirectory tmp_dir;
     test::HelloWorldSnapshotFile hello_world_snapshot_file{tmp_dir.path(), kValidHeadersSegmentPath.filename()};
-    SegmentFileReader tmp_snapshot{hello_world_snapshot_file.path()};
+    SegmentFileReader tmp_snapshot{hello_world_snapshot_file.path(), kStepConverter};
     CHECK(!tmp_snapshot.empty());
     CHECK(tmp_snapshot.item_count() == 1);
 
@@ -64,7 +66,7 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][ind
     header_index.set_base_data_id(header_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(header_index.build());
 
-    SegmentFileReader header_segment{header_segment_path};
+    SegmentFileReader header_segment{header_segment_path, kStepConverter};
 
     AccessorIndex idx_header_hash{header_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     HeaderFindByBlockNumSegmentQuery header_by_number{{header_segment, idx_header_hash}};
@@ -104,7 +106,7 @@ TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]"
     body_index.set_base_data_id(body_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(body_index.build());
 
-    SegmentFileReader body_segment{body_segment_path};
+    SegmentFileReader body_segment{body_segment_path, kStepConverter};
 
     AccessorIndex idx_body_number{body_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     BodyFindByBlockNumSegmentQuery body_by_number{{body_segment, idx_body_number}};
@@ -130,7 +132,7 @@ TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index
     auto tx_index = TransactionIndex::make(body_segment_path, txn_segment_path);
     CHECK_NOTHROW(tx_index.build());
 
-    SegmentFileReader txn_segment{txn_segment_path};
+    SegmentFileReader txn_segment{txn_segment_path, kStepConverter};
 
     AccessorIndex idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     TransactionFindByIdSegmentQuery txn_by_id{{txn_segment, idx_txn_hash}};
@@ -156,7 +158,7 @@ TEST_CASE("TransactionSnapshot::block_num_by_txn_hash OK", "[silkworm][node][sna
     auto tx_index_hash_to_block = TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(tx_index_hash_to_block.build());
 
-    SegmentFileReader txn_segment{txn_segment_path};
+    SegmentFileReader txn_segment{txn_segment_path, kStepConverter};
 
     AccessorIndex idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     TransactionFindByIdSegmentQuery txn_by_id{{txn_segment, idx_txn_hash}};
@@ -194,7 +196,7 @@ TEST_CASE("TransactionSnapshot::txn_range OK", "[silkworm][node][snapshot][index
     auto tx_index = TransactionIndex::make(body_segment_path, txn_segment_path);
     REQUIRE_NOTHROW(tx_index.build());
 
-    SegmentFileReader txn_segment{txn_segment_path};
+    SegmentFileReader txn_segment{txn_segment_path, kStepConverter};
 
     AccessorIndex idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     TransactionRangeFromIdSegmentQuery query{{txn_segment, idx_txn_hash}};
@@ -223,7 +225,7 @@ TEST_CASE("TransactionSnapshot::txn_rlp_range OK", "[silkworm][node][snapshot][i
     auto tx_index = TransactionIndex::make(body_segment_path, txn_segment_path);
     REQUIRE_NOTHROW(tx_index.build());
 
-    SegmentFileReader txn_segment{txn_segment_path};
+    SegmentFileReader txn_segment{txn_segment_path, kStepConverter};
 
     AccessorIndex idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     TransactionPayloadRlpRangeFromIdSegmentQuery query{{txn_segment, idx_txn_hash}};

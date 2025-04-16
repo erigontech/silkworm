@@ -44,11 +44,13 @@ static SnapshotPath parse_snapshot_path(const char* file_path) {
 static void build_inverted_index_bundle_data(
     const SilkwormInvertedIndexSnapshot& snapshot,
     const Schema::EntityDef& entity_def,
+    const datastore::StepToTimestampConverter& step_converter,
     SnapshotBundleEntityData& data) {
     data.kv_segments.emplace(
         Schema::kInvIdxKVSegmentName,
         segment::KVSegmentFileReader{
             parse_snapshot_path(snapshot.segment.file_path),
+            step_converter,
             entity_def.kv_segment(Schema::kInvIdxKVSegmentName).compression_kind(),
             make_region(snapshot.segment),
         });
@@ -62,21 +64,24 @@ static void build_inverted_index_bundle_data(
 
 static snapshots::SnapshotBundleEntityData build_inverted_index_bundle_data(
     const SilkwormInvertedIndexSnapshot& snapshot,
-    const Schema::EntityDef& entity_def) {
+    const Schema::EntityDef& entity_def,
+    const datastore::StepToTimestampConverter& step_converter) {
     SnapshotBundleEntityData data;
-    build_inverted_index_bundle_data(snapshot, entity_def, data);
+    build_inverted_index_bundle_data(snapshot, entity_def, step_converter, data);
     return data;
 }
 
 static snapshots::SnapshotBundleEntityData build_domain_bundle_data(
     const SilkwormDomainSnapshot& snapshot,
     const Schema::EntityDef& entity_def,
+    const datastore::StepToTimestampConverter& step_converter,
     uint32_t index_salt) {
     SnapshotBundleEntityData data;
     data.kv_segments.emplace(
         Schema::kDomainKVSegmentName,
         segment::KVSegmentFileReader{
             parse_snapshot_path(snapshot.segment.file_path),
+            step_converter,
             entity_def.kv_segment(Schema::kDomainKVSegmentName).compression_kind(),
             make_region(snapshot.segment),
         });
@@ -105,12 +110,14 @@ static snapshots::SnapshotBundleEntityData build_domain_bundle_data(
 
 static snapshots::SnapshotBundleEntityData build_history_bundle_data(
     const SilkwormHistorySnapshot& snapshot,
-    const Schema::EntityDef& entity_def) {
+    const Schema::EntityDef& entity_def,
+    const datastore::StepToTimestampConverter& step_converter) {
     SnapshotBundleEntityData data;
     data.segments.emplace(
         Schema::kHistorySegmentName,
         segment::SegmentFileReader{
             parse_snapshot_path(snapshot.segment.file_path),
+            step_converter,
             make_region(snapshot.segment),
         });
     data.accessor_indexes.emplace(
@@ -120,7 +127,7 @@ static snapshots::SnapshotBundleEntityData build_history_bundle_data(
             make_region(snapshot.accessor_index),
         });
 
-    build_inverted_index_bundle_data(snapshot.inverted_index, entity_def, data);
+    build_inverted_index_bundle_data(snapshot.inverted_index, entity_def, step_converter, data);
     return data;
 }
 
@@ -129,22 +136,24 @@ static snapshots::SnapshotBundle build_state_snapshot_bundle_latest(
     const Schema::RepositoryDef& schema,
     uint32_t salt) {
     SnapshotBundleData bundle_data;
+    datastore::StepToTimestampConverter step_converter = schema.make_step_converter();
+
     bundle_data.entities.emplace(
         db::state::kDomainNameAccounts,
-        build_domain_bundle_data(bundle->accounts, schema.domain(db::state::kDomainNameAccounts), salt));
+        build_domain_bundle_data(bundle->accounts, schema.domain(db::state::kDomainNameAccounts), step_converter, salt));
     bundle_data.entities.emplace(
         db::state::kDomainNameStorage,
-        build_domain_bundle_data(bundle->storage, schema.domain(db::state::kDomainNameStorage), salt));
+        build_domain_bundle_data(bundle->storage, schema.domain(db::state::kDomainNameStorage), step_converter, salt));
     bundle_data.entities.emplace(
         db::state::kDomainNameCode,
-        build_domain_bundle_data(bundle->code, schema.domain(db::state::kDomainNameCode), salt));
+        build_domain_bundle_data(bundle->code, schema.domain(db::state::kDomainNameCode), step_converter, salt));
     // TODO(canepat): enable after fixing .kvi configuration with IndexList-like implementation
     // bundle_data.entities.emplace(
     //     db::state::kDomainNameCommitment,
-    //     build_domain_bundle_data(bundle->commitment, schema.domain(db::state::kDomainNameCommitment), salt));
+    //     build_domain_bundle_data(bundle->commitment, schema.domain(db::state::kDomainNameCommitment), step_converter, salt));
     bundle_data.entities.emplace(
         db::state::kDomainNameReceipts,
-        build_domain_bundle_data(bundle->receipts, schema.domain(db::state::kDomainNameReceipts), salt));
+        build_domain_bundle_data(bundle->receipts, schema.domain(db::state::kDomainNameReceipts), step_converter, salt));
 
     return SnapshotBundle{
         parse_snapshot_path(bundle->accounts.segment.file_path).step_range(),
@@ -156,32 +165,33 @@ static snapshots::SnapshotBundle build_state_snapshot_bundle_historical(
     const SilkwormStateSnapshotBundleHistorical* bundle,
     const Schema::RepositoryDef& schema) {
     SnapshotBundleData bundle_data;
+    datastore::StepToTimestampConverter step_converter = schema.make_step_converter();
 
     bundle_data.entities.emplace(
         db::state::kDomainNameAccounts,
-        build_history_bundle_data(bundle->accounts, schema.history(db::state::kDomainNameAccounts)));
+        build_history_bundle_data(bundle->accounts, schema.history(db::state::kDomainNameAccounts), step_converter));
     bundle_data.entities.emplace(
         db::state::kDomainNameStorage,
-        build_history_bundle_data(bundle->storage, schema.history(db::state::kDomainNameStorage)));
+        build_history_bundle_data(bundle->storage, schema.history(db::state::kDomainNameStorage), step_converter));
     bundle_data.entities.emplace(
         db::state::kDomainNameCode,
-        build_history_bundle_data(bundle->code, schema.history(db::state::kDomainNameCode)));
+        build_history_bundle_data(bundle->code, schema.history(db::state::kDomainNameCode), step_converter));
     bundle_data.entities.emplace(
         db::state::kDomainNameReceipts,
-        build_history_bundle_data(bundle->receipts, schema.history(db::state::kDomainNameReceipts)));
+        build_history_bundle_data(bundle->receipts, schema.history(db::state::kDomainNameReceipts), step_converter));
 
     bundle_data.entities.emplace(
         db::state::kInvIdxNameLogAddress,
-        build_inverted_index_bundle_data(bundle->log_addresses, schema.inverted_index(db::state::kInvIdxNameLogAddress)));
+        build_inverted_index_bundle_data(bundle->log_addresses, schema.inverted_index(db::state::kInvIdxNameLogAddress), step_converter));
     bundle_data.entities.emplace(
         db::state::kInvIdxNameLogTopics,
-        build_inverted_index_bundle_data(bundle->log_topics, schema.inverted_index(db::state::kInvIdxNameLogTopics)));
+        build_inverted_index_bundle_data(bundle->log_topics, schema.inverted_index(db::state::kInvIdxNameLogTopics), step_converter));
     bundle_data.entities.emplace(
         db::state::kInvIdxNameTracesFrom,
-        build_inverted_index_bundle_data(bundle->traces_from, schema.inverted_index(db::state::kInvIdxNameTracesFrom)));
+        build_inverted_index_bundle_data(bundle->traces_from, schema.inverted_index(db::state::kInvIdxNameTracesFrom), step_converter));
     bundle_data.entities.emplace(
         db::state::kInvIdxNameTracesTo,
-        build_inverted_index_bundle_data(bundle->traces_to, schema.inverted_index(db::state::kInvIdxNameTracesTo)));
+        build_inverted_index_bundle_data(bundle->traces_to, schema.inverted_index(db::state::kInvIdxNameTracesTo), step_converter));
 
     return SnapshotBundle{
         parse_snapshot_path(bundle->accounts.segment.file_path).step_range(),
@@ -281,13 +291,17 @@ SILKWORM_EXPORT int silkworm_build_recsplit_indexes(SilkwormHandle handle, struc
     return SILKWORM_OK;
 }
 
-static snapshots::SnapshotBundle build_blocks_snapshot_bundle(const SilkwormBlocksSnapshotBundle* bundle) {
+static snapshots::SnapshotBundle build_blocks_snapshot_bundle(
+    const SilkwormBlocksSnapshotBundle* bundle,
+    const Schema::RepositoryDef& schema) {
     snapshots::SnapshotBundleEntityData data;
+    datastore::StepToTimestampConverter step_converter = schema.make_step_converter();
 
     data.segments.emplace(
         db::blocks::kHeaderSegmentName,
         snapshots::segment::SegmentFileReader{
             parse_snapshot_path(bundle->headers.segment.file_path),
+            step_converter,
             make_region(bundle->headers.segment),
         });
     data.accessor_indexes.emplace(
@@ -301,6 +315,7 @@ static snapshots::SnapshotBundle build_blocks_snapshot_bundle(const SilkwormBloc
         db::blocks::kBodySegmentName,
         snapshots::segment::SegmentFileReader{
             parse_snapshot_path(bundle->bodies.segment.file_path),
+            step_converter,
             make_region(bundle->bodies.segment),
         });
     data.accessor_indexes.emplace(
@@ -314,6 +329,7 @@ static snapshots::SnapshotBundle build_blocks_snapshot_bundle(const SilkwormBloc
         db::blocks::kTxnSegmentName,
         snapshots::segment::SegmentFileReader{
             parse_snapshot_path(bundle->transactions.segment.file_path),
+            step_converter,
             make_region(bundle->transactions.segment),
         });
     data.accessor_indexes.emplace(
@@ -351,7 +367,7 @@ SILKWORM_EXPORT int silkworm_add_blocks_snapshot_bundle(
 
         auto& repository = handle->db->blocks_repository;
 
-        repository.add_snapshot_bundle(build_blocks_snapshot_bundle(bundle));
+        repository.add_snapshot_bundle(build_blocks_snapshot_bundle(bundle, repository.schema()));
         return SILKWORM_OK;
     } catch (const InvalidSnapshotPathException&) {
         return SILKWORM_INVALID_PATH;

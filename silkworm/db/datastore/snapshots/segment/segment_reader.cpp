@@ -12,9 +12,11 @@ namespace silkworm::snapshots::segment {
 
 SegmentFileReader::SegmentFileReader(
     SnapshotPath path,
+    datastore::StepToTimestampConverter step_converter,
     std::optional<MemoryMappedRegion> segment_region,
     bool is_compressed)
     : path_(std::move(path)),
+      step_converter_{std::move(step_converter)},
       decompressor_{
           path_.path(),
           segment_region,
@@ -31,9 +33,12 @@ SegmentFileReader::Iterator& SegmentFileReader::Iterator::operator++() {
     ++it_;
 
     if (has_next) {
+        if (path_) {
+            decoder_->decode_word_with_metadata(*path_, step_converter_);
+        }
         decoder_->decode_word(*it_);
         if (path_) {
-            decoder_->check_sanity_with_metadata(*path_);
+            decoder_->check_sanity_with_metadata(*path_, step_converter_);
         }
     } else {
         decoder_.reset();
@@ -62,13 +67,14 @@ SegmentFileReader::Iterator SegmentFileReader::begin(std::shared_ptr<Decoder> de
     if (it == decompressor_.end()) {
         return end();
     }
+    decoder->decode_word_with_metadata(path_, step_converter_);
     decoder->decode_word(*it);
-    decoder->check_sanity_with_metadata(path_);
-    return SegmentFileReader::Iterator{std::move(it), std::move(decoder), path()};
+    decoder->check_sanity_with_metadata(path_, step_converter_);
+    return SegmentFileReader::Iterator{std::move(it), std::move(decoder), path(), step_converter_};
 }
 
 SegmentFileReader::Iterator SegmentFileReader::end() const {
-    return SegmentFileReader::Iterator{decompressor_.end(), {}, path()};
+    return SegmentFileReader::Iterator{decompressor_.end(), {}, path(), step_converter_};
 }
 
 SegmentFileReader::Iterator SegmentFileReader::seek(
@@ -79,13 +85,14 @@ SegmentFileReader::Iterator SegmentFileReader::seek(
     if (it == decompressor_.end()) {
         return end();
     }
+    decoder->decode_word_with_metadata(path_, step_converter_);
     try {
         decoder->decode_word(*it);
     } catch (...) {
         return end();
     }
-    decoder->check_sanity_with_metadata(path_);
-    return SegmentFileReader::Iterator{std::move(it), std::move(decoder), path()};
+    decoder->check_sanity_with_metadata(path_, step_converter_);
+    return SegmentFileReader::Iterator{std::move(it), std::move(decoder), path(), step_converter_};
 }
 
 }  // namespace silkworm::snapshots::segment

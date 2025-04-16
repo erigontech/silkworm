@@ -11,6 +11,7 @@ namespace silkworm::db::blocks {
 snapshots::Schema::RepositoryDef make_blocks_repository_schema() {
     snapshots::Schema::RepositoryDef repository_schema;
     repository_schema.index_salt_file_name("salt-blocks.txt");
+    repository_schema.step_size(kStepSizeForBlockSnapshots);
     snapshots::Schema::EntityDef& schema = repository_schema.default_entity();
 
     schema.segment(kHeaderSegmentName)
@@ -48,12 +49,12 @@ snapshots::SnapshotRepository make_blocks_repository(
     std::filesystem::path dir_path,
     bool open,
     std::optional<uint32_t> index_salt) {
+    auto schema = make_blocks_repository_schema();
     return snapshots::SnapshotRepository{
         kBlocksRepositoryName,
         std::move(dir_path),
         open,
-        make_blocks_repository_schema(),
-        kStepToBlockNumConverter,
+        schema,
         index_salt,
         make_blocks_index_builders_factory(),
         std::nullopt,  // no domain caches

@@ -15,6 +15,7 @@ namespace silkworm::db::state {
 snapshots::Schema::RepositoryDef make_state_repository_schema_latest() {
     snapshots::Schema::RepositoryDef schema;
     schema.index_salt_file_name("salt-state.txt");
+    schema.step_size(kStepSizeForTemporalSnapshots);
 
     schema.domain(kDomainNameAccounts)
         .tag_override(kDomainAccountsTag);
@@ -33,6 +34,7 @@ snapshots::Schema::RepositoryDef make_state_repository_schema_latest() {
 snapshots::Schema::RepositoryDef make_state_repository_schema_historical() {
     snapshots::Schema::RepositoryDef schema;
     schema.index_salt_file_name("salt-state.txt");
+    schema.step_size(kStepSizeForTemporalSnapshots);
 
     schema.history(kDomainNameAccounts)
         .tag_override(kDomainAccountsTag);
@@ -119,7 +121,6 @@ static snapshots::SnapshotRepository make_state_repository(
         std::move(dir_path),
         open,
         schema,
-        kStepToTxnIdConverter,
         index_salt,
         std::make_unique<StateIndexBuildersFactory>(schema),
         make_domain_caches(index_salt),

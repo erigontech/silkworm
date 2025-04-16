@@ -39,6 +39,7 @@
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 #include <silkworm/db/snapshot_recompress.hpp>
 #include <silkworm/db/snapshot_sync.hpp>
+#include <silkworm/db/state/step_txn_id_converter.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/infra/cli/common.hpp>
 #include <silkworm/infra/cli/shutdown_signal.hpp>
@@ -274,7 +275,7 @@ void decode_segment(const SnapshotSubcommandSettings& settings, int repetitions)
     SILK_INFO << "Decode snapshot: " << snapshot_path->path();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     for (int i = 0; i < repetitions; ++i) {
-        SegmentFileReader snapshot{*snapshot_path};
+        SegmentFileReader snapshot{*snapshot_path, db::blocks::kStepToBlockNumConverter};
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     SILK_INFO << "Decode snapshot elapsed: " << as_milliseconds(elapsed) << " msec";
@@ -329,7 +330,7 @@ void count_bodies(const SnapshotSubcommandSettings& settings, int repetitions) {
         if (settings.segment_file_name) {
             const auto snapshot_path{SnapshotPath::parse(std::filesystem::path{*settings.segment_file_name})};
             ensure(snapshot_path.has_value(), "count_bodies: invalid snapshot_file path format");
-            SegmentFileReader body_segment{*snapshot_path};
+            SegmentFileReader body_segment{*snapshot_path, db::blocks::kStepToBlockNumConverter};
             std::tie(num_bodies, num_txns) = count_bodies_in_one(settings, body_segment);
         } else {
             std::tie(num_bodies, num_txns) = count_bodies_in_all(settings);
@@ -373,7 +374,7 @@ void count_headers(const SnapshotSubcommandSettings& settings, int repetitions) 
         if (settings.segment_file_name) {
             const auto snapshot_path{SnapshotPath::parse(std::filesystem::path{*settings.segment_file_name})};
             ensure(snapshot_path.has_value(), "count_headers: invalid snapshot_file path format");
-            SegmentFileReader header_segment{*snapshot_path};
+            SegmentFileReader header_segment{*snapshot_path, db::blocks::kStepToBlockNumConverter};
             num_headers = count_headers_in_one(settings, header_segment);
         } else {
             num_headers = count_headers_in_all(settings);
@@ -452,7 +453,7 @@ void open_btree_index(const SnapshotSubcommandSettings& settings) {
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
-    segment::KVSegmentFileReader kv_segment{*kv_segment_path, seg::CompressionKind::kAll};
+    segment::KVSegmentFileReader kv_segment{*kv_segment_path, db::state::kStepToTxnIdConverter, seg::CompressionKind::kAll};
 
     btree::BTreeIndex bt_index{bt_index_path.path()};
     SILK_INFO << "Starting KV scan and BTreeIndex check, total keys: " << bt_index.key_count();
@@ -733,7 +734,7 @@ void lookup_body_in_one(const SnapshotSubcommandSettings& settings, BlockNum blo
     ensure(snapshot_path.has_value(), "lookup_body: --snapshot_file is invalid snapshot file");
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    SegmentFileReader body_segment{*snapshot_path};
+    SegmentFileReader body_segment{*snapshot_path, db::blocks::kStepToBlockNumConverter};
 
     rec_split::AccessorIndex idx_body_number{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
 
@@ -851,7 +852,7 @@ void lookup_txn_by_hash_in_one(const SnapshotSubcommandSettings& settings, const
     ensure(snapshot_path.has_value(), "lookup_tx_by_hash_in_one: --snapshot_file is invalid snapshot file");
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    SegmentFileReader txn_segment{*snapshot_path};
+    SegmentFileReader txn_segment{*snapshot_path, db::blocks::kStepToBlockNumConverter};
 
     {
         rec_split::AccessorIndex idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};
@@ -913,7 +914,7 @@ void lookup_txn_by_id_in_one(const SnapshotSubcommandSettings& settings, uint64_
     ensure(snapshot_path.has_value(), "lookup_txn_by_id_in_one: --snapshot_file is invalid snapshot file");
 
     std::chrono::time_point start{std::chrono::steady_clock::now()};
-    SegmentFileReader txn_segment{*snapshot_path};
+    SegmentFileReader txn_segment{*snapshot_path, db::blocks::kStepToBlockNumConverter};
 
     {
         rec_split::AccessorIndex idx_txn_hash{snapshot_path->related_path_ext(db::blocks::kIdxExtension)};

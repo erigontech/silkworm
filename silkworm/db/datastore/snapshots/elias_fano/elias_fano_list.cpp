@@ -45,29 +45,38 @@
 
 namespace silkworm::snapshots::elias_fano {
 
-EliasFanoList32 EliasFanoList32::from_encoded_data(std::span<const uint8_t> encoded_data) {
-    ensure(encoded_data.size() >= kCountLength + kULength, "EliasFanoList32::from_encoded_data data too short");
+EliasFanoList32 EliasFanoList32::from_encoded_data(BytesOrByteView encoded_data_holder) {
+    std::span<const uint8_t> encoded_data{ByteView{encoded_data_holder}};
+    const uint64_t data_offset = kCountLength + kULength;
+    ensure(encoded_data.size() >= data_offset, "EliasFanoList32::from_encoded_data data too short");
     const uint64_t last = endian::load_big_u64(encoded_data.data());
     const uint64_t u = endian::load_big_u64(encoded_data.subspan(kCountLength).data());
-    const auto remaining_data = encoded_data.subspan(kCountLength + kULength);
-    return EliasFanoList32{last + 1, u - 1, remaining_data};
+    return EliasFanoList32{last + 1, u - 1, data_offset, std::move(encoded_data_holder)};
+}
+
+EliasFanoList32 EliasFanoList32::from_encoded_data(std::span<const uint8_t> encoded_data) {
+    return from_encoded_data(BytesOrByteView{ByteView{encoded_data}});
 }
 
 EliasFanoList32 EliasFanoList32::from_encoded_data(ByteView encoded_data) {
-    return from_encoded_data(std::span<const uint8_t>{encoded_data});
+    return from_encoded_data(BytesOrByteView{encoded_data});
 }
 
 EliasFanoList32 EliasFanoList32::from_encoded_data(Bytes encoded_data) {
-    auto elias_fano_list = from_encoded_data(std::span<const uint8_t>{encoded_data});
-    elias_fano_list.data_holder_ = std::move(encoded_data);
-    return elias_fano_list;
+    return from_encoded_data(BytesOrByteView{std::move(encoded_data)});
 }
 
-EliasFanoList32::EliasFanoList32(uint64_t count, uint64_t max_value, std::span<const uint8_t> encoded_data)
+EliasFanoList32::EliasFanoList32(
+    uint64_t count,
+    uint64_t max_value,
+    uint64_t data_offset,
+    BytesOrByteView data_holder)
     : count_{count},
       u_{max_value + 1},
-      data_{reinterpret_cast<const uint64_t*>(encoded_data.data()), EliasFanoList32::total_words(count, max_value)} {
-    SILKWORM_ASSERT(EliasFanoList32::total_words(count, max_value) * sizeof(uint64_t) <= encoded_data.size());
+      data_offset_{data_offset},
+      total_words_{EliasFanoList32::total_words(count, max_value)},
+      data_holder_{std::move(data_holder)} {
+    SILKWORM_ASSERT(EliasFanoList32::total_words(count, max_value) * sizeof(uint64_t) + data_offset <= ByteView{data_holder_}.size());
     derive_fields();
 }
 
@@ -164,7 +173,8 @@ std::ostream& operator<<(std::ostream& os, const EliasFanoList32& ef) {
     os.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
     SILK_DEBUG << "[index] written EF upper: " << ef.u_;
 
-    os.write(reinterpret_cast<const char*>(ef.data_.data()), static_cast<std::streamsize>(ef.data_.size() * sizeof(uint64_t)));
+    auto data = ef.data();
+    os.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size() * sizeof(uint64_t)));
     return os;
 }
 
@@ -197,9 +207,11 @@ uint64_t EliasFanoList32::derive_fields() {
     uint64_t words_upper_bits = (count_ + (u_ >> l_) + 63) / 64;
     uint64_t jump_words = jump_size_words(count_);
     uint64_t total_words = words_lower_bits + words_upper_bits + jump_words;
-    lower_bits_ = data_.subspan(0, words_lower_bits);
-    upper_bits_ = data_.subspan(words_lower_bits, words_upper_bits);
-    jump_ = data_.subspan(words_lower_bits + words_upper_bits, jump_words);
+
+    auto data = this->data();
+    lower_bits_ = data.subspan(0, words_lower_bits);
+    upper_bits_ = data.subspan(words_lower_bits, words_upper_bits);
+    jump_ = data.subspan(words_lower_bits + words_upper_bits, jump_words);
 
     return total_words;
 }

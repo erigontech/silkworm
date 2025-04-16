@@ -11,9 +11,11 @@ namespace silkworm::snapshots::segment {
 
 KVSegmentFileReader::KVSegmentFileReader(
     SnapshotPath path,
+    datastore::StepToTimestampConverter step_converter,
     seg::CompressionKind compression_kind,
     std::optional<MemoryMappedRegion> segment_region)
     : path_(std::move(path)),
+      step_converter_{std::move(step_converter)},
       decompressor_{path_.path(), segment_region, compression_kind} {
 }
 
@@ -33,9 +35,12 @@ KVSegmentFileReader::Iterator& KVSegmentFileReader::Iterator::operator++() {
 
         if (has_next) {
             if (decoder) {
+                if (path_) {
+                    decoder->decode_word_with_metadata(*path_, step_converter_);
+                }
                 decoder->decode_word(*it_);
                 if (path_) {
-                    decoder->check_sanity_with_metadata(*path_);
+                    decoder->check_sanity_with_metadata(*path_, step_converter_);
                 }
             }
         } else {
@@ -75,23 +80,25 @@ KVSegmentFileReader::Iterator KVSegmentFileReader::begin(std::shared_ptr<Decoder
     }
 
     if (key_decoder) {
+        key_decoder->decode_word_with_metadata(path_, step_converter_);
         key_decoder->decode_word(*it);
-        key_decoder->check_sanity_with_metadata(path_);
+        key_decoder->check_sanity_with_metadata(path_, step_converter_);
     }
 
     if (value_decoder) {
         ++it;
+        value_decoder->decode_word_with_metadata(path_, step_converter_);
         value_decoder->decode_word(*it);
-        value_decoder->check_sanity_with_metadata(path_);
+        value_decoder->check_sanity_with_metadata(path_, step_converter_);
     } else {
         it.skip();
     }
 
-    return KVSegmentFileReader::Iterator{std::move(it), std::move(key_decoder), std::move(value_decoder), path()};
+    return KVSegmentFileReader::Iterator{std::move(it), std::move(key_decoder), std::move(value_decoder), path(), step_converter_};
 }
 
 KVSegmentFileReader::Iterator KVSegmentFileReader::end() const {
-    return KVSegmentFileReader::Iterator{decompressor_.end(), {}, {}, path()};
+    return KVSegmentFileReader::Iterator{decompressor_.end(), {}, {}, path(), step_converter_};
 }
 
 KVSegmentFileReader::Iterator KVSegmentFileReader::seek(
@@ -109,23 +116,25 @@ KVSegmentFileReader::Iterator KVSegmentFileReader::seek(
     }
 
     if (key_decoder) {
+        key_decoder->decode_word_with_metadata(path_, step_converter_);
         try {
             key_decoder->decode_word(*it);
         } catch (...) {
             return end();
         }
-        key_decoder->check_sanity_with_metadata(path_);
+        key_decoder->check_sanity_with_metadata(path_, step_converter_);
     }
 
     if (value_decoder) {
         ++it;
+        value_decoder->decode_word_with_metadata(path_, step_converter_);
         value_decoder->decode_word(*it);
-        value_decoder->check_sanity_with_metadata(path_);
+        value_decoder->check_sanity_with_metadata(path_, step_converter_);
     } else {
         it.skip();
     }
 
-    return KVSegmentFileReader::Iterator{std::move(it), std::move(key_decoder), std::move(value_decoder), path()};
+    return KVSegmentFileReader::Iterator{std::move(it), std::move(key_decoder), std::move(value_decoder), path(), step_converter_};
 }
 
 }  // namespace silkworm::snapshots::segment

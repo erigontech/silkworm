@@ -16,8 +16,8 @@
 
 namespace silkworm::snapshots {
 
-inline auto timestamp_range_filter(elias_fano::EliasFanoList32 list, datastore::TimestampRange ts_range, bool ascending) {
-    using Iterator = elias_fano::EliasFanoList32::Iterator;
+inline auto timestamp_range_filter(InvertedIndexTimestampList list, datastore::TimestampRange ts_range, bool ascending) {
+    using Iterator = InvertedIndexTimestampList::Iterator;
 
     size_t start = 0;
     size_t end = list.size();
@@ -31,7 +31,7 @@ inline auto timestamp_range_filter(elias_fano::EliasFanoList32 list, datastore::
         start = end;
     }
 
-    auto range_from_list = [ts_range, ascending, start, end](const elias_fano::EliasFanoList32& list1) {
+    auto range_from_list = [ts_range, ascending, start, end](const InvertedIndexTimestampList& list1) {
         auto list_range = [&list1, start, end]() { return std::ranges::subrange{Iterator{list1, start}, Iterator{list1, end}}; };
         return silkworm::views::if_view(
             ascending,
@@ -56,21 +56,21 @@ struct InvertedIndexFindByKeySegmentQuery {
 
     using Key = decltype(TKeyEncoder::value);
 
-    std::optional<elias_fano::EliasFanoList32> exec(Key key) {
+    std::optional<InvertedIndexTimestampList> exec(Key key) {
         TKeyEncoder key_encoder;
         key_encoder.value = std::move(key);
         ByteView key_data = key_encoder.encode_word();
         return exec_raw(key_data);
     }
 
-    std::optional<elias_fano::EliasFanoList32> exec_raw(ByteView key_data) {
+    std::optional<InvertedIndexTimestampList> exec_raw(ByteView key_data) {
         auto offset = entity_.accessor_index.lookup_by_key(key_data);
         if (!offset) {
             return std::nullopt;
         }
 
         auto reader = entity_.kv_segment_reader<RawDecoder<Bytes>>();
-        std::optional<std::pair<Bytes, elias_fano::EliasFanoList32>> result = reader.seek_one(*offset);
+        std::optional<std::pair<Bytes, InvertedIndexTimestampList>> result = reader.seek_one(*offset);
 
         // ensure that the found key matches to avoid lookup_by_key false positives
         if (result && (result->first == key_data)) {
@@ -81,7 +81,7 @@ struct InvertedIndexFindByKeySegmentQuery {
     }
 
     auto exec_filter(Key key, datastore::TimestampRange ts_range, bool ascending) {
-        return timestamp_range_filter(exec(std::move(key)).value_or(elias_fano::EliasFanoList32::empty_list()), ts_range, ascending);
+        return timestamp_range_filter(exec(std::move(key)).value_or(InvertedIndexTimestampList{}), ts_range, ascending);
     }
 
   private:

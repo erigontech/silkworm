@@ -18,6 +18,7 @@
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 #include <silkworm/infra/common/os.hpp>
 
+#include "../../common/step_timestamp_converter.hpp"
 #include "../common/codec.hpp"
 #include "../common/snapshot_path.hpp"
 #include "../common/util/iterator/iterator_read_into_vector.hpp"
@@ -48,13 +49,18 @@ class SegmentFileReader {
         Iterator(
             seg::Decompressor::Iterator it,
             std::shared_ptr<Decoder> decoder,
-            SnapshotPath path)
-            : it_(std::move(it)), decoder_(std::move(decoder)), path_(std::move(path)) {}
+            SnapshotPath path,
+            datastore::StepToTimestampConverter step_converter)
+            : it_(std::move(it)),
+              decoder_(std::move(decoder)),
+              path_(std::move(path)),
+              step_converter_(std::move(step_converter)) {}
 
         Iterator()
             : it_{seg::Decompressor::Iterator::make_end()},
               decoder_{},
-              path_{std::nullopt} {}
+              path_{std::nullopt},
+              step_converter_{} {}
 
         value_type operator*() const { return decoder_; }
 
@@ -70,6 +76,7 @@ class SegmentFileReader {
         seg::Decompressor::Iterator it_;
         std::shared_ptr<Decoder> decoder_;
         std::optional<SnapshotPath> path_;
+        datastore::StepToTimestampConverter step_converter_;
     };
 
     static_assert(std::input_iterator<Iterator>);
@@ -79,6 +86,7 @@ class SegmentFileReader {
 
     explicit SegmentFileReader(
         SnapshotPath path,
+        datastore::StepToTimestampConverter step_converter,
         std::optional<MemoryMappedRegion> segment_region = std::nullopt,
         bool is_compressed = true);
 
@@ -101,6 +109,7 @@ class SegmentFileReader {
   private:
     //! The path of the segment file for this snapshot
     SnapshotPath path_;
+    datastore::StepToTimestampConverter step_converter_;
 
     seg::Decompressor decompressor_;
 };

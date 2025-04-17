@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <silkworm/db/datastore/kvdb/inverted_index_put_query.hpp>
 #include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 
@@ -11,5 +12,7 @@
 namespace silkworm::db::state {
 
 using TracesToInvertedIndexKVSegmentReader = snapshots::segment::KVSegmentReader<AddressSnapshotsDecoder, snapshots::RawDecoder<Bytes>>;
+
+using TracesToInvertedIndexPutQuery = datastore::kvdb::InvertedIndexPutQuery<AddressKVDBEncoder>;
 
 }  // namespace silkworm::db::state

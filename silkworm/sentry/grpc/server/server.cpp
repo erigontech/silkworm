@@ -7,7 +7,10 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <agrpc/grpc_context.hpp>
+#pragma GCC diagnostic pop
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/server/call.hpp>

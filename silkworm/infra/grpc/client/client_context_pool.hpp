@@ -7,7 +7,11 @@
 #include <functional>
 #include <memory>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <agrpc/asio_grpc.hpp>
+#pragma GCC diagnostic pop
 #include <boost/asio/executor_work_guard.hpp>
 #include <grpcpp/grpcpp.h>
 

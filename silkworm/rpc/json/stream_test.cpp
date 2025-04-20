@@ -25,7 +25,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {
     StringWriter string_writer;
 
     SECTION("write_json in string") {
-        Stream stream(io_executor, string_writer);
+        Stream stream(io_executor, string_writer, /* request_id */ 0);
 
         nlohmann::json json = R"({
             "test": "test"
@@ -38,7 +38,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {
         CHECK((string_writer.get_content() == "{\"test\":\"test\"}"));
     }
     SECTION("write_json in 1 chunk") {
-        Stream stream(io_executor, string_writer);
+        Stream stream(io_executor, string_writer, /* request_id */ 0);
 
         nlohmann::json json = R"({
             "test": "test"
@@ -50,7 +50,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream writing JSON", "[rpc][json]") {
         CHECK((string_writer.get_content() == "{\"test\":\"test\"}"));
     }
     SECTION("write_json in 2 chunks") {
-        Stream stream(io_executor, string_writer);
+        Stream stream(io_executor, string_writer, /* request_id */ 0);
 
         nlohmann::json json = R"({
             "check": "check",
@@ -68,7 +68,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream API", "[rpc][json]") {
     boost::asio::any_io_executor io_executor = ioc_.get_executor();
 
     StringWriter string_writer;
-    Stream stream(io_executor, string_writer);
+    Stream stream(io_executor, string_writer, /* request_id */ 0);
 
     SECTION("write_json json") {
         nlohmann::json json = R"({
@@ -318,7 +318,7 @@ TEST_CASE_METHOD(StreamTest, "json::Stream threading", "[rpc][json]") {
     constexpr std::string_view kData{R"({"test":"test"})"};
 
     StringWriter string_writer;
-    Stream stream(io_executor, string_writer, 1);  // tiny buffer capacity
+    Stream stream(io_executor, string_writer, /* request_id */ 0, 1);  // tiny buffer capacity
 
     const nlohmann::json json = R"({"test":"test"})"_json;
 

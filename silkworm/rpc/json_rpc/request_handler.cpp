@@ -25,7 +25,7 @@ RequestHandler::RequestHandler(StreamWriter* stream_writer,
       rpc_api_table_{rpc_api_table},
       ifc_log_{ifc_log_settings.enabled ? std::make_shared<InterfaceLog>(std::move(ifc_log_settings)) : nullptr} {}
 
-Task<std::optional<std::string>> RequestHandler::handle(const std::string& request) {
+Task<std::optional<std::string>> RequestHandler::handle(const std::string& request, uint64_t request_id) {
     const auto start = clock_time::now();
     std::string response;
     bool return_reply{true};
@@ -38,7 +38,7 @@ Task<std::optional<std::string>> RequestHandler::handle(const std::string& reque
             if (const auto valid_result{is_valid_jsonrpc(request_json)}; !valid_result) {
                 response = make_json_error(request_json, kInvalidRequest, valid_result.error()).dump() + "\n";
             } else {
-                return_reply = co_await handle_request_and_create_reply(request_json, response);
+                return_reply = co_await handle_request_and_create_reply(request_json, response, request_id);
             }
         } else {
             std::stringstream batch_reply_content;
@@ -54,7 +54,7 @@ Task<std::optional<std::string>> RequestHandler::handle(const std::string& reque
                     batch_reply_content << make_json_error(request_json, kInvalidRequest, valid_result.error()).dump();
                 } else {
                     std::string single_reply;
-                    return_reply = co_await handle_request_and_create_reply(single_request_json, single_reply);
+                    return_reply = co_await handle_request_and_create_reply(single_request_json, single_reply, request_id);
                     batch_reply_content << single_reply;
                 }
             }
@@ -110,7 +110,7 @@ ValidationResult RequestHandler::is_valid_jsonrpc(const nlohmann::json& request_
     return json_rpc_validator_.validate(request_json);
 }
 
-Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, std::string& response) {
+Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, std::string& response, uint64_t request_id) {
     if (!request_json.contains("method")) {
         response = make_json_error(request_json, kInvalidRequest, "invalid request").dump();
         co_return true;
@@ -140,7 +140,7 @@ Task<bool> RequestHandler::handle_request_and_create_reply(const nlohmann::json&
     const auto stream_handler = rpc_api_table_.find_stream_handler(method);
     if (stream_handler) {
         SILK_TRACE << "--> handle RPC stream request: " << method;
-        co_await handle_request(*stream_handler, request_json);
+        co_await handle_request(*stream_handler, request_json, request_id);
         SILK_TRACE << "<-- handle RPC stream request: " << method;
         co_return false;
     }
@@ -181,11 +181,11 @@ Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethod ha
     }
 }
 
-Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json) {
+Task<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json, uint64_t request_id) {
     auto io_executor = co_await boost::asio::this_coro::executor;
 
     try {
-        json::Stream stream(io_executor, *stream_writer_);
+        json::Stream stream(io_executor, *stream_writer_, request_id);
         co_await stream.open();
 
         try {

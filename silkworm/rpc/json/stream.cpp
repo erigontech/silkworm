@@ -37,8 +37,9 @@ static constexpr std::string_view kDoubleQuotes{"\""};
 //! The maximum number of items enqueued in the chunk channel
 static constexpr size_t kChannelCapacity{100};
 
-Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, size_t buffer_capacity)
+Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, uint64_t request_id, size_t buffer_capacity)
     : writer_(writer),
+      request_id_{request_id},
       buffer_capacity_{buffer_capacity ? buffer_capacity : writer_.get_capacity()},
       channel_{executor, kChannelCapacity},
 // Workaround for Windows build error due to bug https://github.com/chriskohlhoff/asio/issues/1281
@@ -61,7 +62,7 @@ Stream::Stream(boost::asio::any_io_executor& executor, StreamWriter& writer, siz
 }
 
 Task<void> Stream::open() {
-    co_await writer_.open_stream();
+    co_await writer_.open_stream(request_id_);
 }
 
 Task<void> Stream::close() {
@@ -79,7 +80,7 @@ Task<void> Stream::close() {
     co_await run_completion_channel_.async_receive(boost::asio::use_awaitable);
 #endif  // _WIN32
 
-    co_await writer_.close_stream();
+    co_await writer_.close_stream(request_id_);
 }
 
 void Stream::open_object() {
@@ -316,7 +317,7 @@ Task<void> Stream::run() {
             if (!data_chunk.chunk) {
                 break;
             }
-            total_bytes_sent += co_await writer_.write(*data_chunk.chunk, data_chunk.last);
+            total_bytes_sent += co_await writer_.write(request_id_, *data_chunk.chunk, data_chunk.last);
             ++total_writes;
         } catch (const boost::system::system_error& se) {
             if (se.code() != boost::asio::experimental::error::channel_cancelled) {

@@ -97,12 +97,23 @@ Task<bool> Connection::do_read() {
     if (!parser.is_done()) {
         co_return true;
     }
-    request_keep_alive_ = parser.get().keep_alive();
-    request_http_version_ = parser.get().version();
+
+    auto req = parser.release();
+    const auto accept_encoding = req[boost::beast::http::field::accept_encoding];
+    auto gzip_encoding_requested = accept_encoding.contains(kGzipEncoding) && http_compression_;
+
+    RequestData request_data{
+        .request_keep_alive_ = parser.get().keep_alive(),
+        .request_http_version_ = parser.get().version(),
+        .gzip_encoding_requested_ = gzip_encoding_requested,
+        .vary_ = req[boost::beast::http::field::vary],
+        .origin_ = req[boost::beast::http::field::origin],
+        .method_ = req.method(),
+    };
 
     if (boost::beast::websocket::is_upgrade(parser.get())) {
         if (const auto auth_result = is_request_authorized(parser.get()); !auth_result) {
-            co_await do_write(auth_result.error() + "\n", boost::beast::http::status::forbidden);
+            co_await do_write(auth_result.error() + "\n", boost::beast::http::status::forbidden, request_data);
             co_return false;
         }
 
@@ -111,12 +122,12 @@ Task<bool> Connection::do_read() {
             co_return false;
         } else {
             // If it does not (or cannot) upgrade the connection, it ignores the Upgrade header and sends back a regular response (OK)
-            co_await do_write("", boost::beast::http::status::ok);
+            co_await do_write("", boost::beast::http::status::ok, request_data);
         }
         co_return true;
     }
 
-    co_await handle_request(parser.release());
+    co_await handle_request(req, request_data);
     co_return true;
 }
 
@@ -132,17 +143,17 @@ Task<void> Connection::do_upgrade(const RequestWithStringBody& req) {
     boost::asio::co_spawn(socket_.get_executor(), connection_loop(ws_connection), boost::asio::detached);
 }
 
-Task<void> Connection::handle_request(const RequestWithStringBody& req) {
+Task<void> Connection::handle_request(const RequestWithStringBody& req, RequestData& request_data) {
     if (req.method() == boost::beast::http::verb::options &&
         !req[boost::beast::http::field::access_control_request_method].empty()) {
-        co_await handle_preflight(req);
+        co_await handle_preflight(req, request_data);
     } else {
-        co_await handle_actual_request(req);
+        co_await handle_actual_request(req, request_data);
     }
 }
 
-Task<void> Connection::handle_preflight(const RequestWithStringBody& req) {
-    boost::beast::http::response<boost::beast::http::string_body> res{boost::beast::http::status::no_content, request_http_version_};
+Task<void> Connection::handle_preflight(const RequestWithStringBody& req, RequestData& request_data) {
+    boost::beast::http::response<boost::beast::http::string_body> res{boost::beast::http::status::no_content, request_data.request_http_version_};
     std::string vary = req[boost::beast::http::field::vary];
 
     if (vary.empty()) {
@@ -169,32 +180,32 @@ Task<void> Connection::handle_preflight(const RequestWithStringBody& req) {
     co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
 }
 
-Task<void> Connection::handle_actual_request(const RequestWithStringBody& req) {
-    if (req.body().empty()) {
-        co_await do_write(std::string{}, boost::beast::http::status::ok);  // just like Erigon
-        co_return;
-    }
-
+Task<void> Connection::handle_actual_request(const RequestWithStringBody& req, RequestData& request_data) {
     const auto accept_encoding = req[boost::beast::http::field::accept_encoding];
-    if (!http_compression_ && !accept_encoding.empty() && !erigon_json_rpc_compatibility_) {
-        co_await do_write("unsupported compression\n", boost::beast::http::status::unsupported_media_type, "identity");
+
+    if (req.body().empty()) {
+        co_await do_write(std::string{}, boost::beast::http::status::ok, request_data);  // just like Erigon
         co_return;
     }
 
-    gzip_encoding_requested_ = accept_encoding.contains(kGzipEncoding) && http_compression_;
-    if (http_compression_ && !accept_encoding.empty() && !accept_encoding.contains(kIdentity) && !gzip_encoding_requested_) {
-        co_await do_write("unsupported requested compression\n", boost::beast::http::status::unsupported_media_type, kGzipEncoding);
+    if (!http_compression_ && !accept_encoding.empty() && !erigon_json_rpc_compatibility_) {
+        co_await do_write("unsupported compression\n", boost::beast::http::status::unsupported_media_type, request_data, "identity");
+        co_return;
+    }
+
+    if (http_compression_ && !accept_encoding.empty() && !accept_encoding.contains(kIdentity) && !request_data.gzip_encoding_requested_) {
+        co_await do_write("unsupported requested compression\n", boost::beast::http::status::unsupported_media_type, request_data, kGzipEncoding);
         co_return;
     }
 
     // Check HTTP method and content type [max body size is limited using beast::http::request_parser::body_limit in do_read]
     if (!is_method_allowed(req.method())) {
-        co_await do_write("method not allowed\n", boost::beast::http::status::method_not_allowed);
+        co_await do_write("method not allowed\n", boost::beast::http::status::method_not_allowed, request_data);
         co_return;
     }
     if (req.method() != boost::beast::http::verb::options && req.method() != boost::beast::http::verb::get) {
         if (!is_accepted_content_type(req[boost::beast::http::field::content_type])) {
-            co_await do_write("invalid content type\n, only application/json is supported\n", boost::beast::http::status::bad_request);
+            co_await do_write("invalid content type\n, only application/json is supported\n", boost::beast::http::status::bad_request, request_data);
             co_return;
         }
     }
@@ -202,51 +213,88 @@ Task<void> Connection::handle_actual_request(const RequestWithStringBody& req) {
     SILK_TRACE << "Connection::handle_request body size: " << req.body().size() << " data: " << req.body();
 
     if (const auto auth_result = is_request_authorized(req); !auth_result) {
-        co_await do_write(auth_result.error() + "\n", boost::beast::http::status::forbidden);
+        co_await do_write(auth_result.error() + "\n", boost::beast::http::status::forbidden, request_data);
         co_return;
     }
 
-    // Save few fields of the request to be used in set_cors
-    vary_ = req[boost::beast::http::field::vary];
-    origin_ = req[boost::beast::http::field::origin];
-    method_ = req.method();
-
-    auto rsp_content = co_await handler_->handle(req.body());
+    request_map_.emplace(request_id_, std::move(request_data));
+    auto rsp_content = co_await handler_->handle(req.body(), request_id_);
     if (rsp_content) {
-        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, gzip_encoding_requested_ ? kGzipEncoding : "");
+        // no streaming api
+        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, request_data, request_data.gzip_encoding_requested_ ? kGzipEncoding : "", request_data.gzip_encoding_requested_);
+        auto it = request_map_.find(request_id_);
+        if (it != request_map_.end()) {
+            request_map_.erase(it);
+        }
     }
+    request_id_++;
 }
 
 //! Write chunked response headers
-Task<void> Connection::open_stream() {
+Task<void> Connection::create_chunk_header(RequestData& request_data) {
     try {
-        boost::beast::http::response<boost::beast::http::empty_body> rsp{boost::beast::http::status::ok, request_http_version_};
+        boost::beast::http::response<boost::beast::http::empty_body> rsp{boost::beast::http::status::ok, request_data.request_http_version_};
         rsp.set(boost::beast::http::field::content_type, "application/json");
         rsp.set(boost::beast::http::field::date, get_date_time());
         rsp.chunked(true);
 
-        if (gzip_encoding_requested_) {
+        if (request_data.gzip_encoding_requested_) {
             rsp.set(boost::beast::http::field::content_encoding, kGzipEncoding);
         }
 
-        set_cors(rsp);
+        set_cors(rsp, request_data);
 
         boost::beast::http::response_serializer<boost::beast::http::empty_body> serializer{rsp};
 
         co_await async_write_header(socket_, serializer, boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
-        SILK_TRACE << "Connection::open_stream system_error: " << se.what();
+        SILK_TRACE << "Connection::create_chunk_header system_error: " << se.what();
         throw;
     } catch (const std::exception& e) {
-        SILK_ERROR << "Connection::open_stream exception: " << e.what();
+        SILK_ERROR << "Connection::create_chunk_header exception: " << e.what();
         throw;
     }
     co_return;
 }
 
-Task<void> Connection::close_stream() {
+Task<void> Connection::open_stream(uint64_t request_id) {
+    auto request_data_it = request_map_.find(request_id);
+    if (request_data_it == request_map_.end()) {
+        SILK_ERROR << "Connection::open_stream request_id not found: " << request_id;
+        co_return;
+    }
+    auto& request_data = request_data_it->second;
+
+    // add chunking supports
+    request_data.chunk_ = std::make_unique<Chunker>();
+
+    co_return;
+}
+
+Task<void> Connection::close_stream(uint64_t request_id) {
+    auto request_data_it = request_map_.find(request_id);
+    if (request_data_it == request_map_.end()) {
+        SILK_ERROR << "Connection::close_stream request_id not found: " << request_id;
+        co_return;
+    }
+    auto& request_data = request_data_it->second;
+
     try {
-        co_await boost::asio::async_write(socket_, boost::beast::http::make_chunk_last(), boost::asio::use_awaitable);
+        // get chunk remainder and flush it
+        auto [chunk, first_chunk] = request_data.chunk_->get_remainder();
+        if (first_chunk) {
+            if (!chunk.empty()) {
+                // it is first chunk so send full msg without chunking
+                co_await do_write(chunk, boost::beast::http::status::ok, request_data, request_data.gzip_encoding_requested_ ? kGzipEncoding : "", /* to_be_compressed */ false);  // data already compressed if nec
+            }
+        } else {
+            // already a chunk is generated
+            if (!chunk.empty()) {
+                // send new one
+                co_await send_chunk(chunk);
+            }
+            co_await boost::asio::async_write(socket_, boost::beast::http::make_chunk_last(), boost::asio::use_awaitable);
+        }
     } catch (const boost::system::system_error& se) {
         SILK_TRACE << "Connection::close system_error: " << se.what();
         throw;
@@ -254,22 +302,52 @@ Task<void> Connection::close_stream() {
         SILK_ERROR << "Connection::close exception: " << e.what();
         throw;
     }
+    request_map_.erase(request_data_it);
+
     co_return;
 }
 
 //! Write chunked response content to the underlying socket
-Task<size_t> Connection::write(std::string_view content, bool /*last*/) {
+Task<size_t> Connection::write(uint64_t request_id, std::string_view content, bool last) {
+    auto request_data_it = request_map_.find(request_id);
+    if (request_data_it == request_map_.end()) {
+        SILK_ERROR << "Connection::write request_id not found: " << request_id;
+        co_return 0;
+    }
+    auto& request_data = request_data_it->second;
+
+    std::string response(std::move(content));
+    if (last) {
+        response.append("\n");
+    }
+
+    if (request_data.gzip_encoding_requested_) {
+        std::string compressed_content;
+        co_await compress(response.data(), compressed_content);
+        // queued compressed buffer
+        request_data.chunk_->queue_data(std::move(compressed_content));
+    } else {
+        // queued clear buffer
+        request_data.chunk_->queue_data(std::move(response));
+    }
+
+    // until completed chunk are present
+    while (request_data.chunk_->has_chunks()) {
+        auto [complete_chunk, first_chunk] = request_data.chunk_->get_complete_chunk();
+
+        if (first_chunk) {
+            co_await create_chunk_header(request_data);
+        }
+        co_await send_chunk(complete_chunk);
+    }
+    co_return 0;
+}
+
+Task<size_t> Connection::send_chunk(const std::string& content) {
     size_t bytes_transferred{0};
     try {
-        if (gzip_encoding_requested_) {
-            std::string compressed_content;
-            co_await compress(content.data(), compressed_content);
-            boost::asio::const_buffer buffer{compressed_content.data(), compressed_content.size()};
-            bytes_transferred = co_await boost::asio::async_write(socket_, boost::beast::http::chunk_body(buffer), boost::asio::use_awaitable);
-        } else {
-            boost::asio::const_buffer buffer{content.data(), content.size()};
-            bytes_transferred = co_await boost::asio::async_write(socket_, boost::beast::http::chunk_body(buffer), boost::asio::use_awaitable);
-        }
+        boost::asio::const_buffer buffer{content.data(), content.size()};
+        bytes_transferred = co_await boost::asio::async_write(socket_, boost::beast::http::chunk_body(buffer), boost::asio::use_awaitable);
     } catch (const boost::system::system_error& se) {
         SILK_TRACE << "Connection::write system_error: " << se.what();
         throw;
@@ -282,10 +360,10 @@ Task<size_t> Connection::write(std::string_view content, bool /*last*/) {
     co_return bytes_transferred;
 }
 
-Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status, std::string_view content_encoding) {
+Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status, RequestData& request_data, std::string_view content_encoding, bool to_be_compressed) {
     try {
         SILK_TRACE << "Connection::do_write response: " << http_status << " content: " << content;
-        boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_http_version_};
+        boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_data.request_http_version_};
 
         if (http_status != boost::beast::http::status::ok) {
             res.set(boost::beast::http::field::content_type, "text/plain");
@@ -295,26 +373,31 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
 
         res.set(boost::beast::http::field::date, get_date_time());
         res.erase(boost::beast::http::field::host);
-        res.keep_alive(request_keep_alive_);
+        res.keep_alive(request_data.request_keep_alive_);
         if (http_status == boost::beast::http::status::ok && !content_encoding.empty()) {
             // Positive response w/ compression required
             res.set(boost::beast::http::field::content_encoding, content_encoding);
-            std::string compressed_content;
+            if (to_be_compressed) {
+                std::string compressed_content;
+                co_await compress(content, compressed_content);
 
-            co_await compress(content, compressed_content);
+                res.content_length(compressed_content.size());
+                res.body() = std::move(compressed_content);
+            } else {
+                res.content_length(content.size());
+                res.body() = std::move(content);
+            }
 
-            res.content_length(compressed_content.size());
-            res.body() = std::move(compressed_content);
         } else {
             // Any negative response or positive response w/o compression
             if (!content_encoding.empty()) {
                 res.set(boost::beast::http::field::accept_encoding, content_encoding);  // Indicate the supported encoding
             }
             res.content_length(content.size());
-            res.body() = content;
+            res.body() = std::move(content);
         }
 
-        set_cors<boost::beast::http::string_body>(res);
+        set_cors<boost::beast::http::string_body>(res, request_data);
 
         res.prepare_payload();
         const auto bytes_transferred = co_await boost::beast::http::async_write(socket_, res, boost::asio::use_awaitable);
@@ -380,30 +463,30 @@ Connection::AuthorizationResult Connection::is_request_authorized(const RequestW
 }
 
 template <class Body>
-void Connection::set_cors(boost::beast::http::response<Body>& res) {
-    if (vary_.empty()) {
+void Connection::set_cors(boost::beast::http::response<Body>& res, RequestData& request_data) {
+    if (request_data.vary_.empty()) {
         res.set(boost::beast::http::field::vary, "Origin");
     } else {
-        vary_.append(" Origin");
-        res.set(boost::beast::http::field::vary, vary_);
+        auto vary{request_data.vary_};
+        res.set(boost::beast::http::field::vary, vary.append(" Origin"));
     }
 
-    if (origin_.empty()) {
+    if (request_data.origin_.empty()) {
         return;
     }
 
-    if (!is_origin_allowed(allowed_origins_, origin_)) {
+    if (!is_origin_allowed(allowed_origins_, request_data.origin_)) {
         return;
     }
 
-    if (!is_method_allowed(method_)) {
+    if (!is_method_allowed(request_data.method_)) {
         return;
     }
 
     if (allowed_origins_.at(0) == "*") {
         res.set(boost::beast::http::field::access_control_allow_origin, "*");
     } else {
-        res.set(boost::beast::http::field::access_control_allow_origin, origin_);
+        res.set(boost::beast::http::field::access_control_allow_origin, request_data.origin_);
     }
 }
 

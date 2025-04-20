@@ -34,10 +34,10 @@ class RequestHandler : public rpc::RequestHandler {
     RequestHandler(const RequestHandler&) = delete;
     RequestHandler& operator=(const RequestHandler&) = delete;
 
-    Task<std::optional<std::string>> handle(const std::string& request) override;
+    Task<std::optional<std::string>> handle(const std::string& request, uint64_t request_id) override;
 
   protected:
-    Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, std::string& response);
+    Task<bool> handle_request_and_create_reply(const nlohmann::json& request_json, std::string& response, uint64_t request_id);
 
   private:
     nlohmann::json prevalidate_and_parse(const std::string& request);
@@ -51,7 +51,7 @@ class RequestHandler : public rpc::RequestHandler {
         commands::RpcApiTable::HandleMethodGlaze handler,
         const nlohmann::json& request_json,
         std::string& response);
-    Task<void> handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
+    Task<void> handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json, uint64_t request_id);
 
     StreamWriter* stream_writer_;
 

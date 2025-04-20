@@ -76,7 +76,7 @@ Task<void> Connection::do_read() {
 
     SILK_TRACE << "ws::Connection::do_read bytes_read: " << bytes_read << " [" << req_content << "]";
 
-    auto rsp_content = co_await handler_->handle(req_content, request_id_++);
+    auto rsp_content = co_await handler_->handle(req_content, 0);
     if (rsp_content) {
         co_await do_write(*rsp_content);
     }

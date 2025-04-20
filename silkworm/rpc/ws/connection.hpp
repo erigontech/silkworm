@@ -62,8 +62,6 @@ class Connection : public StreamWriter {
 
     //! enable compress flag
     bool compression_{false};
-
-    uint64_t request_id_{0};
 };
 
 }  // namespace silkworm::rpc::ws

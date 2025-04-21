@@ -58,13 +58,13 @@ class LocalTransaction : public BaseTransaction {
     Task<HistoryPointResult> history_seek(HistoryPointRequest request) override;
 
     // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
-    Task<PaginatedTimestamps> index_range(IndexRangeRequest request) override;
+    Task<TimestampStreamReply> index_range(IndexRangeRequest request) override;
 
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-    Task<PaginatedKeysValues> history_range(HistoryRangeRequest request) override;
+    Task<KeyValueStreamReply> history_range(HistoryRangeRequest request) override;
 
     // rpc RangeAsOf(RangeAsOfReq) returns (Pairs);
-    Task<PaginatedKeysValues> range_as_of(DomainRangeRequest request) override;
+    Task<KeyValueStreamReply> range_as_of(DomainRangeRequest request) override;
 
   private:
     template <typename DomainGetAsOfQuery>

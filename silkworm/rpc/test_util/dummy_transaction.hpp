@@ -17,20 +17,17 @@
 
 namespace silkworm::rpc::test {
 
-template <typename Paginated>
-inline Paginated empty_paginated_sequence() {
-    auto paginator = [](typename Paginated::PageToken) -> Task<typename Paginated::PageResult> {
-        co_return typename Paginated::PageResult{};
-    };
-    return Paginated{paginator};
+template <db::kv::api::Value V>
+inline auto empty_stream() {
+    return db::kv::api::StreamReply<V>{db::kv::api::EmptyStreamFactory<V>};
 }
 
-inline db::kv::api::PaginatedTimestamps empty_paginated_timestamps() {
-    return empty_paginated_sequence<db::kv::api::PaginatedTimestamps>();
+inline db::kv::api::TimestampStreamReply empty_timestamps() {
+    return empty_stream<db::kv::api::Timestamp>();
 }
 
-inline db::kv::api::PaginatedKeysValues empty_paginated_keys_and_values() {
-    return empty_paginated_sequence<db::kv::api::PaginatedKeysValues>();
+inline db::kv::api::KeyValueStreamReply empty_keys_and_values() {
+    return empty_stream<db::kv::api::RawKeyValue>();
 }
 
 //! This dummy transaction just gives you the same cursor over and over again.
@@ -83,16 +80,16 @@ class DummyTransaction : public db::kv::api::BaseTransaction {
         co_return db::kv::api::HistoryPointResult{};
     }
 
-    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeRequest /*query*/) override {
-        co_return empty_paginated_timestamps();
+    Task<db::kv::api::TimestampStreamReply> index_range(db::kv::api::IndexRangeRequest /*query*/) override {
+        co_return empty_timestamps();
     }
 
-    Task<db::kv::api::PaginatedKeysValues> history_range(db::kv::api::HistoryRangeRequest /*query*/) override {
-        co_return empty_paginated_keys_and_values();
+    Task<db::kv::api::KeyValueStreamReply> history_range(db::kv::api::HistoryRangeRequest /*query*/) override {
+        co_return empty_keys_and_values();
     }
 
-    Task<db::kv::api::PaginatedKeysValues> range_as_of(db::kv::api::DomainRangeRequest /*query*/) override {
-        co_return test::empty_paginated_keys_and_values();
+    Task<db::kv::api::KeyValueStreamReply> range_as_of(db::kv::api::DomainRangeRequest /*query*/) override {
+        co_return empty_keys_and_values();
     }
 
   private:

@@ -58,9 +58,9 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: empty sequen
     PaginatedUint64 paginated{paginator};
     // We're using this lambda instead of built-in paginated_to_vector just to check Iterator::has_next
     const auto paginated_it_to_vector = [](auto& ps) -> Task<std::vector<uint64_t>> {
-        auto it = co_await ps.begin();
+        auto it = co_await ps();
         CHECK(!co_await it->has_next());
-        co_return co_await paginated_iterator_to_vector(it);
+        co_return co_await stream_to_vector(it);
     };
     CHECK(spawn_and_wait(paginated_it_to_vector(paginated)).empty());
 }
@@ -107,9 +107,9 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: empty sequence",
     PaginatedKV paginated{paginator};
     // We're using this lambda instead of built-in paginated_to_vector just to check Iterator::has_next
     const auto paginated_it_to_vector = [](auto& ps) -> Task<std::vector<KeyValue>> {
-        auto it = co_await ps.begin();
+        auto it = co_await ps();
         CHECK(!co_await it->has_next());
-        co_return co_await paginated_iterator_to_vector<PaginatedKV::KVPair, KeyValue>(it);
+        co_return co_await stream_to_vector<PaginatedKV::KVPair, KeyValue>(it);
     };
     CHECK(spawn_and_wait(paginated_it_to_vector(paginated)).empty());
 }
@@ -172,9 +172,9 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: set_intersec
         PaginatedUint64 paginated1{paginator1}, paginated2{paginator2};
         SECTION("test vector " + std::to_string(i)) {
             const auto async_intersection = [&](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
-                auto it = set_intersection(co_await ps1.begin(), co_await ps2.begin());
+                auto it = set_intersection(co_await ps1(), co_await ps2());
                 CHECK(co_await it->has_next() == !expected_intersection_set.empty());
-                co_return co_await paginated_iterator_to_vector(it);
+                co_return co_await stream_to_vector(it);
             };
             CHECK(spawn_and_wait(async_intersection(paginated1, paginated2)) == expected_intersection_set);
         }
@@ -207,9 +207,9 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: set_union", 
             TestPaginatorUint64 paginator1{v1}, paginator2{v2};
             PaginatedUint64 paginated1{paginator1}, paginated2{paginator2};
             const auto async_union = [&](PaginatedUint64& ps1, PaginatedUint64& ps2) -> Task<std::vector<uint64_t>> {
-                auto it = set_union(co_await ps1.begin(), co_await ps2.begin(), ascending);
+                auto it = set_union(co_await ps1(), co_await ps2(), ascending);
                 CHECK(co_await it->has_next() == !expected_union_set.empty());
-                co_return co_await paginated_iterator_to_vector(it);
+                co_return co_await stream_to_vector(it);
             };
             CHECK(spawn_and_wait(async_union(paginated1, paginated2)) == expected_union_set);
         }
@@ -227,7 +227,7 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "range stream", "[db][kv][api][paginated
     for (const auto& [pair, expected_sequence] : fixtures) {
         SECTION("test range: " + std::to_string(++i)) {
             auto stream = make_range_stream<uint64_t>(pair.first, pair.second);
-            auto sequence = spawn_and_wait(paginated_iterator_to_vector(stream));
+            auto sequence = spawn_and_wait(stream_to_vector(stream));
             CHECK(sequence == expected_sequence);
         }
     }
@@ -289,9 +289,9 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: set_union", "[db
         PaginatedKV paginated1{paginator1}, paginated2{paginator2};
         SECTION("test vector " + std::string{ascending ? "ascending" : "descending"} + ": " + std::to_string(i)) {
             const auto async_union = [&](PaginatedKV& ps1, PaginatedKV& ps2) -> Task<std::vector<KeyValue>> {
-                auto it = set_union(co_await ps1.begin(), co_await ps2.begin(), ascending);
+                auto it = set_union(co_await ps1(), co_await ps2(), ascending);
                 CHECK(co_await it->has_next() == !expected_union_set.empty());
-                co_return co_await paginated_iterator_to_vector<PaginatedKV::KVPair, KeyValue>(it);
+                co_return co_await stream_to_vector<PaginatedKV::KVPair, KeyValue>(it);
             };
             CHECK(spawn_and_wait(async_union(paginated1, paginated2)) == expected_union_set);
         }
@@ -301,25 +301,25 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_kv_sequence: set_union", "[db
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: nested intersection", "[db][kv][api][paginated_sequence]") {
     SECTION("2 null streams") {
-        PaginatedStream<uint64_t> n1;
-        PaginatedStream<uint64_t> n2;
+        Stream<uint64_t> n1;
+        Stream<uint64_t> n2;
         const auto n1_n2_intersection = set_intersection(std::move(n1), std::move(n2));
         CHECK_FALSE(spawn_and_wait(n1_n2_intersection->has_next()));
         CHECK(spawn_and_wait(n1_n2_intersection->next()) == std::nullopt);
     }
     SECTION("2 empty streams") {
-        PaginatedStream<uint64_t> e1 = std::make_unique<EmptyIterator<uint64_t>>();
-        PaginatedStream<uint64_t> e2 = std::make_unique<EmptyIterator<uint64_t>>();
+        Stream<uint64_t> e1 = std::make_unique<EmptyIterator<uint64_t>>();
+        Stream<uint64_t> e2 = std::make_unique<EmptyIterator<uint64_t>>();
         const auto e1_e2_intersection = set_intersection(std::move(e1), std::move(e2));
         CHECK_FALSE(spawn_and_wait(e1_e2_intersection->has_next()));
         CHECK(spawn_and_wait(e1_e2_intersection->next()) == std::nullopt);
     }
     SECTION("1 empty stream 1 non-empty stream") {
         const auto async_union_with_empty = [&](PaginatedUint64& ps) -> Task<std::vector<uint64_t>> {
-            PaginatedStream<uint64_t> empty = std::make_unique<EmptyIterator<uint64_t>>();
-            auto stream = co_await ps.begin();
+            Stream<uint64_t> empty = std::make_unique<EmptyIterator<uint64_t>>();
+            auto stream = co_await ps();
             auto intersection_stream = set_intersection(std::move(stream), std::move(empty));
-            co_return co_await paginated_iterator_to_vector(intersection_stream);
+            co_return co_await stream_to_vector(intersection_stream);
         };
         PageUint64List v{{1, 2, 3}, {4, 5, 6}, {7, 8}};
         TestPaginatorUint64 paginator{v};
@@ -328,11 +328,11 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: nested inter
     }
     SECTION("nesting streams") {
         const auto nested_intersection = [&](std::vector<PaginatedUint64> ps_list) -> Task<std::vector<uint64_t>> {
-            PaginatedStream<uint64_t> intersection_stream;
+            Stream<uint64_t> intersection_stream;
             for (auto& ps : ps_list) {
-                intersection_stream = set_intersection(std::move(intersection_stream), co_await ps.begin());
+                intersection_stream = set_intersection(std::move(intersection_stream), co_await ps());
             }
-            co_return co_await paginated_iterator_to_vector(intersection_stream);
+            co_return co_await stream_to_vector(intersection_stream);
         };
         CHECK(spawn_and_wait(nested_intersection(std::vector<PaginatedUint64>{})).empty());
     }
@@ -340,25 +340,25 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: nested inter
 
 TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: nested unions", "[db][kv][api][paginated_sequence]") {
     SECTION("2 null streams") {
-        PaginatedStream<uint64_t> n1;
-        PaginatedStream<uint64_t> n2;
+        Stream<uint64_t> n1;
+        Stream<uint64_t> n2;
         const auto n1_n2_union = set_union(std::move(n1), std::move(n2));
         CHECK_FALSE(spawn_and_wait(n1_n2_union->has_next()));
         CHECK(spawn_and_wait(n1_n2_union->next()) == std::nullopt);
     }
     SECTION("2 empty streams") {
-        PaginatedStream<uint64_t> e1 = std::make_unique<EmptyIterator<uint64_t>>();
-        PaginatedStream<uint64_t> e2 = std::make_unique<EmptyIterator<uint64_t>>();
+        Stream<uint64_t> e1 = std::make_unique<EmptyIterator<uint64_t>>();
+        Stream<uint64_t> e2 = std::make_unique<EmptyIterator<uint64_t>>();
         const auto e1_e2_union = set_union(std::move(e1), std::move(e2));
         CHECK_FALSE(spawn_and_wait(e1_e2_union->has_next()));
         CHECK(spawn_and_wait(e1_e2_union->next()) == std::nullopt);
     }
     SECTION("1 empty stream 1 non-empty stream") {
         const auto async_union_with_empty = [&](PaginatedUint64& ps1) -> Task<std::vector<uint64_t>> {
-            PaginatedStream<uint64_t> empty = std::make_unique<EmptyIterator<uint64_t>>();
-            auto stream = co_await ps1.begin();
+            Stream<uint64_t> empty = std::make_unique<EmptyIterator<uint64_t>>();
+            auto stream = co_await ps1();
             auto union_stream = set_union(std::move(stream), std::move(empty));
-            co_return co_await paginated_iterator_to_vector(union_stream);
+            co_return co_await stream_to_vector(union_stream);
         };
         PageUint64List v{{1, 2, 3}, {4, 5, 6}, {7, 8}};
         TestPaginatorUint64 paginator{v};
@@ -367,11 +367,11 @@ TEST_CASE_METHOD(PaginatedSequenceTest, "paginated_uint64_sequence: nested union
     }
     SECTION("nesting streams") {
         const auto nested_union = [&](std::vector<PaginatedUint64> ps_list) -> Task<std::vector<uint64_t>> {
-            PaginatedStream<uint64_t> union_stream;
+            Stream<uint64_t> union_stream;
             for (auto& ps : ps_list) {
-                union_stream = set_union(std::move(union_stream), co_await ps.begin());
+                union_stream = set_union(std::move(union_stream), co_await ps());
             }
-            co_return co_await paginated_iterator_to_vector(union_stream);
+            co_return co_await stream_to_vector(union_stream);
         };
         CHECK(spawn_and_wait(nested_union(std::vector<PaginatedUint64>{})).empty());
     }

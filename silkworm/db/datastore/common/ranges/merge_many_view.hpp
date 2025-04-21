@@ -43,13 +43,10 @@ class MergeManyView : public std::ranges::view_interface<MergeManyView<Range, Ra
         using pointer = std::remove_reference_t<reference>*;
 
         Iterator() = default;
-        Iterator(
-            Ranges& ranges,
-            const Comp* comp, Proj proj)
-            : ranges_{vector_from_range(ranges)},
-              comp_{comp},
+        Iterator(std::vector<Range>& ranges, const Comp* comp, Proj proj)
+            : comp_{comp},
               proj_{std::move(proj)} {
-            for (Range& range : ranges_) {
+            for (Range& range : ranges) {
                 iterators_.emplace_back(std::ranges::begin(range));
                 sentinels_.emplace_back(std::ranges::end(range));
             }
@@ -156,7 +153,6 @@ class MergeManyView : public std::ranges::view_interface<MergeManyView<Range, Ra
             return std::ranges::iter_move(iterators_[i]);
         }
 
-        std::vector<Range> ranges_;
         std::vector<RangeIterator> iterators_;
         std::vector<RangeSentinel> sentinels_;
         const Comp* comp_{nullptr};
@@ -170,7 +166,7 @@ class MergeManyView : public std::ranges::view_interface<MergeManyView<Range, Ra
     MergeManyView(
         Ranges ranges,
         Comp comp, Proj proj)
-        : ranges_{std::move(ranges)},
+        : ranges_{vector_from_range(std::move(ranges))},
           comp_{std::move(comp)},
           proj_{std::move(proj)} {}
     MergeManyView() = default;
@@ -182,7 +178,7 @@ class MergeManyView : public std::ranges::view_interface<MergeManyView<Range, Ra
     std::default_sentinel_t end() const { return std::default_sentinel; }
 
   private:
-    Ranges ranges_;
+    std::vector<Range> ranges_;
     Comp comp_;
     Proj proj_;
 };

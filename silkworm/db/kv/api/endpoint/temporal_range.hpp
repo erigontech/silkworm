@@ -9,7 +9,7 @@
 #include <silkworm/core/common/bytes.hpp>
 
 #include "common.hpp"
-#include "paginated_sequence.hpp"
+#include "sequence.hpp"
 
 namespace silkworm::db::kv::api {
 
@@ -79,11 +79,20 @@ struct DomainRangeRequest {
     int64_t limit{kUnlimited};
     uint32_t page_size{0};
     std::string page_token;
+    bool skip_empty_values{false};
 };
 
 using DomainRangeResult = RangeResult;
 
-using PaginatedTimestamps = PaginatedSequence<Timestamp>;
-using PaginatedKeysValues = PaginatedSequencePair<Bytes, Bytes>;
+using RawKeyValue = std::pair<Bytes, Bytes>;
+
+using TimestampStream = Stream<Timestamp>;
+using KeyValueStream = Stream<RawKeyValue>;
+
+using TimestampStreamFactory = StreamFactory<Timestamp>;
+using KeyValueStreamFactory = StreamFactory<RawKeyValue>;
+
+using TimestampStreamReply = StreamReply<Timestamp>;
+using KeyValueStreamReply = StreamReply<RawKeyValue>;
 
 }  // namespace silkworm::db::kv::api

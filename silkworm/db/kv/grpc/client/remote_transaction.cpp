@@ -9,6 +9,7 @@
 #include <silkworm/infra/grpc/common/errors.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
 
+#include "../../api/endpoint/paginated_sequence.hpp"
 #include "endpoint/temporal_point.hpp"
 #include "endpoint/temporal_range.hpp"
 
@@ -144,7 +145,7 @@ Task<api::HistoryPointResult> RemoteTransaction::history_seek(api::HistoryPointR
     }
 }
 
-Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeRequest request) {
+Task<api::TimestampStreamReply> RemoteTransaction::index_range(api::IndexRangeRequest request) {
     auto paginator = [&, request = std::move(request)](api::PaginatedTimestamps::PageToken page_token) mutable -> Task<api::PaginatedTimestamps::PageResult> {
         request.tx_id = tx_id_;
         request.page_token = std::move(page_token);
@@ -159,10 +160,10 @@ Task<api::PaginatedTimestamps> RemoteTransaction::index_range(api::IndexRangeReq
             throw boost::system::system_error{rpc::to_system_code(gse.status().error_code())};
         }
     };
-    co_return api::PaginatedTimestamps{std::move(paginator)};
+    co_return api::TimestampStreamReply{api::PaginatedTimestamps{std::move(paginator)}};
 }
 
-Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRangeRequest request) {
+Task<api::KeyValueStreamReply> RemoteTransaction::history_range(api::HistoryRangeRequest request) {
     auto paginator = [&, request = std::move(request)](api::PaginatedKeysValues::PageToken page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         request.tx_id = tx_id_;
         request.page_token = std::move(page_token);
@@ -177,10 +178,10 @@ Task<api::PaginatedKeysValues> RemoteTransaction::history_range(api::HistoryRang
             throw boost::system::system_error{rpc::to_system_code(gse.status().error_code())};
         }
     };
-    co_return api::PaginatedKeysValues{std::move(paginator)};
+    co_return api::KeyValueStreamReply{api::PaginatedKeysValues{std::move(paginator)}};
 }
 
-Task<api::PaginatedKeysValues> RemoteTransaction::range_as_of(api::DomainRangeRequest request) {
+Task<api::KeyValueStreamReply> RemoteTransaction::range_as_of(api::DomainRangeRequest request) {
     auto paginator = [&, request = std::move(request)](api::PaginatedKeysValues::PageToken page_token) mutable -> Task<api::PaginatedKeysValues::PageResult> {
         request.tx_id = tx_id_;
         request.page_token = std::move(page_token);
@@ -195,7 +196,7 @@ Task<api::PaginatedKeysValues> RemoteTransaction::range_as_of(api::DomainRangeRe
             throw boost::system::system_error{rpc::to_system_code(gse.status().error_code())};
         }
     };
-    co_return api::PaginatedKeysValues{std::move(paginator)};
+    co_return api::KeyValueStreamReply{api::PaginatedKeysValues{std::move(paginator)}};
 }
 
 }  // namespace silkworm::db::kv::grpc::client

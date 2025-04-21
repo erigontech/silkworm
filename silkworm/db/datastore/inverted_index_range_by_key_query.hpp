@@ -54,4 +54,10 @@ struct InvertedIndexRangeByKeyQuery {
     snapshots::InvertedIndexRangeByKeyQuery<TKeyEncoder2> query2_;
 };
 
+template <kvdb::EncoderConcept TKeyEncoder1, snapshots::EncoderConcept TKeyEncoder2>
+using InvertedIndexRangeByKeyQueryResult = decltype(std::declval<InvertedIndexRangeByKeyQuery<TKeyEncoder1, TKeyEncoder2>>().exec(
+    std::declval<typename InvertedIndexRangeByKeyQuery<TKeyEncoder1, TKeyEncoder2>::Key>(),
+    std::declval<TimestampRange>(),
+    std::declval<bool>()));
+
 }  // namespace silkworm::datastore

@@ -126,6 +126,7 @@ struct HistoryRangeByKeysQuery {
         }
 
         auto before_key_end_predicate = [key_end = std::move(key_end)](const std::shared_ptr<ROCursor>& cursor) {
+            if (key_end.empty()) return true;
             auto result = cursor->current();
             SILKWORM_ASSERT(result);
             return from_slice(result.key) < ByteView{key_end};

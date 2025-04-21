@@ -12,6 +12,7 @@ namespace silkworm::views {
 
 static_assert(std::ranges::input_range<MergeManyView<std::vector<std::vector<int>>>>);
 static_assert(std::ranges::view<MergeManyView<std::vector<std::vector<int>>>>);
+static_assert(std::ranges::view<std::ranges::take_view<MergeManyView<std::vector<std::vector<int>>>>>);
 
 template <std::ranges::input_range TRange>
 std::vector<TRange> ranges(TRange r1, TRange r2) {

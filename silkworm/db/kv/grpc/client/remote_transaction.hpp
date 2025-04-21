@@ -10,8 +10,11 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <agrpc/client_rpc.hpp>
 #include <agrpc/grpc_context.hpp>
+#pragma GCC diagnostic pop
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/db/chain/providers.hpp>
@@ -37,9 +40,9 @@ class RemoteTransaction : public api::BaseTransaction {
 
     Task<void> open() override;
 
-    Task<std::shared_ptr<api::Cursor>> cursor(const std::string& table) override;
+    Task<std::shared_ptr<api::Cursor>> cursor(std::string_view table) override;
 
-    Task<std::shared_ptr<api::CursorDupSort>> cursor_dup_sort(const std::string& table) override;
+    Task<std::shared_ptr<api::CursorDupSort>> cursor_dup_sort(std::string_view table) override;
 
     std::shared_ptr<chain::ChainStorage> make_storage() override;
 
@@ -66,7 +69,7 @@ class RemoteTransaction : public api::BaseTransaction {
     Task<api::PaginatedKeysValues> range_as_of(api::DomainRangeRequest request) override;
 
   private:
-    Task<std::shared_ptr<api::CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
+    Task<std::shared_ptr<api::CursorDupSort>> get_cursor(std::string_view table_view, bool is_cursor_dup_sort);
 
     chain::Providers providers_;
     std::map<std::string, std::shared_ptr<api::CursorDupSort>> cursors_;

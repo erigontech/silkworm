@@ -14,7 +14,6 @@
 #include <silkworm/core/common/bytes_to_string.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/db/chain/remote_chain_storage.hpp>
-#include <silkworm/db/kv/api/endpoint/key_value.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -56,17 +55,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
 
     SECTION("precompiled contract failure") {
         db::kv::api::GetAsOfRequest query1{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query2{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query3{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818874,
         };
@@ -195,17 +194,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
     SECTION("Call: full output") {
         db::kv::api::GetAsOfRequest query1{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query2{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query3{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818874,
         };
@@ -384,17 +383,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
     SECTION("Call: no vmTrace") {
         db::kv::api::GetAsOfRequest query1{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query2{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query3{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818874,
         };
@@ -510,17 +509,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
     SECTION("Call: no trace") {
         db::kv::api::GetAsOfRequest query1{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query2{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query3{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818874,
         };
@@ -682,17 +681,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
     SECTION("Call: no stateDiff") {
         db::kv::api::GetAsOfRequest query1{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query2{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query3{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818874,
         };
@@ -832,17 +831,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
     SECTION("Call: no vmTrace, trace and stateDiff") {
         db::kv::api::GetAsOfRequest query1{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query2{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query3{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818874,
         };
@@ -912,17 +911,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
 
     SECTION("Call: TO present") {
         db::kv::api::GetAsOfRequest query1{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query2{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query3{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818874,
         };
@@ -1055,17 +1054,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
     static Bytes account_history_value3{*silkworm::from_hex("000944ed67f28fd50bb8e90000")};
 
     db::kv::api::GetAsOfRequest query1{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key1)),
         .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfRequest query2{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key2)),
         .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfRequest query3{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key3)),
         .timestamp = 244087591818874,
     };
@@ -1244,17 +1243,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
 
     SECTION("Call: full output") {
         db::kv::api::GetAsOfRequest query1{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key1)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query2{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key2)),
             .timestamp = 244087591818874,
         };
         db::kv::api::GetAsOfRequest query3{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(bytes_to_address(account_history_key3)),
             .timestamp = 244087591818874,
         };
@@ -1447,17 +1446,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
     static Bytes account_history_value3{*silkworm::from_hex("0008028ded68c33d14010000")};
 
     db::kv::api::GetAsOfRequest query1{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key1)),
         .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfRequest query2{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key2)),
         .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfRequest query3{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key3)),
         .timestamp = 244087591818874,
     };
@@ -1897,17 +1896,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     static Bytes account_history_value3{*silkworm::from_hex("0127080334e1d62a9e34400000")};
 
     db::kv::api::GetAsOfRequest query1{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key1)),
         .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfRequest query2{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key2)),
         .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfRequest query3{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key3)),
         .timestamp = 244087591818874,
     };
@@ -2004,17 +2003,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
     static Bytes account_history_value3{*silkworm::from_hex("0008028ded68c33d14010000")};
 
     db::kv::api::GetAsOfRequest query1{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key1)),
         .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfRequest query2{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key2)),
         .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfRequest query3{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key3)),
         .timestamp = 244087591818874,
     };
@@ -2924,17 +2923,17 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     static Bytes account_history_value3{*silkworm::from_hex("0127080334e1d62a9e34400000")};
 
     db::kv::api::GetAsOfRequest query1{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key1)),
         .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfRequest query2{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key2)),
         .timestamp = 244087591818874,
     };
     db::kv::api::GetAsOfRequest query3{
-        .table = table::kAccountDomain,
+        .table = std::string{table::kAccountDomain},
         .key = db::account_domain_key(bytes_to_address(account_history_key3)),
         .timestamp = 244087591818874,
     };

@@ -5,20 +5,12 @@
 add_subdirectory(test)
 
 if(NOT SILKWORM_CORE_ONLY)
-  # C API
-  add_subdirectory(capi)
-
   # Benchmarks
   add_subdirectory(benchmark)
 
   if(SILKWORM_USE_MIMALLOC)
     find_package(mimalloc REQUIRED)
   endif()
-
-  # Development utility tools
-  add_subdirectory(dev)
-
-  # Silkworm runnable components
 
   # [=] "all-in-one" Silkworm component
   # cmake-format: off

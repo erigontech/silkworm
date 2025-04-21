@@ -24,7 +24,7 @@ class Cursor {
 
     virtual uint32_t cursor_id() const = 0;
 
-    virtual Task<void> open_cursor(const std::string& table_name, bool is_dup_sorted) = 0;
+    virtual Task<void> open_cursor(std::string_view table_name, bool is_dup_sorted) = 0;
 
     virtual Task<KeyValue> seek(ByteView key) = 0;
 

@@ -70,7 +70,7 @@ class OtsRpcApi {
 
   private:
     static IssuanceDetails get_issuance(const silkworm::ChainConfig& chain_config, const silkworm::BlockWithHash& block);
-    static intx::uint256 get_block_fees(const silkworm::BlockWithHash& block, const std::vector<Receipt>& receipts);
+    static intx::uint256 get_block_fees(const std::vector<std::shared_ptr<Receipt>>& receipts);
 
     Task<TransactionsWithReceipts> collect_transactions_with_receipts(
         db::kv::api::Transaction& tx,

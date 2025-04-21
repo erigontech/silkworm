@@ -30,6 +30,7 @@
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/state/schema_config.hpp>
+#include <silkworm/execution/block_executor.hpp>
 #include <silkworm/execution/domain_state.hpp>
 #include <silkworm/infra/common/bounded_buffer.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -38,7 +39,6 @@
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/node/execution/block/block_executor.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/rpc/daemon.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
@@ -684,8 +684,19 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
 
     try {
         processor.flush_state();
-        handle->transactions_in_current_block.push_back({txn_id_, transaction});
-        handle->receipts_in_current_block.push_back(receipt);
+        SilkwormInstance::ExecutionResult exec_result{
+            .tx_id = txn_id_,
+            .blob_gas_used = transaction.total_blob_gas(),
+            .receipt = receipt,
+            .log_index = 0};
+
+        if (!handle->executions_in_block.empty()) {
+            const auto& prev = handle->executions_in_block.back();
+            exec_result.blob_gas_used += prev.blob_gas_used;
+            exec_result.receipt.cumulative_gas_used += prev.receipt.cumulative_gas_used;
+            exec_result.log_index += std::size(prev.receipt.logs);
+        }
+        handle->executions_in_block.push_back(std::move(exec_result));
     } catch (const std::exception& ex) {
         SILK_ERROR << "transaction post-processing failed: " << ex.what();
         return SILKWORM_INTERNAL_ERROR;
@@ -714,11 +725,8 @@ SILKWORM_EXPORT int silkworm_block_exec_start(SilkwormHandle handle, MDBX_txn* m
 
     // TODO: cache block here for future reuse with transactions within same (block_exec_start, block_exec_end) range
 
-    // Clear any receipts created in previous blocks
-    handle->receipts_in_current_block.clear();
-
-    // Clear any transactions executed in previous blocks
-    handle->transactions_in_current_block.clear();
+    // Clear any transactoins and receipts created in previous blocks
+    handle->executions_in_block.clear();
 
     return SILKWORM_OK;
 }
@@ -732,22 +740,41 @@ SILKWORM_EXPORT int silkworm_block_exec_end(SilkwormHandle handle, MDBX_txn* mdb
         return SILKWORM_INVALID_MDBX_TXN;
     }
 
-    SILKWORM_ASSERT(std::size(handle->receipts_in_current_block) == std::size(handle->transactions_in_current_block));
+    // Temporary db used for silkworm->erigon communication
+    auto unmanaged_in_mem_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_in_mem_temp_tx};
+    auto rw_in_mem_cursor = unmanaged_in_mem_tx.rw_cursor(db::table::kBlockReceipts);
 
-    auto unmanaged_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_in_mem_temp_tx};
-    auto rw_cursor = unmanaged_tx.rw_cursor(db::table::kBlockReceipts);
-    uint64_t receipt_idx = 0;
-    for (const auto& receipt : handle->receipts_in_current_block) {
+    // Persistent db used for shared domains
+    auto unmanaged_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_tx};
+    auto unmanaged_env = silkworm::datastore::kvdb::EnvUnmanaged{::mdbx_txn_env(mdbx_tx)};
+    auto chain_db = db::DataStore::make_chaindata_database(std::move(unmanaged_env));
+    auto db_ref = chain_db.ref();
+
+    for (uint64_t index = 0; index < std::size(handle->executions_in_block); ++index) {
+        const auto& receipt = handle->executions_in_block[index].receipt;
+
         Bytes rlp_encoded;
         rlp::encode(rlp_encoded, receipt);
 
         Bytes key(sizeof(int64_t), '\0');
 
-        endian::store_big_u64(key.data(), receipt_idx);
+        endian::store_big_u64(key.data(), index);
 
-        rw_cursor->insert(datastore::kvdb::Slice(key), datastore::kvdb::Slice(rlp_encoded));
+        rw_in_mem_cursor->insert(datastore::kvdb::Slice(key), datastore::kvdb::Slice(rlp_encoded));
 
-        receipt_idx++;
+        const auto& tx_id = handle->executions_in_block[index].tx_id;
+
+        execution::DomainState state{
+            tx_id,
+            unmanaged_tx,
+            db_ref,
+            *handle->blocks_repository,
+            *handle->state_repository_latest,
+        };
+
+        const auto log_index = handle->executions_in_block[index].log_index;
+        const auto blob_gas_used = handle->executions_in_block[index].blob_gas_used;
+        state.insert_receipt(receipt, log_index, blob_gas_used);
     }
 
     return SILKWORM_OK;

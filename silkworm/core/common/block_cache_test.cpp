@@ -32,8 +32,8 @@ TEST_CASE("insert entry in cache(lock)", "[rpc][commands][block_cache]") {
     auto block1 = std::make_shared<silkworm::BlockWithHash>();
     block_cache.insert(bh1, block1);
 
-    ret_block_option = block_cache.get(bh1);
-    CHECK((*ret_block_option)->hash == block1->hash);
+    auto ret_block = block_cache.get(bh1);
+    CHECK(ret_block->hash == block1->hash);
 }
 
 TEST_CASE("insert entry in cache(no-lock)", "[rpc][commands][block_cache]") {
@@ -45,8 +45,8 @@ TEST_CASE("insert entry in cache(no-lock)", "[rpc][commands][block_cache]") {
     auto block1 = std::make_shared<silkworm::BlockWithHash>();
     block_cache.insert(bh1, block1);
 
-    ret_block_option = block_cache.get(bh1);
-    CHECK((*ret_block_option)->hash == block1->hash);
+    auto ret_block = block_cache.get(bh1);
+    CHECK(ret_block->hash == block1->hash);
 }
 
 }  // namespace silkworm

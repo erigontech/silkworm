@@ -48,12 +48,12 @@ static const silkworm::ByteView kExecutionStage{stages::kExecution};
 // 1) passing const char* constants directly where const std::string& is expected creates references to temporary objects
 // into the coroutine frame
 // 2) when the coroutine is actually executed such references refer to destroyed stack objects, hence stack-use-after-scope error
-static const std::string kEarliest = kEarliestBlockId;
-static const std::string kLatest = kLatestBlockId;
-static const std::string kLatestExecuted = kLatestExecutedBlockId;
-static const std::string kPending = kPendingBlockId;
-static const std::string kFinalized = kFinalizedBlockId;
-static const std::string kSafe = kSafeBlockId;
+static constexpr std::string_view kEarliest = kEarliestBlockId;
+static constexpr std::string_view kLatest = kLatestBlockId;
+static constexpr std::string_view kLatestExecuted = kLatestExecutedBlockId;
+static constexpr std::string_view kPending = kPendingBlockId;
+static constexpr std::string_view kFinalized = kFinalizedBlockId;
+static constexpr std::string_view kSafe = kSafeBlockId;
 
 TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
     MockTransaction transaction;
@@ -130,21 +130,21 @@ TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
     }
 
     SECTION("block_num in hex") {
-        static const std::string kBlockIdHex = "0x12345";
+        static constexpr std::string_view kBlockIdHex = "0x12345";
         auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kBlockIdHex, /*latest_required=*/false), boost::asio::use_future);
         auto [block_num, ignore] = result.get();
         CHECK(block_num == 0x12345);
     }
 
     SECTION("block_num in dec") {
-        static const std::string kBlockIdDec = "67890";
+        static constexpr std::string_view kBlockIdDec = "67890";
         auto result = boost::asio::co_spawn(pool, block_reader.get_block_num(kBlockIdDec, /*latest_required=*/false), boost::asio::use_future);
         auto [block_num, ignore] = result.get();
         CHECK(block_num == 67890);
     }
 
     SECTION("block_num in hex & latest true") {
-        static const std::string kBlockIdHex = "0x1234";
+        static constexpr std::string_view kBlockIdHex = "0x1234";
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("0000000000001234")};
         }));
@@ -155,7 +155,7 @@ TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
     }
 
     SECTION("block_num in hex & latest false") {
-        static const std::string kBlockIdHex = "0x1234";
+        static constexpr std::string_view kBlockIdHex = "0x1234";
         EXPECT_CALL(transaction, get(table::kSyncStageProgressName, kExecutionStage)).WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
             co_return KeyValue{silkworm::Bytes{}, *silkworm::from_hex("0000000000001235")};
         }));

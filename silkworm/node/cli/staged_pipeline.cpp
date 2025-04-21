@@ -152,7 +152,7 @@ struct StageOrderCompare {
         add_after_history_index(stages_forward_order, db::stages::kAccountHistoryIndexKey);
         return stages_forward_order;
     }
-    static void add_after_history_index(stagedsync::ExecutionPipeline::StageNames& forward_stages, const char* stage) {
+    static void add_after_history_index(stagedsync::ExecutionPipeline::StageNames& forward_stages, std::string_view stage) {
         auto history_index_it = std::ranges::find(forward_stages, db::stages::kHistoryIndexKey);
         forward_stages.insert(std::next(history_index_it), stage);
     }
@@ -427,7 +427,7 @@ void unwind(kvdb::EnvConfig& config, std::unique_ptr<DataDirectory>&& data_direc
 
         // Remove the block bodies up to the unwind point
         const auto body_cursor{txn.rw_cursor(db::table::kBlockBodies)};
-        const auto start_key{db::block_key(unwind_point)};
+        const auto start_key{db::block_key(unwind_point + 1)};
         std::size_t erased_bodies{0};
         auto body_data{body_cursor->lower_bound(kvdb::to_slice(start_key), /*throw_notfound=*/false)};
         while (body_data) {
@@ -657,7 +657,7 @@ void reset_to_download(const kvdb::EnvConfig& config, const bool keep_senders, c
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void TxLookup stage
-    SILK_INFO_M(db::stages::kTxLookupKey, {"table", db::table::kTxLookup.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kTxLookupKey, {"table", db::table::kTxLookup.name_str()}) << "truncating ...";
     kvdb::PooledCursor source(*txn, db::table::kTxLookup);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kTxLookupKey, 0);
@@ -667,10 +667,10 @@ void reset_to_download(const kvdb::EnvConfig& config, const bool keep_senders, c
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void CallTraces stage
-    SILK_INFO_M(db::stages::kCallTracesKey, {"table", db::table::kCallFromIndex.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kCallTracesKey, {"table", db::table::kCallFromIndex.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kCallFromIndex);
     txn->clear_map(source.map());
-    SILK_INFO_M(db::stages::kCallTracesKey, {"table", db::table::kCallToIndex.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kCallTracesKey, {"table", db::table::kCallToIndex.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kCallToIndex);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kCallTracesKey, 0);
@@ -680,10 +680,10 @@ void reset_to_download(const kvdb::EnvConfig& config, const bool keep_senders, c
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void LogIndex stage
-    SILK_INFO_M(db::stages::kLogIndexKey, {"table", db::table::kLogTopicIndex.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kLogIndexKey, {"table", db::table::kLogTopicIndex.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kLogTopicIndex);
     txn->clear_map(source.map());
-    SILK_INFO_M(db::stages::kLogIndexKey, {"table", db::table::kLogAddressIndex.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kLogIndexKey, {"table", db::table::kLogAddressIndex.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kLogAddressIndex);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kLogIndexKey, 0);
@@ -693,10 +693,10 @@ void reset_to_download(const kvdb::EnvConfig& config, const bool keep_senders, c
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void HistoryIndex (StorageHistoryIndex + AccountHistoryIndex) stage
-    SILK_INFO_M(db::stages::kStorageHistoryIndexKey, {"table", db::table::kStorageHistory.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kStorageHistoryIndexKey, {"table", db::table::kStorageHistory.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kStorageHistory);
     txn->clear_map(source.map());
-    SILK_INFO_M(db::stages::kAccountHistoryIndexKey, {"table", db::table::kAccountHistory.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kAccountHistoryIndexKey, {"table", db::table::kAccountHistory.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kAccountHistory);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kStorageHistoryIndexKey, 0);
@@ -709,13 +709,13 @@ void reset_to_download(const kvdb::EnvConfig& config, const bool keep_senders, c
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void HashState stage
-    SILK_INFO_M(db::stages::kHashStateKey, {"table", db::table::kHashedCodeHash.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kHashStateKey, {"table", db::table::kHashedCodeHash.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kHashedCodeHash);
     txn->clear_map(source.map());
-    SILK_INFO_M(db::stages::kHashStateKey, {"table", db::table::kHashedStorage.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kHashStateKey, {"table", db::table::kHashedStorage.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kHashedStorage);
     txn->clear_map(source.map());
-    SILK_INFO_M(db::stages::kHashStateKey, {"table", db::table::kHashedAccounts.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kHashStateKey, {"table", db::table::kHashedAccounts.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kHashedAccounts);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kHashStateKey, 0);
@@ -725,10 +725,10 @@ void reset_to_download(const kvdb::EnvConfig& config, const bool keep_senders, c
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void Intermediate Hashes stage
-    SILK_INFO_M(db::stages::kIntermediateHashesKey, {"table", db::table::kTrieOfStorage.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kIntermediateHashesKey, {"table", db::table::kTrieOfStorage.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kTrieOfStorage);
     txn->clear_map(source.map());
-    SILK_INFO_M(db::stages::kIntermediateHashesKey, {"table", db::table::kTrieOfAccounts.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kIntermediateHashesKey, {"table", db::table::kTrieOfAccounts.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kTrieOfAccounts);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, 0);
@@ -737,37 +737,37 @@ void reset_to_download(const kvdb::EnvConfig& config, const bool keep_senders, c
     if (SignalHandler::signalled()) throw std::runtime_error("Aborted");
 
     // Void Execution stage
-    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kBlockReceipts.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kBlockReceipts.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kBlockReceipts);
     txn->clear_map(source.map());
-    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kLogs.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kLogs.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kLogs);
     txn->clear_map(source.map());
-    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kIncarnationMap.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kIncarnationMap.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kIncarnationMap);
     txn->clear_map(source.map());
-    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kCode.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kCode.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kCode);
     txn->clear_map(source.map());
-    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kPlainCodeHash.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kPlainCodeHash.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kPlainCodeHash);
     txn->clear_map(source.map());
-    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kAccountChangeSet.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kAccountChangeSet.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kAccountChangeSet);
     txn->clear_map(source.map());
-    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kStorageChangeSet.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kStorageChangeSet.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kStorageChangeSet);
     txn->clear_map(source.map());
-    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kCallTraceSet.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kCallTraceSet.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kCallTraceSet);
     txn->clear_map(source.map());
-    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kPlainState.name}) << "truncating ...";
+    SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kPlainState.name_str()}) << "truncating ...";
     source.bind(*txn, db::table::kPlainState);
     txn->clear_map(source.map());
     txn.commit_and_renew();
 
     {
-        SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kPlainState.name}) << "redo genesis allocations ...";
+        SILK_INFO_M(db::stages::kExecutionKey, {"table", db::table::kPlainState.name_str()}) << "redo genesis allocations ...";
         // Read chain ID from database
         const auto chain_config{db::read_chain_config(txn)};
         ensure(chain_config.has_value(), "cannot read chain configuration from database");
@@ -787,7 +787,7 @@ void reset_to_download(const kvdb::EnvConfig& config, const bool keep_senders, c
 
     if (!keep_senders) {
         // Void Senders stage
-        SILK_INFO_M(db::stages::kSendersKey, {"table", db::table::kSenders.name}) << "truncating ...";
+        SILK_INFO_M(db::stages::kSendersKey, {"table", db::table::kSenders.name_str()}) << "truncating ...";
         source.bind(*txn, db::table::kSenders);
         txn->clear_map(source.map());
         db::stages::write_stage_progress(txn, db::stages::kSendersKey, 0);
@@ -1212,11 +1212,11 @@ void trie_reset(const kvdb::EnvConfig& config, bool always_yes) {
 
     auto env{open_env(config)};
     kvdb::RWTxnManaged txn{env};
-    SILK_INFO << "Clearing ..." << log::Args{"table", db::table::kTrieOfAccounts.name};
-    txn->clear_map(db::table::kTrieOfAccounts.name);
-    SILK_INFO << "Clearing ..." << log::Args{"table", db::table::kTrieOfStorage.name};
-    txn->clear_map(db::table::kTrieOfStorage.name);
-    SILK_INFO << "Setting progress ..." << log::Args{"key", db::stages::kIntermediateHashesKey, "value", "0"};
+    SILK_INFO << "Clearing ..." << log::Args{"table", db::table::kTrieOfAccounts.name_str()};
+    txn->clear_map(db::table::kTrieOfAccounts.name_str());
+    SILK_INFO << "Clearing ..." << log::Args{"table", db::table::kTrieOfStorage.name_str()};
+    txn->clear_map(db::table::kTrieOfStorage.name_str());
+    SILK_INFO << "Setting progress ..." << log::Args{"key", std::string{db::stages::kIntermediateHashesKey}, "value", "0"};
     db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, 0);
     SILK_INFO << "Committing ..." << log::Args{};
     txn.commit_and_renew();

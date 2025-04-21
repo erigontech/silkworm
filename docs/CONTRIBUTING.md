@@ -95,7 +95,7 @@ If you need to update the list of builtin snapshots in Silkworm, the following p
 * update `erigon-snapshot` submodule to the new commit
 * generate the embedded C++ code bindings for predefined snapshots by executing from project home folder:
 ```
-<build_folder>/cmd/dev/embed_toml -i third_party/erigon-snapshot -o silkworm/db/datastore/snapshots/config/chains
+<build_folder>/silkworm/dev/cli/embed_toml -i third_party/erigon-snapshot -o silkworm/db/datastore/snapshots/config/chains
 ```
 
 
@@ -109,7 +109,7 @@ If you need to expand or modify the network configurations used by Silkworm, the
 1. add new or edit existing JSON genesis files in `silkworm/core/chain` following the naming convention `genesis_<network>.json`
 2. generate the C++ code bindings for JSON genesis files by executing from project home folder:
 ```
-<build_folder>/cmd/dev/embed_json -i silkworm/core/chain -o silkworm/core/chain -w
+<build_folder>/silkworm/dev/cli/embed_json -i silkworm/core/chain -o silkworm/core/chain -w
 ```
 
 
@@ -126,7 +126,7 @@ If you need to update the official specification imported by Silkworm, the follo
 3. copy and rename the generated JSON specification file into `silkworm/rpc/json_rpc/specification.json`, resolving the conflicts that may arise 
 4. generate the C++ code bindings for JSON specification by executing from project home folder:
 ```
-<build_folder>/cmd/dev/embed_json -i silkworm/rpc/json_rpc -o silkworm/rpc/json_rpc -p specification -n silkworm::rpc::json_rpc -w
+<build_folder>/silkworm/dev/cli/embed_json -i silkworm/rpc/json_rpc -o silkworm/rpc/json_rpc -p specification -n silkworm::rpc::json_rpc -w
 ```
 
 ### Patch Local Specification

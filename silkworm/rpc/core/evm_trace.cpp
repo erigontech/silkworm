@@ -580,7 +580,7 @@ void push_memory_offset_len(std::uint8_t op_code, const evmone::uint256* stack, 
 }
 
 std::string to_string(intx::uint256 value) {
-    static constexpr const char* kPadding = "0x0000000000000000000000000000000000000000000000000000000000000000";
+    static constexpr std::string_view kPadding = "0x0000000000000000000000000000000000000000000000000000000000000000";
     const auto out = intx::to_string(value, 16);
     std::string padding = std::string{kPadding};
     return padding.substr(0, padding.size() - out.size()) + out;
@@ -1561,11 +1561,10 @@ Task<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& 
     co_return trace_calls_result;
 }
 
-Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address) {
+Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address, const silkworm::Transaction& transaction, TxnId creation_txn_id) {
     auto block_num = block.header.number;
-    const auto& transactions = block.transactions;
 
-    SILK_TRACE << "trace_deploy_transaction: block_num: " << std::dec << block_num << " #txns: " << transactions.size();
+    SILK_DEBUG << "trace_deploy_transaction: block_num: " << std::dec << block_num << " transaction.hash: " << silkworm::to_hex(transaction.hash());
 
     const auto chain_config = co_await chain_storage_.read_chain_config();
     auto current_executor = co_await boost::asio::this_coro::executor;
@@ -1577,22 +1576,17 @@ Task<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkwo
         auto state = state_factory.make(current_executor, chain_storage_, txn_id);
         silkworm::IntraBlockState initial_ibs{*state};
 
-        auto curr_state = state_factory.make(current_executor, chain_storage_, txn_id);
+        auto curr_state = state_factory.make(current_executor, chain_storage_, creation_txn_id);
         EVMExecutor executor{block, chain_config, workers_, curr_state};
 
         TraceDeployResult result;
 
         auto create_tracer = std::make_shared<trace::CreateTracer>(contract_address, initial_ibs);
         Tracers tracers{create_tracer};
-        for (size_t index = 0; index < transactions.size(); ++index) {
-            const silkworm::Transaction& transaction{block.transactions[index]};
-            executor.call(transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
-            executor.reset();
-            if (create_tracer->found()) {
-                result.transaction_hash = transaction.hash();
-                result.contract_creator = transaction.sender();
-                break;
-            }
+        executor.call(transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+        if (create_tracer->found()) {
+            result.transaction_hash = transaction.hash();
+            result.contract_creator = transaction.sender();
         }
         return result;
     });
@@ -1719,45 +1713,6 @@ Task<TraceOperationsResult> TraceCallExecutor::trace_operations(const Transactio
     co_return trace_op_result;
 }
 
-Task<bool> TraceCallExecutor::trace_touch_block(const silkworm::BlockWithHash& block_with_hash,
-                                                const evmc::address& address, uint64_t block_size,
-                                                const std::vector<Receipt>& receipts,
-                                                TransactionsWithReceipts& results) {
-    auto& block = block_with_hash.block;
-    auto block_num = block.header.number;
-    auto& hash = block_with_hash.hash;
-
-    const auto chain_config = co_await chain_storage_.read_chain_config();
-    auto current_executor = co_await boost::asio::this_coro::executor;
-    execution::StateFactory state_factory{tx_};
-    const auto txn_id = co_await tx_.user_txn_id_at(block_num);
-
-    const bool result = co_await async_task(workers_.executor(), [&]() -> bool {
-        auto state = state_factory.make(current_executor, chain_storage_, txn_id);
-        silkworm::IntraBlockState initial_ibs{*state};
-
-        auto curr_state = execution::StateFactory{tx_}.make(current_executor, chain_storage_, txn_id);
-        EVMExecutor executor{block, chain_config, workers_, curr_state};
-
-        for (size_t i = 0; i < block.transactions.size(); ++i) {
-            auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
-            Tracers tracers{tracer};
-            const auto& txn = block.transactions.at(i);
-            executor.call(txn, tracers, /*refund=*/true, /*gas_bailout=*/false);
-
-            if (tracer->found()) {
-                const BlockDetails block_details{block_size, hash, block.header, block.transactions.size(), block.ommers};
-                results.transactions.push_back(txn);
-                results.receipts.push_back(receipts.at(i));
-                results.blocks.push_back(block_details);
-            }
-        }
-        return result;
-    });
-
-    co_return result;
-}
-
 Task<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream& stream) {
     SILK_TRACE << "TraceCallExecutor::trace_filter: filter " << trace_filter;
 
@@ -1870,10 +1825,6 @@ Task<TraceCallResult> TraceCallExecutor::execute(
 }
 
 void CreateTracer::on_execution_start(evmc_revision, const evmc_message& msg, evmone::bytes_view code) noexcept {
-    if (found_) {
-        return;
-    }
-    auto sender = evmc::address{msg.sender};
     auto recipient = evmc::address{msg.recipient};
     auto code_address = evmc::address{msg.code_address};
 
@@ -1887,7 +1838,6 @@ void CreateTracer::on_execution_start(evmc_revision, const evmc_message& msg, ev
                << " create: " << create
                << ", msg.depth: " << msg.depth
                << ", msg.kind: " << msg.kind
-               << ", sender: " << sender
                << ", recipient: " << recipient << " (created: " << create << ")"
                << ", code_address: " << code_address
                << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))

@@ -12,7 +12,7 @@ namespace silkworm::db::table {
 void check_or_create_chaindata_tables(RWTxn& txn) {
     for (const auto& config : kChainDataTables) {
         if (has_map(txn, config.name)) {
-            auto table_map{txn->open_map(config.name)};
+            ::mdbx::map_handle table_map = txn->open_map(config.name_str());
             auto table_info{txn->get_handle_info(table_map)};
             auto table_key_mode{table_info.key_mode()};
             auto table_value_mode{table_info.value_mode()};
@@ -23,7 +23,7 @@ void check_or_create_chaindata_tables(RWTxn& txn) {
             continue;
         }
         // Create missing table
-        (void)txn->create_map(config.name, config.key_mode, config.value_mode);  // Will throw if tx is RO
+        (void)txn->create_map(config.name_str(), config.key_mode, config.value_mode);  // Will throw if tx is RO
     }
 
     auto db_schema_version{db::read_schema_version(txn)};
@@ -35,7 +35,7 @@ void check_or_create_chaindata_tables(RWTxn& txn) {
     }
 }
 
-std::optional<MapConfig> get_map_config(const std::string& map_name) {
+std::optional<MapConfig> get_map_config(std::string_view map_name) {
     for (const auto& table_config : kChainDataTables) {
         if (table_config.name == map_name) {
             return table_config;

@@ -16,9 +16,9 @@
 
 namespace {
 #ifdef _WIN32
-const char* kInvalidArgumentMessage = "invalid argument";
+static constexpr std::string_view kInvalidArgumentMessage = "invalid argument";
 #else
-const char* kInvalidArgumentMessage = "Invalid argument";
+static constexpr std::string_view kInvalidArgumentMessage = "Invalid argument";
 #endif
 }  // namespace
 
@@ -118,9 +118,9 @@ TEST_CASE("decode receipts from CBOR 1", "[rpc][ethdb][cbor]") {
     Receipts receipts{};
     CHECK_NOTHROW(cbor_decode(*silkworm::from_hex("818400f60101"), receipts));
     CHECK(receipts.size() == 1);
-    CHECK(receipts[0].type == TransactionType::kLegacy);
-    CHECK(receipts[0].success == 1);
-    CHECK(receipts[0].cumulative_gas_used == 1);
+    CHECK(receipts[0]->type == TransactionType::kLegacy);
+    CHECK(receipts[0]->success == 1);
+    CHECK(receipts[0]->cumulative_gas_used == 1);
 }
 
 TEST_CASE("decode receipts from CBOR 2", "[rpc][ethdb][cbor]") {
@@ -131,12 +131,12 @@ TEST_CASE("decode receipts from CBOR 2", "[rpc][ethdb][cbor]") {
                                   "8400f60101"),
                               receipts));
     CHECK(receipts.size() == 2);
-    CHECK(receipts[0].type == TransactionType::kLegacy);
-    CHECK(receipts[0].success == 1);
-    CHECK(receipts[0].cumulative_gas_used == 1);
-    CHECK(receipts[1].type == TransactionType::kLegacy);
-    CHECK(receipts[1].success == 1);
-    CHECK(receipts[1].cumulative_gas_used == 1);
+    CHECK(receipts[0]->type == TransactionType::kLegacy);
+    CHECK(receipts[0]->success == 1);
+    CHECK(receipts[0]->cumulative_gas_used == 1);
+    CHECK(receipts[1]->type == TransactionType::kLegacy);
+    CHECK(receipts[1]->success == 1);
+    CHECK(receipts[1]->cumulative_gas_used == 1);
 }
 
 TEST_CASE("decode receipts from CBOR 3", "[rpc][ethdb][cbor]") {
@@ -144,12 +144,12 @@ TEST_CASE("decode receipts from CBOR 3", "[rpc][ethdb][cbor]") {
     auto bytes = *silkworm::from_hex("838400f601196d398400f6011a00371b0b8400f6011a003947f4");
     CHECK_NOTHROW(cbor_decode(bytes, receipts));
     CHECK(receipts.size() == 3);
-    CHECK(receipts[0].success == true);
-    CHECK(receipts[0].cumulative_gas_used == 0x6d39);
-    CHECK(receipts[1].success == true);
-    CHECK(receipts[1].cumulative_gas_used == 0x371b0b);
-    CHECK(receipts[2].success == true);
-    CHECK(receipts[2].cumulative_gas_used == 0x3947f4);
+    CHECK(receipts[0]->success == true);
+    CHECK(receipts[0]->cumulative_gas_used == 0x6d39);
+    CHECK(receipts[1]->success == true);
+    CHECK(receipts[1]->cumulative_gas_used == 0x371b0b);
+    CHECK(receipts[2]->success == true);
+    CHECK(receipts[2]->cumulative_gas_used == 0x3947f4);
 }
 
 TEST_CASE("decode receipts from incorrect bytes", "[rpc][ethdb][cbor]") {
@@ -157,7 +157,7 @@ TEST_CASE("decode receipts from incorrect bytes", "[rpc][ethdb][cbor]") {
     const Bytes b1 = *silkworm::from_hex("81");
     CHECK_THROWS(cbor_decode(b1, receipts));
     const Bytes b2 = *silkworm::from_hex("83808040");
-    CHECK_THROWS_MATCHES(cbor_decode(b2, receipts), std::system_error, Message("Receipt CBOR: missing entries: "s + kInvalidArgumentMessage));
+    CHECK_THROWS_MATCHES(cbor_decode(b2, receipts), std::system_error, Message("Receipt CBOR: missing entries: " + std::string{kInvalidArgumentMessage}));
 }
 
 }  // namespace silkworm::rpc

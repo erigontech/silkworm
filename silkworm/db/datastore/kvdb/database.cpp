@@ -36,7 +36,7 @@ void Database::create_tables() {
     for (auto& entity : entities_) {
         for (auto& entry : entity.second) {
             MapConfig& map_config = entry.second;
-            tx->create_map(map_config.name, map_config.key_mode, map_config.value_mode);
+            tx->create_map(map_config.name_str(), map_config.key_mode, map_config.value_mode);
         }
     }
     tx.commit_and_stop();

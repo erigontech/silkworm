@@ -25,7 +25,7 @@ Task<std::optional<Account>> StateReader::read_account(const evmc::address& addr
         result = co_await latest_from_cache(table::kAccountDomain, db::account_domain_key(address));
     } else {
         db::kv::api::GetAsOfRequest request{
-            .table = table::kAccountDomain,
+            .table = std::string{table::kAccountDomain},
             .key = db::account_domain_key(address),
             .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
         };
@@ -55,7 +55,7 @@ Task<evmc::bytes32> StateReader::read_storage(const evmc::address& address,
         result = co_await latest_from_cache(table::kStorageDomain, db::storage_domain_key(address, location_hash));
     } else {
         db::kv::api::GetAsOfRequest request{
-            .table = table::kStorageDomain,
+            .table = std::string{table::kStorageDomain},
             .key = db::storage_domain_key(address, location_hash),
             .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
         };
@@ -79,7 +79,7 @@ Task<std::optional<Bytes>> StateReader::read_code(const evmc::address& address, 
         result = co_await latest_code_from_cache(db::code_domain_key(address));
     } else {
         db::kv::api::GetAsOfRequest request{
-            .table = table::kCodeDomain,
+            .table = std::string{table::kCodeDomain},
             .key = db::code_domain_key(address),
             .timestamp = static_cast<kv::api::Timestamp>(*txn_number_),
         };

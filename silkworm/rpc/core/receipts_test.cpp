@@ -58,7 +58,7 @@ TEST_CASE("read_receipts") {
         const uint64_t block_num{0};
         EXPECT_CALL(transaction, get_one(table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_num), boost::asio::use_future);
-        CHECK(!result.get().has_value());
+        CHECK(result.get() == nullptr);
     }
 
     SECTION("zero receipts") {
@@ -66,9 +66,9 @@ TEST_CASE("read_receipts") {
         EXPECT_CALL(transaction, get_one(table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<silkworm::Bytes> { co_return *silkworm::from_hex("f6"); }));
         auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_num), boost::asio::use_future);
         const auto receipts = result.get();
-        CHECK(receipts.has_value());
+        CHECK(receipts != nullptr);
         if (receipts) {
-            CHECK(receipts.value().empty());
+            CHECK(receipts->empty());
         }
     }
 
@@ -109,7 +109,7 @@ TEST_CASE("read_receipts") {
         EXPECT_CALL(*cursor, next()).WillOnce(Invoke([]() -> Task<KeyValue> { co_return KeyValue{}; }));
         auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_num), boost::asio::use_future);
         // CHECK(result.get() == Receipts{Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
-        CHECK(result.get().value().size() == Receipts{Receipt{}}.size());
+        CHECK(result.get()->size() == Receipts{std::make_shared<Receipt>(Receipt{})}.size());
     }
 
     SECTION("many receipts") {  // https://goerli.etherscan.io/block/3529600
@@ -166,7 +166,7 @@ TEST_CASE("read_receipts") {
         EXPECT_CALL(*cursor, next()).WillOnce(Invoke([]() -> Task<KeyValue> { co_return KeyValue{}; }));
         auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_num), boost::asio::use_future);
         // CHECK(result.get() == Receipts{Receipt{...}, Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
-        CHECK(result.get().value().size() == Receipts{Receipt{}, Receipt{}}.size());
+        CHECK(result.get()->size() == Receipts{std::make_shared<Receipt>(Receipt{}), std::make_shared<Receipt>(Receipt{})}.size());
     }
 
     SECTION("invalid receipt log") {  // https://goerli.etherscan.io/block/3529600
@@ -205,9 +205,9 @@ TEST_CASE("read_receipts") {
         }));
         auto result = boost::asio::co_spawn(pool, read_receipts(transaction, block_num), boost::asio::use_future);
         // TODO(canepat): this case should fail instead of providing 1 receipt with 0 logs
-        const Receipts receipts = result.get().value();
-        CHECK(receipts.size() == 1);
-        CHECK(receipts[0].logs.empty());
+        const auto receipts = result.get();
+        CHECK(receipts->size() == 1);
+        CHECK((*receipts)[0]->logs.empty());
     }
 }
 
@@ -221,14 +221,14 @@ TEST_CASE("get_receipts") {
         const silkworm::BlockWithHash block_with_hash{};
         auto result = boost::asio::co_spawn(pool, get_receipts(transaction, block_with_hash, chain_storage, pool), boost::asio::use_future);
         const auto receipts = result.get();
-        CHECK(receipts.empty());
+        CHECK(receipts->empty());
     }
 
     SECTION("zero receipts w/ zero transactions") {
         const silkworm::BlockWithHash block_with_hash{};
         auto result = boost::asio::co_spawn(pool, get_receipts(transaction, block_with_hash, chain_storage, pool), boost::asio::use_future);
         const auto receipts = result.get();
-        CHECK(receipts.empty());
+        CHECK(receipts->empty());
     }
 
 #ifdef TEST_DELETED

@@ -33,10 +33,10 @@ namespace system = boost::system;
 namespace urls = boost::urls;
 
 //! HTTP target for Manifest file containing the list of available snapshot files
-static constexpr std::string_view kManifestTarget{"/manifest.txt"sv};
+static constexpr std::string_view kManifestTarget{"/manifest.txt"};
 
 //! The BitTorrent file extension for torrent files
-static constexpr std::string_view kTorrentExtension{".torrent"sv};
+static constexpr std::string_view kTorrentExtension{".torrent"};
 
 //! Timeout for parallel async download of manifest files in msec
 static const std::chrono::milliseconds kParallelManifestDownloadTimeout{60'000};

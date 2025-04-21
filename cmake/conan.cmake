@@ -95,6 +95,7 @@ endif()
 
 if(OS_VERSION_MIN_CXXFLAG AND NOT SILKWORM_SANITIZE_COMPILER_OPTIONS)
   list(APPEND CONAN_CONF "tools.build:cxxflags=[\"${OS_VERSION_MIN_CXXFLAG}\"]")
+  list(APPEND CONAN_CONF "tools.build:cflags=[\"${OS_VERSION_MIN_CXXFLAG}\"]")
 endif()
 
 if(SILKWORM_SANITIZE_COMPILER_OPTIONS)
@@ -102,7 +103,11 @@ if(SILKWORM_SANITIZE_COMPILER_OPTIONS)
 
   if(OS_VERSION_MIN_CXXFLAG)
     list(APPEND CONAN_CXXFLAGS ${OS_VERSION_MIN_CXXFLAG})
+    list(APPEND CONAN_CONF "tools.build:cflags=[\"${OS_VERSION_MIN_CXXFLAG}\"]")
   endif()
+
+  format_list_as_json_array(CONAN_CXXFLAGS CONAN_CXXFLAGS_STR)
+  list(APPEND CONAN_CONF "tools.build:cxxflags=${CONAN_CXXFLAGS_STR}")
 
   list(APPEND CONAN_OPTIONS "boost/*:zlib=False")
   list(APPEND CONAN_OPTIONS "grpc/*:with_libsystemd=False")
@@ -118,9 +123,6 @@ if(SILKWORM_SANITIZE_COMPILER_OPTIONS)
   )
   list(APPEND CONAN_BUILD "missing")
   # cmake-format: on
-
-  format_list_as_json_array(CONAN_CXXFLAGS CONAN_CXXFLAGS_STR)
-  list(APPEND CONAN_CONF "tools.build:cxxflags=${CONAN_CXXFLAGS_STR}")
 endif()
 
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
@@ -134,7 +136,6 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   list(APPEND CONAN_SETTINGS "build_type=${CMAKE_BUILD_TYPE}")
   # most Windows packages on ConanCenter are built for cppstd=14, but some packages require at least cppstd=17
   # (otherwise report "Invalid" status)
-  list(APPEND CONAN_SETTINGS "asio-grpc/*:compiler.cppstd=17")
   list(APPEND CONAN_SETTINGS "magic_enum/*:compiler.cppstd=17")
   list(APPEND CONAN_SETTINGS "tomlplusplus/*:compiler.cppstd=17")
 endif()

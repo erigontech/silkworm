@@ -10,7 +10,11 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <agrpc/asio_grpc.hpp>
+#pragma GCC diagnostic pop
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/chain/config.hpp>

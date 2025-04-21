@@ -253,7 +253,7 @@ TEST_CASE("RWTxn") {
     const TemporaryDirectory tmp_dir;
     EnvConfig db_config{.path = tmp_dir.path().string(), .create = true, .in_memory = true};
     auto env{open_env(db_config)};
-    static constexpr const char* kTableName{"GeneticCode"};
+    static constexpr std::string_view kTableName{"GeneticCode"};
 
     SECTION("Managed: commit_and_renew") {
         {
@@ -295,7 +295,7 @@ TEST_CASE("RWTxn") {
         RWTxnManaged tx{env};
         tx.disable_commit();
         {
-            (void)tx->create_map(kTableName, mdbx::key_mode::usual, mdbx::value_mode::single);
+            (void)tx->create_map(std::string{kTableName}, mdbx::key_mode::usual, mdbx::value_mode::single);
             tx.commit_and_renew();  // Does not have any effect
         }
         tx.abort();
@@ -307,7 +307,7 @@ TEST_CASE("RWTxn") {
         RWTxnManaged tx{env};
         tx.disable_commit();
         {
-            (void)tx->create_map(kTableName, mdbx::key_mode::usual, mdbx::value_mode::single);
+            (void)tx->create_map(std::string{kTableName}, mdbx::key_mode::usual, mdbx::value_mode::single);
             tx.commit_and_stop();  // Does not have any effect
         }
         tx.abort();
@@ -375,7 +375,7 @@ TEST_CASE("Cursor walk") {
     auto env{open_env(db_config)};
     auto txn{env.start_write()};
 
-    static constexpr const char* kTableName{"GeneticCode"};
+    static constexpr std::string_view kTableName{"GeneticCode"};
 
     PooledCursor table_cursor(txn, {kTableName});
 

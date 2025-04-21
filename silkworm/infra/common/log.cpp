@@ -83,7 +83,7 @@ std::string get_thread_name() {
     return thread_name_;
 }
 
-static std::pair<const char*, const char*> get_level_settings(Level level) {
+static std::pair<std::string_view, std::string_view> get_level_settings(Level level) {
     switch (level) {
         case Level::kTrace:
             return {"TRACE", kColorCoal};

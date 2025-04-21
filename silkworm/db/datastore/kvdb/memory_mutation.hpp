@@ -31,8 +31,8 @@ class MemoryOverlay {
     MemoryOverlay(
         const std::filesystem::path& tmp_dir,
         ROTxn* txn,
-        std::function<std::optional<MapConfig>(const std::string& map_name)> get_map_config,
-        std::string sequence_map_name);
+        std::function<std::optional<MapConfig>(std::string_view map_name)> get_map_config,
+        std::string_view sequence_map_name);
 
     MemoryOverlay(MemoryOverlay&& other) noexcept = default;
     MemoryOverlay& operator=(MemoryOverlay&&) noexcept = default;
@@ -42,13 +42,13 @@ class MemoryOverlay {
 
     ::mdbx::txn_managed start_rw_txn();
 
-    std::optional<MapConfig> map_config(const std::string& map_name);
+    std::optional<MapConfig> map_config(std::string_view map_name);
     MapConfig sequence_map_config();
 
   private:
     MemoryDatabase memory_db_;
     ROTxn* txn_;
-    std::function<std::optional<MapConfig>(const std::string& map_name)> get_map_config_;
+    std::function<std::optional<MapConfig>(std::string_view map_name)> get_map_config_;
     std::string sequence_map_name_;
 };
 
@@ -63,10 +63,10 @@ class MemoryMutation : public RWTxnManaged {
 
     ~MemoryMutation() override;
 
-    bool is_table_cleared(const std::string& table) const;
-    bool is_entry_deleted(const std::string& table, const Slice& key) const;
-    bool is_dup_deleted(const std::string& table, const Slice& key, const Slice& value) const;
-    bool has_map(const std::string& bucket_name) const;
+    bool is_table_cleared(std::string_view table) const;
+    bool is_entry_deleted(std::string_view table_view, const Slice& key) const;
+    bool is_dup_deleted(std::string_view table, const Slice& key, const Slice& value) const;
+    bool has_map(std::string_view bucket_name) const;
 
     ROTxn* external_txn() const { return overlay_.external_txn(); }
 
@@ -81,7 +81,7 @@ class MemoryMutation : public RWTxnManaged {
     bool erase(const MapConfig& config, const Slice& key, const Slice& value);
     void upsert(const MapConfig& config, const Slice& key, const Slice& value);
 
-    bool clear_table(const std::string& table);
+    bool clear_table(std::string_view table_view);
 
     void flush(RWTxn& rw_txn);
     void rollback();

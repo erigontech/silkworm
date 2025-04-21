@@ -4,7 +4,6 @@
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
 find_package(absl REQUIRED)
-find_package(asio-grpc REQUIRED)
 find_package(Boost REQUIRED COMPONENTS headers container)
 find_package(gRPC REQUIRED)
 find_package(GTest REQUIRED)
@@ -35,6 +34,7 @@ set(SILKWORM_RPCDAEMON_PUBLIC_LIBRARIES
 # cmake-format: off
 set(SILKWORM_RPCDAEMON_PRIVATE_LIBRARIES
     absl::strings
+    cpp_base64
     evmc::instructions
     roaring::roaring
     silkworm_execution

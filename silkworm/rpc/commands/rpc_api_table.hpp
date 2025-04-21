@@ -21,7 +21,7 @@ class RpcApiTable {
     using HandleMethodGlaze = Task<void> (RpcApi::*)(const nlohmann::json&, std::string&);
     using HandleStream = Task<void> (RpcApi::*)(const nlohmann::json&, json::Stream&);
 
-    explicit RpcApiTable(const std::string& api_spec);
+    explicit RpcApiTable(std::string_view api_spec);
 
     RpcApiTable(const RpcApiTable&) = delete;
     RpcApiTable& operator=(const RpcApiTable&) = delete;
@@ -32,8 +32,8 @@ class RpcApiTable {
     std::optional<HandleStream> find_stream_handler(const std::string& method) const;
 
   private:
-    void build_handlers(const std::string& api_spec);
-    void add_handlers(const std::string& api_namespace);
+    void build_handlers(std::string_view api_spec);
+    void add_handlers(std::string_view api_namespace);
     void add_admin_handlers();
     void add_debug_handlers();
     void add_eth_handlers();

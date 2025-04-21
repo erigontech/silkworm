@@ -123,7 +123,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request
             const auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
             const auto chain_config = co_await chain_storage->read_chain_config();
             const IssuanceDetails issuance = get_issuance(chain_config, *block_with_hash);
-            const intx::uint256 total_fees = get_block_fees(*block_with_hash, receipts);
+            const intx::uint256 total_fees = get_block_fees(*receipts);
             const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
             reply = make_json_content(request, block_details_response);
         } else {
@@ -170,7 +170,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json&
             const auto receipts = co_await core::get_receipts(*tx, *block_with_hash, *chain_storage, workers_);
             const auto chain_config = co_await chain_storage->read_chain_config();
             const IssuanceDetails issuance = get_issuance(chain_config, *block_with_hash);
-            const intx::uint256 total_fees = get_block_fees(*block_with_hash, receipts);
+            const intx::uint256 total_fees = get_block_fees(*receipts);
             const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
             reply = make_json_content(request, block_details_response);
         } else {
@@ -243,7 +243,7 @@ Task<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& re
             }
 
             for (auto i = page_start; i < page_end; ++i) {
-                block_transactions.receipts.push_back(receipts.at(i));
+                block_transactions.receipts.push_back(*(receipts->at(i)));
                 block_transactions.transactions.push_back(block_with_hash->block.transactions.at(i));
             }
 
@@ -284,7 +284,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
         auto key = db::code_domain_key(sender);
 
         db::kv::api::IndexRangeRequest query{
-            .table = db::table::kAccountsHistoryIdx,
+            .table = std::string{db::table::kAccountsHistoryIdx},
             .key = key,
             .from_timestamp = -1,
             .to_timestamp = -1,
@@ -304,7 +304,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
             }
             SILK_DEBUG << "count: " << count << ", txnId: " << txn_id;
             db::kv::api::HistoryPointRequest hpq{
-                .table = db::table::kAccountDomain,
+                .table = std::string{db::table::kAccountDomain},
                 .key = key,
                 .timestamp = *value};
             auto result = co_await tx->history_seek(std::move(hpq));
@@ -339,7 +339,7 @@ Task<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohm
 
             SILK_DEBUG << "searching for txnId: " << txn_id << ", i: " << i;
             db::kv::api::HistoryPointRequest hpq{
-                .table = db::table::kAccountDomain,
+                .table = std::string{db::table::kAccountDomain},
                 .key = key,
                 .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)};
             auto result = co_await tx->history_seek(std::move(hpq));
@@ -446,7 +446,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         // so as a result we'll have small range of blocks for binary search or full scan.
         const auto key = db::code_domain_key(contract_address);
         db::kv::api::IndexRangeRequest query{
-            .table = db::table::kAccountsHistoryIdx,
+            .table = std::string{db::table::kAccountsHistoryIdx},
             .key = key,
             .from_timestamp = 0,
             .to_timestamp = -1,
@@ -457,6 +457,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         uint64_t count = 0;
         TxnId prev_txn_id = 0;
         TxnId next_txn_id = 0;
+
         while (const auto value = co_await it->next()) {
             const auto txn_id = static_cast<TxnId>(*value);
             if (count++ % kTxnProbeWindowSize != 0) {
@@ -466,7 +467,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
             SILK_DEBUG << "txn_id:" << txn_id << ", count: " << count;
 
             db::kv::api::HistoryPointRequest hpq{
-                .table = db::table::kAccountDomain,
+                .table = std::string{db::table::kAccountDomain},
                 .key = key,
                 .timestamp = *value};
             auto result = co_await tx->history_seek(std::move(hpq));
@@ -495,11 +496,12 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         }
 
         db::txn::TxNum creation_txn_id = 0;
+
         auto index = co_await async_binary_search(static_cast<size_t>(next_txn_id - prev_txn_id), [&](size_t i) -> Task<bool> {
             auto txn_id = i + prev_txn_id;
 
             db::kv::api::HistoryPointRequest hpq{
-                .table = db::table::kAccountDomain,
+                .table = std::string{db::table::kAccountDomain},
                 .key = key,
                 .timestamp = static_cast<db::kv::api::Timestamp>(txn_id)};
             auto result = co_await tx->history_seek(std::move(hpq));
@@ -519,6 +521,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
         }
         auto canonical_body_provider = db::chain::canonical_body_provider_from_chain_storage(*chain_storage);
         const auto block_num_opt = co_await db::txn::block_num_from_tx_num(*tx, creation_txn_id, canonical_body_provider);
+
         if (block_num_opt) {
             block_num = block_num_opt.value();
             const auto min_txn_id = co_await db::txn::min_tx_num(*tx, block_num, canonical_body_provider);
@@ -542,15 +545,20 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
                 co_return;
             }
 
-            const auto block_with_hash = co_await block_reader.read_block_by_number(*block_cache_, block_num);
-
-            if (block_with_hash) {
-                trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
-                const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
-                reply = make_json_content(request, result);
-            } else {
+            const auto header = co_await chain_storage->read_canonical_header(block_num);
+            if (!header) {
+                SILK_DEBUG << "block not found" << block_num << " for index " << tx_index;
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
+                co_await tx->close();
+                co_return;
             }
+
+            const silkworm::Block block{.header = std::move(*header)};
+
+            trace::TraceCallExecutor executor{*block_cache_, *chain_storage, workers_, *tx};
+            const auto result = co_await executor.trace_deploy_transaction(block, contract_address, *transaction, creation_txn_id);
+            reply = make_json_content(request, result);
+
         } else {
             SILK_DEBUG << "No block found for txn_id " << creation_txn_id;
             reply = make_json_content(request, nlohmann::detail::value_t::null);
@@ -837,7 +845,7 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     bool ascending, uint64_t page_size) {
     const auto key = db::code_domain_key(address);
     db::kv::api::IndexRangeRequest query_to{
-        .table = db::table::kTracesToIdx,
+        .table = std::string{db::table::kTracesToIdx},
         .key = key,
         .from_timestamp = from_timestamp,
         .to_timestamp = -1,
@@ -845,7 +853,7 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
     auto paginated_result_to = co_await tx.index_range(std::move(query_to));
 
     db::kv::api::IndexRangeRequest query_from{
-        .table = db::table::kTracesFromIdx,
+        .table = std::string{db::table::kTracesFromIdx},
         .key = key,
         .from_timestamp = from_timestamp,
         .to_timestamp = -1,
@@ -920,7 +928,7 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
             continue;
         }
 
-        results.receipts.push_back(std::move(*receipt));
+        results.receipts.push_back(*receipt);
         results.transactions.push_back(std::move(*transaction));
         results.headers.push_back(block.header);
     }
@@ -944,15 +952,10 @@ IssuanceDetails OtsRpcApi::get_issuance(const silkworm::ChainConfig& config, con
     return issuance;
 }
 
-intx::uint256 OtsRpcApi::get_block_fees(const silkworm::BlockWithHash& block, const std::vector<Receipt>& receipts) {
+intx::uint256 OtsRpcApi::get_block_fees(const std::vector<std::shared_ptr<Receipt>>& receipts) {
     intx::uint256 fees = 0;
     for (const auto& receipt : receipts) {
-        auto& txn = block.block.transactions[receipt.tx_index];
-
-        intx::uint256 base_fee = block.block.header.base_fee_per_gas.value_or(0);
-        const auto effective_gas_price = txn.effective_gas_price(base_fee);
-
-        fees += effective_gas_price * receipt.gas_used;
+        fees += receipt->effective_gas_price * receipt->gas_used;
     }
     return fees;
 }

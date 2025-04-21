@@ -50,8 +50,12 @@ struct SilkwormInstance {
     boost::asio::cancellation_signal sentry_stop_signal;
 
     // TODO: This has to be changed and encapsulated by a proper block caching state
-    // Keeps all the receipts created in the current block
-    std::vector<silkworm::Receipt> receipts_in_current_block;
-    // Keeps all transactions executed in current block
-    std::vector<std::pair<silkworm::TxnId, silkworm::Transaction>> transactions_in_current_block;
+    struct ExecutionResult {
+        silkworm::TxnId tx_id = 0;
+        uint64_t blob_gas_used = 0;
+        silkworm::Receipt receipt;
+        uint64_t log_index = 0;
+    };
+    // Keeps all the transactions and receipts created in the current block
+    std::vector<ExecutionResult> executions_in_block;
 };

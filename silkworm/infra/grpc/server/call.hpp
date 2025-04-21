@@ -9,7 +9,11 @@
 #include <stdexcept>
 #include <utility>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <agrpc/repeatedly_request.hpp>
+#pragma GCC diagnostic pop
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/impl/codegen/async_stream.h>
 #include <grpcpp/impl/codegen/async_unary_call.h>

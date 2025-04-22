@@ -1374,8 +1374,8 @@ void do_first_byte_analysis(EnvConfig& config) {
     std::vector<std::pair<uint8_t, size_t>> histogram_sorted;
     std::ranges::copy(histogram, std::back_inserter<std::vector<std::pair<uint8_t, size_t>>>(histogram_sorted));
     std::ranges::sort(histogram_sorted, [](std::pair<uint8_t, size_t>& a, std::pair<uint8_t, size_t>& b) -> bool {
-            return a.second == b.second ? a.first < b.first : a.second > b.second;
-        });
+        return a.second == b.second ? a.first < b.first : a.second > b.second;
+    });
 
     if (!histogram_sorted.empty()) {
         std::cout << (boost::format(" %-4s %8s") % "Byte" % "Count") << "\n"

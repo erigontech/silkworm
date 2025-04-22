@@ -59,8 +59,8 @@ struct HistoryRangeByKeysQuery {
         };
     }
 
-    auto exec_with_eager_begin(Bytes key_start, Bytes key_end, Timestamp timestamp, bool ascending) {
-        SILKWORM_ASSERT(ascending);  // descending is not implemented
+    auto exec_with_eager_begin(Bytes key_start, Bytes key_end, Timestamp timestamp, bool ascending) {  // NOLINT(*-unnecessary-value-param)
+        SILKWORM_ASSERT(ascending);                                                                    // descending is not implemented
 
         CursorMoveIterator begin_it;
         std::function<std::shared_ptr<ROCursor>(std::shared_ptr<ROCursor>)> seek_func;

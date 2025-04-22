@@ -3,7 +3,11 @@
 
 #include "net_api.hpp"
 
-#include <agrpc/test.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#include <agrpc/asio_grpc.hpp>
+#pragma GCC diagnostic pop
 #include <catch2/catch_test_macros.hpp>
 #include <grpcpp/grpcpp.h>
 

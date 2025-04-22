@@ -45,4 +45,6 @@ list(REMOVE_ITEM LINK_OPTIONS "-Wl,-stack_size")
 list(REMOVE_ITEM LINK_OPTIONS "-Wl,${SILKWORM_STACK_SIZE}")
 set_target_properties(${TARGET} PROPERTIES LINK_OPTIONS "${LINK_OPTIONS}")
 
+add_subdirectory(cli)
+
 target_link_libraries(silkworm_capi_static_test PRIVATE silkworm_db_test_util silkworm_node)

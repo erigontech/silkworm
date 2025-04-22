@@ -92,29 +92,6 @@ std::optional<evmc::bytes32> DomainState::canonical_hash(BlockNum block_num) con
     return data_model_.read_canonical_header_hash(block_num);
 }
 
-void DomainState::insert_txn_receipts(std::vector<Receipt>& receipts, const std::vector<std::pair<TxnId, Transaction>>& transactions) {
-    uint64_t log_index = 0;
-    uint64_t blob_gas_used = 0;
-    uint64_t gas_used = 0;
-
-    for (size_t i = 0; i < std::size(receipts); i++) {
-        auto& receipt = receipts[i];
-        const auto& [txn_id, transaction] = transactions[i];
-        gas_used += receipt.cumulative_gas_used;
-
-        // Receipt contains gas used within a block + gas used by itself
-        receipt.cumulative_gas_used = gas_used;
-
-        // Update blob gas used by transaction
-        blob_gas_used += transaction.total_blob_gas();
-
-        insert_receipt(receipt, log_index, blob_gas_used);
-
-        // Update log index for the next receipt
-        log_index += std::size(receipt.logs);
-    }
-}
-
 void DomainState::insert_receipt(const Receipt& receipt, uint64_t current_log_index, uint64_t cumulative_blob_gas_used) {
     ReceiptsDomainPutQuery query{database_, tx_};
 

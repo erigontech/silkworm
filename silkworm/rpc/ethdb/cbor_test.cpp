@@ -18,7 +18,7 @@ namespace {
 #ifdef _WIN32
 static constexpr std::string_view kInvalidArgumentMessage = "invalid argument";
 #else
-static constexpr std::string_view kInvalidArgumentMessage = "Invalid argument";
+constexpr std::string_view kInvalidArgumentMessage = "Invalid argument";
 #endif
 }  // namespace
 
@@ -26,7 +26,6 @@ namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
-using std::string_literals::operator""s;
 
 TEST_CASE("decode logs from empty bytes", "[rpc][ethdb][cbor]") {
     Logs logs{};

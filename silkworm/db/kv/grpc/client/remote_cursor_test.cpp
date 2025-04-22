@@ -25,7 +25,7 @@ using testing::Property;
 namespace test = rpc::test;
 
 static constexpr std::string_view kPlainStateKey{"e0a2bd4258d2768837baa26a28fe71dc079f84c7"};
-static constexpr std::string_view kPlainStateValue{""};
+static constexpr std::string_view kPlainStateValue;
 
 static const silkworm::ByteView kPlainStateKeyBytes{string_view_to_byte_view(kPlainStateKey)};
 static const silkworm::ByteView kPlainStateValueBytes{string_view_to_byte_view(kPlainStateValue)};

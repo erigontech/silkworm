@@ -545,7 +545,7 @@ Task<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& requ
                 co_return;
             }
 
-            const auto header = co_await chain_storage->read_canonical_header(block_num);
+            auto header = co_await chain_storage->read_canonical_header(block_num);
             if (!header) {
                 SILK_DEBUG << "block not found" << block_num << " for index " << tx_index;
                 reply = make_json_content(request, nlohmann::detail::value_t::null);
@@ -916,7 +916,7 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
 
         SILKWORM_ASSERT(header);
 
-        const auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index.value());
+        auto transaction = co_await chain_storage->read_transaction_by_idx_in_block(tnx_nums->block_num, tnx_nums->txn_index.value());
         if (!transaction) {
             SILK_DEBUG << "No transaction found in block " << tnx_nums->block_num << " for index " << tnx_nums->txn_index.value();
             continue;
@@ -928,7 +928,7 @@ Task<TransactionsWithReceipts> OtsRpcApi::collect_transactions_with_receipts(
             continue;
         }
 
-        results.receipts.push_back(*receipt);
+        results.receipts.push_back(std::move(*receipt));
         results.transactions.push_back(std::move(*transaction));
         results.headers.push_back(block.header);
     }

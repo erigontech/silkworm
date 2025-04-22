@@ -107,9 +107,9 @@ TEST_CASE_METHOD(RemoteChainStorageTest, "read_transaction_by_idx_in_block") {
     SECTION("found") {
         Block block = silkworm::test_util::sample_block();
         providers.block = [&](BlockNum, HashAsSpan, bool, Block& b) -> Task<bool> { b = block; co_return true; };
-        const auto txn0 = spawn_and_wait(storage.read_transaction_by_idx_in_block(block.header.number, /*txn_id=*/0));
+        const auto txn0 = spawn_and_wait(storage.read_transaction_by_idx_in_block(block.header.number, /*txn_idx=*/0));
         REQUIRE(txn0 == silkworm::test_util::kSampleTx0);
-        const auto txn1 = spawn_and_wait(storage.read_transaction_by_idx_in_block(block.header.number, /*txn_id=*/1));
+        const auto txn1 = spawn_and_wait(storage.read_transaction_by_idx_in_block(block.header.number, /*txn_idx=*/1));
         REQUIRE(txn1 == silkworm::test_util::kSampleTx1);
     }
 }

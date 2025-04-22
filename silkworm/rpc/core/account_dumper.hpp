@@ -18,7 +18,7 @@ using db::kv::api::KeyValue;
 
 class AccountDumper {
   public:
-    AccountDumper(db::kv::api::Transaction& transaction) : transaction_(transaction) {}
+    explicit AccountDumper(db::kv::api::Transaction& transaction) : transaction_(transaction) {}
 
     AccountDumper(const AccountDumper&) = delete;
     AccountDumper& operator=(const AccountDumper&) = delete;

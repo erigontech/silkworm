@@ -33,7 +33,7 @@ struct DomainRangeLatestSegmentQuery {
 
     using ResultItem = btree::BTreeIndex::Cursor::value_type;
 
-    auto exec_with_eager_begin(const Bytes& key_start, Bytes key_end, bool ascending) {
+    auto exec_with_eager_begin(Bytes key_start, Bytes key_end, bool ascending) {
         SILKWORM_ASSERT(ascending);  // descending is not implemented
 
         auto begin_it = entity_.btree_index.seek(key_start, entity_.kv_segment).value_or(btree::BTreeIndex::Cursor{});
@@ -44,7 +44,7 @@ struct DomainRangeLatestSegmentQuery {
 
     auto exec(Bytes key_start, Bytes key_end, bool ascending) {
         auto exec_func = [query = *this, key_start = std::move(key_start), key_end = std::move(key_end), ascending]() mutable {
-            return query.exec_with_eager_begin(key_start, std::move(key_end), ascending);
+            return query.exec_with_eager_begin(std::move(key_start), std::move(key_end), ascending);
         };
         return silkworm::ranges::lazy(std::move(exec_func));
     }

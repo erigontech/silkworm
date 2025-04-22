@@ -51,7 +51,7 @@ struct SilkwormInstance {
 
     // TODO: This has to be changed and encapsulated by a proper block caching state
     struct ExecutionResult {
-        silkworm::TxnId tx_id = 0;
+        silkworm::TxnId txn_id = 0;
         uint64_t blob_gas_used = 0;
         silkworm::Receipt receipt;
         uint64_t log_index = 0;

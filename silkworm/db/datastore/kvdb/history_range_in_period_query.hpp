@@ -100,8 +100,7 @@ struct HistoryRangeInPeriodQuery {
                         if (key_decoder.value.timestamp.value < ts_range.start) {
                             *skip_current_key = false;
                             return {};
-                        }
-                        if (key_decoder.value.timestamp.value < ts_range.end) {
+                        } else if (key_decoder.value.timestamp.value < ts_range.end) {
                             *skip_current_key = true;
                             return cursor;
                         }

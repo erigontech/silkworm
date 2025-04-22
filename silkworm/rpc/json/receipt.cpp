@@ -11,7 +11,7 @@
 
 namespace silkworm::rpc {
 
-void to_json(nlohmann::json& json, const std::shared_ptr<Receipt> receipt) {
+void to_json(nlohmann::json& json, const std::shared_ptr<Receipt>& receipt) {
     json = *receipt;
 }
 

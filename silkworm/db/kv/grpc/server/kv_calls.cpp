@@ -192,7 +192,7 @@ void TxCall::handle_cursor_open(const remote::Cursor* request, remote::Pair& res
     const std::string& bucket_name = request->bucket_name();
 
     // Bucket name must be a valid MDBX map name
-    if (!has_map(read_only_txn_, bucket_name.c_str())) {
+    if (!has_map(read_only_txn_, bucket_name)) {
         const auto err = "unknown bucket: " + request->bucket_name();
         SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << err;
         throw_with_error(::grpc::Status{::grpc::StatusCode::INVALID_ARGUMENT, err});
@@ -208,7 +208,7 @@ void TxCall::handle_cursor_open(const remote::Cursor* request, remote::Pair& res
     // Create a new database cursor tracking also bucket name (needed for reopening). We create a read-only dup-sort
     // cursor so that it works for both single-value and multi-value tables.
     const MapConfig map_config{
-        .name = bucket_name.c_str(),
+        .name = bucket_name,
         .value_mode = request->op() == remote::Op::OPEN ? ::mdbx::value_mode::single : ::mdbx::value_mode::multi,
     };
     auto cursor = read_only_txn_.ro_cursor_dup_sort(map_config);
@@ -364,7 +364,7 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
 
     for (auto& [cursor_id, tx_cursor] : cursors_) {
         const std::string& bucket_name = tx_cursor.bucket_name;
-        const MapConfig map_config{bucket_name.c_str()};
+        const MapConfig map_config{.name = bucket_name};
 
         // Bind each cursor to the renewed transaction.
         auto& cursor = tx_cursor.cursor;

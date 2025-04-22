@@ -191,8 +191,7 @@ Task<std::shared_ptr<Receipts>> generate_receipts(db::kv::api::Transaction& tx,
 
         uint64_t cumulative_gas_used{0};
 
-        for (size_t index = 0; index < transactions.size(); ++index) {
-            auto& transaction = transactions[index];
+        for (const auto& transaction : transactions) {
             auto receipt = std::make_shared<Receipt>();
 
             auto result = executor.call_with_receipt(transaction, *receipt, {}, /*refund=*/true, /*gas_bailout=*/false);

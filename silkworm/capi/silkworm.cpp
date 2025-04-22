@@ -612,14 +612,14 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
     silkworm::Hash block_header_hash{};
     memcpy(block_header_hash.bytes, block_hash.bytes, sizeof(block_hash.bytes));
     BlockNum block_number{block_num};
-    TxnId txn_id_{txn_num};
+    TxnId txn_id{txn_num};
 
     auto unmanaged_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_tx};
     auto unmanaged_env = silkworm::datastore::kvdb::EnvUnmanaged{::mdbx_txn_env(mdbx_tx)};
     auto chain_db = db::DataStore::make_chaindata_database(std::move(unmanaged_env));
     auto db_ref = chain_db.ref();
     silkworm::execution::DomainState state{
-        txn_id_,
+        txn_id,
         unmanaged_tx,
         db_ref,
         *handle->blocks_repository,
@@ -662,13 +662,13 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
                << " TxnHash " << silkworm::to_hex(transaction.hash().bytes, true)
                << " Sender " << silkworm::to_hex(transaction.sender().value_or(evmc::address{}).bytes, true);
 
-    auto protocol_rule_set_{protocol::rule_set_factory(*handle->chain_config)};
-    if (!protocol_rule_set_) {
+    auto protocol_rule_set{protocol::rule_set_factory(*handle->chain_config)};
+    if (!protocol_rule_set) {
         SILK_ERROR << "Protocol rule set not created";
         return SILKWORM_INTERNAL_ERROR;
     }
 
-    ExecutionProcessor processor{block, *protocol_rule_set_, state, *handle->chain_config, false};
+    ExecutionProcessor processor{block, *protocol_rule_set, state, *handle->chain_config, false};
     // TODO: add analysis cache, check block exec for more
 
     silkworm::Receipt receipt{};
@@ -685,7 +685,7 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
     try {
         processor.flush_state();
         SilkwormInstance::ExecutionResult exec_result{
-            .tx_id = txn_id_,
+            .txn_id = txn_id,
             .blob_gas_used = transaction.total_blob_gas(),
             .receipt = receipt,
             .log_index = 0};
@@ -696,7 +696,7 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
             exec_result.receipt.cumulative_gas_used += prev.receipt.cumulative_gas_used;
             exec_result.log_index += std::size(prev.receipt.logs);
         }
-        handle->executions_in_block.push_back(std::move(exec_result));
+        handle->executions_in_block.emplace_back(std::move(exec_result));
     } catch (const std::exception& ex) {
         SILK_ERROR << "transaction post-processing failed: " << ex.what();
         return SILKWORM_INTERNAL_ERROR;
@@ -762,10 +762,10 @@ SILKWORM_EXPORT int silkworm_block_exec_end(SilkwormHandle handle, MDBX_txn* mdb
 
         rw_in_mem_cursor->insert(datastore::kvdb::Slice(key), datastore::kvdb::Slice(rlp_encoded));
 
-        const auto& tx_id = handle->executions_in_block[index].tx_id;
+        const auto& txn_id = handle->executions_in_block[index].txn_id;
 
         execution::DomainState state{
-            tx_id,
+            txn_id,
             unmanaged_tx,
             db_ref,
             *handle->blocks_repository,

@@ -125,7 +125,9 @@ BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbo
     auto [log_level, color] = get_level_settings(level);
 
     // Prefix
-    auto log_tag{settings_.log_trim ? absl::StripAsciiWhitespace(log_level).substr(0, 4) : log_level};
+    auto log_tag{settings_.log_trim ?
+        std::string_view{absl::StripAsciiWhitespace(absl::string_view{log_level}).substr(0, 4)} :
+        log_level};
     std::string_view padding = settings_.log_trim ? "" : " ";
     ss_ << kColorReset
         << (settings_.log_trim && !is_terminal ? "[" : padding) << color << log_tag

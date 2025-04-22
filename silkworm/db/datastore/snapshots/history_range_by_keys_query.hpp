@@ -57,7 +57,7 @@ struct HistoryRangeByKeysSegmentQuery {
         return std::pair{std::move(key_data), std::move(*value_opt)};
     }
 
-    auto exec_with_eager_begin(const Bytes& key_start, Bytes key_end, datastore::Timestamp timestamp, bool ascending) {
+    auto exec_with_eager_begin(Bytes key_start, Bytes key_end, datastore::Timestamp timestamp, bool ascending) {
         SILKWORM_ASSERT(ascending);  // descending is not implemented
 
         InvertedIndexLowerBoundKeyOffsetSegmentQuery lower_bound_query{entity_.inverted_index};
@@ -81,7 +81,7 @@ struct HistoryRangeByKeysSegmentQuery {
 
     auto exec(Bytes key_start, Bytes key_end, datastore::Timestamp timestamp, bool ascending) {
         auto exec_func = [query = *this, key_start = std::move(key_start), key_end = std::move(key_end), timestamp, ascending]() mutable {
-            return query.exec_with_eager_begin(key_start, std::move(key_end), timestamp, ascending);
+            return query.exec_with_eager_begin(std::move(key_start), std::move(key_end), timestamp, ascending);
         };
         return silkworm::ranges::lazy(std::move(exec_func));
     }

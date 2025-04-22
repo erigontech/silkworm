@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <algorithm>
-#include <bit>
-#include <bitset>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <ranges>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -251,7 +250,7 @@ void table_get(EnvConfig& config, const std::string& table, const std::optional<
     ensure(k.has_value() || block_num.has_value(), "You must specify either --key or --block");
     auto env = open_env(config);
     auto txn = env.start_read();
-    ensure(has_map(txn, table.c_str()), [&table]() { return "Table " + table + " not found"; });
+    ensure(has_map(txn, table), [&table]() { return "Table " + table + " not found"; });
     ::mdbx::map_handle table_map = txn.open_map(table);
     const std::string_view key_identifier = block_num ? "block_key" : "key";
     const Bytes key = k.value_or(block_key(*block_num));
@@ -277,8 +276,7 @@ void table_get(EnvConfig& config, const std::string& table, const std::optional<
     std::cout << "\n";
 }
 
-void do_clear(EnvConfig& config, bool dry, bool always_yes, const std::vector<std::string>& table_names,
-              bool drop) {
+void do_clear(EnvConfig& config, bool dry, bool always_yes, const std::vector<std::string>& table_names, bool drop) {
     config.readonly = false;
 
     if (!config.exclusive) {
@@ -288,22 +286,22 @@ void do_clear(EnvConfig& config, bool dry, bool always_yes, const std::vector<st
     auto env{open_env(config)};
     auto txn{env.start_write()};
 
-    for (const auto& tablename : table_names) {
-        if (!has_map(txn, tablename.c_str())) {
-            std::cout << "Table " << tablename << " not found\n";
+    for (const auto& table : table_names) {
+        if (!has_map(txn, table)) {
+            std::cout << "Table " << table << " not found\n";
             continue;
         }
 
-        mdbx::map_handle table_map{txn.open_map(tablename)};
+        mdbx::map_handle table_map{txn.open_map(table)};
         size_t rcount{txn.get_map_stat(table_map).ms_entries};
 
         if (!rcount && !drop) {
-            std::cout << " Table " << tablename << " is already empty. Skipping\n";
+            std::cout << " Table " << table << " is already empty. Skipping\n";
             continue;
         }
 
         std::cout << "\n"
-                  << (drop ? "Dropping" : "Emptying") << " table " << tablename << " (" << rcount << " records) "
+                  << (drop ? "Dropping" : "Emptying") << " table " << table << " (" << rcount << " records) "
                   << std::flush;
 
         if (!always_yes) {
@@ -1003,12 +1001,12 @@ static void print_table_diff(ROTxn& txn1, ROTxn& txn2, const DbTableInfo& table1
            [&]() { return "value_mode mismatch: " + std::to_string(static_cast<int>(table1.info.value_mode())) + " vs " + std::to_string(static_cast<int>(table2.info.value_mode())); });
 
     MapConfig table1_config{
-        .name = table1.name.c_str(),
+        .name = table1.name,
         .key_mode = table1.info.key_mode(),
         .value_mode = table1.info.value_mode(),
     };
     MapConfig table2_config{
-        .name = table2.name.c_str(),
+        .name = table2.name,
         .key_mode = table2.info.key_mode(),
         .value_mode = table2.info.value_mode(),
     };
@@ -1024,7 +1022,7 @@ static void print_table_diff(ROTxn& txn1, ROTxn& txn2, const DbTableInfo& table1
             "MAIN_DBI"sv,
             "DbInfo"sv,
         };
-        std::any_of(kIrrelevantTables.begin(), kIrrelevantTables.end(), [&table1](const std::string_view table_name) { return table_name == table1.name; })) {
+        std::ranges::any_of(kIrrelevantTables, [&table1](const std::string_view table_name) { return table_name == table1.name; })) {
         std::cout << "Skipping irrelevant table: " << table1.name << "\n";
         return;
     }
@@ -1050,7 +1048,7 @@ static void print_table_diff(ROTxn& txn1, ROTxn& txn2, const DbTableInfo& table1
 
 static std::optional<DbTableInfo> find_table(const DbInfo& db_info, std::string_view table) {
     const auto& db_tables{db_info.tables};
-    const auto it{std::find_if(db_tables.begin(), db_tables.end(), [=](const auto& t) { return t.name == table; })};
+    const auto it{std::ranges::find_if(db_tables, [=](const auto& t) { return t.name == table; })};
     return it != db_tables.end() ? std::make_optional<DbTableInfo>(*it) : std::nullopt;
 }
 
@@ -1066,12 +1064,12 @@ static DbComparisonResult compare_db_schema(const DbInfo& db1_info, const DbInfo
 
     // Check both databases have the same table names
     for (auto& db1_table : db1_tables) {
-        if (std::find(db2_tables.begin(), db2_tables.end(), db1_table) == db2_tables.end()) {
+        if (std::ranges::find(db2_tables, db1_table) == db2_tables.end()) {
             return tl::make_unexpected("db1 table " + db1_table.name + " not present in db2\n");
         }
     }
     for (auto& db2_table : db2_tables) {
-        if (std::find(db1_tables.begin(), db1_tables.end(), db2_table) == db1_tables.end()) {
+        if (std::ranges::find(db1_tables, db2_table) == db1_tables.end()) {
             return tl::make_unexpected("db2 table " + db2_table.name + " not present in db1\n");
         }
     }
@@ -1374,12 +1372,10 @@ void do_first_byte_analysis(EnvConfig& config) {
 
     // Sort histogram by usage (from most used to less used)
     std::vector<std::pair<uint8_t, size_t>> histogram_sorted;
-    std::copy(histogram.begin(), histogram.end(),
-              std::back_inserter<std::vector<std::pair<uint8_t, size_t>>>(histogram_sorted));
-    std::sort(histogram_sorted.begin(), histogram_sorted.end(),
-              [](std::pair<uint8_t, size_t>& a, std::pair<uint8_t, size_t>& b) -> bool {
-                  return a.second == b.second ? a.first < b.first : a.second > b.second;
-              });
+    std::ranges::copy(histogram, std::back_inserter<std::vector<std::pair<uint8_t, size_t>>>(histogram_sorted));
+    std::ranges::sort(histogram_sorted, [](std::pair<uint8_t, size_t>& a, std::pair<uint8_t, size_t>& b) -> bool {
+            return a.second == b.second ? a.first < b.first : a.second > b.second;
+        });
 
     if (!histogram_sorted.empty()) {
         std::cout << (boost::format(" %-4s %8s") % "Byte" % "Count") << "\n"

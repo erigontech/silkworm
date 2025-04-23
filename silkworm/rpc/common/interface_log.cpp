@@ -28,6 +28,9 @@ class InterfaceLogImpl final {
     template <typename... Args>
     void log(spdlog::format_string_t<Args...> fmt, Args&&... args) {
         rotating_logger_->info(fmt, std::forward<Args>(args)...);
+        if (auto_flush_) {
+            rotating_logger_->flush();
+        }
     }
 
     void log(std::string_view msg) {
@@ -69,6 +72,9 @@ InterfaceLogImpl::InterfaceLogImpl(InterfaceLogSettings settings)
     // Customize log pattern to avoid unnecessary fields (log level, logger name)
     rotating_logger_->set_pattern("[%Y-%m-%d %H:%M:%S.%e] %v");
 }
+
+//! Fixed-size header prepended to every log line: "[YYYY-MM-dd hh:mm:ss.mss] REQ|RSP -> "
+const size_t InterfaceLog::kLogLineHeaderSize{33};
 
 InterfaceLog::InterfaceLog(InterfaceLogSettings settings)
     : p_impl_{std::make_unique<InterfaceLogImpl>(std::move(settings))} {

@@ -7,13 +7,13 @@
 #include <silkworm/db/datastore/snapshots/common/raw_codec.hpp>
 #include <silkworm/db/datastore/snapshots/segment/kv_segment_reader.hpp>
 
-#include "address_codecs.hpp"
 #include "hash_decoder.hpp"
+#include "storage_codecs.hpp"
 
 namespace silkworm::db::state {
 
 using LogTopicsInvertedIndexKVSegmentReader = snapshots::segment::KVSegmentReader<HashSnapshotsDecoder, snapshots::RawDecoder<Bytes>>;
 
-using LogTopicsToInvertedIndexPutQuery = datastore::kvdb::InvertedIndexPutQuery<AddressKVDBEncoder>;
+using LogTopicsToInvertedIndexPutQuery = datastore::kvdb::InvertedIndexPutQuery<Bytes32KVDBCodec>;
 
 }  // namespace silkworm::db::state

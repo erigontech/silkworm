@@ -10,6 +10,8 @@
 #include <silkworm/db/state/step_txn_id_converter.hpp>
 #include <silkworm/db/state/storage_domain.hpp>
 
+#include "silkworm/db/state/log_address_inverted_index.hpp"
+#include "silkworm/db/state/log_topics_inverted_index.hpp"
 #include "silkworm/db/state/receipts_domain.hpp"
 
 namespace silkworm::execution {
@@ -120,6 +122,22 @@ void DomainState::insert_receipt(const Receipt& receipt, uint64_t current_log_in
         VarintSnapshotEncoder encoder{encoded_value, current_log_index};
         const auto encoded_view = encoder.encode_word();
         query.exec(gas_used_key, encoded_view, txn_id_, std::nullopt, current_step());
+    }
+
+    // Insert log indexes which are part of the receipt
+    insert_log_indexes(receipt);
+}
+
+void DomainState::insert_log_indexes(const Receipt& receipt) const {
+    LogAddressesToInvertedIndexPutQuery log_address_put_query{tx_, database_.inverted_index(kInvIdxNameLogAddress)};
+    LogTopicsToInvertedIndexPutQuery log_topic_put_query{tx_, database_.inverted_index(kInvIdxNameLogTopics)};
+
+    for (const auto& log : receipt.logs) {
+        log_address_put_query.exec(log.address, txn_id_, true);
+
+        for (const auto& topic : log.topics) {
+            log_topic_put_query.exec(topic, txn_id_, true);
+        }
     }
 }
 

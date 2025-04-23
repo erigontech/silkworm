@@ -34,7 +34,7 @@ class ZlibCompressor {
 
     void compress_chunk(const std::string& clear_data, std::string& compressed_data, const bool flush) {
         stream_.next_in = const_cast<Bytef*>(reinterpret_cast<const Bytef*>(clear_data.data()));
-        stream_.avail_in = clear_data.size();
+        stream_.avail_in = static_cast<unsigned int>(clear_data.size());
         size_t offset = 0;
         do {
             compressed_data.resize(kZlibCompressionBufferSize + offset);

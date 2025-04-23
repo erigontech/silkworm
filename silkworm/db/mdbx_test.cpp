@@ -850,7 +850,6 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
     // We need to split max multi-value data size between key and value
     constexpr size_t kKeySize{20};  // just to copycat account address size
     auto ro_txn{env.start_read()};
-    auto stat = env.get_stat(ro_txn);
     auto max_non_initial_value_size = max_multivalue_size_for_leaf_page(ro_txn);
     ro_txn.abort();
     const size_t max_first_value_size{max_non_initial_value_size - kKeySize};  // we need to take key size into account once

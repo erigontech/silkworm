@@ -133,6 +133,9 @@ static mdbx::cursor::move_operation move_operation(CursorMoveDirection direction
     if (config.shared) {
         flags |= MDBX_ACCEDE;
     }
+    if (config.no_sticky_threads) {
+        flags |= MDBX_NOSTICKYTHREADS;
+    }
     if (config.write_map) {
         flags |= MDBX_WRITEMAP;
     }

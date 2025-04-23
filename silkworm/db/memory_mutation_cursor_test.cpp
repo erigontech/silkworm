@@ -432,24 +432,12 @@ TEST_CASE("MemoryMutationCursor: to_current_next_multi", "[silkworm][node][db][m
         SECTION(tag + ": to_current_next_multi on existent table w/ positioning: OK") {
             MemoryMutationCursor mutation_cursor1{test->mutation, table::kCode};
             REQUIRE(mutation_cursor1.to_first());
-            const auto result1 = mutation_cursor1.to_current_next_multi();
-            CHECK(result1.done);
-            CHECK(result1.key == "BB");
-            CHECK(result1.value == "11");
+            const auto result1 = mutation_cursor1.to_current_next_multi(/*throw_notfound=*/false);
+            CHECK(!result1.done);
 
             MemoryMutationCursor mutation_cursor2{test->mutation, table::kCode};
             REQUIRE(mutation_cursor2.to_first());
-            const auto result2 = mutation_cursor2.to_current_next_multi(/*throw_notfound=*/true);
-            CHECK(result2.done);
-            CHECK(result2.key == "BB");
-            CHECK(result2.value == "11");
-
-            MemoryMutationCursor mutation_cursor3{test->mutation, table::kCode};
-            REQUIRE(mutation_cursor3.to_first());
-            const auto result3 = mutation_cursor3.to_current_next_multi(/*throw_notfound=*/false);
-            CHECK(result3.done);
-            CHECK(result3.key == "BB");
-            CHECK(result3.value == "11");
+            CHECK_THROWS_AS( mutation_cursor2.to_current_next_multi(/*throw_notfound=*/true), mdbx::not_found);
 
             MemoryMutationCursor mutation_cursor4{test->mutation, table::kAccountChangeSet};
             REQUIRE(mutation_cursor4.to_first());
@@ -477,14 +465,8 @@ TEST_CASE("MemoryMutationCursor: to_current_next_multi", "[silkworm][node][db][m
             MemoryMutationCursor mutation_cursor1{test->mutation, table::kCode};
             REQUIRE(mutation_cursor1.to_first(/*throw_notfound=*/false));
             const auto result1 = mutation_cursor1.to_current_next_multi(/*throw_notfound=*/false);
-            CHECK(result1.done);
-            CHECK(result1.key == "BB");
-            CHECK(result1.value == "11");
-            const auto result2 = mutation_cursor1.to_current_next_multi(/*throw_notfound=*/false);
-            CHECK(!result2.done);
-            REQUIRE(mutation_cursor1.to_last(/*throw_notfound=*/false));
-            const auto result3 = mutation_cursor1.to_current_next_multi(/*throw_notfound=*/false);
-            CHECK(!result3.done);
+            CHECK(!result1.done);
+            CHECK_THROWS_AS(mutation_cursor1.to_current_next_multi(/*throw_notfound=*/true), mdbx::not_found);
 
             MemoryMutationCursor mutation_cursor2{test->mutation, table::kAccountChangeSet};
             REQUIRE(mutation_cursor2.to_first(/*throw_notfound=*/false));
@@ -1198,19 +1180,19 @@ TEST_CASE("MemoryMutationCursor: SeekBothRange db->mem->db->mem", "[silkworm][no
 TEST_CASE("MemoryMutationCursor: Delete db->mem->db->mem", "[silkworm][node][db][memory_mutation]") {
     MemoryMutationCursorTest test;
 
-    auto rw_db_cursor = test.main_txn.rw_cursor_dup_sort(table::kHashedAccounts);
+    auto rw_db_cursor = test.main_txn.rw_cursor(table::kHashedAccounts);
     rw_db_cursor->upsert(mdbx::slice{"key1"}, mdbx::slice{"value1.1"});
     rw_db_cursor->upsert(mdbx::slice{"key3"}, mdbx::slice{"value3.3"});
     test.main_txn.commit_and_renew();
 
-    auto rw_mem_cursor = test.mutation.rw_cursor_dup_sort(table::kHashedAccounts);
+    auto rw_mem_cursor = test.mutation.rw_cursor(table::kHashedAccounts);
     rw_mem_cursor->upsert("key1", "value1.3");
     rw_mem_cursor->upsert("key2", "value2.1");
     rw_mem_cursor->upsert("key3", "value3.1");
     test.mutation.commit_and_renew();
 
-    auto db_cursor = test.main_txn.rw_cursor_dup_sort(table::kHashedAccounts);
-    auto mem_cursor = test.mutation.rw_cursor_dup_sort(table::kHashedAccounts);
+    auto db_cursor = test.main_txn.rw_cursor(table::kHashedAccounts);
+    auto mem_cursor = test.mutation.rw_cursor(table::kHashedAccounts);
 
     mem_cursor->erase(mdbx::slice{"key1"});
     mem_cursor->erase(mdbx::slice{"key3"});

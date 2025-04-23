@@ -404,9 +404,8 @@ TEST_CASE("Cursor walk") {
         REQUIRE(table_cursor.size() == kGeneticCode.size());
         REQUIRE(table_cursor.empty() == false);
 
-        // Rebind cursor so its position is undefined
-        table_cursor.bind(txn, {kTableName});
-        REQUIRE(table_cursor.eof() == true);
+        // Reset cursor so its position is at the begining
+        table_cursor.to_first();
 
         // read entire table forward
         cursor_for_each(table_cursor, save_all_data_map);
@@ -587,16 +586,17 @@ TEST_CASE("Cursor walk") {
 //! Compute the maximum free space in an empty MDBX database page
 //! \warning this may change in future versions of MDBX
 //! \details see `page_space` function in MDBX core.c
-static size_t page_space(const mdbx::env& env) {
+static size_t page_space(const mdbx::txn& txn) {
     constexpr size_t kPageHeaderSize{20};  // size of MDBX page header (PAGEHDRSZ)
-    const size_t db_page_size{env.get_pagesize()};
+    const auto stats = txn.env().get_stat(txn);
+    const size_t db_page_size{stats.ms_psize};
     return db_page_size - kPageHeaderSize;
 }
 
 static size_t max_multivalue_size_for_leaf_page(const mdbx::txn& txn) {
     constexpr size_t kDupSortNodes{2};
     constexpr size_t kNodeHeaderSize{8};  // size of MDBX node header (NODESIZE)
-    return page_space(txn.env()) / kDupSortNodes - 2 * kNodeHeaderSize;
+    return page_space(txn) / kDupSortNodes - 2 * kNodeHeaderSize;
 }
 
 TEST_CASE("OF pages") {
@@ -849,10 +849,10 @@ TEST_CASE("Multi-value erase+upsert w/ same value increases free pages") {
 
     // We need to split max multi-value data size between key and value
     constexpr size_t kKeySize{20};  // just to copycat account address size
-    const size_t max_non_initial_value_size{[&env]() {
-        auto ro_txn{env.start_read()};
-        return max_multivalue_size_for_leaf_page(ro_txn);
-    }()};
+    auto ro_txn{env.start_read()};
+    auto stat = env.get_stat(ro_txn);
+    auto max_non_initial_value_size = max_multivalue_size_for_leaf_page(ro_txn);
+    ro_txn.abort();
     const size_t max_first_value_size{max_non_initial_value_size - kKeySize};  // we need to take key size into account once
     const Bytes key(kKeySize, '\0');
 

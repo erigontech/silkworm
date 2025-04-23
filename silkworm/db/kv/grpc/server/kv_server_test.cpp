@@ -210,6 +210,7 @@ struct KvEnd2EndTest {
         db_config->path = data_dir.chaindata().path().string();
         db_config->create = true;
         db_config->in_memory = true;
+        db_config->no_sticky_threads = true;
         database_env = datastore::kvdb::open_env(*db_config);
         auto rw_txn{database_env.start_write()};
         datastore::kvdb::open_map(rw_txn, kTestMap);
@@ -1004,7 +1005,7 @@ TEST_CASE("KvServer E2E: Tx cursor valid operations", "[silkworm][node][rpc]") {
         open1.set_op(remote::Op::OPEN);
         open1.set_bucket_name(kTestMap.name);
         remote::Cursor next1;
-        next1.set_op(remote::Op::NEXT);
+        next1.set_op(remote::Op::FIRST);
         next1.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close1;
         close1.set_op(remote::Op::CLOSE);
@@ -1013,7 +1014,7 @@ TEST_CASE("KvServer E2E: Tx cursor valid operations", "[silkworm][node][rpc]") {
         open2.set_op(remote::Op::OPEN);
         open2.set_bucket_name(kTestMap.name);
         remote::Cursor next2;
-        next2.set_op(remote::Op::NEXT);
+        next2.set_op(remote::Op::FIRST);
         next2.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close2;
         close2.set_op(remote::Op::CLOSE);
@@ -1091,7 +1092,7 @@ TEST_CASE("KvServer E2E: Tx cursor valid operations", "[silkworm][node][rpc]") {
         open1.set_op(remote::Op::OPEN);
         open1.set_bucket_name(kTestMap.name);
         remote::Cursor prev1;
-        prev1.set_op(remote::Op::PREV);
+        prev1.set_op(remote::Op::LAST);
         prev1.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close1;
         close1.set_op(remote::Op::CLOSE);
@@ -1100,7 +1101,7 @@ TEST_CASE("KvServer E2E: Tx cursor valid operations", "[silkworm][node][rpc]") {
         open2.set_op(remote::Op::OPEN);
         open2.set_bucket_name(kTestMap.name);
         remote::Cursor prev2;
-        prev2.set_op(remote::Op::PREV);
+        prev2.set_op(remote::Op::LAST);
         prev2.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close2;
         close2.set_op(remote::Op::CLOSE);
@@ -1803,22 +1804,19 @@ TEST_CASE("KvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]")
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucket_name(kTestMap.name);
-        remote::Cursor first;
-        first.set_op(remote::Op::FIRST);
-        first.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor first_dup;
         first_dup.set_op(remote::Op::FIRST_DUP);
         first_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
         close.set_cursor(0);  // automatically assigned by KvClient::tx
-        std::vector<remote::Cursor> requests{open, first, first_dup, close};
+        std::vector<remote::Cursor> requests{open, first_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == ::grpc::StatusCode::INTERNAL);
-        CHECK(absl::StrContains(status.error_message(), "exception: MDBX_INCOMPATIBLE"));
-        CHECK(responses.size() == 3);
+        CHECK(absl::StrContains(status.error_message(), "exception: MDBX_ENODATA"));
+        CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
         CHECK(responses[1].cursor_id() != 0);
     }
@@ -1827,22 +1825,19 @@ TEST_CASE("KvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]")
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucket_name(kTestMap.name);
-        remote::Cursor first;
-        first.set_op(remote::Op::FIRST);
-        first.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor last_dup;
         last_dup.set_op(remote::Op::LAST_DUP);
         last_dup.set_cursor(0);  // automatically assigned by KvClient::tx
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
         close.set_cursor(0);  // automatically assigned by KvClient::tx
-        std::vector<remote::Cursor> requests{open, first, last_dup, close};
+        std::vector<remote::Cursor> requests{open, last_dup, close};
         std::vector<remote::Pair> responses;
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == ::grpc::StatusCode::INTERNAL);
-        CHECK(absl::StrContains(status.error_message(), "exception: MDBX_INCOMPATIBLE"));
-        CHECK(responses.size() == 3);
+        CHECK(absl::StrContains(status.error_message(), "exception: MDBX_ENODATA"));
+        CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
         CHECK(responses[1].cursor_id() != 0);
     }
@@ -1862,7 +1857,7 @@ TEST_CASE("KvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]")
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == ::grpc::StatusCode::INTERNAL);
-        CHECK(absl::StrContains(status.error_message(), "exception: mdbx"));
+        CHECK(absl::StrContains(status.error_message(), "exception: MDBX_ENODATA"));
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
     }
@@ -1882,7 +1877,7 @@ TEST_CASE("KvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]")
         const auto status = kv_client.tx(requests, responses);
         CHECK(!status.ok());
         CHECK(status.error_code() == ::grpc::StatusCode::INTERNAL);
-        CHECK(absl::StrContains(status.error_message(), "exception: mdbx"));
+        CHECK(absl::StrContains(status.error_message(), "exception: MDBX_ENODATA"));
         CHECK(responses.size() == 2);
         CHECK(responses[0].tx_id() != 0);
     }

@@ -523,6 +523,14 @@ CursorResult MemoryMutationCursor::to_current_next_multi() {
 }
 
 CursorResult MemoryMutationCursor::to_current_next_multi(bool throw_notfound) {
+    if (config_.value_mode == ::mdbx::value_mode::single) {
+        if (throw_notfound) {
+            throw_error_notfound();
+        } else {
+            return CursorResult{{}, {}, false};
+        }
+    }
+
     if (is_table_cleared()) {
         return memory_cursor_->to_current_next_multi(throw_notfound);
     }
@@ -598,7 +606,7 @@ CursorResult MemoryMutationCursor::find_multivalue(const Slice& key, const Slice
     const auto memory_result = memory_cursor_->find_multivalue(key, value, false);
 
     auto db_result = cursor_->find_multivalue(key, value, false);
-    if (db_result.key && is_entry_deleted(db_result.key, db_result.value)) {
+    if (db_result.done && is_entry_deleted(db_result.key, db_result.value)) {
         db_result = next_on_db(MoveType::kNextDup, throw_notfound);
     }
 
@@ -702,7 +710,7 @@ CursorResult MemoryMutationCursor::next_on_db(MemoryMutationCursor::MoveType typ
     CursorResult result = next_by_type(type, throw_notfound);
     if (!result.done) return result;
 
-    while (result.key && result.value && is_entry_deleted(result.key, result.value)) {
+    while (result.done && result.value && is_entry_deleted(result.key, result.value)) {
         result = next_by_type(type, throw_notfound);
         if (!result.done) return result;
     }
@@ -711,19 +719,27 @@ CursorResult MemoryMutationCursor::next_on_db(MemoryMutationCursor::MoveType typ
 }
 
 CursorResult MemoryMutationCursor::next_by_type(MemoryMutationCursor::MoveType type, bool throw_notfound) {
-    switch (type) {
-        case MoveType::kNext: {
-            return cursor_->to_next(throw_notfound);
+    try {
+        switch (type) {
+            case MoveType::kNext: {
+                return cursor_->to_next(throw_notfound);
+            }
+            case MoveType::kNextDup: {
+                return cursor_->to_current_next_multi(throw_notfound);
+            }
+            case MoveType::kNextNoDup: {
+                return cursor_->to_next_first_multi(throw_notfound);
+            }
+            default: {  // Avoid GCC complaining w/ error: control reaches end of non-void function
+                return CursorResult{{}, {}, false};
+            }
         }
-        case MoveType::kNextDup: {
-            return cursor_->to_current_next_multi(throw_notfound);
-        }
-        case MoveType::kNextNoDup: {
-            return cursor_->to_next_first_multi(throw_notfound);
-        }
-        default: {  // Avoid GCC complaining w/ error: control reaches end of non-void function
+    } catch (const mdbx::no_data& ex) {
+        // special case when cursor moves beyond existing data and is not handled by MDBX_NOTFOUND
+        if (!throw_notfound) {
             return CursorResult{{}, {}, false};
         }
+        throw ex;
     }
 }
 

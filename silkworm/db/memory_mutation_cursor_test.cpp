@@ -437,7 +437,7 @@ TEST_CASE("MemoryMutationCursor: to_current_next_multi", "[silkworm][node][db][m
 
             MemoryMutationCursor mutation_cursor2{test->mutation, table::kCode};
             REQUIRE(mutation_cursor2.to_first());
-            CHECK_THROWS_AS( mutation_cursor2.to_current_next_multi(/*throw_notfound=*/true), mdbx::not_found);
+            CHECK_THROWS_AS(mutation_cursor2.to_current_next_multi(/*throw_notfound=*/true), mdbx::not_found);
 
             MemoryMutationCursor mutation_cursor4{test->mutation, table::kAccountChangeSet};
             REQUIRE(mutation_cursor4.to_first());

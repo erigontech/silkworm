@@ -24,6 +24,7 @@ debug_traceBlockByNumber/test_27,\
 debug_traceBlockByNumber/test_28,\
 debug_traceCall/test_21,\
 debug_traceCall/test_22,\
+debug_traceCall/test_22,\
 debug_traceTransaction/test_25,\
 debug_traceTransaction/test_36,\
 debug_traceTransaction/test_62,\
@@ -31,6 +32,11 @@ debug_traceTransaction/test_74,\
 debug_traceTransaction/test_75,\
 debug_traceTransaction/test_77,\
 engine_,\
+eth_getLogs/test_16,\
+eth_getLogs/test_17,\
+eth_getLogs/test_18,\
+eth_getLogs/test_19,\
+eth_getLogs/test_20,\
 parity_listStorageKeys,\
 trace_replayBlockTransactions/test_29,\
 trace_transaction/test_44,\

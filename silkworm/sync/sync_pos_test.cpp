@@ -128,7 +128,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload timeout") {
                     co_return execution::api::ValidChain{};
                 }));
 
-            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == rpc::PayloadStatus::kSyncingStr);
+            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == std::string{rpc::PayloadStatus::kSyncingStr});
         }
     }
 }

@@ -60,11 +60,7 @@ TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
         EXPECT_CALL(transaction, get_one(table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return Bytes{};
         }));
-#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
         CHECK_THROWS_AS(spawn_and_wait(storage.read_chain_config()), std::invalid_argument);
-#else
-        CHECK_THROWS_MATCHES(spawn_and_wait(storage.read_chain_config()), std::invalid_argument, Message("empty chain config data in read_chain_config"));
-#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("invalid JSON chain data") {

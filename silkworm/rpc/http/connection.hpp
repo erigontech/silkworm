@@ -29,7 +29,7 @@ namespace silkworm::rpc::http {
 
 using RequestWithStringBody = boost::beast::http::request<boost::beast::http::string_body>;
 
-inline constexpr size_t kDefaultCapacity = 10 * 1024 * 1024;
+inline constexpr size_t kDefaultCapacity = 1 * 1024 * 1024;
 
 struct RequestData {
     bool request_keep_alive_{false};

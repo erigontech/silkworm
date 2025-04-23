@@ -7,7 +7,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
-#include <gmock/gmock.h>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/util.hpp>
@@ -55,6 +54,9 @@ struct RemoteChainStorageTest : public silkworm::test_util::ContextTestBase {
     chain::Providers& providers{storage.providers()};
 };
 
+// Exclude on MSVC due to error LNK2001: unresolved external symbol testing::Matcher<class std::basic_string_view...
+// See also https://github.com/google/googletest/issues/4357
+#ifndef _WIN32
 TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
     SECTION("empty chain data") {
         EXPECT_CALL(transaction, get_one(table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
@@ -94,6 +96,7 @@ TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
             })"_json);
     }
 }
+#endif  // _WIN32
 
 TEST_CASE_METHOD(RemoteChainStorageTest, "read_transaction_by_idx_in_block") {
     SECTION("not found") {

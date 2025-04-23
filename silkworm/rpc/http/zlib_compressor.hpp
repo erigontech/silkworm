@@ -4,6 +4,7 @@
 #pragma once
 
 #include <zlib.h>
+
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -45,7 +46,7 @@ class ZlibCompressor {
             if (ret == Z_STREAM_ERROR) {
                 throw std::runtime_error("zlib compression error");
             }
-            offset += kZlibCompressionBufferSize  - stream_.avail_out;
+            offset += kZlibCompressionBufferSize - stream_.avail_out;
 
             if (flush && ret == Z_STREAM_END) {
                 break;

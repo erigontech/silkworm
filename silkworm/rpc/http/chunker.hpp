@@ -4,8 +4,8 @@
 #pragma once
 
 #include <algorithm>
-#include <memory>
 #include <deque>
+#include <memory>
 
 namespace silkworm::rpc::http {
 
@@ -57,7 +57,7 @@ class Chunker {
         return !complete_chunk_.empty();
     }
 
-    std::pair<std::string, bool> get_remainder()  {
+    std::pair<std::string, bool> get_remainder() {
         if (current_chunk_.empty()) {
             // no bytes are present on current_chunk so return empty string and indication if first chunk or not
             // we are in two possible cases: at least one completed chunk is already produced, or any chunk are produced

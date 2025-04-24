@@ -103,12 +103,12 @@ Task<bool> Connection::do_read() {
     auto gzip_encoding_requested = accept_encoding.contains(kGzipEncoding) && http_compression_;
 
     RequestData request_data{
-        .request_keep_alive_ = parser.get().keep_alive(),
-        .request_http_version_ = parser.get().version(),
-        .gzip_encoding_requested_ = gzip_encoding_requested,
-        .vary_ = req[boost::beast::http::field::vary],
-        .origin_ = req[boost::beast::http::field::origin],
-        .method_ = req.method(),
+        .request_keep_alive = parser.get().keep_alive(),
+        .request_http_version = parser.get().version(),
+        .gzip_encoding_requested = gzip_encoding_requested,
+        .vary = req[boost::beast::http::field::vary],
+        .origin = req[boost::beast::http::field::origin],
+        .method = req.method(),
     };
 
     if (boost::beast::websocket::is_upgrade(parser.get())) {
@@ -153,7 +153,7 @@ Task<void> Connection::handle_request(const RequestWithStringBody& req, RequestD
 }
 
 Task<void> Connection::handle_preflight(const RequestWithStringBody& req, RequestData& request_data) {
-    boost::beast::http::response<boost::beast::http::string_body> res{boost::beast::http::status::no_content, request_data.request_http_version_};
+    boost::beast::http::response<boost::beast::http::string_body> res{boost::beast::http::status::no_content, request_data.request_http_version};
     std::string vary = req[boost::beast::http::field::vary];
 
     if (vary.empty()) {
@@ -193,7 +193,7 @@ Task<void> Connection::handle_actual_request(const RequestWithStringBody& req, R
         co_return;
     }
 
-    if (http_compression_ && !accept_encoding.empty() && !accept_encoding.contains(kIdentity) && !request_data.gzip_encoding_requested_) {
+    if (http_compression_ && !accept_encoding.empty() && !accept_encoding.contains(kIdentity) && !request_data.gzip_encoding_requested) {
         co_await do_write("unsupported requested compression\n", boost::beast::http::status::unsupported_media_type, request_data, kGzipEncoding);
         co_return;
     }
@@ -220,9 +220,10 @@ Task<void> Connection::handle_actual_request(const RequestWithStringBody& req, R
     request_map_.emplace(request_id_, std::move(request_data));
     auto rsp_content = co_await handler_->handle(req.body(), request_id_);
     if (rsp_content) {
-        // no streaming api
-        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, request_data, request_data.gzip_encoding_requested_ ? kGzipEncoding : "", request_data.gzip_encoding_requested_);
-        auto it = request_map_.find(request_id_);
+        // no streaming
+        const auto& req_data = request_map_.at(request_id_);
+        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, req_data, req_data.gzip_encoding_requested ? kGzipEncoding : "", req_data.gzip_encoding_requested);
+        const auto it = request_map_.find(request_id_);
         if (it != request_map_.end()) {
             request_map_.erase(it);
         }
@@ -233,12 +234,12 @@ Task<void> Connection::handle_actual_request(const RequestWithStringBody& req, R
 //! Write chunked response headers
 Task<void> Connection::create_chunk_header(RequestData& request_data) {
     try {
-        boost::beast::http::response<boost::beast::http::empty_body> rsp{boost::beast::http::status::ok, request_data.request_http_version_};
+        boost::beast::http::response<boost::beast::http::empty_body> rsp{boost::beast::http::status::ok, request_data.request_http_version};
         rsp.set(boost::beast::http::field::content_type, "application/json");
         rsp.set(boost::beast::http::field::date, get_date_time());
         rsp.chunked(true);
 
-        if (request_data.gzip_encoding_requested_) {
+        if (request_data.gzip_encoding_requested) {
             rsp.set(boost::beast::http::field::content_encoding, kGzipEncoding);
         }
 
@@ -258,47 +259,49 @@ Task<void> Connection::create_chunk_header(RequestData& request_data) {
 }
 
 Task<void> Connection::open_stream(uint64_t request_id) {
-    auto request_data_it = request_map_.find(request_id);
+    const auto request_data_it = request_map_.find(request_id);
     if (request_data_it == request_map_.end()) {
         SILK_ERROR << "Connection::open_stream request_id not found: " << request_id;
-        co_return;
+        SILKWORM_ASSERT(false);
     }
     auto& request_data = request_data_it->second;
 
     // add chunking supports
-    request_data.chunk_ = std::make_unique<Chunker>();
+    request_data.chunk = std::make_unique<Chunker>();
 
     co_return;
 }
 
 Task<void> Connection::close_stream(uint64_t request_id) {
-    auto request_data_it = request_map_.find(request_id);
+    const auto request_data_it = request_map_.find(request_id);
     if (request_data_it == request_map_.end()) {
         SILK_ERROR << "Connection::close_stream request_id not found: " << request_id;
-        co_return;
+        SILKWORM_ASSERT(false);
     }
     auto& request_data = request_data_it->second;
 
     try {
-        // get chunk remainder and flush it
-        auto [chunk, first_chunk] = request_data.chunk_->get_remainder();
+        // Get remaining chunk and flush it
+        auto [chunk, first_chunk] = request_data.chunk->get_remainder();
         if (first_chunk) {
             if (!chunk.empty()) {
-                // it is first chunk so send full msg without chunking
-                co_await do_write(chunk, boost::beast::http::status::ok, request_data, request_data.gzip_encoding_requested_ ? kGzipEncoding : "", /* to_be_compressed */ false);  // data already compressed if nec
+                // If it is the first chunk, send without chunking
+                co_await do_write(chunk, boost::beast::http::status::ok, request_data, request_data.gzip_encoding_requested ? kGzipEncoding : "", /* to_be_compressed */ false);  // data already compressed if nec
             }
         } else {
-            // already a chunk is generated
+            // A previous chunk was already generated
             if (!chunk.empty()) {
-                // send new one
+                // Send the new one
                 co_await send_chunk(chunk);
             }
             co_await boost::asio::async_write(socket_, boost::beast::http::make_chunk_last(), boost::asio::use_awaitable);
         }
     } catch (const boost::system::system_error& se) {
+        request_map_.erase(request_data_it);
         SILK_TRACE << "Connection::close system_error: " << se.what();
         throw;
     } catch (const std::exception& e) {
+        request_map_.erase(request_data_it);
         SILK_ERROR << "Connection::close exception: " << e.what();
         throw;
     }
@@ -309,10 +312,10 @@ Task<void> Connection::close_stream(uint64_t request_id) {
 
 //! Write chunked response content to the underlying socket
 Task<size_t> Connection::write(uint64_t request_id, std::string_view content, bool last) {
-    auto request_data_it = request_map_.find(request_id);
+    const auto request_data_it = request_map_.find(request_id);
     if (request_data_it == request_map_.end()) {
         SILK_ERROR << "Connection::write request_id not found: " << request_id;
-        co_return 0;
+        SILKWORM_ASSERT(false);
     }
     auto& request_data = request_data_it->second;
 
@@ -321,19 +324,19 @@ Task<size_t> Connection::write(uint64_t request_id, std::string_view content, bo
         response.append("\n");
     }
 
-    if (request_data.gzip_encoding_requested_) {
+    if (request_data.gzip_encoding_requested) {
         std::string compressed_content;
-        co_await compress(response.data(), compressed_content);
+        co_await compress(response, compressed_content);
         // queued compressed buffer
-        request_data.chunk_->queue_data(std::move(compressed_content));
+        request_data.chunk->queue_data(compressed_content);
     } else {
         // queued clear buffer
-        request_data.chunk_->queue_data(std::move(response));
+        request_data.chunk->queue_data(response);
     }
 
     // until completed chunk are present
-    while (request_data.chunk_->has_chunks()) {
-        auto [complete_chunk, first_chunk] = request_data.chunk_->get_complete_chunk();
+    while (request_data.chunk->has_chunks()) {
+        auto [complete_chunk, first_chunk] = request_data.chunk->get_complete_chunk();
 
         if (first_chunk) {
             co_await create_chunk_header(request_data);
@@ -360,10 +363,10 @@ Task<size_t> Connection::send_chunk(const std::string& content) {
     co_return bytes_transferred;
 }
 
-Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status, RequestData& request_data, std::string_view content_encoding, bool to_be_compressed) {
+Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status, const RequestData& request_data, std::string_view content_encoding, bool to_be_compressed) {
     try {
         SILK_TRACE << "Connection::do_write response: " << http_status << " content: " << content;
-        boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_data.request_http_version_};
+        boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_data.request_http_version};
 
         if (http_status != boost::beast::http::status::ok) {
             res.set(boost::beast::http::field::content_type, "text/plain");
@@ -373,7 +376,7 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
 
         res.set(boost::beast::http::field::date, get_date_time());
         res.erase(boost::beast::http::field::host);
-        res.keep_alive(request_data.request_keep_alive_);
+        res.keep_alive(request_data.request_keep_alive);
         if (http_status == boost::beast::http::status::ok && !content_encoding.empty()) {
             // Positive response w/ compression required
             res.set(boost::beast::http::field::content_encoding, content_encoding);
@@ -385,7 +388,7 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
                 res.body() = std::move(compressed_content);
             } else {
                 res.content_length(content.size());
-                res.body() = std::move(content);
+                res.body() = content;
             }
 
         } else {
@@ -394,7 +397,7 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
                 res.set(boost::beast::http::field::accept_encoding, content_encoding);  // Indicate the supported encoding
             }
             res.content_length(content.size());
-            res.body() = std::move(content);
+            res.body() = content;
         }
 
         set_cors<boost::beast::http::string_body>(res, request_data);
@@ -463,30 +466,30 @@ Connection::AuthorizationResult Connection::is_request_authorized(const RequestW
 }
 
 template <class Body>
-void Connection::set_cors(boost::beast::http::response<Body>& res, RequestData& request_data) {
-    if (request_data.vary_.empty()) {
+void Connection::set_cors(boost::beast::http::response<Body>& res, const RequestData& request_data) {
+    if (request_data.vary.empty()) {
         res.set(boost::beast::http::field::vary, "Origin");
     } else {
-        auto vary{request_data.vary_};
+        auto vary{request_data.vary};
         res.set(boost::beast::http::field::vary, vary.append(" Origin"));
     }
 
-    if (request_data.origin_.empty()) {
+    if (request_data.origin.empty()) {
         return;
     }
 
-    if (!is_origin_allowed(allowed_origins_, request_data.origin_)) {
+    if (!is_origin_allowed(allowed_origins_, request_data.origin)) {
         return;
     }
 
-    if (!is_method_allowed(request_data.method_)) {
+    if (!is_method_allowed(request_data.method)) {
         return;
     }
 
     if (allowed_origins_.at(0) == "*") {
         res.set(boost::beast::http::field::access_control_allow_origin, "*");
     } else {
-        res.set(boost::beast::http::field::access_control_allow_origin, request_data.origin_);
+        res.set(boost::beast::http::field::access_control_allow_origin, request_data.origin);
     }
 }
 

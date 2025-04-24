@@ -11,8 +11,8 @@
 namespace silkworm::db::kv::api {
 
 using namespace silkworm::datastore::kvdb;
-using datastore::kvdb::detail::slice_as_hex;
 using datastore::kvdb::detail::slice_as_bytes;
+using datastore::kvdb::detail::slice_as_hex;
 
 Task<void> LocalCursor::open_cursor(std::string_view table_name, bool is_dup_sorted) {
     const auto start_time = clock_time::now();

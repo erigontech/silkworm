@@ -116,7 +116,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload.get_header_timeout", "[sync]
                     co_return BlockHeader{};
                 }));
 
-            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == rpc::PayloadStatus::kSyncingStr);
+            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == std::string{rpc::PayloadStatus::kSyncingStr});
         }
     }
 }
@@ -137,7 +137,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload.get_td_timeout", "[sync]") {
                     co_return kSepoliaConfig.terminal_total_difficulty;
                 }));
 
-            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == rpc::PayloadStatus::kSyncingStr);
+            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == std::string{rpc::PayloadStatus::kSyncingStr});
         }
     }
 }
@@ -162,7 +162,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload.insert_blocks_timeout", "[sy
                     co_return execution::api::InsertionResult{};
                 }));
 
-            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == rpc::PayloadStatus::kSyncingStr);
+            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == std::string{rpc::PayloadStatus::kSyncingStr});
         }
     }
 }
@@ -191,7 +191,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload.get_header_hash_number_timeo
                     co_return payload.block_num;
                 }));
 
-            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == rpc::PayloadStatus::kSyncingStr);
+            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == std::string{rpc::PayloadStatus::kSyncingStr});
         }
     }
 }
@@ -250,7 +250,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::new_payload.validate_chain_success", "[s
                     co_return execution::api::ValidChain{};
                 }));
 
-            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == rpc::PayloadStatus::kValidStr);
+            CHECK(spawn_and_wait(sync_.new_payload(request, 1ms)).status == std::string{rpc::PayloadStatus::kValidStr});
         }
     }
 }
@@ -265,7 +265,7 @@ static const rpc::ForkChoiceUpdatedRequest kInvalidForkChoiceUpdatedRequest{
 
 TEST_CASE_METHOD(PoSSyncTest, "PoSSync::fork_choice_updated.invalid_request", "[sync]") {
     const auto request = kInvalidForkChoiceUpdatedRequest;
-    CHECK(spawn_and_wait(sync_.fork_choice_updated(request, 1ms)).payload_status.status == rpc::PayloadStatus::kInvalidStr);
+    CHECK(spawn_and_wait(sync_.fork_choice_updated(request, 1ms)).payload_status.status == std::string{rpc::PayloadStatus::kInvalidStr});
 }
 
 static const rpc::ForkChoiceUpdatedRequest kValidForkChoiceUpdatedRequest{
@@ -286,7 +286,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::fork_choice_updated.get_header1_timeout"
             co_return BlockHeader{};
         }));
 
-    CHECK(spawn_and_wait(sync_.fork_choice_updated(request, 1ms)).payload_status.status == rpc::PayloadStatus::kSyncingStr);
+    CHECK(spawn_and_wait(sync_.fork_choice_updated(request, 1ms)).payload_status.status == std::string{rpc::PayloadStatus::kSyncingStr});
 }
 
 TEST_CASE_METHOD(PoSSyncTest, "PoSSync::fork_choice_updated.get_header2_timeout", "[sync]") {
@@ -304,7 +304,7 @@ TEST_CASE_METHOD(PoSSyncTest, "PoSSync::fork_choice_updated.get_header2_timeout"
             co_return BlockHeader{};
         }));
 
-    CHECK(spawn_and_wait(sync_.fork_choice_updated(request, 1ms)).payload_status.status == rpc::PayloadStatus::kSyncingStr);
+    CHECK(spawn_and_wait(sync_.fork_choice_updated(request, 1ms)).payload_status.status == std::string{rpc::PayloadStatus::kSyncingStr});
 }
 
 }  // namespace silkworm::chainsync

@@ -34,7 +34,7 @@ TEST_CASE("split cursor dup sort") {
     WorkerPool pool{1};
     db::test_util::MockCursorDupSort csdp;
 
-    SECTION("0 maching bits: seek_both, key not exists") {
+    SECTION("0 matching bits: seek_both, key not exists") {
         SplitCursorDupSort sc(csdp, kKey, kLocation, 0, silkworm::kAddressLength, 0);
 
         EXPECT_CALL(csdp, seek_both(_, _))
@@ -50,7 +50,7 @@ TEST_CASE("split cursor dup sort") {
         CHECK(silkworm::to_hex(skv.value).empty());
     }
 
-    SECTION("evmc:.address maching bits: seek_both, key not exists") {
+    SECTION("evmc:.address matching bits: seek_both, key not exists") {
         SplitCursorDupSort sc(csdp, kKey, kLocation, 8 * silkworm::kAddressLength, silkworm::kAddressLength,
                               silkworm::kHashLength);
 
@@ -67,7 +67,7 @@ TEST_CASE("split cursor dup sort") {
         CHECK(silkworm::to_hex(skv.value).empty());
     }
 
-    SECTION("evmc:.address odd maching bits: seek_both, key not exists") {
+    SECTION("evmc:.address odd matching bits: seek_both, key not exists") {
         SplitCursorDupSort sc(csdp, kKey, kLocation, 153, silkworm::kAddressLength,
                               silkworm::kHashLength);
 
@@ -84,7 +84,7 @@ TEST_CASE("split cursor dup sort") {
         CHECK(silkworm::to_hex(skv.value).empty());
     }
 
-    SECTION("evmc:.address maching bits: seek_both, key exists") {
+    SECTION("evmc:.address matching bits: seek_both, key exists") {
         SplitCursorDupSort sc(csdp, kKey, kLocation, 8 * silkworm::kAddressLength, silkworm::kAddressLength,
                               silkworm::kHashLength);
 
@@ -118,7 +118,7 @@ TEST_CASE("split cursor dup sort") {
         CHECK(silkworm::to_hex(skv.value).empty());
     }
 
-    SECTION("evmc:.address maching bits: next_dup, key exists empty key") {
+    SECTION("evmc:.address matching bits: next_dup, key exists empty key") {
         SplitCursorDupSort sc(csdp, kKey, kLocation, 8 * silkworm::kAddressLength, silkworm::kAddressLength,
                               silkworm::kHashLength);
 
@@ -135,7 +135,7 @@ TEST_CASE("split cursor dup sort") {
         CHECK(silkworm::to_hex(skv.value).empty());
     }
 
-    SECTION("evmc:.address maching bits: next_dup, key exists wrong key last byte") {
+    SECTION("evmc:.address matching bits: next_dup, key exists wrong key last byte") {
         SplitCursorDupSort sc(csdp, kKey, kLocation, 8 * silkworm::kAddressLength, silkworm::kAddressLength,
                               silkworm::kHashLength);
 
@@ -152,7 +152,7 @@ TEST_CASE("split cursor dup sort") {
         CHECK(silkworm::to_hex(skv.value).empty());
     }
 
-    SECTION("evmc:.address maching bits: next_dup, key exists wrong key first byte") {
+    SECTION("evmc:.address matching bits: next_dup, key exists wrong key first byte") {
         SplitCursorDupSort sc(csdp, kKey, kLocation, 8 * silkworm::kAddressLength, silkworm::kAddressLength,
                               silkworm::kHashLength);
 
@@ -174,7 +174,7 @@ TEST_CASE("split cursor") {
     WorkerPool pool{1};
     db::test_util::MockCursor csdp;
 
-    SECTION("0 maching bits: seek, key not exists") {
+    SECTION("0 matching bits: seek, key not exists") {
         SplitCursor sc(csdp, kKey, 0, silkworm::kAddressLength, 0, silkworm::kAddressLength);
 
         EXPECT_CALL(csdp, seek(_))
@@ -190,7 +190,7 @@ TEST_CASE("split cursor") {
         CHECK(silkworm::to_hex(skv.value).empty());
     }
 
-    SECTION("evmc:.address maching bits: seek, key not exists") {
+    SECTION("evmc:.address matching bits: seek, key not exists") {
         SplitCursor sc(csdp, kKey, 8 * silkworm::kAddressLength, silkworm::kAddressLength, 0, silkworm::kAddressLength);
 
         EXPECT_CALL(csdp, seek(_))
@@ -206,7 +206,7 @@ TEST_CASE("split cursor") {
         CHECK(silkworm::to_hex(skv.value).empty());
     }
 
-    SECTION("evmc:.address odd maching bits: seek, key not exists") {
+    SECTION("evmc:.address odd matching bits: seek, key not exists") {
         SplitCursor sc(csdp, kKey, 131, silkworm::kAddressLength, 0, silkworm::kAddressLength);
 
         EXPECT_CALL(csdp, seek(_))
@@ -222,7 +222,7 @@ TEST_CASE("split cursor") {
         CHECK(silkworm::to_hex(skv.value).empty());
     }
 
-    SECTION("evmc:.address maching bits: seek, key exists") {
+    SECTION("evmc:.address matching bits: seek, key exists") {
         SplitCursor sc(csdp, kKey, 8 * silkworm::kAddressLength, silkworm::kAddressLength, 0, silkworm::kAddressLength);
 
         EXPECT_CALL(csdp, seek(_))
@@ -238,7 +238,7 @@ TEST_CASE("split cursor") {
         CHECK(silkworm::to_hex(skv.value) == "0000000000000000000000000000000000000000000000000000000000000001134567");
     }
 
-    SECTION("evmc:.address maching bits: next_dup, key exists short key") {
+    SECTION("evmc:.address matching bits: next_dup, key exists short key") {
         SplitCursor sc(csdp, kKey, 8 * silkworm::kAddressLength, silkworm::kAddressLength, 0, silkworm::kAddressLength);
 
         EXPECT_CALL(csdp, next())
@@ -254,7 +254,7 @@ TEST_CASE("split cursor") {
         CHECK(silkworm::to_hex(skv.value).empty());
     }
 
-    SECTION("evmc:.address maching bits: next, empty key") {
+    SECTION("evmc:.address matching bits: next, empty key") {
         SplitCursor sc(csdp, kKey, 8 * silkworm::kAddressLength, silkworm::kAddressLength, 0, silkworm::kAddressLength);
 
         EXPECT_CALL(csdp, next())
@@ -270,7 +270,7 @@ TEST_CASE("split cursor") {
         CHECK(silkworm::to_hex(skv.value).empty());
     }
 
-    SECTION("evmc:.address maching bits: next, key exists wrong key last byte") {
+    SECTION("evmc:.address matching bits: next, key exists wrong key last byte") {
         SplitCursor sc(csdp, kKey, 8 * silkworm::kAddressLength, silkworm::kAddressLength, 0, silkworm::kAddressLength);
         EXPECT_CALL(csdp, next())
             .WillOnce(InvokeWithoutArgs([]() -> Task<KeyValue> {
@@ -285,7 +285,7 @@ TEST_CASE("split cursor") {
         CHECK(silkworm::to_hex(skv.value).empty());
     }
 
-    SECTION("evmc:.address maching bits: next, key exists wrong key first byte") {
+    SECTION("evmc:.address matching bits: next, key exists wrong key first byte") {
         SplitCursor sc(csdp, kKey, 8 * silkworm::kAddressLength, silkworm::kAddressLength, 0, silkworm::kAddressLength);
 
         EXPECT_CALL(csdp, next())
@@ -301,4 +301,5 @@ TEST_CASE("split cursor") {
         CHECK(silkworm::to_hex(skv.value).empty());
     }
 }
+
 }  // namespace silkworm::rpc::ethdb

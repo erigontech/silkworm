@@ -24,6 +24,7 @@ using boost::asio::as_tuple;
 using namespace boost::asio::experimental::awaitable_operators;
 using boost::asio::steady_timer;
 using boost::asio::use_awaitable;
+using datastore::kvdb::detail::slice_as_string;
 
 api::Version higher_version_ignoring_patch(api::Version lhs, api::Version rhs) {
     uint32_t lhs_major = std::get<0>(lhs);
@@ -350,7 +351,7 @@ bool TxCall::save_cursors(std::vector<CursorPosition>& positions) {
             }
             mdbx::slice key = result.key;
             mdbx::slice value = result.value;
-            positions.emplace_back(CursorPosition{key.as_string(), value.as_string()});
+            positions.emplace_back(CursorPosition{slice_as_string(key), slice_as_string(value)});
         }
     }
 

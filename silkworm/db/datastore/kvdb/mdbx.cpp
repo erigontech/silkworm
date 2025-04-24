@@ -585,7 +585,7 @@ std::vector<std::string> list_maps(::mdbx::txn& tx, bool throw_notfound) {
     ::mdbx::map_handle main_map{1};
     auto main_cursor{tx.open_cursor(main_map)};
     for (auto it{main_cursor.to_first(throw_notfound)}; it.done; it = main_cursor.to_next(throw_notfound)) {
-        map_names.push_back(std::string(it.key.as_string()));
+        map_names.push_back(detail::slice_as_string(it.key));
     }
     return map_names;
 }

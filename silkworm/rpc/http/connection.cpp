@@ -217,12 +217,16 @@ Task<void> Connection::handle_actual_request(const RequestWithStringBody& req, R
         co_return;
     }
 
+    request_map_.emplace(request_id_, std::move(request_data));
     auto rsp_content = co_await handler_->handle(req.body(), request_id_);
     if (rsp_content) {
         // no streaming
-        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, request_data, request_data.gzip_encoding_requested ? kGzipEncoding : "", request_data.gzip_encoding_requested);
-    } else {
-        request_map_.emplace(request_id_, std::move(request_data));
+        const auto& req_data = request_map_.at(request_id_);
+        co_await do_write(rsp_content->append("\n"), boost::beast::http::status::ok, req_data, req_data.gzip_encoding_requested ? kGzipEncoding : "", req_data.gzip_encoding_requested);
+        const auto it = request_map_.find(request_id_);
+        if (it != request_map_.end()) {
+            request_map_.erase(it);
+        }
     }
     request_id_++;
 }
@@ -255,10 +259,10 @@ Task<void> Connection::create_chunk_header(RequestData& request_data) {
 }
 
 Task<void> Connection::open_stream(uint64_t request_id) {
-    auto request_data_it = request_map_.find(request_id);
+    const auto request_data_it = request_map_.find(request_id);
     if (request_data_it == request_map_.end()) {
         SILK_ERROR << "Connection::open_stream request_id not found: " << request_id;
-        co_return;
+        SILKWORM_ASSERT(false);
     }
     auto& request_data = request_data_it->second;
 
@@ -269,15 +273,15 @@ Task<void> Connection::open_stream(uint64_t request_id) {
 }
 
 Task<void> Connection::close_stream(uint64_t request_id) {
-    auto request_data_it = request_map_.find(request_id);
+    const auto request_data_it = request_map_.find(request_id);
     if (request_data_it == request_map_.end()) {
         SILK_ERROR << "Connection::close_stream request_id not found: " << request_id;
-        co_return;
+        SILKWORM_ASSERT(false);
     }
     auto& request_data = request_data_it->second;
 
     try {
-        // Get remianing chunk and flush it
+        // Get remaining chunk and flush it
         auto [chunk, first_chunk] = request_data.chunk->get_remainder();
         if (first_chunk) {
             if (!chunk.empty()) {
@@ -293,9 +297,11 @@ Task<void> Connection::close_stream(uint64_t request_id) {
             co_await boost::asio::async_write(socket_, boost::beast::http::make_chunk_last(), boost::asio::use_awaitable);
         }
     } catch (const boost::system::system_error& se) {
+        request_map_.erase(request_data_it);
         SILK_TRACE << "Connection::close system_error: " << se.what();
         throw;
     } catch (const std::exception& e) {
+        request_map_.erase(request_data_it);
         SILK_ERROR << "Connection::close exception: " << e.what();
         throw;
     }
@@ -306,10 +312,10 @@ Task<void> Connection::close_stream(uint64_t request_id) {
 
 //! Write chunked response content to the underlying socket
 Task<size_t> Connection::write(uint64_t request_id, std::string_view content, bool last) {
-    auto request_data_it = request_map_.find(request_id);
+    const auto request_data_it = request_map_.find(request_id);
     if (request_data_it == request_map_.end()) {
         SILK_ERROR << "Connection::write request_id not found: " << request_id;
-        co_return 0;
+        SILKWORM_ASSERT(false);
     }
     auto& request_data = request_data_it->second;
 
@@ -357,7 +363,7 @@ Task<size_t> Connection::send_chunk(const std::string& content) {
     co_return bytes_transferred;
 }
 
-Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status, RequestData& request_data, std::string_view content_encoding, bool to_be_compressed) {
+Task<void> Connection::do_write(const std::string& content, boost::beast::http::status http_status, const RequestData& request_data, std::string_view content_encoding, bool to_be_compressed) {
     try {
         SILK_TRACE << "Connection::do_write response: " << http_status << " content: " << content;
         boost::beast::http::response<boost::beast::http::string_body> res{http_status, request_data.request_http_version};
@@ -460,7 +466,7 @@ Connection::AuthorizationResult Connection::is_request_authorized(const RequestW
 }
 
 template <class Body>
-void Connection::set_cors(boost::beast::http::response<Body>& res, RequestData& request_data) {
+void Connection::set_cors(boost::beast::http::response<Body>& res, const RequestData& request_data) {
     if (request_data.vary.empty()) {
         res.set(boost::beast::http::field::vary, "Origin");
     } else {

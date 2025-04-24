@@ -87,13 +87,13 @@ class Connection : public StreamWriter {
     Task<void> do_upgrade(const RequestWithStringBody& req);
 
     template <class Body>
-    void set_cors(boost::beast::http::response<Body>& res, RequestData& request_data);
+    void set_cors(boost::beast::http::response<Body>& res, const RequestData& request_data);
 
     //! Perform an asynchronous read operation.
     Task<bool> do_read();
 
     //! Perform an asynchronous write operation.
-    Task<void> do_write(const std::string& content, boost::beast::http::status http_status, RequestData& request_data, std::string_view content_encoding = "", bool to_be_compressed = false);
+    Task<void> do_write(const std::string& content, boost::beast::http::status http_status, const RequestData& request_data, std::string_view content_encoding = "", bool to_be_compressed = false);
 
     static std::string get_date_time();
 

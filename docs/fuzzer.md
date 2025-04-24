@@ -6,7 +6,7 @@ To build the fuzzer use the following:
 ```bash
 mkdir build
 cd build
-cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
+cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_18_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
 cmake --build --target rpcdaemon_fuzzer_test
 cmake –-build --target rpcdaemon_fuzzer_diagnostics
 ```

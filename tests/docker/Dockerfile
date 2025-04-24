@@ -18,11 +18,11 @@ RUN git submodule sync
 RUN git submodule update --init --recursive
 
 # 3 Install compiler
-RUN cmake/setup/compiler_install.sh clang 16
+RUN cmake/setup/compiler_install.sh clang 18
 
 # 4 Build all targets
 WORKDIR /app/build
-RUN cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake
+RUN cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_x64_clang_18_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake
 WORKDIR /app/project
 RUN cmake --build /app/build -j4 
 
@@ -48,7 +48,7 @@ RUN git pull origin ${BRANCH}
 # Rebuild all targets
 RUN echo "Rebuilding"
 WORKDIR /app/build
-RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake
+RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_x64_clang_18_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake
 WORKDIR /app/project
 RUN sudo cmake --build /app/build -j4 
 
@@ -64,7 +64,7 @@ RUN sudo cmake --build /app/build -j4
 # RUN for file in ~/artifacts/*; do sed -i 's/^>> //' "$file"; done
 # # Rebuild fuzzer
 # WORKDIR /app/build
-# RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
+# RUN sudo cmake ../project -DCMAKE_BUILD_TYPE=Debug -DCONAN_PROFILE=linux_x64_clang_18_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
 # WORKDIR /app/project
 # RUN sudo cmake --build /app/build -j4 --target rpcdaemon_fuzzer_test
 # # Run fuzzer

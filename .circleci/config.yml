@@ -95,7 +95,7 @@ commands:
           command: |
             if [[ "<<parameters.compiler_id>>" == "clang" ]]
             then
-                conan_profile=linux_x64_clang_16_release
+                conan_profile=linux_x64_clang_18_release
             else
                 conan_profile=linux_x64_gcc_11_release
             fi
@@ -132,7 +132,7 @@ commands:
       - run:
           name: "CMake Fuzzer"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
+          command: cmake ../project -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_18_release -DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON
       - run:
           name: "Build Fuzzer"
           command: |

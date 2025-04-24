@@ -21,7 +21,7 @@ namespace detail {
     }
 
     std::string slice_as_hex(const Slice& data) {
-        return ::mdbx::to_hex(data).as_string();
+        return std::string(::mdbx::to_hex(data).as_string());
     }
 
     log::Args log_args_for_commit_latency(const MDBX_commit_latency& commit_latency) {
@@ -577,7 +577,7 @@ std::vector<std::string> list_maps(::mdbx::txn& tx, bool throw_notfound) {
     ::mdbx::map_handle main_map{1};
     auto main_cursor{tx.open_cursor(main_map)};
     for (auto it{main_cursor.to_first(throw_notfound)}; it.done; it = main_cursor.to_next(throw_notfound)) {
-        map_names.push_back(it.key.as_string());
+        map_names.push_back(std::string(it.key.as_string()));
     }
     return map_names;
 }

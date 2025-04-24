@@ -105,6 +105,6 @@ struct CachingViewFactory {
     }
 };
 
-inline constexpr CachingViewFactory caching;
+inline constexpr CachingViewFactory caching;  // NOLINT(*-identifier-naming)
 
 }  // namespace silkworm::views

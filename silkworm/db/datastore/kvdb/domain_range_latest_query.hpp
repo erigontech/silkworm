@@ -48,8 +48,8 @@ struct DomainRangeLatestQuery {
         return decode_kv_pair(kv_pair);
     };
 
-    auto exec_with_eager_begin(Bytes key_start, Bytes key_end, bool ascending) {
-        SILKWORM_ASSERT(ascending);  // descending is not implemented
+    auto exec_with_eager_begin(Bytes key_start, Bytes key_end, bool ascending) {  // NOLINT(*-unnecessary-value-param)
+        SILKWORM_ASSERT(ascending);                                               // descending is not implemented
 
         using CursorKVIteratorRaw = CursorKVIterator<DomainKeyDecoder<RawDecoder<ByteView>>, DomainValueDecoder<RawDecoder<ByteView>>>;
         CursorKVIteratorRaw begin_it;

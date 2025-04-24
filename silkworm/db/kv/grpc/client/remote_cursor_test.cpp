@@ -24,19 +24,20 @@ using testing::Expectation;
 using testing::Property;
 namespace test = rpc::test;
 
-static constexpr std::string_view kPlainStateKey{"e0a2bd4258d2768837baa26a28fe71dc079f84c7"};
-static constexpr std::string_view kPlainStateValue{""};
+// The following constants must stay as std::string/Bytes because gRPC bindings require std::string
+static const std::string kPlainStateKey{"e0a2bd4258d2768837baa26a28fe71dc079f84c7"};
+static const std::string kPlainStateValue;
 
-static const silkworm::ByteView kPlainStateKeyBytes{string_view_to_byte_view(kPlainStateKey)};
-static const silkworm::ByteView kPlainStateValueBytes{string_view_to_byte_view(kPlainStateValue)};
+static const silkworm::Bytes kPlainStateKeyBytes{string_view_to_byte_view(kPlainStateKey)};
+static const silkworm::Bytes kPlainStateValueBytes{string_view_to_byte_view(kPlainStateValue)};
 
-static constexpr std::string_view kAccountChangeSetKey{"0000000000532b9f"};
-static constexpr std::string_view kAccountChangeSetSubkey{"0000000000000000000000000000000000000000"};
-static constexpr std::string_view kAccountChangeSetValue{"020944ed67f28fd50bb8e9"};
+static const std::string kAccountChangeSetKey{"0000000000532b9f"};
+static const std::string kAccountChangeSetSubkey{"0000000000000000000000000000000000000000"};
+static const std::string kAccountChangeSetValue{"020944ed67f28fd50bb8e9"};
 
-static const silkworm::ByteView kAccountChangeSetKeyBytes{string_view_to_byte_view(kAccountChangeSetKey)};
-static const silkworm::ByteView kAccountChangeSetSubkeyBytes{string_view_to_byte_view(kAccountChangeSetSubkey)};
-static const silkworm::ByteView kAccountChangeSetValueBytes{string_view_to_byte_view(kAccountChangeSetValue)};
+static const silkworm::Bytes kAccountChangeSetKeyBytes{string_to_bytes(kAccountChangeSetKey)};
+static const silkworm::Bytes kAccountChangeSetSubkeyBytes{string_to_bytes(kAccountChangeSetSubkey)};
+static const silkworm::Bytes kAccountChangeSetValueBytes{string_to_bytes(kAccountChangeSetValue)};
 
 class RemoteCursorTest : public test_util::KVTestBase {
   public:
@@ -44,7 +45,7 @@ class RemoteCursorTest : public test_util::KVTestBase {
         // Set the call expectations common to all RemoteCursor tests:
         // remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
         expect_request_async_tx(/*ok=*/true);
-        // AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds w/ tx_id set in pair ignored
+        // AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds w/ tx_id in Pair ignored
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, remote::Pair{}));
     }
 
@@ -76,7 +77,7 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::open_cursor", "[rpc][ethdb][kv
 
     SECTION("success") {
         // Set the call expectations:
-        // 1. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call to open cursor on specified table succeeds
+        // 1. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call to open cursor on the specified table succeeds
         EXPECT_CALL(reader_writer_, Write(
                                         AllOf(Property(&remote::Cursor::op, Eq(remote::Op::OPEN)), Property(&remote::Cursor::bucket_name, Eq("table1"))), _))
             .WillOnce(test::write_success(grpc_context_));

@@ -46,9 +46,8 @@ class MergeView : public std::ranges::view_interface<MergeView<Range1, Range2, C
               sentinel2_{std::ranges::end(range2)},
               comp_{std::move(comp)},
               proj1_{std::move(proj1)},
-              proj2_{std::move(proj2)} {
-            selector_ = select(it1_ended(), it2_ended());
-        }
+              proj2_{std::move(proj2)},
+              selector_{select(it1_ended(), it2_ended())} {}
 
         reference operator*() const {
             switch (selector_) {

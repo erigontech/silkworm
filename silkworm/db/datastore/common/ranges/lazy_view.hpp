@@ -21,7 +21,7 @@ class LazyView : public std::ranges::view_interface<LazyView<TRangeFactory, TRan
     LazyView& operator=(LazyView&& other) noexcept {
         range_factory_ = std::exchange(std::move(other.range_factory_), std::nullopt);
         range_ = std::exchange(std::move(other.range_), std::nullopt);
-        return this;
+        return *this;
     };
 
     std::ranges::iterator_t<TRange> begin() { return std::ranges::begin(range()); }

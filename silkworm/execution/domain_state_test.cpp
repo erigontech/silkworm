@@ -17,6 +17,9 @@
 
 namespace silkworm::execution {
 
+// Exclude on MSVC due to error LNK2001: unresolved external symbol testing::Matcher<class std::basic_string_view...
+// See also https://github.com/google/googletest/issues/4357
+#if !defined(SILKWORM_SANITIZE) && !defined(_WIN32)
 using testing::Unused;
 
 TEST_CASE("DomainState data access", "[execution][domain][state]") {
@@ -276,7 +279,7 @@ TEST_CASE("DomainState data access", "[execution][domain][state]") {
     }
 }
 
-TEST_CASE("DomainState empty overriden methods do nothing", "[execution][domain][state]") {
+TEST_CASE("DomainState empty overridden methods do nothing", "[execution][domain][state]") {
     TemporaryDirectory tmp_dir;
     silkworm::db::test_util::TestDataStore ds_context{tmp_dir};
 
@@ -295,5 +298,6 @@ TEST_CASE("DomainState empty overriden methods do nothing", "[execution][domain]
     auto state_root_hash = sut.state_root_hash();
     CHECK(state_root_hash == evmc::bytes32{});
 }
+#endif  // !defined(SILKWORM_SANITIZE) && !defined(_WIN32)
 
 }  // namespace silkworm::execution

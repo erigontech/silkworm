@@ -101,6 +101,7 @@ class DomainState : public State {
 
   private:
     datastore::Step current_step() const;
+    void insert_log_indexes(const Receipt& receipt) const;
 
     TxnId txn_id_;
     datastore::kvdb::RWTxn& tx_;

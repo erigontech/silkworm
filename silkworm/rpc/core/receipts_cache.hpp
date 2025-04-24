@@ -13,8 +13,8 @@
 
 namespace silkworm::rpc {
 
-inline constexpr uint kReceiptCacheLimit = 1024 * 1000;
-inline constexpr uint kReceiptsCacheLimit = 1024;
+inline constexpr size_t kReceiptCacheLimit = 1024 * 1000;
+inline constexpr size_t kReceiptsCacheLimit = 1024;
 
 class ReceiptCache {
   public:

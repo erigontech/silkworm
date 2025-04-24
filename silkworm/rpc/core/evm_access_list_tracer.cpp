@@ -42,7 +42,8 @@ void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* st
                << "}";
 
     if (is_storage_opcode(opcode) && stack_height >= 1) {
-        const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
+        evmc::bytes32 address;
+        intx::be::store(address.bytes, stack_top[0]);
         if (!exclude(recipient, execution_state.rev)) {
             add_storage(recipient, address);
             if (!is_created_contract(recipient)) {
@@ -135,7 +136,7 @@ void AccessListTracer::add_address(const evmc::address& address) {
     }
     silkworm::AccessListEntry item;
     item.account = address;
-    access_list_.push_back(item);
+    access_list_.push_back(std::move(item));
 }
 
 void AccessListTracer::dump(const std::string& user_string, const AccessList& acl) {

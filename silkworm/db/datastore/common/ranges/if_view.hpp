@@ -98,14 +98,13 @@ class IfView : public std::ranges::view_interface<IfView<Range1, Range2>> {
                 std::nullopt,
                 std::nullopt,
             };
-        } else {
-            return Iterator{
-                std::nullopt,
-                std::nullopt,
-                std::ranges::begin(range2_),
-                std::ranges::end(range2_),
-            };
         }
+        return Iterator{
+            std::nullopt,
+            std::nullopt,
+            std::ranges::begin(range2_),
+            std::ranges::end(range2_),
+        };
     }
 
     std::default_sentinel_t end() const { return std::default_sentinel; }

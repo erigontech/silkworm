@@ -28,6 +28,9 @@ struct TxNumText : ContextTestBase {
     chain::CanonicalBodyForStorageProvider provider;
 };
 
+// Exclude on MSVC due to error LNK2001: unresolved external symbol testing::Matcher<class std::basic_string_view...
+// See also https://github.com/google/googletest/issues/4357
+#ifndef _WIN32
 TEST_CASE_METHOD(TxNumText, "max_tx_num", "[db][txn][tx_num]") {
     auto cursor = std::make_shared<MockCursor>();
     EXPECT_CALL(transaction, cursor(table::kMaxTxNumName)).WillOnce(Invoke([&cursor](Unused) -> Task<std::shared_ptr<kv::api::Cursor>> {
@@ -237,5 +240,6 @@ TEST_CASE_METHOD(TxNumText, "block_num_from_tx_num", "[db][txn][tx_num]") {
         CHECK(spawn_and_wait(block_num_from_tx_num(transaction, 15, provider)) == 2);
     }
 }
+#endif  // _WIN32
 
 }  // namespace silkworm::db::txn

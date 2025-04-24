@@ -53,7 +53,7 @@ class TestDebugExecutor : DebugExecutor {
     }
 };
 
-#ifndef SILKWORM_SANITIZE
+#if !defined(SILKWORM_SANITIZE) && !defined(_WIN32)
 using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
@@ -1170,6 +1170,6 @@ TEST_CASE("uint256_to_hex", "evmone::uint256") {
     }
 }
 
-#endif  // SILKWORM_SANITIZE
+#endif  // !defined(SILKWORM_SANITIZE) && !defined(_WIN32)
 
 }  // namespace silkworm::rpc::debug

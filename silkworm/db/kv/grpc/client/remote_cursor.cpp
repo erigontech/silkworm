@@ -22,7 +22,7 @@ Task<void> RemoteCursor::open_cursor(std::string_view table_name, bool is_dup_so
         } else {
             open_message.set_op(remote::Op::OPEN);
         }
-        open_message.set_bucket_name(table_name);
+        open_message.set_bucket_name(std::string{table_name});
         cursor_id_ = (co_await write_and_read(open_message)).cursor_id();
         SILK_DEBUG << "RemoteCursor::open_cursor cursor: " << cursor_id_ << " for table: " << table_name;
     }

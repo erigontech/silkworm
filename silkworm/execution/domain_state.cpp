@@ -147,24 +147,24 @@ datastore::Step DomainState::current_step() const {
 
 void DomainState::update_account(
     const evmc::address& address,
-    std::optional<Account> original,
+    std::optional<Account> initial,
     std::optional<Account> current) {
-    if (!original) {
+    if (!initial) {
         AccountsDomainGetLatestQuery query_prev{database_, tx_, latest_state_repository_};
         auto result_prev = query_prev.exec(address);
         if (result_prev) {
-            original = std::move(result_prev->value);
+            initial = std::move(result_prev->value);
         }
     }
 
     if (current) {
-        if (!original || current->rlp({}) != original->rlp({})) {
+        if (!initial || current->rlp({}) != initial->rlp({})) {
             AccountsDomainPutQuery query{database_, tx_};
-            query.exec(address, *current, txn_id_, original, current_step());
+            query.exec(address, current, txn_id_, initial, current_step());
         }
     } else {
         AccountsDomainDeleteQuery query{database_, tx_};
-        query.exec(address, txn_id_, original, current_step());
+        query.exec(address, txn_id_, initial, current_step());
     }
 }
 

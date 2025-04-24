@@ -55,6 +55,9 @@ static constexpr std::string_view kPending = kPendingBlockId;
 static constexpr std::string_view kFinalized = kFinalizedBlockId;
 static constexpr std::string_view kSafe = kSafeBlockId;
 
+// Exclude on MSVC due to error LNK2001: unresolved external symbol testing::Matcher<class std::basic_string_view...
+// See also https://github.com/google/googletest/issues/4357
+#ifndef _WIN32
 TEST_CASE("get_block_num latest_required", "[rpc][core][blocks]") {
     MockTransaction transaction;
     MockChainStorage chain_storage;
@@ -407,5 +410,6 @@ TEST_CASE("is_latest_block_num", "[rpc][core][blocks]") {
         CHECK(!result.get());
     }
 }
+#endif  // _WIN32
 
 }  // namespace silkworm::rpc::core

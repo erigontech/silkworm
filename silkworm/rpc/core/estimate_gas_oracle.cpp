@@ -8,7 +8,6 @@
 #include <silkworm/execution/state_factory.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/rpc/common/async_task.hpp>
-#include <silkworm/rpc/core/block_reader.hpp>
 #include <silkworm/rpc/core/override_state.hpp>
 
 namespace silkworm::rpc {
@@ -16,8 +15,7 @@ namespace silkworm::rpc {
 Task<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block, std::optional<TxnId> txn_id) {
     SILK_DEBUG << "EstimateGasOracle::estimate_gas called";
 
-    uint64_t hi = 0;
-    uint64_t lo;
+    uint64_t hi = 0, lo = 0;
 
     if (call.gas.value_or(0) >= kTxGas) {
         SILK_DEBUG << "Set gas limit using call args: " << call.gas.value_or(0);
@@ -130,4 +128,5 @@ void EstimateGasOracle::throw_exception(ExecutionResult& result) {
     }
     throw EstimateGasException{3, error_message, result.data};
 }
+
 }  // namespace silkworm::rpc

@@ -59,7 +59,9 @@ struct EngineRpcApiTest : public test_util::JsonApiTestBase<EngineRpcApiForTest>
     std::shared_ptr<db::test_util::MockCursorDupSort> mock_cursor_dup_sort{std::make_shared<db::test_util::MockCursorDupSort>()};
 };
 
-#ifndef SILKWORM_SANITIZE
+// Exclude on MSVC due to error LNK2001: unresolved external symbol testing::Matcher<class std::basic_string_view...
+// See also https://github.com/google/googletest/issues/4357
+#if !defined(SILKWORM_SANITIZE) && !defined(_WIN32)
 static const evmc::bytes32 kZeroHeaderHash{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
 static const silkworm::Bytes kBlockHash(32, '\0');
 
@@ -769,6 +771,6 @@ TEST_CASE_METHOD(EngineRpcApiTest, "engine_transitionConfigurationV1 KO: incorre
             "jsonrpc":"2.0"
         })"_json);
 }
-#endif  // SILKWORM_SANITIZE
+#endif  // !defined(SILKWORM_SANITIZE) && !defined(_WIN32)
 
 }  // namespace silkworm::rpc::commands

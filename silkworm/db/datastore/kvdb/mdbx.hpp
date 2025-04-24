@@ -60,6 +60,8 @@ namespace detail {
 
     std::string dump_mdbx_result(const CursorResult& result);
     std::string slice_as_hex(const Slice& data);
+    std::string slice_as_string(const Slice& data);
+    silkworm::Bytes slice_as_bytes(const Slice& data);
 }  // namespace detail
 
 class ROTxn;

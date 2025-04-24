@@ -24,6 +24,14 @@ namespace detail {
         return std::string(::mdbx::to_hex(data).as_string());
     }
 
+    std::string slice_as_string(const Slice& data) {
+        return std::string(data.as_string());
+    }
+
+    silkworm::Bytes slice_as_bytes(const Slice& data) {
+        return silkworm::Bytes{reinterpret_cast<const unsigned char*>(data.data()), data.size()};
+    }
+
     log::Args log_args_for_commit_latency(const MDBX_commit_latency& commit_latency) {
         return {
             "preparation",

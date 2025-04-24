@@ -26,7 +26,7 @@ class RequestHandler {
     RequestHandler(const RequestHandler&) = delete;
     RequestHandler& operator=(const RequestHandler&) = delete;
 
-    virtual Task<std::optional<Response>> handle(const Request& request) = 0;
+    virtual Task<std::optional<Response>> handle(const Request& request, uint64_t request_id) = 0;
 };
 
 using RequestHandlerPtr = std::unique_ptr<RequestHandler>;

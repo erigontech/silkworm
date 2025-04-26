@@ -401,7 +401,7 @@ Task<void> Connection::do_write(const std::string& content, boost::beast::http::
                 res.set(boost::beast::http::field::accept_encoding, content_encoding);  // Indicate the supported encoding
             }
             res.content_length(content.size());
-            res.body() = std::move(content);
+            res.body() = content;
         }
 
         set_cors<boost::beast::http::string_body>(res, request_data);

@@ -20,6 +20,7 @@
 #include <silkworm/rpc/common/interface_log.hpp>
 #include <silkworm/rpc/common/worker_pool.hpp>
 #include <silkworm/rpc/http/chunker.hpp>
+#include <silkworm/rpc/http/zlib_compressor.hpp>
 #include <silkworm/rpc/transport/request_handler.hpp>
 #include <silkworm/rpc/transport/stream_writer.hpp>
 #include <silkworm/rpc/ws/connection.hpp>
@@ -28,7 +29,7 @@ namespace silkworm::rpc::http {
 
 using RequestWithStringBody = boost::beast::http::request<boost::beast::http::string_body>;
 
-inline constexpr size_t kDefaultCapacity = 4 * 1024;
+inline constexpr size_t kDefaultCapacity = 1 * 1024 * 1024;
 
 struct RequestData {
     bool request_keep_alive{false};
@@ -38,6 +39,7 @@ struct RequestData {
     std::string origin;
     boost::beast::http::verb method{boost::beast::http::verb::unknown};
     std::unique_ptr<Chunker> chunk;
+    std::unique_ptr<ZlibCompressor> zlib_compressor;
 };
 
 //! Represents a single connection from a client.
@@ -98,6 +100,7 @@ class Connection : public StreamWriter {
     static std::string get_date_time();
 
     Task<void> compress(const std::string& clear_data, std::string& compressed_data);
+    Task<void> compress_stream(const std::string& clear_data, std::string& compressed_data, const RequestData& req_data, bool last);
     Task<void> create_chunk_header(RequestData& request_data);
     Task<size_t> send_chunk(const std::string& content);
 

@@ -32,17 +32,6 @@ using RequestWithStringBody = boost::beast::http::request<boost::beast::http::st
 inline constexpr size_t kDefaultCapacity = 1 * 1024 * 1024;
 
 struct RequestData {
-    bool request_keep_alive_{false};
-    unsigned int request_http_version_{11};
-    bool gzip_encoding_requested_{false};
-    std::string vary_;
-    std::string origin_;
-    boost::beast::http::verb method_{boost::beast::http::verb::unknown};
-    std::unique_ptr<Chunker> chunk_;
-    std::unique_ptr<ZlibCompressor> zlib_compressor_;
-};
-
-struct RequestData {
     bool request_keep_alive{false};
     unsigned int request_http_version{11};
     bool gzip_encoding_requested{false};
@@ -50,6 +39,7 @@ struct RequestData {
     std::string origin;
     boost::beast::http::verb method{boost::beast::http::verb::unknown};
     std::unique_ptr<Chunker> chunk;
+    std::unique_ptr<ZlibCompressor> zlib_compressor;
 };
 
 //! Represents a single connection from a client.

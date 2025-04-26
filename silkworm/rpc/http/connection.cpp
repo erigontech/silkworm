@@ -267,9 +267,9 @@ Task<void> Connection::open_stream(uint64_t request_id) {
     auto& request_data = request_data_it->second;
 
     // add chunking supports
-    request_data.chunk_ = std::make_unique<Chunker>();
-    if (request_data.gzip_encoding_requested_) {
-        request_data.zlib_compressor_ = std::make_unique<ZlibCompressor>();
+    request_data.chunk = std::make_unique<Chunker>();
+    if (request_data.gzip_encoding_requested) {
+        request_data.zlib_compressor = std::make_unique<ZlibCompressor>();
     }
     request_data.chunk = std::make_unique<Chunker>();
 
@@ -563,7 +563,7 @@ Task<void> Connection::compress(const std::string& clear_data, std::string& comp
 
 Task<void> Connection::compress_stream(const std::string& clear_data, std::string& compressed_data, const RequestData& req_data, bool last) {
     co_await async_task(workers_.executor(), [&]() -> void {
-        req_data.zlib_compressor_->compress_chunk(clear_data, compressed_data, last);
+        req_data.zlib_compressor->compress_chunk(clear_data, compressed_data, last);
     });
 }
 

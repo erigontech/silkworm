@@ -42,6 +42,16 @@ struct RequestData {
     std::unique_ptr<ZlibCompressor> zlib_compressor_;
 };
 
+struct RequestData {
+    bool request_keep_alive{false};
+    unsigned int request_http_version{11};
+    bool gzip_encoding_requested{false};
+    std::string vary;
+    std::string origin;
+    boost::beast::http::verb method{boost::beast::http::verb::unknown};
+    std::unique_ptr<Chunker> chunk;
+};
+
 //! Represents a single connection from a client.
 class Connection : public StreamWriter {
   public:
@@ -89,18 +99,18 @@ class Connection : public StreamWriter {
     Task<void> do_upgrade(const RequestWithStringBody& req);
 
     template <class Body>
-    void set_cors(boost::beast::http::response<Body>& res, RequestData& request_data);
+    void set_cors(boost::beast::http::response<Body>& res, const RequestData& request_data);
 
     //! Perform an asynchronous read operation.
     Task<bool> do_read();
 
     //! Perform an asynchronous write operation.
-    Task<void> do_write(const std::string& content, boost::beast::http::status http_status, RequestData& request_data, std::string_view content_encoding = "", bool to_be_compressed = false);
+    Task<void> do_write(const std::string& content, boost::beast::http::status http_status, const RequestData& request_data, std::string_view content_encoding = "", bool to_be_compressed = false);
 
     static std::string get_date_time();
 
     Task<void> compress(const std::string& clear_data, std::string& compressed_data);
-    Task<void> compress_stream(const std::string& clear_data, std::string& compressed_data, RequestData& req_data, bool last);
+    Task<void> compress_stream(const std::string& clear_data, std::string& compressed_data, const RequestData& req_data, bool last);
     Task<void> create_chunk_header(RequestData& request_data);
     Task<size_t> send_chunk(const std::string& content);
 

@@ -49,7 +49,9 @@ TEST_CASE("DebugRpcApi") {
     }
 }
 
-#if !defined(__clang__)
+// Exclude on MSVC due to error LNK2001: unresolved external symbol testing::Matcher<class std::basic_string_view...
+// See also https://github.com/google/googletest/issues/4357
+#if !defined(__clang__) && !defined(_WIN32)
 using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
@@ -279,7 +281,7 @@ TEST_CASE("get_modified_accounts") {
     }
 #endif
 }
-#endif  // !defined(__clang__)
+#endif  // !defined(__clang__) && !defined(_WIN32)
 
 #endif  // SILKWORM_SANITIZE
 

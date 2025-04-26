@@ -50,6 +50,9 @@ static silkworm::Bytes kHeader{*silkworm::from_hex(
     "00000000000000000000000000000000000000000000880000000000000000")};
 static silkworm::Bytes kBody{*silkworm::from_hex("c68369e45a03c0")};
 
+// Exclude on MSVC due to error LNK2001: unresolved external symbol testing::Matcher<class std::basic_string_view...
+// See also https://github.com/google/googletest/issues/4357
+#ifndef _WIN32
 TEST_CASE("read_receipts") {
     WorkerPool pool{1};
     db::test_util::MockTransaction transaction;
@@ -210,6 +213,7 @@ TEST_CASE("read_receipts") {
         CHECK((*receipts)[0]->logs.empty());
     }
 }
+#endif  // _WIN32
 
 TEST_CASE("get_receipts") {
     WorkerPool pool{1};

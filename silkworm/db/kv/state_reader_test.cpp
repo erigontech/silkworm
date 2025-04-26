@@ -18,7 +18,9 @@ using testing::_;
 using testing::Invoke;
 using testing::Unused;
 
-#ifndef SILKWORM_SANITIZE
+// Exclude on MSVC due to error LNK2001: unresolved external symbol testing::Matcher<class std::basic_string_view...
+// See also https://github.com/google/googletest/issues/4357
+#if !defined(SILKWORM_SANITIZE) && !defined(_WIN32)
 static const evmc::address kZeroAddress{};
 static const Bytes kEncodedAccount{*from_hex(
     "01020203e820f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c92390105")};
@@ -178,6 +180,6 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
         }
     }
 }
-#endif  // SILKWORM_SANITIZE
+#endif  // !defined(SILKWORM_SANITIZE) && !defined(_WIN32)
 
 }  // namespace silkworm::db::kv

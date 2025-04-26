@@ -46,7 +46,7 @@ struct EVMExecutorTest : public test_util::ServiceContextTestBase {
     std::shared_ptr<State> state{std::make_shared<execution::RemoteState>(io_executor, transaction, storage, block_num)};
 };
 
-#ifndef SILKWORM_SANITIZE
+#if !defined(SILKWORM_SANITIZE) && !defined(_WIN32)
 using testing::_;
 using testing::Invoke;
 using testing::Unused;
@@ -304,6 +304,6 @@ TEST_CASE_METHOD(EVMExecutorTest, "EVMExecutor") {
         CHECK(error_message == "wasm trap");
     }
 }
-#endif  // SILKWORM_SANITIZE
+#endif  // !defined(SILKWORM_SANITIZE) && !defined(_WIN32)
 
 }  // namespace silkworm::rpc

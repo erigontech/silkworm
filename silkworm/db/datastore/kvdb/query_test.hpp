@@ -34,7 +34,7 @@ enum class EntityKind {
 class QueryTest {
   public:
     QueryTest(EntityName name, Schema::DatabaseDef schema)
-        : name_{name},
+        : name_{std::move(name)},
           db_{
               open_env(EnvConfig{.path = tmp_dir_.path().string(), .create = true, .in_memory = true}),
               std::move(schema),

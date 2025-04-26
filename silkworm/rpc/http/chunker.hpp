@@ -19,7 +19,7 @@ class Chunker {
         current_chunk_.reserve(kDefaultMaxChunkSize);
     }
 
-    ~Chunker() {}
+    ~Chunker() = default;
 
     void queue_data(const std::string& new_buffer) {
         size_t position = 0;

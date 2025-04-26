@@ -29,7 +29,7 @@ TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
 
     SECTION("EthereumBackEnd::EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
         EthereumBackEnd backend{node_settings, chaindata, null_sentry_client};
-        CHECK(backend.node_name() == kDefaultNodeName);
+        CHECK(backend.node_name() == std::string{kDefaultNodeName});
         CHECK(!backend.etherbase());
         CHECK(backend.state_change_source() != nullptr);
     }

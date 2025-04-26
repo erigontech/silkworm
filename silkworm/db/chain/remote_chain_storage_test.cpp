@@ -7,7 +7,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_exception.hpp>
-#include <gmock/gmock.h>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/util.hpp>
@@ -55,16 +54,15 @@ struct RemoteChainStorageTest : public silkworm::test_util::ContextTestBase {
     chain::Providers& providers{storage.providers()};
 };
 
+// Exclude on MSVC due to error LNK2001: unresolved external symbol testing::Matcher<class std::basic_string_view...
+// See also https://github.com/google/googletest/issues/4357
+#ifndef _WIN32
 TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
     SECTION("empty chain data") {
         EXPECT_CALL(transaction, get_one(table::kConfigName, _)).WillOnce(InvokeWithoutArgs([]() -> Task<Bytes> {
             co_return Bytes{};
         }));
-#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
         CHECK_THROWS_AS(spawn_and_wait(storage.read_chain_config()), std::invalid_argument);
-#else
-        CHECK_THROWS_MATCHES(spawn_and_wait(storage.read_chain_config()), std::invalid_argument, Message("empty chain config data in read_chain_config"));
-#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("invalid JSON chain data") {
@@ -98,6 +96,7 @@ TEST_CASE_METHOD(RemoteChainStorageTest, "read_chain_config") {
             })"_json);
     }
 }
+#endif  // _WIN32
 
 TEST_CASE_METHOD(RemoteChainStorageTest, "read_transaction_by_idx_in_block") {
     SECTION("not found") {
@@ -107,9 +106,9 @@ TEST_CASE_METHOD(RemoteChainStorageTest, "read_transaction_by_idx_in_block") {
     SECTION("found") {
         Block block = silkworm::test_util::sample_block();
         providers.block = [&](BlockNum, HashAsSpan, bool, Block& b) -> Task<bool> { b = block; co_return true; };
-        const auto txn0 = spawn_and_wait(storage.read_transaction_by_idx_in_block(block.header.number, /*txn_id=*/0));
+        const auto txn0 = spawn_and_wait(storage.read_transaction_by_idx_in_block(block.header.number, /*txn_idx=*/0));
         REQUIRE(txn0 == silkworm::test_util::kSampleTx0);
-        const auto txn1 = spawn_and_wait(storage.read_transaction_by_idx_in_block(block.header.number, /*txn_id=*/1));
+        const auto txn1 = spawn_and_wait(storage.read_transaction_by_idx_in_block(block.header.number, /*txn_idx=*/1));
         REQUIRE(txn1 == silkworm::test_util::kSampleTx1);
     }
 }

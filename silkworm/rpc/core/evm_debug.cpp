@@ -166,13 +166,16 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     bool output_storage = false;
     if (!config_.disable_storage) {
         if (opcode == OP_SLOAD && stack_height >= 1) {
-            const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
+            evmc::bytes32 address;
+            intx::be::store(address.bytes, stack_top[0]);
             const auto value = intra_block_state.get_current_storage(recipient, address);
             storage_[recipient][silkworm::to_hex(address)] = silkworm::to_hex(value);
             output_storage = true;
         } else if (opcode == OP_SSTORE && stack_height >= 2) {
-            const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
-            const auto value = silkworm::bytes32_from_hex(intx::hex(stack_top[-1]));
+            evmc::bytes32 address;
+            intx::be::store(address.bytes, stack_top[0]);
+            evmc::bytes32 value;
+            intx::be::store(value.bytes, stack_top[-1]);
             storage_[recipient][silkworm::to_hex(address)] = silkworm::to_hex(value);
             output_storage = true;
         }

@@ -93,6 +93,20 @@ Task<std::shared_ptr<BlockWithHash>> BlockReader::read_block_by_block_num_or_has
     throw std::runtime_error{"invalid block_num_or_hash value"};
 }
 
+Task<std::optional<BlockHeader>> BlockReader::read_header_by_block_num_or_hash(const BlockNumOrHash& block_num_or_hash) const {
+    if (block_num_or_hash.is_number()) {  // NOLINT(bugprone-branch-clone)
+        co_return co_await chain_storage_.read_canonical_header(block_num_or_hash.number());
+    }
+    if (block_num_or_hash.is_hash()) {
+        co_return co_await chain_storage_.read_header(block_num_or_hash.hash());
+    }
+    if (block_num_or_hash.is_tag()) {
+        auto [block_num, ignore] = co_await get_block_num(block_num_or_hash.tag(), /*latest_required=*/false);
+        co_return co_await chain_storage_.read_canonical_header(block_num);
+    }
+    throw std::runtime_error{"invalid block_num_or_hash value"};
+}
+
 Task<std::optional<TransactionWithBlock>> BlockReader::read_transaction_by_hash(BlockCache& cache, const evmc::bytes32& transaction_hash) const {
     const auto result = co_await chain_storage_.read_block_num_by_transaction_hash(transaction_hash);
     if (!result) {

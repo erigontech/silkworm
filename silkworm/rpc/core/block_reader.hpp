@@ -76,6 +76,8 @@ class BlockReader {
 
     Task<std::optional<BlockHeader>> read_header(BlockNum block_num) { co_return co_await chain_storage_.read_canonical_header(block_num); }
 
+    Task<std::optional<BlockHeader>> read_header_by_block_num_or_hash(const BlockNumOrHash& block_num_or_hash) const;
+
   private:
     Task<BlockNum> get_forkchoice_block_num(std::string_view block_hash_tag) const;
     const db::chain::ChainStorage& chain_storage_;

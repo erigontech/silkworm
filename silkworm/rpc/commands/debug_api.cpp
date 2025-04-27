@@ -216,8 +216,8 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
     try {
         const auto chain_storage = tx->make_storage();
         const BlockReader reader{*chain_storage, *tx};
-        const auto header_optional = co_await chain_storage->read_header(block_hash);
-        if (!header_optional) {
+        const auto header = co_await chain_storage->read_header(block_hash);
+        if (!header) {
             SILK_WARN << "debug_storage_range_at: block not found, hash: " << evmc::hex(block_hash);
             nlohmann::json result = {{"storage", nullptr}, {"nextKey", nullptr}};
             reply = make_json_content(request, result);
@@ -246,7 +246,7 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
             return count++ < max_result;
         };
 
-        const auto min_tx_num = co_await tx->first_txn_num_in_block(header_optional->number);
+        const auto min_tx_num = co_await tx->first_txn_num_in_block(header->number);
         const auto from_tx_num = min_tx_num + tx_index + 1;  // for system txn in the beginning of block
 
         StorageWalker storage_walker{*tx};

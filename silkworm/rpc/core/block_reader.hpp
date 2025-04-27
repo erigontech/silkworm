@@ -74,7 +74,7 @@ class BlockReader {
 
     Task<bool> is_latest_block_num(const BlockNumOrHash& block_num_or_hash) const;
 
-    Task<std::optional<BlockHeader>> read_header(BlockNum block_num) const { return  chain_storage_.read_canonical_header(block_num); }
+    Task<std::optional<BlockHeader>> read_header(BlockNum block_num) const { return chain_storage_.read_canonical_header(block_num); }
 
     Task<std::optional<BlockHeader>> read_header_by_block_num_or_hash(const BlockNumOrHash& block_num_or_hash) const;
 

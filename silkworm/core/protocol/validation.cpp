@@ -342,6 +342,9 @@ ValidationResult validate_requests_root(const BlockHeader& header, const std::ve
         system_txn.data = Bytes{};
         system_txn.set_sender(kSystemAddress);
         const auto withdrawals = evm.execute(system_txn, kSystemCallGasLimit);
+        if (withdrawals.status != EVMC_SUCCESS) {
+            return ValidationResult::kSystemCallFailed;
+        }
         evm.state().destruct_touched_dead();
         requests.add_request(FlatRequestType::kWithdrawalRequest, withdrawals.data);
     }
@@ -354,6 +357,9 @@ ValidationResult validate_requests_root(const BlockHeader& header, const std::ve
         system_txn.data = Bytes{};
         system_txn.set_sender(kSystemAddress);
         const auto consolidations = evm.execute(system_txn, kSystemCallGasLimit);
+        if (consolidations.status != EVMC_SUCCESS) {
+            return ValidationResult::kSystemCallFailed;
+        }
         evm.state().destruct_touched_dead();
         requests.add_request(FlatRequestType::kConsolidationRequest, consolidations.data);
     }

@@ -8,6 +8,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/datastore/kvdb/database.hpp>
+#include <silkworm/db/datastore/snapshots/query_caches.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_repository.hpp>
 
 namespace silkworm::db::capi {
@@ -17,6 +18,7 @@ struct Component {
     silkworm::snapshots::SnapshotRepository state_repository_latest;
     silkworm::snapshots::SnapshotRepository state_repository_historical;
     std::unique_ptr<silkworm::datastore::kvdb::DatabaseUnmanaged> chaindata;
+    silkworm::snapshots::QueryCaches query_caches;
 
     DataStoreRef data_store() {
         SILKWORM_ASSERT(chaindata);
@@ -25,6 +27,7 @@ struct Component {
             blocks_repository,
             state_repository_latest,
             state_repository_historical,
+            query_caches,
         };
     }
 

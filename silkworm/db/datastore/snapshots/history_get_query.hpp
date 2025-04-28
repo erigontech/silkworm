@@ -8,6 +8,7 @@
 #include "common/codec.hpp"
 #include "common/raw_codec.hpp"
 #include "inverted_index_seek_query.hpp"
+#include "query_caches.hpp"
 #include "snapshot_repository_ro_access.hpp"
 
 namespace silkworm::snapshots {
@@ -17,11 +18,13 @@ template <
     DecoderConcept TValueDecoder,
     const SegmentAndAccessorIndexNames& segment_names>
 struct HistoryGetQuery {
-    explicit HistoryGetQuery(const SnapshotRepositoryROAccess& repository)
+    HistoryGetQuery(
+        const SnapshotRepositoryROAccess& repository,
+        const QueryCaches& query_caches)
         : timestamp_query_{
               repository,
               [](const SnapshotBundle& bundle) { return bundle.history(segment_names.front()).inverted_index; },
-              [&]() { return repository.inverted_index_seek_cache(segment_names.front()); },
+              query_caches.cache<InvertedIndexSeekQueryRawWithCache::CacheType>(InvertedIndexSeekQueryRawWithCache::kName, segment_names.front()).get(),
           },
           value_query_{repository} {}
 

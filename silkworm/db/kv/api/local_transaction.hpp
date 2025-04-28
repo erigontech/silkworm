@@ -69,20 +69,24 @@ class LocalTransaction : public BaseTransaction {
   private:
     template <typename DomainGetAsOfQuery>
     auto query_domain_as_of(const datastore::EntityName domain_name, ByteView key, Timestamp ts) {
-        DomainGetAsOfQuery query(
+        DomainGetAsOfQuery query{
             data_store_.chaindata.domain(domain_name),
             tx_,
             data_store_.state_repository_latest,
-            data_store_.state_repository_historical);
+            data_store_.state_repository_historical,
+            data_store_.query_caches,
+        };
         return query.exec(key, ts);
     }
 
     template <typename HistoryGetQuery>
     auto query_history_get(datastore::kvdb::History kvdb_entity, ByteView key, datastore::Timestamp ts) {
-        HistoryGetQuery query(
+        HistoryGetQuery query{
             kvdb_entity,
             tx_,
-            data_store_.state_repository_historical);
+            data_store_.state_repository_historical,
+            data_store_.query_caches,
+        };
         return query.exec(key, ts);
     }
 

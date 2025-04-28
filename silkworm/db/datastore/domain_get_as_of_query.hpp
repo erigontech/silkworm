@@ -17,17 +17,19 @@ struct DomainGetAsOfQuery {
         kvdb::Domain kvdb_entity,
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository_latest,
-        const snapshots::SnapshotRepositoryROAccess& repository_historical)
-        : query1_{*kvdb_entity.history, tx, repository_historical},
-          query2_{history_segment_names.front(), kvdb_entity, tx, repository_latest} {}
+        const snapshots::SnapshotRepositoryROAccess& repository_historical,
+        const snapshots::QueryCaches& query_caches)
+        : query1_{*kvdb_entity.history, tx, repository_historical, query_caches},
+          query2_{history_segment_names.front(), kvdb_entity, tx, repository_latest, query_caches} {}
 
     DomainGetAsOfQuery(
         const kvdb::DatabaseRef& database,
         kvdb::ROTxn& tx,
         const snapshots::SnapshotRepositoryROAccess& repository_latest,
-        const snapshots::SnapshotRepositoryROAccess& repository_historical)
-        : query1_{database, tx, repository_historical},
-          query2_{history_segment_names.front(), database, tx, repository_latest} {}
+        const snapshots::SnapshotRepositoryROAccess& repository_historical,
+        const snapshots::QueryCaches& query_caches)
+        : query1_{database, tx, repository_historical, query_caches},
+          query2_{history_segment_names.front(), database, tx, repository_latest, query_caches} {}
 
     using Key = decltype(TKeyEncoder1::value);
     using Value = decltype(TValueDecoder1::value);

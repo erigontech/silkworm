@@ -11,6 +11,7 @@
 #include "../datastore/snapshots/domain.hpp"
 #include "../datastore/snapshots/index_builders_factory.hpp"
 #include "../datastore/snapshots/inverted_index.hpp"
+#include "../datastore/snapshots/query_caches_schema.hpp"
 #include "../datastore/snapshots/schema.hpp"
 #include "../datastore/snapshots/snapshot_repository.hpp"
 
@@ -22,6 +23,7 @@ inline const datastore::EntityName kStateRepositoryNameHistorical{"StateHistoric
 snapshots::Schema::RepositoryDef make_state_repository_schema_latest();
 snapshots::Schema::RepositoryDef make_state_repository_schema_historical();
 datastore::kvdb::Schema::DatabaseDef make_state_database_schema();
+snapshots::QueryCachesSchema make_query_caches_schema();
 
 snapshots::SnapshotRepository make_state_repository_latest(
     std::filesystem::path dir_path,

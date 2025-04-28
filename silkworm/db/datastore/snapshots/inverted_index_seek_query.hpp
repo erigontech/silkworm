@@ -37,73 +37,100 @@ struct InvertedIndexSeekSegmentQuery {
 
         InvertedIndexTimestampList& list = *list_opt;
         const auto seek_result = list.seek(timestamp);
-        if (!seek_result) {
-            return std::nullopt;
+        if (seek_result) {
+            return seek_result->second;
         }
-        const auto [_, higher_or_equal_timestamp] = *seek_result;
-        return higher_or_equal_timestamp;
+        return std::nullopt;
     }
 
   private:
     InvertedIndexFindByKeySegmentQuery<TKeyEncoder> query_;
 };
 
-template <EncoderConcept TKeyEncoder>
-struct InvertedIndexSeekQuery {
-    explicit InvertedIndexSeekQuery(
+struct InvertedIndexSeekQueryRawNoCache {
+    const SnapshotRepositoryROAccess& repository_;
+    std::function<InvertedIndex(const SnapshotBundle&)> entity_provider_;
+
+    std::optional<datastore::Timestamp> exec(ByteView key_data, datastore::Timestamp timestamp) {
+        datastore::TimestampRange ts_range{timestamp, repository_.max_timestamp_available() + 1};
+        for (auto& bundle_ptr : repository_.bundles_intersecting_range(ts_range, /*ascending=*/true)) {
+            const SnapshotBundle& bundle = *bundle_ptr;
+            InvertedIndexSeekSegmentQuery<RawEncoder<ByteView>> query{entity_provider_(bundle)};
+            std::optional<datastore::Timestamp> result = query.exec_raw(key_data, timestamp);
+            if (result) {
+                return result;
+            }
+        }
+        return std::nullopt;
+    }
+};
+
+struct InvertedIndexSeekQueryRawWithCache {
+    struct InvertedIndexSeekCacheData {
+        datastore::Timestamp requested;
+        std::optional<datastore::Timestamp> found;
+    };
+
+    using CacheType = QueryCache<InvertedIndexSeekCacheData>;
+    static inline const datastore::EntityName kName{"InvertedIndexSeekQueryRawWithCache"};
+
+    InvertedIndexSeekQueryRawWithCache(
         const SnapshotRepositoryROAccess& repository,
         std::function<InvertedIndex(const SnapshotBundle&)> entity_provider,
-        std::function<InvertedIndexSeekCache*()> cache_provider)
-        : repository_{repository},
-          entity_provider_{std::move(entity_provider)},
-          cache_provider_{std::move(cache_provider)} {}
+        CacheType* cache)
+        : query_{repository, std::move(entity_provider)},
+          cache_{cache} {}
+
+    std::optional<datastore::Timestamp> exec(ByteView key_data, datastore::Timestamp timestamp) {
+        if (!cache_) {
+            return query_.exec(key_data, timestamp);
+        }
+
+        std::optional<InvertedIndexSeekCacheData> cached_data;
+        uint64_t cache_key{0};
+        std::tie(cached_data, cache_key) = cache_->get(key_data);
+        if (cached_data && (cached_data->requested <= timestamp)) {
+            if (!cached_data->found) {  // hit in cache but value not found
+                return std::nullopt;
+            }
+            if (timestamp <= *cached_data->found) {
+                return cached_data->found;
+            }
+        }
+
+        std::optional<datastore::Timestamp> result = query_.exec(key_data, timestamp);
+        bool found_equal = result && (*result == timestamp);
+        if (!found_equal) {
+            cache_->put(cache_key, {.requested = timestamp, .found = result});
+        }
+        return result;
+    }
+
+  private:
+    InvertedIndexSeekQueryRawNoCache query_;
+    CacheType* cache_;
+};
+
+template <EncoderConcept TKeyEncoder>
+struct InvertedIndexSeekQuery {
+    InvertedIndexSeekQuery(
+        const SnapshotRepositoryROAccess& repository,
+        std::function<InvertedIndex(const SnapshotBundle&)> entity_provider,
+        InvertedIndexSeekQueryRawWithCache::CacheType* cache)
+        : query_{repository, std::move(entity_provider), cache} {}
 
     using Key = decltype(TKeyEncoder::value);
 
     std::optional<datastore::Timestamp> exec(Key key, datastore::Timestamp timestamp) {
-        InvertedIndexSeekCache* cache = cache_provider_();
-
         TKeyEncoder key_encoder;
         key_encoder.value = std::move(key);
         ByteView key_data = key_encoder.encode_word();
 
-        uint64_t key_hash_hi{0};
-        if (cache) {
-            std::optional<InvertedIndexSeekCacheData> cached_data;
-            if (std::tie(cached_data, key_hash_hi) = cache->get(key_data); cached_data) {
-                if (cached_data->requested <= timestamp) {
-                    if (timestamp <= cached_data->found) {
-                        return cached_data->found;
-                    }
-                    if (cached_data->found == 0) {  // hit in cache but value not found
-                        return std::nullopt;
-                    }
-                }
-            }
-        }
-
-        datastore::TimestampRange ts_range{timestamp, repository_.max_timestamp_available() + 1};
-        for (auto& bundle_ptr : repository_.bundles_intersecting_range(ts_range, /*ascending=*/true)) {
-            const SnapshotBundle& bundle = *bundle_ptr;
-            InvertedIndexSeekSegmentQuery<TKeyEncoder> query{entity_provider_(bundle)};
-            std::optional<datastore::Timestamp> higher_or_equal = query.exec_raw(key_data, timestamp);
-            if (higher_or_equal) {
-                if (cache && *higher_or_equal > timestamp) {
-                    cache->put(key_hash_hi, {.requested = timestamp, .found = *higher_or_equal});
-                }
-                return higher_or_equal;
-            }
-        }
-        if (cache) {
-            cache->put(key_hash_hi, {.requested = timestamp, .found = 0});  // 0 means value not found
-        }
-        return std::nullopt;
+        return query_.exec(key_data, timestamp);
     }
 
   private:
-    const SnapshotRepositoryROAccess& repository_;
-    std::function<InvertedIndex(const SnapshotBundle&)> entity_provider_;
-    std::function<InvertedIndexSeekCache*()> cache_provider_;
+    InvertedIndexSeekQueryRawWithCache query_;
 };
 
 }  // namespace silkworm::snapshots

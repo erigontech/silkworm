@@ -23,14 +23,17 @@ struct CodeDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
     CodeDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
-        const snapshots::SnapshotRepositoryROAccess& repository)
+        const snapshots::SnapshotRepositoryROAccess& repository,
+        const snapshots::QueryCaches& query_caches)
         : datastore::DomainGetLatestQuery<
               AddressKVDBEncoder, AddressSnapshotsEncoder,
-              datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>(
+              datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>{
               db::state::kDomainNameCode,
               database.domain(db::state::kDomainNameCode),
               tx,
-              repository) {}
+              repository,
+              query_caches,
+          } {}
 };
 
 struct CodeDomainPutQuery : public datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, datastore::kvdb::RawEncoder<ByteView>> {

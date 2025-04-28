@@ -83,6 +83,7 @@ SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormS
         .state_repository_latest = std::move(state_repository_latest),
         .state_repository_historical = std::move(state_repository_historical),
         .chaindata = {},
+        .query_caches = snapshots::QueryCaches{db::state::make_query_caches_schema(), snapshots_dir_path, settings->state_repo_index_salt},
     };
 
     // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)

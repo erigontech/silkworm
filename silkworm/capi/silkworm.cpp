@@ -500,6 +500,7 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
         db_ref,
         handle->db->blocks_repository,
         handle->db->state_repository_latest,
+        handle->db->query_caches,
     };
     if (!handle->chain_config) {
         handle->chain_config = db::read_chain_config(unmanaged_tx);
@@ -646,6 +647,7 @@ SILKWORM_EXPORT int silkworm_block_exec_end(SilkwormHandle handle, MDBX_txn* mdb
             db_ref,
             handle->db->blocks_repository,
             handle->db->state_repository_latest,
+            handle->db->query_caches,
         };
 
         const auto log_index = handle->executions_in_block[index].log_index;

@@ -17,6 +17,7 @@ struct DataStoreRef {
     snapshots::SnapshotRepository& blocks_repository;
     snapshots::SnapshotRepository& state_repository_latest;
     snapshots::SnapshotRepository& state_repository_historical;
+    const snapshots::QueryCaches& query_caches;
 };
 
 class DataStore {
@@ -32,6 +33,7 @@ class DataStore {
                   std::move(blocks_repository),
                   std::move(state_repository_latest),
                   std::move(state_repository_historical)),
+              blocks_repository.path(),
           } {}
 
   public:
@@ -61,6 +63,7 @@ class DataStore {
             blocks_repository(),
             state_repository_latest(),
             state_repository_historical(),
+            store_.query_caches(),
         };
     }
 
@@ -75,6 +78,7 @@ class DataStore {
     snapshots::SnapshotRepository& state_repository_historical() const {
         return store_.repository(state::kStateRepositoryNameHistorical);
     }
+    const snapshots::QueryCaches& query_caches() const { return store_.query_caches(); }
 
     static datastore::kvdb::Schema::DatabaseDef make_chaindata_database_schema();
     static datastore::kvdb::Database make_chaindata_database(mdbx::env_managed chaindata_env);

@@ -9,6 +9,7 @@
 #include "../common/entity_name.hpp"
 #include "../common/step_timestamp_converter.hpp"
 #include "common/snapshot_path.hpp"
+#include "query_caches_schema.hpp"
 #include "segment/seg/compression_kind.hpp"
 
 namespace silkworm::snapshots {
@@ -219,6 +220,10 @@ class Schema {
         return repository_defs_[name];
     }
 
+    QueryCachesSchema& query_caches_schema() {
+        return query_caches_schema_;
+    }
+
     static inline const datastore::EntityName kDefaultEntityName{"_"};
 
     static inline const datastore::EntityName kDomainKVSegmentName{"DomainKVSegment"};
@@ -250,6 +255,7 @@ class Schema {
 
   private:
     datastore::EntityMap<RepositoryDef> repository_defs_;
+    QueryCachesSchema query_caches_schema_;
 };
 
 }  // namespace silkworm::snapshots

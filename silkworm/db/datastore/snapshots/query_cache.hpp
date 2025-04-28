@@ -8,26 +8,28 @@
 
 #include <silkworm/core/common/lru_cache.hpp>
 
-#include "key_hasher.hpp"
+#include "common/key_hasher.hpp"
 
 namespace silkworm::snapshots {
 
 template <typename Value>
-class Cache {
+class QueryCache {
   public:
-    Cache(size_t size, uint32_t salt) : cache_{size, /*thread_safe=*/true}, key_hasher_{salt} {}
+    QueryCache(size_t size, KeyHasher key_hasher)
+        : cache_{size, /* thread_safe = */ true},
+          key_hasher_{std::move(key_hasher)} {}
 
-    void put(uint64_t key_hash_high, const Value& value) {
-        cache_.put(key_hash_high, value);
+    void put(uint64_t cache_key, const Value& value) {
+        cache_.put(cache_key, value);
     }
 
-    std::optional<Value> get(uint64_t key_hash_high) {
-        return cache_.get_as_copy(key_hash_high);
+    std::optional<Value> get(uint64_t cache_key) {
+        return cache_.get_as_copy(cache_key);
     }
 
     std::pair<std::optional<Value>, uint64_t> get(ByteView key) {
-        const uint64_t hash_high = key_hasher_.hash(key);
-        return {get(hash_high), hash_high};
+        const uint64_t cache_key = key_hasher_.hash(key);
+        return {get(cache_key), cache_key};
     }
 
     void clear() noexcept {

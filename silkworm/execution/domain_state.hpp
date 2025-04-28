@@ -26,12 +26,14 @@ class DomainState : public State {
         TxnId txn_id,
         datastore::kvdb::RWTxn& tx,
         datastore::kvdb::DatabaseRef& database,
-        snapshots::SnapshotRepositoryROAccess& blocks_repository,
-        snapshots::SnapshotRepositoryROAccess& latest_state_repository)
+        const snapshots::SnapshotRepositoryROAccess& blocks_repository,
+        snapshots::SnapshotRepositoryROAccess& latest_state_repository,
+        const snapshots::QueryCaches& query_caches)
         : txn_id_{txn_id},
           tx_{tx},
           database_{database},
           latest_state_repository_{latest_state_repository},
+          query_caches_{query_caches},
           data_model_{db::DataModel{tx_, blocks_repository}} {}
 
     explicit DomainState(
@@ -39,13 +41,14 @@ class DomainState : public State {
         datastore::kvdb::RWTxn& tx,
         datastore::kvdb::DatabaseRef& database,
         snapshots::SnapshotRepositoryROAccess& state_repository,
-        db::DataModel& data_model)
-
+        snapshots::QueryCaches& query_caches,
+        db::DataModel data_model)
         : txn_id_{txn_id},
           tx_{tx},
           database_{database},
           latest_state_repository_{state_repository},
-          data_model_{data_model} {}
+          query_caches_{query_caches},
+          data_model_{std::move(data_model)} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -107,6 +110,7 @@ class DomainState : public State {
     datastore::kvdb::RWTxn& tx_;
     datastore::kvdb::DatabaseRef& database_;
     snapshots::SnapshotRepositoryROAccess& latest_state_repository_;
+    const snapshots::QueryCaches& query_caches_;
     db::DataModel data_model_;
     mutable std::unordered_map<evmc::address, Bytes> code_;
 };

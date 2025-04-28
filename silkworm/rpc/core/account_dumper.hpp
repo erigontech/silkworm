@@ -24,7 +24,6 @@ class AccountDumper {
     AccountDumper& operator=(const AccountDumper&) = delete;
 
     Task<DumpAccounts> dump_accounts(
-        BlockCache& cache,
         const BlockNumOrHash& block_num_or_hash,
         const evmc::address& start_address,
         int16_t max_result,

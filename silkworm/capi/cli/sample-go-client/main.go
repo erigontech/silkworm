@@ -3,7 +3,7 @@ package main
 // #cgo LDFLAGS: -lsilkworm_capi
 // #cgo LDFLAGS: -L${SRCDIR}/../../../../build/silkworm/capi
 // #cgo LDFLAGS: -Wl,-rpath ${SRCDIR}/../../../../build/silkworm/capi
-// #cgo CFLAGS: -I${SRCDIR}/../../../../silkworm/capi
+// #cgo CFLAGS: -I${SRCDIR}/../../../../build/silkworm/capi/include
 /*
 #include "silkworm.h"
 #include <stdlib.h>

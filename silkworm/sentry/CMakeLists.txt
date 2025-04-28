@@ -33,6 +33,7 @@ set(LIBS_PRIVATE
     stbrumme_crc32
     stbrumme_keccak
     stun_msg
+    silkworm_capi_common
     silkworm_core
     silkworm_interfaces
     silkworm-buildinfo

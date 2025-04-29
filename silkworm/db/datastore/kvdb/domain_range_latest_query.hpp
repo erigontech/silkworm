@@ -71,7 +71,7 @@ struct DomainRangeLatestQuery {
         }
 
         auto before_key_end_predicate = [key_end = std::move(key_end)](const std::pair<ByteView, ByteView>& kv_pair) {
-            return kv_pair.first < key_end;
+            return key_end.empty() || kv_pair.first < key_end;
         };
 
         return std::ranges::subrange{std::move(begin_it), CursorKVIteratorRaw{}} |

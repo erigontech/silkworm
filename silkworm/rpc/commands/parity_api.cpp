@@ -37,14 +37,13 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         auto value = params[2].get<std::string>();
         offset = silkworm::from_hex(value);
     }
-    std::string_view block_id = kLatestBlockId;
+    std::string block_id{kLatestBlockId};
     if (params.size() >= 4) {
         block_id = params[3].get<std::string>();
     }
 
-    SILK_DEBUG << "address: " << address
-               << " quantity: " << quantity
-               << " offset: " << (offset ? silkworm::to_hex(offset.value(), true) : "null");
+    SILK_TRACE << "parity_listStorageKeys: address=" << address << " quantity=" << quantity
+               << " offset=" << (offset ? silkworm::to_hex(offset.value(), true) : "null");
 
     auto tx = co_await database_->begin_transaction();
 
@@ -53,7 +52,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         rpc::BlockReader block_reader{*chain_storage, *tx};
 
         const auto block_num = co_await block_reader.get_block_num(block_id);
-        SILK_DEBUG << "read account with address: " << address << " block number: " << block_num;
+        SILK_TRACE << "read account with address: " << address << " block number: " << block_num;
 
         std::optional<TxnId> txn_number;
         const bool is_latest_block = co_await block_reader.is_latest_block_num(block_num);
@@ -72,7 +71,7 @@ Task<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& r
         }
         auto to = db::code_domain_key(address);
         increment(to);
-        SILK_DEBUG << "handle_parity_list_storage_keys: from " << from << ", to " << to;
+        SILK_TRACE << "handle_parity_list_storage_keys: from=" << from << ", to=" << to;
 
         db::kv::api::DomainRangeRequest query{
             .table = std::string{db::table::kStorageDomain},

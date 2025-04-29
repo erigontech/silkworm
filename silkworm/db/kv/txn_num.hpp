@@ -47,14 +47,12 @@ struct TransactionNums {
     bool block_changed{false};
 };
 
-using PaginatedTimestampStream = kv::api::PaginatedStream<kv::api::Timestamp>;
-
-class PaginatedTransactionInfoIterator : public kv::api::PaginatedIterator<TransactionNums> {
+class TransactionInfoIterator : public kv::api::StreamIterator<TransactionNums> {
   public:
-    PaginatedTransactionInfoIterator(PaginatedTimestampStream stream,
-                                     bool ascending,
-                                     kv::api::Transaction& tx,
-                                     db::chain::CanonicalBodyForStorageProvider& provider)
+    TransactionInfoIterator(kv::api::TimestampStream stream,
+                            bool ascending,
+                            kv::api::Transaction& tx,
+                            db::chain::CanonicalBodyForStorageProvider& provider)
         : stream_(std::move(stream)), ascending_(ascending), tx_(tx), provider_(provider) {}
 
     Task<bool> has_next() override {
@@ -63,7 +61,7 @@ class PaginatedTransactionInfoIterator : public kv::api::PaginatedIterator<Trans
     Task<std::optional<TransactionNums>> next() override;
 
   private:
-    PaginatedTimestampStream stream_;
+    kv::api::TimestampStream stream_;
     bool ascending_;
     kv::api::Transaction& tx_;
     db::chain::CanonicalBodyForStorageProvider& provider_;
@@ -72,8 +70,8 @@ class PaginatedTransactionInfoIterator : public kv::api::PaginatedIterator<Trans
     TxNum max_txn_num_{0};
 };
 
-kv::api::PaginatedStream<TransactionNums> make_txn_nums_stream(PaginatedTimestampStream stream,
-                                                               bool ascending,
-                                                               kv::api::Transaction& tx,
-                                                               db::chain::CanonicalBodyForStorageProvider& provider);
+kv::api::Stream<TransactionNums> make_txn_nums_stream(kv::api::TimestampStream stream,
+                                                      bool ascending,
+                                                      kv::api::Transaction& tx,
+                                                      db::chain::CanonicalBodyForStorageProvider& provider);
 }  // namespace silkworm::db::txn

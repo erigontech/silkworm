@@ -39,7 +39,7 @@ struct DomainRangeLatestSegmentQuery {
         auto begin_it = entity_.btree_index.seek(key_start, entity_.kv_segment).value_or(btree::BTreeIndex::Cursor{});
 
         return std::ranges::subrange{std::move(begin_it), std::default_sentinel} |
-               std::views::take_while([key_end = std::move(key_end)](const auto& kv_pair) { return ByteView{kv_pair.first} < key_end; });
+               std::views::take_while([key_end = std::move(key_end)](const auto& kv_pair) { return key_end.empty() || ByteView{kv_pair.first} < key_end; });
     }
 
     auto exec(Bytes key_start, Bytes key_end, bool ascending) {
@@ -112,6 +112,7 @@ struct DomainRangeLatestQuery {
             PairGetFirst<DomainRangeLatestSegmentQuery::ResultItem::first_type, DomainRangeLatestSegmentQuery::ResultItem::second_type>{});
 
         return silkworm::ranges::owning_view(std::move(results)) |
+               std::views::filter([](const auto& kv_pair) { return !ByteView{kv_pair.second}.empty(); }) |
                std::views::transform(kDecodeKVPairFunc) |
                silkworm::views::caching;
     }

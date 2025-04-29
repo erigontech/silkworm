@@ -78,13 +78,13 @@ class Transaction {
     /** Temporal Range Queries **/
 
     // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
-    virtual Task<PaginatedTimestamps> index_range(IndexRangeRequest request) = 0;
+    virtual Task<TimestampStreamReply> index_range(IndexRangeRequest request) = 0;
 
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-    virtual Task<PaginatedKeysValues> history_range(HistoryRangeRequest request) = 0;
+    virtual Task<KeyValueStreamReply> history_range(HistoryRangeRequest request) = 0;
 
     // rpc RangeAsOf(RangeAsOfReq) returns (Pairs);
-    virtual Task<PaginatedKeysValues> range_as_of(DomainRangeRequest request) = 0;
+    virtual Task<KeyValueStreamReply> range_as_of(DomainRangeRequest request) = 0;
 };
 
 }  // namespace silkworm::db::kv::api

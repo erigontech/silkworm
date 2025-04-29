@@ -58,4 +58,11 @@ struct HistoryRangeInPeriodQuery {
     snapshots::HistoryRangeInPeriodQuery<TKeyDecoder2, TValueDecoder2> query2_;
 };
 
+template <
+    kvdb::DecoderConcept TKeyDecoder1, snapshots::DecoderConcept TKeyDecoder2,
+    kvdb::DecoderConcept TValueDecoder1, snapshots::DecoderConcept TValueDecoder2>
+using HistoryRangeInPeriodQueryResult = decltype(std::declval<HistoryRangeInPeriodQuery<TKeyDecoder1, TKeyDecoder2, TValueDecoder1, TValueDecoder2>>().exec(
+    std::declval<TimestampRange>(),
+    std::declval<bool>()));
+
 }  // namespace silkworm::datastore

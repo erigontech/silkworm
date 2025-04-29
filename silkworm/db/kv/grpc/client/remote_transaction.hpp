@@ -60,13 +60,13 @@ class RemoteTransaction : public api::BaseTransaction {
     Task<api::HistoryPointResult> history_seek(api::HistoryPointRequest request) override;
 
     // rpc IndexRange(IndexRangeReq) returns (IndexRangeReply);
-    Task<api::PaginatedTimestamps> index_range(api::IndexRangeRequest request) override;
+    Task<api::TimestampStreamReply> index_range(api::IndexRangeRequest request) override;
 
     // rpc HistoryRange(HistoryRangeReq) returns (Pairs);
-    Task<api::PaginatedKeysValues> history_range(api::HistoryRangeRequest request) override;
+    Task<api::KeyValueStreamReply> history_range(api::HistoryRangeRequest request) override;
 
     // rpc RangeAsOf(RangeAsOfReq) returns (Pairs);
-    Task<api::PaginatedKeysValues> range_as_of(api::DomainRangeRequest request) override;
+    Task<api::KeyValueStreamReply> range_as_of(api::DomainRangeRequest request) override;
 
   private:
     Task<std::shared_ptr<api::CursorDupSort>> get_cursor(std::string_view table_view, bool is_cursor_dup_sort);

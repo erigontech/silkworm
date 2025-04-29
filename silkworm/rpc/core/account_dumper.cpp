@@ -38,18 +38,19 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
 
     dump_accounts.root = header->state_root;
 
-    auto key = db::code_domain_key(start_address);
     const auto block_num = header->number + 1;
     const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_num);
 
     db::kv::api::DomainRangeRequest query{
         .table = std::string{db::table::kAccountDomain},
-        .from_key = key,
+        .from_key = db::account_domain_key(start_address),
         .timestamp = start_txn_number,
-        .ascending_order = true};
+        .ascending_order = true,
+        .skip_empty_values = true,  // just for direct Data API
+    };
 
-    auto paginated_result = co_await transaction_.range_as_of((std::move(query)));
-    auto it = co_await paginated_result.begin();
+    auto domain_kv_result = co_await transaction_.range_as_of(std::move(query));
+    auto it = co_await domain_kv_result.begin();
 
     while (const auto value = co_await it->next()) {
         DumpAccount dump_account;

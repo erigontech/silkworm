@@ -13,13 +13,13 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/db/chain/chain_storage.hpp>
-#include <silkworm/db/kv/api/base_transaction.hpp>
 #include <silkworm/db/kv/api/cursor.hpp>
 #include <silkworm/db/kv/api/endpoint/paginated_sequence.hpp>
 #include <silkworm/db/kv/api/endpoint/temporal_range.hpp>
-#include <silkworm/db/kv/api/service.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
+#if !defined(__clang__)
+#include <silkworm/db/tables.hpp>
+#endif  // !defined(__clang__)
 #include <silkworm/db/test_util/mock_transaction.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/rpc/core/filter_storage.hpp>
@@ -154,7 +154,7 @@ TEST_CASE("get_modified_accounts") {
             .from_timestamp = static_cast<db::kv::api::Timestamp>(0),
             .to_timestamp = static_cast<db::kv::api::Timestamp>(19),
             .ascending_order = true};
-        EXPECT_CALL(transaction, history_range(std::move(request))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::PaginatedKeysValues> {
+        EXPECT_CALL(transaction, history_range(std::move(request))).WillOnce(Invoke([=](Unused) -> Task<db::kv::api::KeyValueStreamReply> {
             PaginatorKV paginator = [](auto next_page_token) -> Task<PageResultKV> {
                 co_return PageResultKV{
                     .keys = {*from_hex("07aaec0b237ccf56b03a7c43c1c7a783da5606420501010101")},
@@ -162,7 +162,7 @@ TEST_CASE("get_modified_accounts") {
                     .next_page_token = std::move(next_page_token)};
             };
             db::kv::api::PaginatedKeysValues result{paginator};
-            co_return result;
+            co_return db::kv::api::KeyValueStreamReply{result};
         }));
 
         auto result = boost::asio::co_spawn(pool, get_modified_accounts(tx, 0x52a010, 0x52a010, 0x800000), boost::asio::use_future);

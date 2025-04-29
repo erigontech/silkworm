@@ -73,16 +73,22 @@ using ReceiptsHistoryGetQuery = RawHistoryGetQuery<state::kHistorySegmentAndIdxN
 
 using RawInvertedIndexRangeByKeyQuery = InvertedIndexRangeByKeyQuery<
     kvdb::RawEncoder<Bytes>, snapshots::RawEncoder<Bytes>>;  // TODO(canepat) try ByteView
+using RawInvertedIndexRangeByKeyQueryResult = InvertedIndexRangeByKeyQueryResult<
+    kvdb::RawEncoder<Bytes>, snapshots::RawEncoder<Bytes>>;
 
 using RawHistoryRangeInPeriodQuery = HistoryRangeInPeriodQuery<
     kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>, kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
+using RawHistoryRangeInPeriodQueryResult = HistoryRangeInPeriodQueryResult<
+    kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>, kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
 
-template <typename PageResult>
-static auto make_empty_paginator() {
-    return [](api::PaginatedTimestamps::PageToken) mutable -> Task<PageResult> {
-        co_return PageResult{};
-    };
-}
+using RawDomainRangeAsOfQuery = DomainRangeAsOfQuery<
+    kvdb::RawEncoder<Bytes>, snapshots::RawEncoder<Bytes>,
+    kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
+    kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
+using RawDomainRangeAsOfQueryResult = DomainRangeAsOfQueryResult<
+    kvdb::RawEncoder<Bytes>, snapshots::RawEncoder<Bytes>,
+    kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
+    kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
 
 Task<void> LocalTransaction::open() {
     co_return;
@@ -216,12 +222,50 @@ Task<HistoryPointResult> LocalTransaction::history_seek(HistoryPointRequest requ
     co_return HistoryPointResult{.success = true, .value = std::move(*value)};
 }
 
-Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeRequest request) {
-    if (!kTable2EntityNames.contains(request.table)) {
-        co_return api::PaginatedTimestamps{make_empty_paginator<api::PaginatedTimestamps::PageResult>()};
+template <Value V, std::ranges::input_range Range>
+    requires std::convertible_to<std::iter_value_t<std::ranges::iterator_t<Range>>, V>
+struct RangeStreamIterator : StreamIterator<V> {
+    using RangeIterator = std::ranges::iterator_t<Range>;
+    using iterator = RangeIterator;
+    using value_type = V;
+
+    explicit RangeStreamIterator(Range&& range) : range_(std::move(range)), it_(std::ranges::begin(range_)) {}
+
+    Task<bool> has_next() override {
+        co_return it_ != std::ranges::end(range_);
     }
 
-    auto paginator = [this, request = std::move(request)](api::PaginatedTimestamps::PageToken) mutable -> Task<api::PaginatedTimestamps::PageResult> {
+    Task<std::optional<value_type>> next() override {
+        if (it_ == std::ranges::end(range_)) {
+            co_return std::nullopt;
+        }
+        const auto value = *it_;
+        ++it_;
+        co_return value;
+    }
+
+  private:
+    Range range_;
+    RangeIterator it_;
+};
+
+struct TimestampConverter {
+    Timestamp operator()(datastore::Timestamp ts) const {
+        return static_cast<Timestamp>(ts);
+    }
+};
+using TimestampView = std::ranges::take_view<
+    std::ranges::transform_view<RawInvertedIndexRangeByKeyQueryResult, TimestampConverter>>;
+using TimestampViewIterator = decltype(std::declval<TimestampView>().begin());
+static_assert(std::is_same_v<TimestampViewIterator::value_type, Timestamp>);
+using TimestampStreamIterator = RangeStreamIterator<Timestamp, TimestampView>;
+
+Task<TimestampStreamReply> LocalTransaction::index_range(IndexRangeRequest request) {
+    if (!kTable2EntityNames.contains(request.table)) {
+        co_return TimestampStreamReply{EmptyStreamFactory<Timestamp>};
+    }
+
+    auto timestamp_stream_factory = [this, request = std::move(request)]() mutable -> Task<TimestampStream> {
         const EntityName inverted_index_name = kTable2EntityNames.at(request.table);
         RawInvertedIndexRangeByKeyQuery query{
             inverted_index_name,
@@ -229,29 +273,30 @@ Task<PaginatedTimestamps> LocalTransaction::index_range(IndexRangeRequest reques
             tx_,
             data_store_.state_repository_historical,
         };
-
         datastore::TimestampRange ts_range = as_datastore_ts_range({request.from_timestamp, request.to_timestamp}, !request.ascending_order);
         const size_t limit = (request.limit == kUnlimited) ? std::numeric_limits<size_t>::max() : static_cast<size_t>(request.limit);
 
-        // TODO: support pagination: apply page_size using std::views::chunk, save the range for future requests using page_token and return the first chunk
         auto timestamps = query.exec(request.key, std::move(ts_range), request.ascending_order) |
-                          std::views::transform([](datastore::Timestamp ts) { return static_cast<Timestamp>(ts); }) |
+                          std::views::transform(TimestampConverter{}) |
                           std::views::take(limit);
+        static_assert(std::is_same_v<TimestampView, decltype(timestamps)>);
 
-        api::PaginatedTimestamps::PageResult result;
-        result.values = vector_from_range(std::move(timestamps));
-
-        co_return result;
+        co_return TimestampStream{std::make_unique<TimestampStreamIterator>(std::move(timestamps))};
     };
-    co_return api::PaginatedTimestamps{std::move(paginator)};
+    co_return TimestampStreamReply{std::move(timestamp_stream_factory)};
 }
 
-Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeRequest request) {
+using RawHistoryRangeView = std::ranges::take_view<RawHistoryRangeInPeriodQueryResult>;
+using RawHistoryRangeViewIterator = decltype(std::declval<RawHistoryRangeView>().begin());
+static_assert(std::is_same_v<RawHistoryRangeViewIterator::value_type, RawKeyValue>);
+using RawHistoryRangeStreamIterator = RangeStreamIterator<RawKeyValue, RawHistoryRangeView>;
+
+Task<KeyValueStreamReply> LocalTransaction::history_range(HistoryRangeRequest request) {
     if (!kTable2EntityNames.contains(request.table)) {
-        co_return api::PaginatedKeysValues{make_empty_paginator<api::PaginatedKeysValues::PageResult>()};
+        co_return KeyValueStreamReply{EmptyStreamFactory<RawKeyValue>};
     }
 
-    auto paginator = [this, request = std::move(request)](api::PaginatedKeysValues::PageToken) mutable -> Task<api::PaginatedKeysValues::PageResult> {
+    auto key_value_stream_factory = [this, request = std::move(request)]() mutable -> Task<KeyValueStream> {
         const EntityName entity_name = kTable2EntityNames.at(request.table);
         RawHistoryRangeInPeriodQuery query{
             entity_name,
@@ -263,31 +308,27 @@ Task<PaginatedKeysValues> LocalTransaction::history_range(HistoryRangeRequest re
         datastore::TimestampRange ts_range = as_datastore_ts_range({request.from_timestamp, request.to_timestamp}, !request.ascending_order);
         const size_t limit = (request.limit == kUnlimited) ? std::numeric_limits<size_t>::max() : static_cast<size_t>(request.limit);
 
-        // TODO: support pagination: apply page_size using std::views::chunk, save the range for future requests using page_token and return the first chunk
-        api::PaginatedKeysValues::PageResult result;
-        for (auto&& kv_pair : query.exec(ts_range, request.ascending_order) | std::views::take(limit)) {
-            result.keys.emplace_back(std::move(kv_pair.first));
-            result.values.emplace_back(std::move(kv_pair.second));
-        }
+        auto history_kv = query.exec(ts_range, request.ascending_order) | std::views::take(limit);
+        static_assert(std::is_same_v<RawHistoryRangeView, decltype(history_kv)>);
 
-        co_return result;
+        co_return KeyValueStream{std::make_unique<RawHistoryRangeStreamIterator>(std::move(history_kv))};
     };
-    co_return api::PaginatedKeysValues{std::move(paginator)};
+    co_return KeyValueStreamReply{std::move(key_value_stream_factory)};
 }
 
-Task<PaginatedKeysValues> LocalTransaction::range_as_of(DomainRangeRequest request) {
+using RawDomainRangeView = std::ranges::take_view<RawDomainRangeAsOfQueryResult>;
+using RawDomainRangeViewViewIterator = decltype(std::declval<RawDomainRangeView>().begin());
+static_assert(std::is_same_v<RawDomainRangeViewViewIterator::value_type, RawKeyValue>);
+using RawDomainRangeStreamIterator = RangeStreamIterator<RawKeyValue, RawDomainRangeView>;
+
+Task<KeyValueStreamReply> LocalTransaction::range_as_of(DomainRangeRequest request) {
     if (!kTable2EntityNames.contains(request.table)) {
-        co_return api::PaginatedKeysValues{make_empty_paginator<api::PaginatedKeysValues::PageResult>()};
+        co_return KeyValueStreamReply{EmptyStreamFactory<RawKeyValue>};
     }
 
-    auto paginator = [this, request = std::move(request)](api::PaginatedKeysValues::PageToken) mutable -> Task<api::PaginatedKeysValues::PageResult> {
+    auto key_value_stream_factory = [this, request = std::move(request)]() mutable -> Task<KeyValueStream> {
         const EntityName entity_name = kTable2EntityNames.at(request.table);
-
-        using DomainRangeAsOfQuery = DomainRangeAsOfQuery<
-            kvdb::RawEncoder<Bytes>, snapshots::RawEncoder<Bytes>,
-            kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>,
-            kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>;
-        DomainRangeAsOfQuery query{
+        RawDomainRangeAsOfQuery query{
             entity_name,
             data_store_.chaindata,
             tx_,
@@ -301,16 +342,13 @@ Task<PaginatedKeysValues> LocalTransaction::range_as_of(DomainRangeRequest reque
         }
         const size_t limit = (request.limit == kUnlimited) ? std::numeric_limits<size_t>::max() : static_cast<size_t>(request.limit);
 
-        // TODO: support pagination: apply page_size using std::views::chunk, save the range for future requests using page_token and return the first chunk
-        api::PaginatedKeysValues::PageResult result;
-        for (auto&& kv_pair : query.exec(request.from_key, request.to_key, timestamp, request.ascending_order) | std::views::take(limit)) {
-            result.keys.emplace_back(std::move(kv_pair.first));
-            result.values.emplace_back(std::move(kv_pair.second));
-        }
+        auto domain_kv = query.exec(request.from_key, request.to_key, timestamp, request.ascending_order, request.skip_empty_values) |
+                         std::views::take(limit);
+        static_assert(std::is_same_v<RawDomainRangeView, decltype(domain_kv)>);
 
-        co_return result;
+        co_return KeyValueStream{std::make_unique<RawDomainRangeStreamIterator>(std::move(domain_kv))};
     };
-    co_return api::PaginatedKeysValues{std::move(paginator)};
+    co_return KeyValueStreamReply{std::move(key_value_stream_factory)};
 }
 
 }  // namespace silkworm::db::kv::api

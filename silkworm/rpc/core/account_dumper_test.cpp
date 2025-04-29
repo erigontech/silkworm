@@ -205,16 +205,16 @@ class DummyTransaction : public BaseTransaction {
         co_return db::kv::api::HistoryPointResult{};
     }
 
-    Task<db::kv::api::PaginatedTimestamps> index_range(db::kv::api::IndexRangeRequest /*query*/) override {
-        co_return test::empty_paginated_timestamps();
+    Task<db::kv::api::TimestampStreamReply> index_range(db::kv::api::IndexRangeRequest /*query*/) override {
+        co_return test::empty_timestamps();
     }
 
-    Task<db::kv::api::PaginatedKeysValues> history_range(db::kv::api::HistoryRangeRequest /*query*/) override {
-        co_return test::empty_paginated_keys_and_values();
+    Task<db::kv::api::KeyValueStreamReply> history_range(db::kv::api::HistoryRangeRequest /*query*/) override {
+        co_return test::empty_keys_and_values();
     }
 
-    Task<db::kv::api::PaginatedKeysValues> range_as_of(db::kv::api::DomainRangeRequest /*query*/) override {
-        co_return test::empty_paginated_keys_and_values();
+    Task<db::kv::api::KeyValueStreamReply> range_as_of(db::kv::api::DomainRangeRequest /*query*/) override {
+        co_return test::empty_keys_and_values();
     }
 
   private:

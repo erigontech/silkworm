@@ -70,14 +70,14 @@ Task<void> LogsWalker::get_logs(BlockNum start,
 
     const auto chain_storage{tx_.make_storage()};
 
-    db::kv::api::PaginatedStream<db::kv::api::Timestamp> paginated_stream;
+    db::kv::api::Stream<db::kv::api::Timestamp> paginated_stream;
     if (!topics.empty()) {
         for (auto sub_topic = topics.begin(); sub_topic < topics.end(); ++sub_topic) {
             if (sub_topic->empty()) {
                 continue;
             }
 
-            db::kv::api::PaginatedStream<db::kv::api::Timestamp> union_stream;
+            db::kv::api::Stream<db::kv::api::Timestamp> union_stream;
             for (auto it = sub_topic->begin(); it < sub_topic->end(); ++it) {
                 SILK_DEBUG << "topic: " << to_hex(*it) << ", from_timestamp: " << from_timestamp << ", to_timestamp: "
                            << to_timestamp;
@@ -99,7 +99,7 @@ Task<void> LogsWalker::get_logs(BlockNum start,
         }
     }
     if (!addresses.empty()) {
-        db::kv::api::PaginatedStream<db::kv::api::Timestamp> union_stream;
+        db::kv::api::Stream<db::kv::api::Timestamp> union_stream;
         for (auto it = addresses.begin(); it < addresses.end(); ++it) {
             SILK_DEBUG << "address: " << *it << ", from_timestamp: " << from_timestamp << ", to_timestamp: " << to_timestamp;
 

@@ -129,7 +129,7 @@ Task<std::optional<BlockNum>> block_num_from_tx_num(kv::api::Transaction& tx,
     co_return block_num;
 }
 
-Task<std::optional<TransactionNums>> PaginatedTransactionInfoIterator::next() {
+Task<std::optional<TransactionNums>> TransactionInfoIterator::next() {
     auto next_id = co_await stream_->next();
     if (!next_id) {
         SILK_DEBUG << "No more values";
@@ -166,11 +166,11 @@ Task<std::optional<TransactionNums>> PaginatedTransactionInfoIterator::next() {
     co_return txn_nums;
 }
 
-kv::api::PaginatedStream<TransactionNums> make_txn_nums_stream(PaginatedTimestampStream stream,
-                                                               bool ascending,
-                                                               kv::api::Transaction& tx,
-                                                               db::chain::CanonicalBodyForStorageProvider& provider) {
-    return std::make_unique<PaginatedTransactionInfoIterator>(std::move(stream), ascending, tx, provider);
+kv::api::Stream<TransactionNums> make_txn_nums_stream(kv::api::TimestampStream stream,
+                                                      bool ascending,
+                                                      kv::api::Transaction& tx,
+                                                      db::chain::CanonicalBodyForStorageProvider& provider) {
+    return std::make_unique<TransactionInfoIterator>(std::move(stream), ascending, tx, provider);
 }
 
 }  // namespace silkworm::db::txn

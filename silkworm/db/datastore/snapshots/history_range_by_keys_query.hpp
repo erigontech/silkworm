@@ -71,7 +71,7 @@ struct HistoryRangeByKeysSegmentQuery {
         };
 
         return std::ranges::subrange{std::move(begin_it), ii_reader.end()} |
-               std::views::take_while([key_end = std::move(key_end)](auto&& ii_entry) { return ii_entry.first < key_end; }) |
+               std::views::take_while([key_end = std::move(key_end)](auto&& ii_entry) { return key_end.empty() || ii_entry.first < key_end; }) |
                std::views::transform(std::move(lookup_kv_pair_func)) |
                silkworm::views::caching |
                std::views::filter([](const std::optional<ResultItem>& result_opt) { return result_opt.has_value(); }) |

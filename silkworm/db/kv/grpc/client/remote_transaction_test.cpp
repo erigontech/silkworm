@@ -9,6 +9,7 @@
 #include <catch2/matchers/catch_matchers_predicate.hpp>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
+#include <silkworm/db/kv/api/endpoint/paginated_sequence.hpp>
 #include <silkworm/db/kv/api/state_cache.hpp>
 #include <silkworm/db/test_util/kv_test_base.hpp>
 #include <silkworm/infra/grpc/test_util/grpc_actions.hpp>
@@ -21,6 +22,8 @@ namespace silkworm::db::kv::grpc::client {
 using testing::_;
 namespace proto = ::remote;
 namespace test = rpc::test;
+
+using PaginatedKV = api::PaginatedSequencePair<Bytes, Bytes>;
 
 class RemoteTransactionTest : public db::test_util::KVTestBase {
   protected:
@@ -561,11 +564,11 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::index_range", "[db][
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::IndexRangeRequest request;
-        auto paginated_timestamps = co_await remote_tx_.index_range(std::move(request));
+        auto timestamps = co_await remote_tx_.index_range(std::move(request));
 #else
-        auto paginated_timestamps = co_await remote_tx_.index_range(api::IndexRangeRequest{});
+        auto timestamps = co_await remote_tx_.index_range(api::IndexRangeRequest{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
-        co_return co_await paginated_to_vector(paginated_timestamps);
+        co_return co_await api::stream_to_vector(timestamps);
     };
     rpc::test::StrictMockAsyncResponseReader<proto::IndexRangeReply> reader;
     SECTION("throw on error") {
@@ -655,11 +658,11 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::history_range", "[db
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::HistoryRangeRequest request;
-        auto paginated_keys_and_values = co_await remote_tx_.history_range(std::move(request));
+        auto keys_and_values = co_await remote_tx_.history_range(std::move(request));
 #else
-        auto paginated_keys_and_values = co_await remote_tx_.history_range(api::HistoryRangeRequest{});
+        auto keys_and_values = co_await remote_tx_.history_range(api::HistoryRangeRequest{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
-        co_return co_await paginated_to_vector(paginated_keys_and_values);
+        co_return co_await stream_to_vector<PaginatedKV::KVPair, api::KeyValue>(keys_and_values);
     };
     rpc::test::StrictMockAsyncResponseReader<proto::Pairs> reader;
     SECTION("throw on error") {
@@ -739,11 +742,11 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::range_as_of", "[db][
         // that involve compiler-generated constructors binding references to pr-values seems to trigger this bug:
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100611
         api::DomainRangeRequest request;
-        auto paginated_keys_and_values = co_await remote_tx_.range_as_of(std::move(request));
+        auto keys_and_values = co_await remote_tx_.range_as_of(std::move(request));
 #else
-        auto paginated_keys_and_values = co_await remote_tx_.range_as_of(api::DomainRangeRequest{});
+        auto keys_and_values = co_await remote_tx_.range_as_of(api::DomainRangeRequest{});
 #endif  // #if __GNUC__ < 13 && !defined(__clang__)
-        co_return co_await paginated_to_vector(paginated_keys_and_values);
+        co_return co_await stream_to_vector<PaginatedKV::KVPair, api::KeyValue>(keys_and_values);
     };
     rpc::test::StrictMockAsyncResponseReader<proto::Pairs> reader;
     SECTION("throw on error") {

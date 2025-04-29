@@ -45,7 +45,7 @@ delivering the first release of [Erigon++] starting from Erigon 2.59.0.
 Erigon++ is supported on platforms:
 
 * Linux x86_64 with glibc 34+, glibcpp 30+ (such as Debian 12+, Ubuntu 22+, etc.)
-* macOS 14+ arm64
+* macOS 15+ arm64
 
 It is not supported on any arm64 Linux, Alpine Linux.
 Test compatibility by running [silkworm_compat_check.sh](https://github.com/erigontech/erigon/blob/main/turbo/silkworm/silkworm_compat_check.sh)
@@ -92,7 +92,7 @@ git submodule update --init --recursive
 
 Building Silkworm requires:
 * C++20 compiler: [GCC](https://www.gnu.org/software/gcc/) >= 11.2 or [Clang](https://clang.llvm.org/) >= 16
-or AppleClang ([Xcode](https://developer.apple.com/xcode/) >= 15)
+or AppleClang ([Xcode](https://developer.apple.com/xcode/) >= 16)
 * [CMake](https://cmake.org)
 * [Conan](https://conan.io)
 

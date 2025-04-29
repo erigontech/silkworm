@@ -237,6 +237,9 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::CoherentStateCache", "[db]
     }
 }
 
+// Exclude on MSVC due to error LNK2001: unresolved external symbol testing::Matcher<class std::basic_string_view...
+// See also https://github.com/google/googletest/issues/4357
+#ifndef _WIN32
 TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::get_view returns empty view", "[db][kv][api][state_cache]") {
     CoherentCacheConfig config{.wait_for_new_block = false};
     CoherentStateCache cache{config};
@@ -574,5 +577,6 @@ TEST_CASE_METHOD(StateCacheTest, "CoherentStateCache::on_new_block clear the cac
         CHECK(spawn_and_wait(cache.get_view(old_txn))->empty());
     }
 }
+#endif  // _WIN32
 
 }  // namespace silkworm::db::kv::api

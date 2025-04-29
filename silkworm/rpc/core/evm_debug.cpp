@@ -59,30 +59,32 @@ std::string DebugConfig::to_string() const {
 
     return out.str();
 }
-
 std::string uint256_to_hex(const evmone::uint256& x) {
-    std::stringstream ss;
-    ss << "0x";
+    static constexpr std::string_view kHexDigits{"0123456789abcdef"};
+    std::string out(2 + 64, '\0');
+    char* dest = out.data();
+
+    *dest++ = '0';
+    *dest++ = 'x';
 
     bool leading_zeros = true;
     const uint64_t* px = &x[0];
     for (int i = 3; i >= 0; --i) {
-        if (px[i] == 0 && leading_zeros) {
-            continue;
-        }
-        if (leading_zeros) {
-            ss << std::hex << px[i];
-            leading_zeros = false;
-        } else {
-            ss << std::setfill('0') << std::setw(16) << std::hex << px[i];
+        for (int shift = 60; shift >= 0; shift -= 4) {
+            char hex_digit = kHexDigits[(px[i] >> shift) & 0xF];
+            if (hex_digit != '0' || !leading_zeros) {
+                *dest++ = hex_digit;
+                leading_zeros = false;
+            }
         }
     }
 
     if (leading_zeros) {
-        ss << "0";
+        *dest++ = '0';
     }
 
-    return ss.str();
+    out.resize(static_cast<size_t>(dest - out.data()));
+    return out;
 }
 
 static void output_stack(std::vector<std::string>& vect, const evmone::uint256* stack, int stack_size) {
@@ -164,13 +166,16 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     bool output_storage = false;
     if (!config_.disable_storage) {
         if (opcode == OP_SLOAD && stack_height >= 1) {
-            const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
+            evmc::bytes32 address;
+            intx::be::store(address.bytes, stack_top[0]);
             const auto value = intra_block_state.get_current_storage(recipient, address);
             storage_[recipient][silkworm::to_hex(address)] = silkworm::to_hex(value);
             output_storage = true;
         } else if (opcode == OP_SSTORE && stack_height >= 2) {
-            const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
-            const auto value = silkworm::bytes32_from_hex(intx::hex(stack_top[-1]));
+            evmc::bytes32 address;
+            intx::be::store(address.bytes, stack_top[0]);
+            evmc::bytes32 value;
+            intx::be::store(value.bytes, stack_top[-1]);
             storage_[recipient][silkworm::to_hex(address)] = silkworm::to_hex(value);
             output_storage = true;
         }

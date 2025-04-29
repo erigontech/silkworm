@@ -30,7 +30,7 @@ struct DebugExecutorTest : public test_util::ServiceContextTestBase {
     WorkerPool workers{1};
     StringWriter writer{4096};
     boost::asio::any_io_executor io_executor{ioc_.get_executor()};
-    json::Stream stream{io_executor, writer};
+    json::Stream stream{io_executor, writer, /* request_id */ 0};
     test::BackEndMock backend;
     RemoteChainStorage chain_storage{transaction, ethdb::kv::make_backend_providers(&backend)};
 };
@@ -53,7 +53,7 @@ class TestDebugExecutor : DebugExecutor {
     }
 };
 
-#ifndef SILKWORM_SANITIZE
+#if !defined(SILKWORM_SANITIZE) && !defined(_WIN32)
 using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
@@ -1170,6 +1170,6 @@ TEST_CASE("uint256_to_hex", "evmone::uint256") {
     }
 }
 
-#endif  // SILKWORM_SANITIZE
+#endif  // !defined(SILKWORM_SANITIZE) && !defined(_WIN32)
 
 }  // namespace silkworm::rpc::debug

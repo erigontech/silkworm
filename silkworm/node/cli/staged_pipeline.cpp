@@ -214,15 +214,15 @@ void set_stage_progress(kvdb::EnvConfig& config, const std::string& stage_name, 
 
     auto env{kvdb::open_env(config)};
     kvdb::RWTxnManaged txn{env};
-    if (!db::stages::is_known_stage(stage_name.c_str())) {
+    if (!db::stages::is_known_stage(stage_name)) {
         throw std::runtime_error("Stage name " + stage_name + " is not known");
     }
     if (!has_map(txn, db::table::kSyncStageProgress.name)) {
         throw std::runtime_error("Either non Silkworm db or table " +
                                  std::string(db::table::kSyncStageProgress.name) + " not found");
     }
-    auto old_height{db::stages::read_stage_progress(txn, stage_name.c_str())};
-    db::stages::write_stage_progress(txn, stage_name.c_str(), new_height);
+    auto old_height{db::stages::read_stage_progress(txn, stage_name)};
+    db::stages::write_stage_progress(txn, stage_name, new_height);
     if (!dry) {
         txn.commit_and_renew();
     }

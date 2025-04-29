@@ -67,8 +67,7 @@ evmc::bytes32 OverrideState::read_storage(const evmc::address& address, uint64_t
     SILK_DEBUG << "OverrideState::read_storage address=" << address << " incarnation=" << incarnation << " location=" << to_hex(location) << " start";
     for (const auto& [key, value] : accounts_overrides_) {
         if (key == address) {
-            const auto& stateMap = value.state;
-            for (const auto& entry : stateMap) {
+            for (const auto& entry : value.state) {
                 if (location == entry.first) {
                     auto storage_value = intx::be::store<evmc::uint256be>(entry.second);
                     SILK_DEBUG << "OverrideState::read_storage reads from cache storage_value=" << to_hex(storage_value);

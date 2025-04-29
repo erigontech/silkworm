@@ -38,7 +38,9 @@ struct TraceCallExecutorTest : public test_util::ServiceContextTestBase {
     RemoteChainStorage chain_storage{transaction, ethdb::kv::make_backend_providers(&backend)};
 };
 
-#ifndef SILKWORM_SANITIZE
+// Exclude on MSVC due to error LNK2001: unresolved external symbol testing::Matcher<class std::basic_string_view...
+// See also https://github.com/google/googletest/issues/4357
+#if !defined(SILKWORM_SANITIZE) && !defined(_WIN32)
 using testing::_;
 using testing::Invoke;
 using testing::InvokeWithoutArgs;
@@ -3888,6 +3890,6 @@ TEST_CASE("TraceManyCallResult: json serialization") {
         ])"_json);
     }
 }
-#endif  // SILKWORM_SANITIZE
+#endif  // !defined(SILKWORM_SANITIZE) && !defined(_WIN32)
 
 }  // namespace silkworm::rpc::trace

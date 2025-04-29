@@ -18,13 +18,12 @@ using db::kv::api::KeyValue;
 
 class AccountDumper {
   public:
-    AccountDumper(db::kv::api::Transaction& transaction) : transaction_(transaction) {}
+    explicit AccountDumper(db::kv::api::Transaction& transaction) : transaction_(transaction) {}
 
     AccountDumper(const AccountDumper&) = delete;
     AccountDumper& operator=(const AccountDumper&) = delete;
 
     Task<DumpAccounts> dump_accounts(
-        BlockCache& cache,
         const BlockNumOrHash& block_num_or_hash,
         const evmc::address& start_address,
         int16_t max_result,

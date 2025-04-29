@@ -3,6 +3,8 @@
 
 include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
 
+add_subdirectory(common)
+
 set(TARGET silkworm_capi)
 
 find_package(Microsoft.GSL REQUIRED)
@@ -11,10 +13,11 @@ set(PUBLIC_LIBS "")
 set(PRIVATE_LIBS
     glaze::glaze
     Microsoft.GSL::GSL
+    silkworm_capi_common
     silkworm_core
     silkworm_db
+    silkworm_execution
     silkworm_sentry
-    silkworm_node
     silkworm_rpcdaemon
 )
 
@@ -47,4 +50,14 @@ set_target_properties(${TARGET} PROPERTIES LINK_OPTIONS "${LINK_OPTIONS}")
 
 add_subdirectory(cli)
 
-target_link_libraries(silkworm_capi_static_test PRIVATE silkworm_db_test_util silkworm_node)
+target_link_libraries(silkworm_capi_static_test PRIVATE silkworm_db_test_util)
+
+# collect all public C headers into the same directory
+set(HEADERS_INSTALL_PATH "${CMAKE_CURRENT_BINARY_DIR}/include")
+file(GLOB_RECURSE HEADERS "../capi/*.h" "../*/capi/*.h")
+add_custom_command(
+  TARGET ${TARGET}
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} ARGS -E make_directory "${HEADERS_INSTALL_PATH}"
+  COMMAND ${CMAKE_COMMAND} ARGS -E copy_if_different ${HEADERS} "${HEADERS_INSTALL_PATH}"
+)

@@ -135,10 +135,10 @@ class MergeUniqueView : public std::ranges::view_interface<MergeUniqueView<Range
             }
         }
 
-        Range1Iterator it1_;
-        Range1Sentinel sentinel1_;
-        Range2Iterator it2_;
-        Range2Sentinel sentinel2_;
+        Range1Iterator it1_{};
+        Range1Sentinel sentinel1_{};
+        Range2Iterator it2_{};
+        Range2Sentinel sentinel2_{};
         const Comp* comp_{nullptr};
         Proj1 proj1_;
         Proj2 proj2_;

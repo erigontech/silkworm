@@ -29,10 +29,10 @@ inline constexpr size_t kDefaultCapacity = 4 * 1024;
 
 class ChannelForTest : public StreamWriter {
   public:
-    Task<void> open_stream() override { co_return; }
+    Task<void> open_stream(uint64_t /* request_id */) override { co_return; }
     size_t get_capacity() const noexcept override { return kDefaultCapacity; }
-    Task<void> close_stream() override { co_return; }
-    Task<size_t> write(std::string_view /* content */, bool /* last */) override { co_return 0; }
+    Task<void> close_stream(uint64_t /* request_id */) override { co_return; }
+    Task<size_t> write(uint64_t /* request_id */, std::string_view /* content */, bool /* last */) override { co_return 0; }
 };
 
 class RequestHandlerForTest : public json_rpc::RequestHandler {
@@ -43,11 +43,11 @@ class RequestHandlerForTest : public json_rpc::RequestHandler {
         : json_rpc::RequestHandler(channel, rpc_api, rpc_api_table) {}
 
     Task<void> request_and_create_reply(const nlohmann::json& request_json, std::string& response) {
-        co_await RequestHandler::handle_request_and_create_reply(request_json, response);
+        co_await RequestHandler::handle_request_and_create_reply(request_json, response, /* request_id */ 0);
     }
 
     Task<void> handle_request(const std::string& request, std::string& response) {
-        auto answer = co_await RequestHandler::handle(request);
+        auto answer = co_await RequestHandler::handle(request, /* request_id */ 0);
         if (answer) {
             response = *answer;
         }

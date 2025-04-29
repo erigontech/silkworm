@@ -76,7 +76,7 @@ Task<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request
     try {
         auto start = std::chrono::system_clock::now();
         core::AccountDumper dumper{*tx};
-        DumpAccounts dump_accounts = co_await dumper.dump_accounts(*block_cache_, block_num_or_hash, start_address, max_result, exclude_code, exclude_storage);
+        DumpAccounts dump_accounts = co_await dumper.dump_accounts(block_num_or_hash, start_address, max_result, exclude_code, exclude_storage);
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;
         SILK_DEBUG << "dump_accounts: elapsed " << elapsed_seconds.count() << " sec";
@@ -216,8 +216,8 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
     try {
         const auto chain_storage = tx->make_storage();
         const BlockReader reader{*chain_storage, *tx};
-        const auto block_with_hash = co_await reader.read_block_by_hash(*block_cache_, block_hash);
-        if (!block_with_hash) {
+        const auto header = co_await chain_storage->read_header(block_hash);
+        if (!header) {
             SILK_WARN << "debug_storage_range_at: block not found, hash: " << evmc::hex(block_hash);
             nlohmann::json result = {{"storage", nullptr}, {"nextKey", nullptr}};
             reply = make_json_content(request, result);
@@ -246,7 +246,7 @@ Task<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& requ
             return count++ < max_result;
         };
 
-        const auto min_tx_num = co_await tx->first_txn_num_in_block(block_with_hash->block.header.number);
+        const auto min_tx_num = co_await tx->first_txn_num_in_block(header->number);
         const auto from_tx_num = min_tx_num + tx_index + 1;  // for system txn in the beginning of block
 
         StorageWalker storage_walker{*tx};

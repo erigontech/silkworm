@@ -12,12 +12,10 @@
 #include <utility>
 #include <vector>
 
-#include <absl/strings/str_split.h>
 #include <boost/thread/scoped_thread.hpp>
 #include <gsl/util>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/execution/call_tracer.hpp>
 #include <silkworm/core/execution/execution.hpp>
@@ -26,6 +24,7 @@
 #include <silkworm/db/blocks/schema_config.hpp>
 #include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/capi/component.hpp>
 #include <silkworm/db/datastore/snapshots/index_builder.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
 #include <silkworm/db/stages.hpp>
@@ -39,16 +38,16 @@
 #include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/infra/concurrency/spawn.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/rpc/daemon.hpp>
 #include <silkworm/rpc/ethbackend/remote_backend.hpp>
 #include <silkworm/rpc/ethdb/kv/backend_providers.hpp>
 
-#include "common.hpp"
+#include "common/parse_path.hpp"
 #include "instance.hpp"
 
 using namespace std::chrono_literals;
 using namespace silkworm;
+using namespace silkworm::capi;
 
 static constexpr size_t kMaxBlockBufferSize{100};
 static constexpr size_t kMaxPrefetchedBlocks{10'240};
@@ -65,48 +64,6 @@ struct ExecutionProgress {
     size_t processed_gas{0};
     float batch_progress_perc{0.0};
 };
-
-//! Kind of match to perform between Erigon and Silkworm libmdbx versions
-enum class MdbxVersionCheck : uint8_t {
-    kNone,      /// no check at all
-    kExact,     /// git-describe versions must match perfectly
-    kSemantic,  /// compare semantic versions (<M1.m1.p1> == <M2.m2.p2>)
-};
-
-static bool is_compatible_mdbx_version(std::string_view their_version, std::string_view our_version, MdbxVersionCheck check) {
-    SILK_TRACE << "is_compatible_mdbx_version their_version: " << their_version << " our_version: " << our_version;
-    bool compatible{false};
-    switch (check) {
-        case MdbxVersionCheck::kNone: {
-            compatible = true;
-        } break;
-        case MdbxVersionCheck::kExact: {
-            compatible = their_version == our_version;
-        } break;
-        case MdbxVersionCheck::kSemantic: {
-            const std::vector<std::string> their_version_parts = absl::StrSplit(std::string(their_version), '.');
-            const std::vector<std::string> our_version_parts = absl::StrSplit(std::string(our_version), '.');
-            compatible = (their_version_parts.size() >= 3) &&
-                         (our_version_parts.size() >= 3) &&
-                         (their_version_parts[0] == our_version_parts[0]) &&
-                         (their_version_parts[1] == our_version_parts[1]) &&
-                         (their_version_parts[2] == our_version_parts[2]);
-        }
-    }
-    return compatible;
-}
-
-//! Generate log arguments for Silkworm library version
-static log::Args log_args_for_version() {
-    const auto build_info{silkworm_get_buildinfo()};
-    return {
-        "git_branch",
-        std::string(build_info->git_branch),
-        "git_tag",
-        std::string(build_info->project_version),
-        "git_commit",
-        std::string(build_info->git_commit_hash)};
-}
 
 //! Generate log arguments for execution flush at specified block
 static log::Args log_args_for_exec_flush(const db::Buffer& state_buffer, uint64_t max_batch_size, uint64_t current_block) {
@@ -186,75 +143,6 @@ class SignalHandlerGuard {
     SignalHandlerGuard() { SignalHandler::init(/*custom_handler=*/{}, /*silent=*/true); }
     ~SignalHandlerGuard() { SignalHandler::reset(); }
 };
-
-static bool is_initialized{false};
-
-SILKWORM_EXPORT int silkworm_init(SilkwormHandle* handle, const struct SilkwormSettings* settings) SILKWORM_NOEXCEPT {
-    if (!handle) {
-        return SILKWORM_INVALID_HANDLE;
-    }
-    if (!settings) {
-        return SILKWORM_INVALID_SETTINGS;
-    }
-    if (std::strlen(settings->data_dir_path) == 0) {
-        return SILKWORM_INVALID_PATH;
-    }
-    if (!is_compatible_mdbx_version(settings->libmdbx_version, silkworm_libmdbx_version(), MdbxVersionCheck::kExact)) {
-        return SILKWORM_INCOMPATIBLE_LIBMDBX;
-    }
-    if (is_initialized) {
-        return SILKWORM_TOO_MANY_INSTANCES;
-    }
-
-    is_initialized = true;
-
-    log::Settings log_settings{make_log_settings(settings->log_verbosity)};
-    log::init(log_settings);
-    log::Info{"Silkworm build info", log_args_for_version()};  // NOLINT(*-unused-raii)
-
-    auto data_dir_path = parse_path(settings->data_dir_path);
-    auto snapshots_dir_path = DataDirectory{data_dir_path}.snapshots().path();
-    auto blocks_repository = db::blocks::make_blocks_repository(
-        snapshots_dir_path,
-        /* open = */ false,
-        settings->blocks_repo_index_salt);
-    auto state_repository_latest = db::state::make_state_repository_latest(
-        snapshots_dir_path,
-        /* open = */ false,
-        settings->state_repo_index_salt);
-    auto state_repository_historical = db::state::make_state_repository_historical(
-        snapshots_dir_path,
-        /* open = */ false,
-        settings->state_repo_index_salt);
-
-    log::Debug{"[1/12] Silkworm initialized",  // NOLINT(*-unused-raii)
-               {"data_dir", data_dir_path.string(),
-                "snapshots_dir", snapshots_dir_path.string(),
-                "blocks_repo_index_salt", std::to_string(settings->blocks_repo_index_salt),
-                "state_repo_index_salt", std::to_string(settings->state_repo_index_salt)}};
-
-    // NOLINTNEXTLINE(bugprone-unhandled-exception-at-new)
-    *handle = new SilkwormInstance{
-        .log_settings = std::move(log_settings),
-        .context_pool_settings = {
-            .num_contexts = settings->num_contexts > 0 ? settings->num_contexts : silkworm::concurrency::kDefaultNumContexts,
-        },
-        .data_dir_path = std::move(data_dir_path),
-        .node_settings = {},
-        .blocks_repository = std::make_unique<snapshots::SnapshotRepository>(std::move(blocks_repository)),
-        .state_repository_latest = std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository_latest)),
-        .state_repository_historical = std::make_unique<snapshots::SnapshotRepository>(std::move(state_repository_historical)),
-        .rpcdaemon = {},
-        .execution_engine = {},
-        .sentry_thread = {},
-        .sentry_stop_signal = {},
-    };
-    return SILKWORM_OK;
-}
-
-SILKWORM_EXPORT const char* silkworm_libmdbx_version() SILKWORM_NOEXCEPT {
-    return ::mdbx::get_version().git.describe;
-}
 
 class BlockProvider {
     static constexpr size_t kTxnRefreshThreshold{100};
@@ -345,8 +233,9 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
 
     try {
         auto txn = datastore::kvdb::RWTxnUnmanaged{mdbx_txn};
+        db::DataModel da_layer{txn, handle->db->blocks_repository};
 
-        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->blocks_repository})};
+        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(da_layer)};
         state_buffer.set_memory_limit(batch_size);
 
         const size_t max_batch_size{batch_size};
@@ -355,7 +244,6 @@ int silkworm_execute_blocks_ephemeral(SilkwormHandle handle, MDBX_txn* mdbx_txn,
         BlockNum block_num{start_block};
         BlockNum batch_start_block_num{start_block};
         BlockNum last_block_num = 0;
-        db::DataModel da_layer{txn, *handle->blocks_repository};
 
         AnalysisCache analysis_cache{execution::block::BlockExecutor::kDefaultAnalysisCacheSize};
         execution::block::BlockExecutor block_executor{*chain_info, write_receipts, write_call_traces, write_change_sets};
@@ -461,28 +349,21 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
 
     try {
         // Wrap MDBX env into an internal *unmanaged* env, i.e. MDBX env is only used but its lifecycle is untouched
-        datastore::kvdb::EnvUnmanaged unmanaged_env{mdbx_env};
-        const auto env_path = unmanaged_env.get_path();
-        handle->chaindata = std::make_unique<datastore::kvdb::DatabaseUnmanaged>(
-            db::DataStore::make_chaindata_database(std::move(unmanaged_env)));
-        auto& chaindata = *handle->chaindata;
+        if (!handle->db->chaindata) {
+            handle->db->chaindata = std::make_unique<datastore::kvdb::DatabaseUnmanaged>(
+                db::DataStore::make_chaindata_database(datastore::kvdb::EnvUnmanaged{mdbx_env}));
+        }
+        auto& chaindata = *handle->db->chaindata;
+        db::DataModelFactory data_model_factory = handle->db->data_model_factory();
 
         datastore::kvdb::RWAccess rw_access = chaindata.access_rw();
         auto txn = rw_access.start_rw_tx();
 
-        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(db::DataModel{txn, *handle->blocks_repository})};
+        db::Buffer state_buffer{txn, std::make_unique<db::BufferFullDataModel>(data_model_factory(txn))};
         state_buffer.set_memory_limit(batch_size);
 
         BoundedBuffer<std::optional<Block>> block_buffer{kMaxBlockBufferSize};
         [[maybe_unused]] auto _ = gsl::finally([&block_buffer] { block_buffer.terminate_and_release_all(); });
-
-        db::DataStoreRef data_store{
-            chaindata.ref(),
-            *handle->blocks_repository,
-            *handle->state_repository_latest,
-            *handle->state_repository_historical,
-        };
-        db::DataModelFactory data_model_factory{std::move(data_store)};
 
         BlockProvider block_provider{
             &block_buffer,
@@ -553,7 +434,7 @@ int silkworm_execute_blocks_perpetual(SilkwormHandle handle, MDBX_env* mdbx_env,
             txn.commit_and_renew();
             const auto elapsed_time_and_duration = sw.stop();
             log::Info("[4/12 Execution] Commit state+history",  // NOLINT(*-unused-raii)
-                      log_args_for_exec_commit(elapsed_time_and_duration.second, env_path));
+                      log_args_for_exec_commit(elapsed_time_and_duration.second, (*rw_access).get_path()));
 
             if (last_executed_block) {
                 *last_executed_block = last_block_num;
@@ -597,13 +478,8 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
         *blob_gas_used = 0;
     }
 
-    if (!handle->blocks_repository) {
-        SILK_ERROR << "Blocks repository not found";
-        return SILKWORM_INVALID_HANDLE;
-    }
-
-    if (!handle->state_repository_latest) {
-        SILK_ERROR << "State repository latest not found";
+    if (!handle->db) {
+        SILK_ERROR << "Database component not initialized";
         return SILKWORM_INVALID_HANDLE;
     }
 
@@ -612,18 +488,18 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
     silkworm::Hash block_header_hash{};
     memcpy(block_header_hash.bytes, block_hash.bytes, sizeof(block_hash.bytes));
     BlockNum block_number{block_num};
-    TxnId txn_id_{txn_num};
+    TxnId txn_id{txn_num};
 
     auto unmanaged_tx = datastore::kvdb::RWTxnUnmanaged{mdbx_tx};
     auto unmanaged_env = silkworm::datastore::kvdb::EnvUnmanaged{::mdbx_txn_env(mdbx_tx)};
     auto chain_db = db::DataStore::make_chaindata_database(std::move(unmanaged_env));
     auto db_ref = chain_db.ref();
     silkworm::execution::DomainState state{
-        txn_id_,
+        txn_id,
         unmanaged_tx,
         db_ref,
-        *handle->blocks_repository,
-        *handle->state_repository_latest,
+        handle->db->blocks_repository,
+        handle->db->state_repository_latest,
     };
     if (!handle->chain_config) {
         handle->chain_config = db::read_chain_config(unmanaged_tx);
@@ -662,13 +538,13 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
                << " TxnHash " << silkworm::to_hex(transaction.hash().bytes, true)
                << " Sender " << silkworm::to_hex(transaction.sender().value_or(evmc::address{}).bytes, true);
 
-    auto protocol_rule_set_{protocol::rule_set_factory(*handle->chain_config)};
-    if (!protocol_rule_set_) {
+    auto protocol_rule_set{protocol::rule_set_factory(*handle->chain_config)};
+    if (!protocol_rule_set) {
         SILK_ERROR << "Protocol rule set not created";
         return SILKWORM_INTERNAL_ERROR;
     }
 
-    ExecutionProcessor processor{block, *protocol_rule_set_, state, *handle->chain_config, false};
+    ExecutionProcessor processor{block, *protocol_rule_set, state, *handle->chain_config, false};
     // TODO: add analysis cache, check block exec for more
 
     silkworm::Receipt receipt{};
@@ -685,7 +561,7 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
     try {
         processor.flush_state();
         SilkwormInstance::ExecutionResult exec_result{
-            .tx_id = txn_id_,
+            .txn_id = txn_id,
             .blob_gas_used = transaction.total_blob_gas(),
             .receipt = receipt,
             .log_index = 0};
@@ -696,7 +572,7 @@ SILKWORM_EXPORT int silkworm_execute_txn(SilkwormHandle handle, MDBX_txn* mdbx_t
             exec_result.receipt.cumulative_gas_used += prev.receipt.cumulative_gas_used;
             exec_result.log_index += std::size(prev.receipt.logs);
         }
-        handle->executions_in_block.push_back(std::move(exec_result));
+        handle->executions_in_block.emplace_back(std::move(exec_result));
     } catch (const std::exception& ex) {
         SILK_ERROR << "transaction post-processing failed: " << ex.what();
         return SILKWORM_INTERNAL_ERROR;
@@ -762,34 +638,20 @@ SILKWORM_EXPORT int silkworm_block_exec_end(SilkwormHandle handle, MDBX_txn* mdb
 
         rw_in_mem_cursor->insert(datastore::kvdb::Slice(key), datastore::kvdb::Slice(rlp_encoded));
 
-        const auto& tx_id = handle->executions_in_block[index].tx_id;
+        const auto& txn_id = handle->executions_in_block[index].txn_id;
 
         execution::DomainState state{
-            tx_id,
+            txn_id,
             unmanaged_tx,
             db_ref,
-            *handle->blocks_repository,
-            *handle->state_repository_latest,
+            handle->db->blocks_repository,
+            handle->db->state_repository_latest,
         };
 
         const auto log_index = handle->executions_in_block[index].log_index;
         const auto blob_gas_used = handle->executions_in_block[index].blob_gas_used;
         state.insert_receipt(receipt, log_index, blob_gas_used);
     }
-
-    return SILKWORM_OK;
-}
-
-SILKWORM_EXPORT int silkworm_fini(SilkwormHandle handle) SILKWORM_NOEXCEPT {
-    if (!handle) {
-        return SILKWORM_INVALID_HANDLE;
-    }
-    if (!handle->blocks_repository) {
-        return SILKWORM_INVALID_HANDLE;
-    }
-    delete handle;
-
-    is_initialized = false;
 
     return SILKWORM_OK;
 }

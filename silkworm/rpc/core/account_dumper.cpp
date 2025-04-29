@@ -22,7 +22,6 @@
 namespace silkworm::rpc::core {
 
 Task<DumpAccounts> AccountDumper::dump_accounts(
-    BlockCache& cache,
     const BlockNumOrHash& block_num_or_hash,
     const evmc::address& start_address,
     int16_t max_result,
@@ -32,14 +31,14 @@ Task<DumpAccounts> AccountDumper::dump_accounts(
     const auto chain_storage = transaction_.make_storage();
 
     const BlockReader block_reader{*chain_storage, transaction_};
-    const auto block_with_hash = co_await block_reader.read_block_by_block_num_or_hash(cache, block_num_or_hash);
-    if (!block_with_hash) {
+    const auto header = co_await block_reader.read_header_by_block_num_or_hash(block_num_or_hash);
+    if (!header) {
         throw std::invalid_argument("dump_accounts: block not found");
     }
 
-    dump_accounts.root = block_with_hash->block.header.state_root;
+    dump_accounts.root = header->state_root;
 
-    const auto block_num = block_with_hash->block.header.number + 1;
+    const auto block_num = header->number + 1;
     const auto start_txn_number = co_await transaction_.first_txn_num_in_block(block_num);
 
     db::kv::api::DomainRangeRequest query{

@@ -21,6 +21,9 @@ using db::kv::api::KeyValue;
 using testing::_;
 using testing::InvokeWithoutArgs;
 
+// Exclude on MSVC due to error LNK2001: unresolved external symbol testing::Matcher<class std::basic_string_view...
+// See also https://github.com/google/googletest/issues/4357
+#ifndef _WIN32
 TEST_CASE("get_sync_stage_progress", "[rpc][stagedsync]") {
     WorkerPool pool{1};
     db::test_util::MockTransaction transaction;
@@ -49,5 +52,6 @@ TEST_CASE("get_sync_stage_progress", "[rpc][stagedsync]") {
         CHECK(result.get() == 255);
     }
 }
+#endif  // _WIN32
 
 }  // namespace silkworm::rpc::stages

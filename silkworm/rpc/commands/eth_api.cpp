@@ -822,7 +822,7 @@ Task<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohmann::js
         }
         const auto [block_number, txn_id] = *result;
 
-        const auto header = co_await chain_storage->read_canonical_header(block_number);
+        auto header = co_await chain_storage->read_canonical_header(block_number);
         if (!header) {
             reply = make_json_content(request, {});
             co_await tx->close();  // RAII not (yet) available with coroutines

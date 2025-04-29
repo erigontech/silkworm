@@ -83,7 +83,7 @@ std::string get_thread_name() {
     return thread_name_;
 }
 
-static std::pair<std::string_view, std::string_view> get_level_settings(Level level) {
+static std::pair<absl::string_view, std::string_view> get_level_settings(Level level) {
     switch (level) {
         case Level::kTrace:
             return {"TRACE", kColorCoal};
@@ -125,7 +125,7 @@ BufferBase::BufferBase(Level level) : should_print_(level <= settings_.log_verbo
     auto [log_level, color] = get_level_settings(level);
 
     // Prefix
-    auto log_tag{settings_.log_trim ? absl::StripAsciiWhitespace(log_level).substr(0, 4) : log_level};
+    auto log_tag = settings_.log_trim ? absl::StripAsciiWhitespace(log_level).substr(0, 4) : log_level;
     std::string_view padding = settings_.log_trim ? "" : " ";
     ss_ << kColorReset
         << (settings_.log_trim && !is_terminal ? "[" : padding) << color << log_tag

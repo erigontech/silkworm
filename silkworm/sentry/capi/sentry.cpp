@@ -1,6 +1,8 @@
 // Copyright 2025 The Silkworm Authors
 // SPDX-License-Identifier: Apache-2.0
 
+#include "sentry.h"
+
 #include <exception>
 #include <latch>
 #include <stdexcept>
@@ -12,13 +14,15 @@
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
+#include <silkworm/capi/common/instance.hpp>
+#include <silkworm/capi/instance.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>
 
-#include "instance.hpp"
-#include "silkworm.h"
+#include "component.hpp"
+#include "sentry.h"
 
 using namespace silkworm;
 using namespace silkworm::sentry;
@@ -90,22 +94,25 @@ static void sentry_run(
     const boost::asio::cancellation_slot& sentry_stop_signal_slot,
     std::latch& sentry_started);
 
-SILKWORM_EXPORT int silkworm_sentry_start(SilkwormHandle handle, const struct SilkwormSentrySettings* c_settings) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_sentry_start(SilkwormHandle silkworm_handle, const struct SilkwormSentrySettings* c_settings) SILKWORM_NOEXCEPT {
     try {
-        if (!handle) {
+        if (!silkworm_handle) {
             return SILKWORM_INVALID_HANDLE;
         }
         if (!c_settings) {
             return SILKWORM_INVALID_SETTINGS;
         }
-        if (handle->sentry_thread) {
+        if (silkworm_handle->sentry) {
             return SILKWORM_SERVICE_ALREADY_STARTED;
         }
+        silkworm_handle->sentry = std::make_unique<sentry::capi::Component>();
+        auto& handle = silkworm_handle->sentry;
 
+        const auto& common = silkworm_handle->common;
         auto settings = make_settings(
             *c_settings,
-            handle->context_pool_settings,
-            handle->data_dir_path);
+            common.context_pool_settings,
+            common.data_dir_path);
 
         std::latch sentry_started{1};
         std::exception_ptr startup_ex_ptr;
@@ -172,21 +179,23 @@ static void sentry_run(
     context_pool.join();
 }
 
-SILKWORM_EXPORT int silkworm_sentry_stop(SilkwormHandle handle) SILKWORM_NOEXCEPT {
+SILKWORM_EXPORT int silkworm_sentry_stop(SilkwormHandle silkworm_handle) SILKWORM_NOEXCEPT {
     try {
-        if (!handle) {
+        if (!silkworm_handle) {
             return SILKWORM_INVALID_HANDLE;
         }
         // check if it's already stopped
-        if (!handle->sentry_thread) {
+        if (!silkworm_handle->sentry) {
             return SILKWORM_OK;
         }
+        auto& handle = silkworm_handle->sentry;
 
         // stop sentry.run() task
         handle->sentry_stop_signal.emit(boost::asio::cancellation_type::all);
 
         handle->sentry_thread->join();
         handle->sentry_thread.reset();
+        handle.reset();
 
         return SILKWORM_OK;
     } catch (...) {

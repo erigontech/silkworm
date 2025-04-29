@@ -15,13 +15,13 @@ class StreamWriter {
   public:
     virtual ~StreamWriter() = default;
 
-    virtual Task<void> open_stream() = 0;
-    virtual Task<void> close_stream() = 0;
-    virtual Task<size_t> write(std::string_view content, bool last) = 0;
+    virtual Task<void> open_stream(uint64_t request_id) = 0;
+    virtual Task<void> close_stream(uint64_t request_id) = 0;
+    virtual Task<size_t> write(uint64_t request_id, std::string_view content, bool last) = 0;
     virtual size_t get_capacity() const noexcept = 0;
 };
 
-inline constexpr size_t kDefaultCapacity = 4096;
+inline constexpr size_t kDefaultCapacity = 2048;
 
 class StringWriter : public StreamWriter {
   public:
@@ -33,11 +33,11 @@ class StringWriter : public StreamWriter {
 
     size_t get_capacity() const noexcept override { return kDefaultCapacity; }
 
-    Task<void> open_stream() override { co_return; }
+    Task<void> open_stream(uint64_t /* request_id */) override { co_return; }
 
-    Task<void> close_stream() override { co_return; }
+    Task<void> close_stream(uint64_t /* request_id */) override { co_return; }
 
-    Task<size_t> write(std::string_view content, bool /*last*/) override {
+    Task<size_t> write(uint64_t /* request_id */, std::string_view content, bool /*last*/) override {
         content_.append(content);
         co_return content.size();
     }

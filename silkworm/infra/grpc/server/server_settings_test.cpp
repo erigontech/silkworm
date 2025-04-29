@@ -14,7 +14,7 @@ namespace silkworm::rpc {
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("ServerConfig::ServerConfig", "[silkworm][rpc][server_settings]") {
     ServerSettings config;
-    CHECK(config.address_uri == kDefaultAddressUri);
+    CHECK(config.address_uri == std::string{kDefaultAddressUri});
     CHECK(config.context_pool_settings.num_contexts > 0);
 }
 #endif  // SILKWORM_SANITIZE

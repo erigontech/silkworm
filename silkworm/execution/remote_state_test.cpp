@@ -7,7 +7,6 @@
 #include <boost/asio/use_future.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <evmc/evmc.hpp>
-#include <gmock/gmock.h>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/bytes.hpp>
@@ -33,6 +32,9 @@ struct RemoteStateTest : public silkworm::test_util::ContextTestBase {
     db::test_util::MockStateCache state_cache;
 };
 
+// Exclude on MSVC due to error LNK2001: unresolved external symbol testing::Matcher<class std::basic_string_view...
+// See also https://github.com/google/googletest/issues/4357
+#ifndef _WIN32
 TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buffer]") {
     auto cursor = std::make_shared<silkworm::db::test_util::MockCursor>();
     const evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
@@ -304,8 +306,9 @@ TEST_CASE_METHOD(RemoteStateTest, "async remote buffer", "[rpc][core][remote_buf
         CHECK(canonical_hash == std::nullopt);
     }
 }
+#endif  // _WIN32
 
-// Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
+// Exclude gRPC tests from sanitizer builds due to data race warnings inside the gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(RemoteStateTest, "RemoteState") {
     RemoteState remote_state(current_executor, transaction, chain_storage, 0);

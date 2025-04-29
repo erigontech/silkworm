@@ -43,10 +43,10 @@ class Connection : public StreamWriter {
     Task<void> read_loop();
 
     // Methods of StreamWriter interface
-    Task<void> open_stream() override { co_return; }
-    Task<void> close_stream() override { co_return; }
+    Task<void> open_stream(uint64_t /* request_id */) override { co_return; }
+    Task<void> close_stream(uint64_t /* request_id */) override { co_return; }
     size_t get_capacity() const noexcept override { return kDefaultCapacity; }
-    Task<size_t> write(std::string_view content, bool last) override;
+    Task<size_t> write(uint64_t request_id, std::string_view content, bool last) override;
 
   private:
     Task<void> do_read();

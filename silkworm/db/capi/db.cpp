@@ -1,18 +1,21 @@
 // Copyright 2025 The Silkworm Authors
 // SPDX-License-Identifier: Apache-2.0
 
+#include "db.h"
+
+#include <silkworm/capi/common/instance.hpp>
+#include <silkworm/capi/instance.hpp>
 #include <silkworm/db/blocks/bodies/body_index.hpp>
 #include <silkworm/db/blocks/headers/header_index.hpp>
 #include <silkworm/db/blocks/schema_config.hpp>
 #include <silkworm/db/blocks/transactions/txn_index.hpp>
 #include <silkworm/db/blocks/transactions/txn_to_block_index.hpp>
+#include <silkworm/db/capi/component.hpp>
+#include <silkworm/db/datastore/kvdb/mdbx_version.hpp>
 #include <silkworm/db/datastore/snapshots/snapshot_bundle.hpp>
 #include <silkworm/db/state/schema_config.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
-
-#include "instance.hpp"
-#include "silkworm.h"
 
 using namespace silkworm;
 using namespace silkworm::db;
@@ -339,14 +342,14 @@ SILKWORM_EXPORT int silkworm_add_blocks_snapshot_bundle(
     SilkwormHandle handle,
     const SilkwormBlocksSnapshotBundle* bundle) SILKWORM_NOEXCEPT {
     try {
-        if (!handle || !handle->blocks_repository) {
+        if (!handle || !handle->db) {
             return SILKWORM_INVALID_HANDLE;
         }
         if (!bundle) {
             return SILKWORM_INVALID_SNAPSHOT;
         }
 
-        auto& repository = *handle->blocks_repository;
+        auto& repository = handle->db->blocks_repository;
 
         repository.add_snapshot_bundle(build_blocks_snapshot_bundle(bundle));
         return SILKWORM_OK;
@@ -361,14 +364,14 @@ SILKWORM_EXPORT int silkworm_add_state_snapshot_bundle_latest(
     SilkwormHandle handle,
     const SilkwormStateSnapshotBundleLatest* bundle) SILKWORM_NOEXCEPT {
     try {
-        if (!handle || !handle->state_repository_latest) {
+        if (!handle || !handle->db) {
             return SILKWORM_INVALID_HANDLE;
         }
         if (!bundle) {
             return SILKWORM_INVALID_SNAPSHOT;
         }
 
-        auto& repository = *handle->state_repository_latest;
+        auto& repository = handle->db->state_repository_latest;
         if (!repository.index_salt()) {
             return SILKWORM_INTERNAL_ERROR;
         }
@@ -386,14 +389,14 @@ SILKWORM_EXPORT int silkworm_add_state_snapshot_bundle_historical(
     SilkwormHandle handle,
     const SilkwormStateSnapshotBundleHistorical* bundle) SILKWORM_NOEXCEPT {
     try {
-        if (!handle || !handle->state_repository_historical) {
+        if (!handle || !handle->db) {
             return SILKWORM_INVALID_HANDLE;
         }
         if (!bundle) {
             return SILKWORM_INVALID_SNAPSHOT;
         }
 
-        auto& repository = *handle->state_repository_historical;
+        auto& repository = handle->db->state_repository_historical;
 
         repository.add_snapshot_bundle(build_state_snapshot_bundle_historical(bundle, repository.schema()));
         return SILKWORM_OK;
@@ -402,4 +405,8 @@ SILKWORM_EXPORT int silkworm_add_state_snapshot_bundle_historical(
     } catch (...) {
         return SILKWORM_INTERNAL_ERROR;
     }
+}
+
+SILKWORM_EXPORT const char* silkworm_libmdbx_version() SILKWORM_NOEXCEPT {
+    return datastore::kvdb::libmdbx_version();
 }

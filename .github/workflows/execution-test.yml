@@ -10,6 +10,10 @@ on:
         description: 'Stage to stop at; none for all; sample values: "Execution", "IntermediateHashes", "HashState", "HistoryIndex"'
         required: false
         type: string
+      clean_datadir:
+        description: 'Remove datadir before running the test'
+        type: boolean
+        default: true
 
 jobs:
   execution-test-suite:
@@ -33,6 +37,10 @@ jobs:
       - name: Clean Build Directory
         run: rm -rf ${{runner.workspace}}/silkworm/build
 
+      - name: Clean Database Directory
+        if: ${{github.event.inputs.clean_datadir}}
+        run: rm -rf ${{runner.workspace}}/silkworm_datadir
+
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/silkworm/build
 
@@ -55,7 +63,7 @@ jobs:
         run: |
           set +e # Disable exit on error
           
-          # Run Erigon, wait sync and check ability to maintain sync
+          # Run Silkworm, wait until the end of historical execution and check the result
           python3 $ERIGON_QA_PATH/test_system/qa-tests/silkworm-execution/run_and_check_execution.py \
           ${{runner.workspace}}/silkworm/build/cmd ${{runner.workspace}}/silkworm_datadir $TRACKING_TIME_SECONDS $TOTAL_TIME_SECONDS $CHAIN
           

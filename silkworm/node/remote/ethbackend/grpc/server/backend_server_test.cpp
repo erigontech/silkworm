@@ -90,8 +90,8 @@ class BackEndClient {
 };
 
 constexpr uint64_t kTestSentryPeerCount = 10;
-constexpr std::string_view kTestSentryNodeId{"24bfa2cdce7c6a41184fa0809ad8d76969b7280952e9aa46179d90cfbab90f7d2b004928f0364389a1aa8d5166281f2ff7568493c1f719e8f6148ef8cf8af42d"};
-constexpr std::string_view kTestSentryNodeClientId{"MockSentryClient"};
+const std::string kTestSentryNodeId{"24bfa2cdce7c6a41184fa0809ad8d76969b7280952e9aa46179d90cfbab90f7d2b004928f0364389a1aa8d5166281f2ff7568493c1f719e8f6148ef8cf8af42d"};
+const std::string kTestSentryNodeClientId{"MockSentryClient"};
 
 class MockSentryClient
     : public std::enable_shared_from_this<MockSentryClient>,
@@ -116,11 +116,11 @@ class MockSentryClient
     Task<NodeInfos> node_infos() override {
         const std::string ip_str = "1.2.3.4";
         const uint16_t port = 50555;
-        const std::string node_url_str = std::string("enode://") + std::string{kTestSentryNodeId} + "@" + ip_str + ":" + std::to_string(port);
+        const std::string node_url_str = std::string("enode://") + kTestSentryNodeId + "@" + ip_str + ":" + std::to_string(port);
 
         silkworm::sentry::api::NodeInfo info = {
             silkworm::sentry::EnodeUrl{node_url_str},
-            std::string{kTestSentryNodeClientId},
+            kTestSentryNodeClientId,
             boost::asio::ip::tcp::endpoint{boost::asio::ip::make_address(ip_str), port},
             port,
         };

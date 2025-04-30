@@ -118,6 +118,9 @@ std::optional<BytesOrByteView> BTree::get(ByteView key, const KeyValueIndex& ind
         }
         const uint64_t median = (left_index + right_index) >> 1;
         const auto lookup_result = index.lookup_key_value(median, key);
+        if (!lookup_result) {
+            return std::nullopt;
+        }
         const auto [cmp, optional_v] = *lookup_result;
         if (cmp == 0) {
             SILKWORM_ASSERT(optional_v);
@@ -130,6 +133,9 @@ std::optional<BytesOrByteView> BTree::get(ByteView key, const KeyValueIndex& ind
         }
     }
     const auto lookup_result = index.lookup_key_value(left_index, key);
+    if (!lookup_result) {
+        return std::nullopt;
+    }
     const auto [cmp, optional_v] = *lookup_result;
     if (cmp != 0) {
         return std::nullopt;

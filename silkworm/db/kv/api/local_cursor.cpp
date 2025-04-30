@@ -11,6 +11,7 @@
 namespace silkworm::db::kv::api {
 
 using namespace silkworm::datastore::kvdb;
+using datastore::kvdb::detail::slice_as_bytes;
 using datastore::kvdb::detail::slice_as_hex;
 
 Task<void> LocalCursor::open_cursor(std::string_view table_name, bool is_dup_sorted) {
@@ -33,7 +34,7 @@ Task<KeyValue> LocalCursor::seek(ByteView key) {
 
     if (result) {
         SILK_DEBUG << "LocalCursor::seek found: key: " << key << " value: " << slice_as_hex(result.value);
-        co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
+        co_return KeyValue{slice_as_bytes(result.key), slice_as_bytes(result.value)};
     } else {
         SILK_DEBUG << "LocalCursor::seek not found key: " << key;
         co_return KeyValue{};
@@ -49,7 +50,7 @@ Task<KeyValue> LocalCursor::seek_exact(ByteView key) {
         SILK_DEBUG << "LocalCursor::seek_exact result: " << detail::dump_mdbx_result(result);
         if (result) {
             SILK_DEBUG << "LocalCursor::seek_exact found: key: " << key << " value: " << slice_as_hex(result.value);
-            co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
+            co_return KeyValue{slice_as_bytes(result.key), slice_as_bytes(result.value)};
         }
         SILK_ERROR << "LocalCursor::seek_exact !result key: " << key;  // TODO(canepat) handle properly?
     }
@@ -66,7 +67,7 @@ Task<KeyValue> LocalCursor::first() {
     }
 
     SILK_DEBUG << "LocalCursor::first: key: " << slice_as_hex(result.key) << " value: " << slice_as_hex(result.value);
-    co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
+    co_return KeyValue{slice_as_bytes(result.key), slice_as_bytes(result.value)};
 }
 
 Task<KeyValue> LocalCursor::last() {
@@ -79,7 +80,7 @@ Task<KeyValue> LocalCursor::last() {
     }
 
     SILK_DEBUG << "LocalCursor::last: key: " << slice_as_hex(result.key) << " value: " << slice_as_hex(result.value);
-    co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
+    co_return KeyValue{slice_as_bytes(result.key), slice_as_bytes(result.value)};
 }
 
 Task<KeyValue> LocalCursor::next() {
@@ -91,7 +92,7 @@ Task<KeyValue> LocalCursor::next() {
     if (result) {
         SILK_DEBUG << "LocalCursor::next: "
                    << " key: " << string_view_to_byte_view(result.key.as_string()) << " value: " << string_view_to_byte_view(result.value.as_string());
-        co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
+        co_return KeyValue{slice_as_bytes(result.key), slice_as_bytes(result.value)};
     } else {
         SILK_ERROR << "LocalCursor::next !result";  // TODO(canepat) handle properly?
     }
@@ -107,7 +108,7 @@ Task<KeyValue> LocalCursor::previous() {
     if (result) {
         SILK_DEBUG << "LocalCursor::previous: "
                    << " key: " << string_view_to_byte_view(result.key.as_string()) << " value: " << string_view_to_byte_view(result.value.as_string());
-        co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
+        co_return KeyValue{slice_as_bytes(result.key), slice_as_bytes(result.value)};
     } else {
         SILK_ERROR << "LocalCursor::previous !result";  // TODO(canepat) handle properly?
     }
@@ -123,7 +124,7 @@ Task<KeyValue> LocalCursor::next_dup() {
     if (result) {
         SILK_DEBUG << "LocalCursor::next_dup: "
                    << " key: " << string_view_to_byte_view(result.key.as_string()) << " value: " << string_view_to_byte_view(result.value.as_string());
-        co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
+        co_return KeyValue{slice_as_bytes(result.key), slice_as_bytes(result.value)};
     } else {
         SILK_ERROR << "LocalCursor::next_dup !result";  // TODO(canepat) handle properly?
     }
@@ -138,9 +139,9 @@ Task<Bytes> LocalCursor::seek_both(ByteView key, ByteView value) {
 
     if (result) {
         SILK_DEBUG << "LocalCursor::seek_both key: " << string_view_to_byte_view(result.key.as_string()) << " value: " << string_view_to_byte_view(result.value.as_string());
-        co_return string_to_bytes(result.value.as_string());
+        co_return slice_as_bytes(result.value);
     }
-    co_return string_to_bytes("");
+    co_return Bytes{};
 }
 
 Task<KeyValue> LocalCursor::seek_both_exact(ByteView key, ByteView value) {
@@ -152,7 +153,7 @@ Task<KeyValue> LocalCursor::seek_both_exact(ByteView key, ByteView value) {
     if (result) {
         SILK_DEBUG << "LocalCursor::seek_both_exact: "
                    << " key: " << string_view_to_byte_view(result.key.as_string()) << " value: " << string_view_to_byte_view(result.value.as_string());
-        co_return KeyValue{string_to_bytes(result.key.as_string()), string_to_bytes(result.value.as_string())};
+        co_return KeyValue{slice_as_bytes(result.key), slice_as_bytes(result.value)};
     } else {
         SILK_ERROR << "LocalCursor::seek_both_exact !found key: " << key << " subkey:" << value;
     }

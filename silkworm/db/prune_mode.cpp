@@ -36,7 +36,7 @@ static BlockAmount read_block_amount_for_key(mdbx::cursor& source, std::string_v
                 value_type = BlockAmount::Type::kBefore;
             } else {
                 // Something bad has been written
-                throw std::runtime_error("Invalid prune type stored in database : " + data2.value.as_string());
+                throw std::runtime_error("Invalid prune type stored in database : " + std::string(data2.value.as_string()));
             }
         }
         return BlockAmount(value_type, value);

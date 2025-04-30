@@ -21,7 +21,15 @@ namespace detail {
     }
 
     std::string slice_as_hex(const Slice& data) {
-        return ::mdbx::to_hex(data).as_string();
+        return std::string(::mdbx::to_hex(data).as_string());
+    }
+
+    std::string slice_as_string(const Slice& data) {
+        return std::string(data.as_string());
+    }
+
+    silkworm::Bytes slice_as_bytes(const Slice& data) {
+        return silkworm::Bytes{reinterpret_cast<const unsigned char*>(data.data()), data.size()};
     }
 
     log::Args log_args_for_commit_latency(const MDBX_commit_latency& commit_latency) {
@@ -106,7 +114,7 @@ static mdbx::cursor::move_operation move_operation(CursorMoveDirection direction
         throw std::runtime_error("Database map size is too small. Min required " + human_size(db_file_size));
     }
 
-    uint32_t flags{MDBX_NOTLS | MDBX_NORDAHEAD | MDBX_COALESCE | MDBX_SYNC_DURABLE};  // Default flags
+    uint32_t flags{MDBX_NORDAHEAD | MDBX_SYNC_DURABLE};  // Default flags
 
     if (config.read_ahead) {
         flags &= ~MDBX_NORDAHEAD;
@@ -132,6 +140,9 @@ static mdbx::cursor::move_operation move_operation(CursorMoveDirection direction
     }
     if (config.shared) {
         flags |= MDBX_ACCEDE;
+    }
+    if (config.no_sticky_threads) {
+        flags |= MDBX_NOSTICKYTHREADS;
     }
     if (config.write_map) {
         flags |= MDBX_WRITEMAP;
@@ -574,7 +585,7 @@ std::vector<std::string> list_maps(::mdbx::txn& tx, bool throw_notfound) {
     ::mdbx::map_handle main_map{1};
     auto main_cursor{tx.open_cursor(main_map)};
     for (auto it{main_cursor.to_first(throw_notfound)}; it.done; it = main_cursor.to_next(throw_notfound)) {
-        map_names.push_back(it.key.as_string());
+        map_names.push_back(detail::slice_as_string(it.key));
     }
     return map_names;
 }

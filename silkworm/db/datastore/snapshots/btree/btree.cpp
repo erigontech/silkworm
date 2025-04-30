@@ -24,23 +24,16 @@ BTree::BTree(
 
 using CompareResult = std::pair<int, BytesOrByteView>;
 
-static CompareResult compare_key(
+static std::optional<CompareResult> compare_key(
     ByteView key,
     BTree::DataIndex key_index,
     const BTree::KeyValueIndex& index) {
     auto data_key = index.lookup_key(key_index);
-    ensure(data_key.has_value(), [&] { return "out-of-bounds key=" + to_hex(key) + " data_index=" + std::to_string(key_index); });
+    if (!data_key) {
+        return std::nullopt;
+    }
     int cmp = ByteView{*data_key}.compare(key);
-    return {cmp, std::move(*data_key)};
-}
-
-static BTree::KeyValueIndex::LookupResult lookup_key_value(
-    ByteView key,
-    BTree::DataIndex key_index,
-    const BTree::KeyValueIndex& index) {
-    auto result = index.lookup_key_value(key_index, key);
-    ensure(result.has_value(), [&] { return "out-of-bounds key=" + to_hex(key) + " data_index=" + std::to_string(key_index); });
-    return std::move(*result);
+    return CompareResult{cmp, std::move(*data_key)};
 }
 
 BTree::SeekResult BTree::seek(ByteView seek_key, const KeyValueIndex& index) {
@@ -55,8 +48,12 @@ BTree::SeekResult BTree::seek(ByteView seek_key, const KeyValueIndex& index) {
     auto [_, left_index, right_index] = binary_search_in_cache(seek_key);  // left_index == right_index when key is found
     uint64_t median = 0;
     while (left_index < right_index) {
-        if (right_index - left_index <= kDefaultBtreeStartSkip) {  // found small range, faster to scan now
-            const auto [cmp, key] = compare_key(seek_key, left_index, index);
+        if (right_index - left_index <= kDefaultBtreeStartSkip) {  // found a small range, faster to scan now
+            const auto cmp_result = compare_key(seek_key, left_index, index);
+            if (!cmp_result) {
+                return {/*found=*/false, {}, {}, 0};
+            }
+            const auto [cmp, key] = *cmp_result;
             if (cmp == 0) {
                 right_index = left_index;
                 break;
@@ -71,7 +68,11 @@ BTree::SeekResult BTree::seek(ByteView seek_key, const KeyValueIndex& index) {
             break;
         }
         median = (left_index + right_index) >> 1;
-        const auto [cmp, key] = compare_key(seek_key, median, index);
+        const auto cmp_result = compare_key(seek_key, median, index);
+        if (!cmp_result) {
+            return {/*found=*/false, {}, {}, 0};
+        }
+        const auto [cmp, key] = *cmp_result;
         if (cmp == 0) {
             left_index = right_index = median;
             break;
@@ -107,7 +108,7 @@ std::optional<BytesOrByteView> BTree::get(ByteView key, const KeyValueIndex& ind
     }
     auto [_, left_index, right_index] = binary_search_in_cache(key);  // left_index == right_index when key is found
     while (left_index < right_index) {
-        if (right_index - left_index <= kDefaultBtreeStartSkip) {  // found small range, faster to scan now
+        if (right_index - left_index <= kDefaultBtreeStartSkip) {  // found a small range, faster to scan now
             auto value = index.advance_key_value(left_index, key, right_index - left_index);
             if (!value) {
                 left_index = right_index;
@@ -116,7 +117,11 @@ std::optional<BytesOrByteView> BTree::get(ByteView key, const KeyValueIndex& ind
             return value;
         }
         const uint64_t median = (left_index + right_index) >> 1;
-        auto [cmp, optional_v] = lookup_key_value(key, median, index);
+        const auto lookup_result = index.lookup_key_value(median, key);
+        if (!lookup_result) {
+            return std::nullopt;
+        }
+        const auto [cmp, optional_v] = *lookup_result;
         if (cmp == 0) {
             SILKWORM_ASSERT(optional_v);
             return optional_v;
@@ -127,7 +132,11 @@ std::optional<BytesOrByteView> BTree::get(ByteView key, const KeyValueIndex& ind
             left_index = median + 1;
         }
     }
-    auto [cmp, optional_v] = lookup_key_value(key, left_index, index);
+    const auto lookup_result = index.lookup_key_value(left_index, key);
+    if (!lookup_result) {
+        return std::nullopt;
+    }
+    const auto [cmp, optional_v] = *lookup_result;
     if (cmp != 0) {
         return std::nullopt;
     }
@@ -157,7 +166,9 @@ void BTree::warmup(const KeyValueIndex& index) {
     const size_t step = num_nodes_ < fanout_ ? 1 : fanout_;  // cache all keys if less than M
     for (size_t i{step}; i < num_nodes_; i += step) {
         const size_t data_index = i - 1;
-        auto [_, key] = compare_key({}, data_index, index);
+        auto cmp_result = compare_key({}, data_index, index);
+        if (!cmp_result) continue;
+        auto [_, key] = *cmp_result;
         cache_.emplace_back(Node{data_index, Bytes{key}});
         cached_bytes += sizeof(Node) + ByteView{key}.size();
     }
@@ -185,7 +196,11 @@ BTree::Nodes BTree::decode_nodes(std::span<uint8_t> encoded_nodes) {
 
 void BTree::check_against_data_keys(const KeyValueIndex& index) {
     for (const auto& node : cache_) {
-        const auto [cmp, key] = compare_key(node.key, node.key_index, index);
+        const auto cmp_result = compare_key(node.key, node.key_index, index);
+        ensure(cmp_result.has_value(), [&] {
+            return "out-of-bounds key=" + to_hex(node.key) + " data_index=" + std::to_string(node.key_index);
+        });
+        const auto [cmp, key] = *cmp_result;
         ensure(cmp == 0, [&]() {
             return "key mismatch node.key=" + to_hex(node.key) +
                    " key=" + to_hex(key) +

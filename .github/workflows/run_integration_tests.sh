@@ -34,6 +34,8 @@ eth_getLogs/test_17,\
 eth_getLogs/test_18,\
 eth_getLogs/test_19,\
 eth_getLogs/test_20,\
+eth_getTransactionByHash/test_02,\
+parity_listStorageKeys/test_07,\
 trace_replayBlockTransactions/test_29,\
 trace_transaction/test_44,\
 trace_transaction/test_47

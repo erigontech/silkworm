@@ -9,6 +9,7 @@
 #include "blocks/bodies/body_segment.hpp"
 #include "blocks/headers/header_segment.hpp"
 #include "blocks/schema_config.hpp"
+#include "blocks/step_block_num_converter.hpp"
 #include "blocks/transactions/txn_segment.hpp"
 #include "datastore/snapshots/common/snapshot_path.hpp"
 
@@ -27,7 +28,7 @@ void snapshot_file_recompress(const std::filesystem::path& path) {
     auto path_opt = SnapshotPath::parse(path);
     if (!path_opt) throw std::runtime_error{"bad snapshot path"};
 
-    SegmentFileReader file_reader{*path_opt};
+    SegmentFileReader file_reader{*path_opt, db::blocks::kStepToBlockNumConverter};
 
     auto out_path = path;
     out_path.replace_extension("seg2");

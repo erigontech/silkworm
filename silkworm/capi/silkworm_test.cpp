@@ -17,6 +17,7 @@
 #include <silkworm/db/datastore/kvdb/mdbx.hpp>
 #include <silkworm/db/datastore/snapshots/schema.hpp>
 #include <silkworm/db/datastore/snapshots/segment/segment_reader.hpp>
+#include <silkworm/db/state/step_txn_id_converter.hpp>
 #include <silkworm/db/test_util/temp_snapshots.hpp>
 #include <silkworm/db/test_util/test_database_context.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -783,6 +784,8 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_execute_blocks_perpetual multiple bloc
 }
 
 TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_blocks_snapshot_bundle", "[capi]") {
+    static constexpr datastore::StepToTimestampConverter kStepConverter = db::blocks::kStepToBlockNumConverter;
+
     snapshot_test::SampleHeaderSnapshotFile header_segment_file{tmp_dir.path()};
     auto& header_segment_path = header_segment_file.path();
     snapshot_test::SampleBodySnapshotFile body_segment_file{tmp_dir.path()};
@@ -793,20 +796,20 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_blocks_snapshot_bundle", "[capi]")
     auto header_index_builder = snapshots::HeaderIndex::make(header_segment_path);
     header_index_builder.set_base_data_id(header_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(header_index_builder.build());
-    snapshots::segment::SegmentFileReader header_segment{header_segment_path};
+    snapshots::segment::SegmentFileReader header_segment{header_segment_path, kStepConverter};
     snapshots::rec_split::AccessorIndex idx_header_hash{header_segment_path.related_path_ext(db::blocks::kIdxExtension)};
 
     auto body_index_builder = snapshots::BodyIndex::make(body_segment_path);
     body_index_builder.set_base_data_id(body_segment_file.block_num_range().start);
     REQUIRE_NOTHROW(body_index_builder.build());
-    snapshots::segment::SegmentFileReader body_segment{body_segment_path};
+    snapshots::segment::SegmentFileReader body_segment{body_segment_path, kStepConverter};
     snapshots::rec_split::AccessorIndex idx_body_number{body_segment_path.related_path_ext(db::blocks::kIdxExtension)};
 
     auto tx_index_builder = snapshots::TransactionIndex::make(body_segment_path, txn_segment_path);
     tx_index_builder.build();
     auto tx_index_hash_to_block_builder = snapshots::TransactionToBlockIndex::make(body_segment_path, txn_segment_path, txn_segment_file.block_num_range().start);
     tx_index_hash_to_block_builder.build();
-    snapshots::segment::SegmentFileReader txn_segment{txn_segment_path};
+    snapshots::segment::SegmentFileReader txn_segment{txn_segment_path, kStepConverter};
     snapshots::rec_split::AccessorIndex idx_txn_hash{txn_segment_path.related_path_ext(db::blocks::kIdxExtension)};
     snapshots::rec_split::AccessorIndex idx_txn_hash_2_block{tx_index_hash_to_block_builder.path()};
 
@@ -938,7 +941,7 @@ TEST_CASE_METHOD(CApiTest, "CAPI silkworm_add_state_snapshot", "[capi]") {
     constexpr uint32_t kZeroSalt{0};
 
     const snapshot_test::SampleAccountsDomainSegmentFile kv_segment_file{tmp_dir.path()};
-    segment::KVSegmentFileReader kv_segment{kv_segment_file.path(), seg::CompressionKind::kAll};
+    segment::KVSegmentFileReader kv_segment{kv_segment_file.path(), db::state::kStepToTxnIdConverter, seg::CompressionKind::kAll};
     const auto kv_segment_path_string{kv_segment_file.path().path().string()};
 
     const snapshot_test::SampleAccountsDomainExistenceIndexFile existence_index_file{tmp_dir.path()};

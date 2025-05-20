@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "../common/entity_name.hpp"
+#include "../common/step_timestamp_converter.hpp"
 #include "common/snapshot_path.hpp"
 #include "segment/seg/compression_kind.hpp"
 
@@ -187,10 +188,17 @@ class Schema {
             return *this;
         }
 
+        RepositoryDef& step_size(size_t value) {
+            step_size_ = value;
+            return *this;
+        }
+
         const datastore::EntityMap<std::shared_ptr<EntityDef>>& entities() const { return entity_defs_; }
         std::vector<std::string> file_extensions() const;
         std::optional<std::pair<datastore::EntityName, datastore::EntityName>> entity_name_by_path(const SnapshotPath& path) const;
         const std::string& index_salt_file_name() const { return index_salt_file_name_.value(); }
+        size_t step_size() const { return step_size_.value(); }
+        datastore::StepToTimestampConverter make_step_converter() const { return datastore::StepToTimestampConverter{step_size()}; }
 
       private:
         friend DomainDef;
@@ -204,6 +212,7 @@ class Schema {
 
         datastore::EntityMap<std::shared_ptr<EntityDef>> entity_defs_;
         std::optional<std::string> index_salt_file_name_;
+        std::optional<size_t> step_size_;
     };
 
     RepositoryDef& repository(datastore::EntityName name) {

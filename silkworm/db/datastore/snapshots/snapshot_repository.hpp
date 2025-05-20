@@ -43,7 +43,6 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
         std::filesystem::path dir_path,
         bool open,
         Schema::RepositoryDef schema,
-        datastore::StepToTimestampConverter step_converter,
         std::optional<uint32_t> index_salt,
         std::unique_ptr<IndexBuildersFactory> index_builders_factory,
         std::optional<DomainGetLatestCaches> domain_caches,

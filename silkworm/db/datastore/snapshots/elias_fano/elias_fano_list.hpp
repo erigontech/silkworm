@@ -37,6 +37,8 @@
 #include <span>
 #include <utility>
 
+#include <silkworm/core/common/bytes.hpp>
+
 #include "../common/encoding/sequence.hpp"
 #include "../common/util/iterator/list_iterator.hpp"
 
@@ -46,6 +48,9 @@ namespace silkworm::snapshots::elias_fano {
 class EliasFanoList32 {
   public:
     using value_type = uint64_t;
+
+    //! Create a new 32-bit EF list from the given encoded data (i.e. data plus data header)
+    static EliasFanoList32 from_encoded_data(BytesOrByteView encoded_data_holder);
 
     //! Create a new 32-bit EF list from the given encoded data (i.e. data plus data header)
     static EliasFanoList32 from_encoded_data(std::span<const uint8_t> encoded_data);
@@ -60,8 +65,13 @@ class EliasFanoList32 {
     //! Create a new 32-bit EF list from an existing data sequence
     //! \param count
     //! \param max_value
-    //! \param encoded_data the existing data sequence (portion exceeding the total words will be ignored)
-    EliasFanoList32(uint64_t count, uint64_t max_value, std::span<const uint8_t> encoded_data);
+    //! \param data_offset offset in the data_holder to the data sequence
+    //! \param data_holder the data (portion exceeding the total words will be ignored)
+    EliasFanoList32(
+        uint64_t count,
+        uint64_t max_value,
+        uint64_t data_offset,
+        BytesOrByteView data_holder);
 
     size_t size() const { return count_; }
 
@@ -69,9 +79,12 @@ class EliasFanoList32 {
 
     uint64_t min() const { return at(0); }
 
-    std::span<const uint64_t> data() const { return data_; }
+    std::span<const uint64_t> data() const {
+        const uint64_t* data = reinterpret_cast<const uint64_t*>(ByteView{data_holder_}.data() + data_offset_);
+        return {data, total_words_};
+    }
 
-    size_t encoded_data_size() const { return kCountLength + kULength + data_.size() * sizeof(uint64_t); }
+    size_t encoded_data_size() const { return kCountLength + kULength + total_words_ * sizeof(uint64_t); }
 
     uint64_t at(size_t i) const;
     uint64_t operator[](size_t i) const { return at(i); }
@@ -84,23 +97,17 @@ class EliasFanoList32 {
     friend std::ostream& operator<<(std::ostream& os, const EliasFanoList32& ef);
 
     bool operator==(const EliasFanoList32& other) const {
-        return (count_ == other.count_) && (u_ == other.u_) && std::ranges::equal(data_, other.data_);
+        return (count_ == other.count_) && (u_ == other.u_) && std::ranges::equal(data(), other.data());
     }
 
     static uint64_t total_words(uint64_t count, uint64_t max_value);
     static uint64_t jump_size_words(uint64_t count);
-
-    static EliasFanoList32 empty_list() {
-        return EliasFanoList32{};
-    }
 
     using Iterator = ListIterator<EliasFanoList32, value_type>;
     Iterator begin() const { return Iterator{*this, 0}; }
     Iterator end() const { return Iterator{*this, size()}; }
 
   private:
-    EliasFanoList32() = default;
-
     uint64_t upper(uint64_t i) const;
     uint64_t derive_fields();
 
@@ -115,10 +122,10 @@ class EliasFanoList32 {
     //! The strict upper bound on the EF data points, i.e. max + 1
     uint64_t u_{0};
     uint64_t l_{0};
-    //! Lightweight view over the EF encoded data sequence.
-    std::span<const uint64_t> data_;
-    //! Copy of the EF encoded data sequence when it must be kept for lifetime reasons
-    std::optional<Bytes> data_holder_{};
+    uint64_t data_offset_{0};
+    uint64_t total_words_{0};
+    //! The EF encoded data sequence
+    BytesOrByteView data_holder_{};
 };
 
 //! 32-bit Elias-Fano (EF) list writer that can be used to encode one monotone non-decreasing sequence
@@ -139,9 +146,12 @@ class EliasFanoList32Builder {
 
     EliasFanoList32 as_view() const {
         const auto max_value = u_ - 1;
-        return EliasFanoList32{count_,
-                               max_value,
-                               {reinterpret_cast<const uint8_t*>(data_.data()), EliasFanoList32::total_words(count_, max_value) * sizeof(uint64_t)}};
+        return EliasFanoList32{
+            count_,
+            max_value,
+            0,
+            BytesOrByteView{ByteView{reinterpret_cast<const uint8_t*>(data_.data()), EliasFanoList32::total_words(count_, max_value) * sizeof(uint64_t)}},
+        };
     };
 
     size_t size() const { return count_; }

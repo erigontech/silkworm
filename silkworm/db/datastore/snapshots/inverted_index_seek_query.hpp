@@ -35,7 +35,7 @@ struct InvertedIndexSeekSegmentQuery {
             return std::nullopt;
         }
 
-        elias_fano::EliasFanoList32& list = *list_opt;
+        InvertedIndexTimestampList& list = *list_opt;
         const auto seek_result = list.seek(timestamp);
         if (!seek_result) {
             return std::nullopt;

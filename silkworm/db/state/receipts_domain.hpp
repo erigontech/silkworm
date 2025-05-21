@@ -69,14 +69,17 @@ struct ReceiptsDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
     ReceiptsDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
-        const snapshots::SnapshotRepositoryROAccess& repository)
+        const snapshots::SnapshotRepositoryROAccess& repository,
+        const snapshots::QueryCaches& query_caches)
         : datastore::DomainGetLatestQuery<
               datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
-              datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>(
+              datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>{
               db::state::kDomainNameReceipts,
               database.domain(db::state::kDomainNameReceipts),
               tx,
-              repository) {}
+              repository,
+              query_caches,
+          } {}
 };
 
 struct ReceiptsDomainPutQuery : public datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>> {

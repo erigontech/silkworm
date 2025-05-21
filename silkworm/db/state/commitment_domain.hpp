@@ -22,14 +22,17 @@ struct CommitmentDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
     CommitmentDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
-        const snapshots::SnapshotRepositoryROAccess& repository)
+        const snapshots::SnapshotRepositoryROAccess& repository,
+        const snapshots::QueryCaches& query_caches)
         : datastore::DomainGetLatestQuery<
               datastore::kvdb::RawEncoder<ByteView>, snapshots::RawEncoder<ByteView>,
-              datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>(
+              datastore::kvdb::RawDecoder<Bytes>, snapshots::RawDecoder<Bytes>>{
               db::state::kDomainNameCommitment,
               database.domain(db::state::kDomainNameCommitment),
               tx,
-              repository) {}
+              repository,
+              query_caches,
+          } {}
 };
 
 struct CommitmentDomainPutQuery : public datastore::kvdb::DomainPutQuery<datastore::kvdb::RawEncoder<ByteView>, datastore::kvdb::RawEncoder<ByteView>> {

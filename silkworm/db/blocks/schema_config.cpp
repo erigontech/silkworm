@@ -57,8 +57,6 @@ snapshots::SnapshotRepository make_blocks_repository(
         schema,
         index_salt,
         make_blocks_index_builders_factory(),
-        std::nullopt,  // no domain caches
-        std::nullopt,  // no inverted index caches
     };
 }
 

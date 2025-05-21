@@ -17,20 +17,23 @@ struct DomainGetLatestQuery {
         datastore::EntityName entity_name,
         kvdb::Domain kvdb_entity,
         kvdb::ROTxn& tx,
-        const snapshots::SnapshotRepositoryROAccess& repository)
+        const snapshots::SnapshotRepositoryROAccess& repository,
+        const snapshots::QueryCaches& query_caches)
         : query1_{tx, kvdb_entity},
-          query2_{repository, entity_name} {}
+          query2_{repository, query_caches, entity_name} {}
 
     DomainGetLatestQuery(
         datastore::EntityName entity_name,
         const kvdb::DatabaseRef& database,
         kvdb::ROTxn& tx,
-        const snapshots::SnapshotRepositoryROAccess& repository)
+        const snapshots::SnapshotRepositoryROAccess& repository,
+        const snapshots::QueryCaches& query_caches)
         : DomainGetLatestQuery{
               entity_name,
               database.domain(entity_name),
               tx,
               repository,
+              query_caches,
           } {}
 
     using Key1 = decltype(TKeyEncoder1::value);

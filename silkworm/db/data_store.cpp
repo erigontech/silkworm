@@ -13,6 +13,7 @@ datastore::Schema DataStore::make_schema() {
     snapshots.repository(blocks::kBlocksRepositoryName) = blocks::make_blocks_repository_schema();
     snapshots.repository(state::kStateRepositoryNameLatest) = state::make_state_repository_schema_latest();
     snapshots.repository(state::kStateRepositoryNameHistorical) = state::make_state_repository_schema_historical();
+    snapshots.query_caches_schema() = state::make_query_caches_schema();
 
     return {
         std::move(kvdb),

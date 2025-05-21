@@ -153,11 +153,13 @@ Task<GetLatestResult> LocalTransaction::get_latest(GetLatestRequest request) {
     }
 
     const EntityName domain_name = kTable2EntityNames.at(request.table);
-    RawDomainGetLatestQuery query(
+    RawDomainGetLatestQuery query{
         domain_name,
         data_store_.chaindata.domain(domain_name),
         tx_,
-        data_store_.state_repository_latest);
+        data_store_.state_repository_latest,
+        data_store_.query_caches,
+    };
     auto result = query.exec(request.key);
     if (!result) {
         co_return GetLatestResult{};

@@ -7,6 +7,8 @@
 
 #include <silkworm/infra/common/environment.hpp>
 
+#include "../datastore/snapshots/domain_get_latest_query.hpp"
+#include "../datastore/snapshots/inverted_index_seek_query.hpp"
 #include "state_index_builders_factory.hpp"
 #include "step_txn_id_converter.hpp"
 
@@ -73,41 +75,21 @@ datastore::kvdb::Schema::DatabaseDef make_state_database_schema() {
     return schema;
 }
 
-static constexpr size_t kDefaultDomainCacheSize = 10'000;
-static constexpr size_t kDefaultInvertedIndexCacheSize = 4'096;
+snapshots::QueryCachesSchema make_query_caches_schema() {
+    snapshots::QueryCachesSchema schema;
+    schema.index_salt_file_name("salt-state.txt");
 
-// 1. std::array instead of const char* because MSVC is stricter on non-type template parameters passed by reference
-// 2. explicit std::array template arguments to avoid incorrect CTAD as std::array<const char*, 1>
-static constexpr std::array<const char, 17> kDomainCacheEnvVar{"D_LRU_CACHE_SIZE"};
-static constexpr std::array<const char, 18> kInvertedIndexCacheEnvVar{"II_LRU_CACHE_SIZE"};
+    schema.enable(kDomainNameAccounts);
+    schema.enable(kDomainNameStorage);
+    schema.enable(kDomainNameCode);
+    schema.enable(kDomainNameReceipts);
 
-template <typename Cache, const auto& env_var_name, size_t default_size>
-static size_t cache_size() {
-    const auto cache_size_var = Environment::get(env_var_name.data());
-    return cache_size_var.empty() ? default_size : std::stoul(cache_size_var);
-}
+    static constexpr size_t kDefaultDomainCacheSize = 10'000;
+    static constexpr size_t kDefaultInvertedIndexCacheSize = 4'096;
+    schema.cache_size(snapshots::DomainGetLatestQueryRawWithCache::kName, kDefaultDomainCacheSize);
+    schema.cache_size(snapshots::InvertedIndexSeekQueryRawWithCache::kName, kDefaultInvertedIndexCacheSize);
 
-template <typename Cache, const auto& env_var_name, size_t default_size>
-static std::unique_ptr<Cache> make_cache(std::optional<uint32_t> salt) {
-    const size_t size = cache_size<Cache, env_var_name, default_size>();
-    return size > 0 ? std::make_unique<Cache>(size, salt.value_or(0)) : nullptr;
-}
-
-template <typename Cache, const auto& env_var_name, size_t default_size>
-static auto make_caches(std::optional<uint32_t> salt) {
-    std::map<datastore::EntityName, std::unique_ptr<Cache>> caches;
-    for (const auto& entity_name : {kDomainNameAccounts, kDomainNameStorage, kDomainNameCode, kDomainNameReceipts}) {
-        caches.emplace(entity_name, make_cache<Cache, env_var_name, default_size>(salt));
-    }
-    return caches;
-}
-
-static snapshots::DomainGetLatestCaches make_domain_caches(std::optional<uint32_t> salt) {
-    return make_caches<snapshots::DomainGetLatestCache, kDomainCacheEnvVar, kDefaultDomainCacheSize>(salt);
-}
-
-static snapshots::InvertedIndexSeekCaches make_inverted_index_caches(std::optional<uint32_t> salt) {
-    return make_caches<snapshots::InvertedIndexSeekCache, kInvertedIndexCacheEnvVar, kDefaultInvertedIndexCacheSize>(salt);
+    return schema;
 }
 
 static snapshots::SnapshotRepository make_state_repository(
@@ -123,8 +105,6 @@ static snapshots::SnapshotRepository make_state_repository(
         schema,
         index_salt,
         std::make_unique<StateIndexBuildersFactory>(schema),
-        make_domain_caches(index_salt),
-        make_inverted_index_caches(index_salt),
     };
 }
 

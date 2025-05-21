@@ -23,14 +23,17 @@ struct AccountsDomainGetLatestQuery : public datastore::DomainGetLatestQuery<
     AccountsDomainGetLatestQuery(
         const datastore::kvdb::DatabaseRef& database,
         datastore::kvdb::ROTxn& tx,
-        const snapshots::SnapshotRepositoryROAccess& repository)
+        const snapshots::SnapshotRepositoryROAccess& repository,
+        const snapshots::QueryCaches& query_caches)
         : datastore::DomainGetLatestQuery<
               AddressKVDBEncoder, AddressSnapshotsEncoder,
-              AccountKVDBCodec, AccountSnapshotsCodec>(
+              AccountKVDBCodec, AccountSnapshotsCodec>{
               db::state::kDomainNameAccounts,
               database.domain(db::state::kDomainNameAccounts),
               tx,
-              repository) {}
+              repository,
+              query_caches,
+          } {}
 };
 
 struct AccountsDomainPutQuery : public datastore::kvdb::DomainPutQuery<AddressKVDBEncoder, AccountKVDBCodec> {

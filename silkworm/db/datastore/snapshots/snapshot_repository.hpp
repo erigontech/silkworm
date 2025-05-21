@@ -44,9 +44,7 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
         bool open,
         Schema::RepositoryDef schema,
         std::optional<uint32_t> index_salt,
-        std::unique_ptr<IndexBuildersFactory> index_builders_factory,
-        std::optional<DomainGetLatestCaches> domain_caches,
-        std::optional<InvertedIndexSeekCaches> inverted_index_caches);
+        std::unique_ptr<IndexBuildersFactory> index_builders_factory);
 
     SnapshotRepository(SnapshotRepository&&) = default;
     SnapshotRepository& operator=(SnapshotRepository&&) noexcept = delete;
@@ -66,9 +64,6 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
 
     //! Replace bundles whose ranges are contained within the given bundle
     void replace_snapshot_bundles(SnapshotBundle bundle);
-
-    DomainGetLatestCache* domain_get_latest_cache(const datastore::EntityName& name) const override;
-    InvertedIndexSeekCache* inverted_index_seek_cache(const datastore::EntityName& name) const override;
 
     size_t bundles_count() const override;
 
@@ -134,10 +129,6 @@ class SnapshotRepository : public SnapshotRepositoryROAccess {
     //! Full snapshot bundles ordered by block_from
     std::shared_ptr<Bundles> bundles_;
     std::unique_ptr<std::mutex> bundles_mutex_;
-
-    //! Cache for D/II values across all bundles
-    std::optional<DomainGetLatestCaches> domain_caches_;
-    std::optional<InvertedIndexSeekCaches> inverted_index_caches_;
 };
 
 }  // namespace silkworm::snapshots

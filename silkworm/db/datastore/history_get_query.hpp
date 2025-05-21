@@ -17,18 +17,21 @@ struct HistoryGetQuery {
     HistoryGetQuery(
         kvdb::History kvdb_entity,
         kvdb::ROTxn& tx,
-        const snapshots::SnapshotRepositoryROAccess& repository)
+        const snapshots::SnapshotRepositoryROAccess& repository,
+        const snapshots::QueryCaches& query_caches)
         : query1_{tx, kvdb_entity},
-          query2_{repository} {}
+          query2_{repository, query_caches} {}
 
     HistoryGetQuery(
         const kvdb::DatabaseRef& database,
         kvdb::ROTxn& tx,
-        const snapshots::SnapshotRepositoryROAccess& repository)
+        const snapshots::SnapshotRepositoryROAccess& repository,
+        const snapshots::QueryCaches& query_caches)
         : HistoryGetQuery{
               database.domain(segment_names.front()).history.value(),
               tx,
               repository,
+              query_caches,
           } {}
 
     using Key1 = decltype(TKeyEncoder1::value);

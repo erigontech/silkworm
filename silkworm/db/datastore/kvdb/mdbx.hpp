@@ -60,6 +60,8 @@ namespace detail {
 
     std::string dump_mdbx_result(const CursorResult& result);
     std::string slice_as_hex(const Slice& data);
+    std::string slice_as_string(const Slice& data);
+    silkworm::Bytes slice_as_bytes(const Slice& data);
 }  // namespace detail
 
 class ROTxn;
@@ -367,6 +369,7 @@ struct EnvConfig {
     bool in_memory{false};              // Whether this db is in memory
     bool shared{false};                 // Whether this process opens a db already opened by another process
     bool read_ahead{false};             // Whether to enable mdbx read ahead
+    bool no_sticky_threads{false};      // Whether to allow moving db transactions between threads
     bool write_map{false};              // Whether to enable mdbx write map
     size_t page_size{os::page_size()};  // Mdbx page size
     size_t max_size{4_Tebi};            // Mdbx max map size

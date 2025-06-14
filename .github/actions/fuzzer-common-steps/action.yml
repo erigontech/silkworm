@@ -11,7 +11,7 @@ runs:
   steps:
     - name: Install Compiler
       shell: bash
-      run: cmake/setup/compiler_install.sh clang 16
+      run: cmake/setup/compiler_install.sh clang 18
 
     - name: Clean Build Directory
       shell: bash
@@ -28,7 +28,7 @@ runs:
     - name: Configure CMake
       shell: bash
       working-directory: ${{runner.workspace}}/silkworm/build
-      run: CC=clang-16 CXX=clang++-16 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_16_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON -DSILKWORM_FUZZER_SANITIZERS=${{inputs.fuzzer_sanitizers}}
+      run: CC=clang-16 CXX=clang++-16 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCONAN_PROFILE=linux_x64_clang_18_release -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain/clang_libcxx.cmake -DSILKWORM_FUZZER=ON -DSILKWORM_FUZZER_SANITIZERS=${{inputs.fuzzer_sanitizers}}
 
     - name: Build Silkworm Fuzzer Test
       shell: bash

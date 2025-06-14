@@ -1,21 +1,12 @@
 # Copyright 2025 The Silkworm Authors
 # SPDX-License-Identifier: Apache-2.0
 
-add_library(secp256k1 secp256k1/src/secp256k1.c)
-if(MSVC)
-  target_compile_options(secp256k1 PRIVATE /w) # Not much we can do about warnings
-endif()
-# cmake-format: off
-target_compile_definitions(
-  secp256k1
-  PUBLIC ECMULT_WINDOW_SIZE=15
-         ECMULT_GEN_PREC_BITS=4
-         ENABLE_MODULE_ECDH
-         ENABLE_MODULE_RECOVERY
+set(SECP256K1_ENABLE_MODULE_RECOVERY
+    ON
+    CACHE BOOL "Enable ECDSA pubkey recovery module." FORCE
 )
-# cmake-format: on
-target_include_directories(
-  secp256k1
-  PRIVATE secp256k1
-  INTERFACE secp256k1/include
+set(BUILD_SHARED_LIBS
+    OFF
+    CACHE BOOL "Build shared libraries." FORCE
 )
+add_subdirectory(secp256k1)

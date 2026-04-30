@@ -33,6 +33,7 @@ class Server : public MessageSender {
 
     void setup();
     Task<void> run();
+    void stop();
 
     Task<void> send_ping(ping::PingMessage message, boost::asio::ip::udp::endpoint recipient) override;
     Task<void> send_pong(ping::PongMessage message, boost::asio::ip::udp::endpoint recipient) override;

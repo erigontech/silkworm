@@ -44,6 +44,7 @@ class PeerManagerApi : public PeerManagerObserver {
           peer_events_channel_(executor, 1000) {}
 
     static Task<void> run(std::shared_ptr<PeerManagerApi> self);
+    void stop();
 
     template <typename T>
     using Channel = concurrency::Channel<T>;

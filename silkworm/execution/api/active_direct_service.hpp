@@ -97,9 +97,10 @@ class ActiveDirectService : public DirectService, public ActiveComponent {
 
     Task<BlockNum> block_progress() override;
 
+    bool stop() override;
+
   protected:
     void execution_loop() override;
-    bool stop() override;
 
   private:
     boost::asio::io_context& ioc_;

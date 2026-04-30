@@ -41,6 +41,7 @@ class Discovery {
     Discovery& operator=(const Discovery&) = delete;
 
     Task<void> run();
+    void stop();
 
     struct PeerCandidate {
         EnodeUrl url;

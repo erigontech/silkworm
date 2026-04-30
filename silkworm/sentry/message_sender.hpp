@@ -24,6 +24,7 @@ class MessageSender {
     }
 
     Task<void> run(PeerManager& peer_manager);
+    void stop() { send_message_channel_.close(); }
 
   private:
     concurrency::Channel<api::router::SendMessageCall> send_message_channel_;

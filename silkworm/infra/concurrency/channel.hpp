@@ -17,6 +17,11 @@
 
 namespace silkworm::concurrency {
 
+inline bool is_channel_stop_error(const boost::system::error_code& error) {
+    return error == boost::asio::experimental::error::channel_cancelled ||
+           error == boost::asio::experimental::error::channel_closed;
+}
+
 template <typename T>
 class Channel {
   public:
@@ -28,7 +33,7 @@ class Channel {
         try {
             co_await channel_.async_send(boost::system::error_code(), value, boost::asio::use_awaitable);
         } catch (const boost::system::system_error& ex) {
-            if (ex.code() == boost::asio::experimental::error::channel_cancelled) {
+            if (is_channel_stop_error(ex.code())) {
                 throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
             }
             throw;
@@ -43,7 +48,7 @@ class Channel {
         try {
             co_return (co_await channel_.async_receive(boost::asio::use_awaitable));
         } catch (const boost::system::system_error& ex) {
-            if (ex.code() == boost::asio::experimental::error::channel_cancelled) {
+            if (is_channel_stop_error(ex.code())) {
                 throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
             }
             throw;
@@ -53,7 +58,7 @@ class Channel {
     std::optional<T> try_receive() {
         std::optional<T> result;
         channel_.try_receive([&](const boost::system::error_code& error, T&& value) {
-            if (error == boost::asio::experimental::error::channel_cancelled) {
+            if (is_channel_stop_error(error)) {
                 throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
             }
             if (error) {

@@ -129,6 +129,10 @@ void MainChain::abort() {
     tx_.abort();
 }
 
+bool MainChain::stop() {
+    return pipeline_.stop();
+}
+
 NodeSettings& MainChain::node_settings() {
     return node_settings_;
 }

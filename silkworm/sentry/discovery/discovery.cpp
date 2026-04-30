@@ -37,6 +37,7 @@ class DiscoveryImpl {
     DiscoveryImpl& operator=(const DiscoveryImpl&) = delete;
 
     Task<void> run();
+    void stop();
 
     Task<std::vector<Discovery::PeerCandidate>> request_peer_candidates(
         size_t max_count,
@@ -127,6 +128,10 @@ Task<void> DiscoveryImpl::run() {
     if (with_dynamic_discovery_) {
         co_await disc_v4_discovery_.run();
     }
+}
+
+void DiscoveryImpl::stop() {
+    disc_v4_discovery_.stop();
 }
 
 void DiscoveryImpl::setup_node_db() {
@@ -235,6 +240,10 @@ Task<void> Discovery::run() {
         }
         throw se;
     }
+}
+
+void Discovery::stop() {
+    p_impl_->stop();
 }
 
 Task<std::vector<Discovery::PeerCandidate>> Discovery::request_peer_candidates(

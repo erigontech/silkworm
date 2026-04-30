@@ -28,6 +28,7 @@ class Sentry final : public api::SentryClient {
     Sentry& operator=(const Sentry&) = delete;
 
     Task<void> run();
+    void request_stop();
 
     Task<std::shared_ptr<api::Service>> service() override;
     bool is_ready() override;

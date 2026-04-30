@@ -38,6 +38,7 @@ class Sync {
     Sync& operator=(const Sync&) = delete;
 
     Task<void> async_run();
+    void request_stop();
 
     BlockNum last_pre_validated_block() const;
 

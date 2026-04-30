@@ -88,10 +88,10 @@ std::optional<Hash> ExecutionPipeline::bad_block() {
 }
 
 bool ExecutionPipeline::stop() {
-    bool stopped{true};
+    bool stopped{Stoppable::stop()};
     for (const auto& [_, stage] : stages_) {
         if (!stage->is_stopping()) {
-            stopped &= stage->stop();
+            stopped = stage->stop() || stopped;
         }
     }
     return stopped;

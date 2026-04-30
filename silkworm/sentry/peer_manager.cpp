@@ -152,6 +152,17 @@ void PeerManager::add_observer(std::weak_ptr<PeerManagerObserver> observer) {
     observers_.push_back(std::move(observer));
 }
 
+void PeerManager::stop() {
+    client_peer_channel_.close();
+    need_peers_notifier_.notify();
+    for (auto& peer : peers_) {
+        peer->disconnect(rlpx::DisconnectReason::kDisconnectRequested);
+    }
+    for (auto& peer : handshaking_peers_) {
+        peer->disconnect(rlpx::DisconnectReason::kDisconnectRequested);
+    }
+}
+
 std::list<std::shared_ptr<PeerManagerObserver>> PeerManager::observers() {
     std::scoped_lock lock(observers_mutex_);
     std::list<std::shared_ptr<PeerManagerObserver>> observers;

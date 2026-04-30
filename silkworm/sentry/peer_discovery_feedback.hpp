@@ -28,6 +28,7 @@ class PeerDiscoveryFeedback : public PeerManagerObserver {
         std::shared_ptr<PeerDiscoveryFeedback> self,
         PeerManager& peer_manager,
         discovery::Discovery& discovery);
+    void stop() { peer_disconnected_events_.close(); }
 
   private:
     // PeerManagerObserver

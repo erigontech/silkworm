@@ -37,6 +37,18 @@ Task<void> PeerManagerApi::run(std::shared_ptr<PeerManagerApi> self) {
     co_await concurrency::spawn_task(self->strand_, std::move(run));
 }
 
+void PeerManagerApi::stop() {
+    peer_count_calls_channel_.close();
+    peers_calls_channel_.close();
+    peer_calls_channel_.close();
+    peer_penalize_calls_channel_.close();
+    peer_events_calls_channel_.close();
+    peer_events_channel_.close();
+    for (auto& subscription : events_subscriptions_) {
+        subscription.events_channel->close();
+    }
+}
+
 Task<void> PeerManagerApi::handle_peer_count_calls() {
     // loop until receive() throws a cancelled exception
     while (true) {

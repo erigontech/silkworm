@@ -114,7 +114,6 @@ class Server {
         // Order matters here: 1) shutdown the server (immediate deadline)
         if (server_) {
             server_->Shutdown(gpr_time_0(GPR_CLOCK_REALTIME));
-            server_->Wait();
         }
 
         SILK_TRACE << "Server::shutdown " << this << " stopping context pool";
@@ -122,6 +121,10 @@ class Server {
         // Order matters here: 2) shutdown and drain the queues
         if (context_pool_) {
             context_pool_->stop();
+        }
+
+        if (server_) {
+            server_->Wait();
         }
 
         SILK_TRACE << "Server::shutdown " << this << " END";

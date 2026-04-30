@@ -107,4 +107,8 @@ Task<void> Server::async_run(std::optional<size_t> stack_size) {
     return p_impl_->async_run("exec-engine", stack_size);
 }
 
+void Server::shutdown() {
+    p_impl_->shutdown();
+}
+
 }  // namespace silkworm::execution::grpc::server

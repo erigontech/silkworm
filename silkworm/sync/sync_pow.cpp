@@ -23,6 +23,11 @@ Task<void> PoWSync::async_run() {
     return ActiveComponent::async_run("pow-sync-ex");
 }
 
+void PoWSync::request_stop() {
+    block_exchange_.stop_downloading();
+    stop();
+}
+
 BlockId PoWSync::resume() {  // find the point (head) where we left off
     BlockId head{};
 

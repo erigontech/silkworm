@@ -34,6 +34,7 @@ class Discovery {
     Discovery& operator=(const Discovery&) = delete;
 
     Task<void> run();
+    void stop();
 
     void discover_more_needed();
 

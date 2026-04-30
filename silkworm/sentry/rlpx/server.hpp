@@ -32,6 +32,7 @@ class Server final {
         EccKeyPair node_key,
         std::string client_id,
         std::function<std::unique_ptr<Protocol>()> protocol_factory);
+    void stop() { peer_channel_.close(); }
 
     const boost::asio::ip::address& ip() const { return ip_; }
     boost::asio::ip::tcp::endpoint listen_endpoint() const;

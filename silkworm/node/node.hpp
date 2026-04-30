@@ -29,6 +29,7 @@ class Node {
 
     Task<void> run();
     Task<void> wait_for_setup();
+    void request_stop();
 
   private:
     std::unique_ptr<NodeImpl> p_impl_;

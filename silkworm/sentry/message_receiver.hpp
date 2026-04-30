@@ -38,6 +38,7 @@ class MessageReceiver : public PeerManagerObserver {
     }
 
     static Task<void> run(std::shared_ptr<MessageReceiver> self, PeerManager& peer_manager);
+    void stop();
 
   private:
     Task<void> handle_calls();

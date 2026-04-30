@@ -50,6 +50,12 @@ void ExecutionEngine::close() {
     context_pool_.reset();
 }
 
+bool ExecutionEngine::stop() {
+    const bool engine_stopped = Stoppable::stop();
+    const bool main_chain_stopped = main_chain_.stop();
+    return engine_stopped || main_chain_stopped;
+}
+
 BlockNum ExecutionEngine::block_progress() const {
     return block_progress_;  // main_chain_.get_block_progress() or forks block progress
 }

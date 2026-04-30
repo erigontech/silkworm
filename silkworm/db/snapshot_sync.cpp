@@ -73,6 +73,7 @@ SnapshotSync::SnapshotSync(
 Task<void> SnapshotSync::run() {
     using namespace concurrency::awaitable_wait_for_all;
 
+    stop_requested_.store(false, std::memory_order_relaxed);
     [[maybe_unused]] auto _ = gsl::finally([this]() { this->is_stopping_latch_.count_down(); });
 
     if (!settings_.enabled) {
@@ -95,6 +96,11 @@ Task<void> SnapshotSync::run() {
         }
         throw;
     }
+}
+
+void SnapshotSync::request_stop() {
+    stop_requested_.store(true, std::memory_order_relaxed);
+    client_.stop();
 }
 
 Task<void> SnapshotSync::setup_and_run() {
@@ -137,7 +143,9 @@ Task<void> SnapshotSync::setup() {
 
     // Update chain and stage progresses in database according to available snapshots
     datastore::kvdb::RWTxnManaged rw_txn = data_store_.chaindata.access_rw().start_rw_tx();
-    update_database(rw_txn, blocks_repository().max_timestamp_available(), [this] { return is_stopping_latch_.try_wait(); });
+    update_database(rw_txn, blocks_repository().max_timestamp_available(), [this] {
+        return stop_requested_.load(std::memory_order_relaxed) || is_stopping_latch_.try_wait();
+    });
     rw_txn.commit_and_stop();
 
     if (!settings_.no_seeding) {

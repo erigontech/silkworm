@@ -20,6 +20,7 @@ class ChainSync {
     ChainSync& operator=(const ChainSync&) = delete;
 
     virtual Task<void> async_run() = 0;
+    virtual void request_stop() { block_exchange_.stop_downloading(); }
 
   protected:
     IBlockExchange& block_exchange_;

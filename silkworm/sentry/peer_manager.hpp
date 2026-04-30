@@ -60,6 +60,7 @@ class PeerManager {
     Task<void> enumerate_random_peers(size_t max_count, EnumeratePeersCallback callback);
 
     void add_observer(std::weak_ptr<PeerManagerObserver> observer);
+    void stop();
 
   private:
     Task<void> run_in_strand(concurrency::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel);

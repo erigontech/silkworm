@@ -43,6 +43,7 @@ class SnapshotSync {
         datastore::StageScheduler& stage_scheduler);
 
     Task<void> run();
+    void request_stop();
 
     Task<void> download_snapshots();
     Task<void> wait_for_setup();
@@ -75,6 +76,7 @@ class SnapshotSync {
     db::Freezer snapshot_freezer_;
     datastore::SnapshotMerger snapshot_merger_;
 
+    std::atomic_bool stop_requested_{false};
     std::latch is_stopping_latch_;
     std::atomic_bool setup_done_;
     concurrency::AwaitableConditionVariable setup_done_cond_var_;

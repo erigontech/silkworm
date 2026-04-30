@@ -37,7 +37,13 @@ PoSSync::PoSSync(IBlockExchange& block_exchange, execution::api::Client& exec_cl
     : ChainSync(block_exchange, exec_client) {}
 
 Task<void> PoSSync::async_run() {
+    stop_requested_.store(false, std::memory_order_relaxed);
     co_await download_blocks();
+}
+
+void PoSSync::request_stop() {
+    stop_requested_.store(true, std::memory_order_relaxed);
+    block_exchange_.stop_downloading();
 }
 
 // Wait for blocks arrival from BlockExchange and insert them into ExecutionEngine
@@ -71,7 +77,7 @@ Task<void> PoSSync::download_blocks() {
 
     // main loop
     try {
-        while (true) {
+        while (!stop_requested_.load(std::memory_order_relaxed)) {
             Blocks blocks;
 
             // wait for a batch of blocks

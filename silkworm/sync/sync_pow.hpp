@@ -23,6 +23,7 @@ class PoWSync : public ChainSync, ActiveComponent {
     PoWSync(IBlockExchange&, execution::api::Client&);
 
     Task<void> async_run() override;
+    void request_stop() override;
 
     void execution_loop() final; /*[[long_running]]*/
 

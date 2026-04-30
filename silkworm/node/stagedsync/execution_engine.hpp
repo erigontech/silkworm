@@ -56,6 +56,7 @@ class ExecutionEngine : public execution::api::ExecutionEngine, public Stoppable
     // needed to circumvent mdbx threading model limitations
     void open() override;
     void close() override;
+    bool stop() override;
 
     // actions
     void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks) override;

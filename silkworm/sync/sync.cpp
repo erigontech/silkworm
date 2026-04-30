@@ -59,7 +59,15 @@ BlockNum Sync::last_pre_validated_block() const {
 
 Task<void> Sync::async_run() {
     using namespace concurrency::awaitable_wait_for_all;
-    return (run_tasks() && start_engine_rpc_server());
+    co_await (run_tasks() && start_engine_rpc_server());
+}
+
+void Sync::request_stop() {
+    block_exchange_.stop_downloading();
+    block_exchange_.stop();
+    if (chain_sync_) {
+        chain_sync_->request_stop();
+    }
 }
 
 Task<void> Sync::run_tasks() {
@@ -68,22 +76,23 @@ Task<void> Sync::run_tasks() {
 }
 
 Task<void> Sync::start_sync_sentry_client() {
-    return sync_sentry_client_.async_run();
+    co_await sync_sentry_client_.async_run();
 }
 
 Task<void> Sync::start_block_exchange() {
-    return block_exchange_.async_run("block-exchg");
+    co_await block_exchange_.async_run("block-exchg");
 }
 
 Task<void> Sync::start_chain_sync() {
     if (!engine_rpc_server_) {
-        return chain_sync_->async_run();
+        co_await chain_sync_->async_run();
+        co_return;
     }
 
     // The ChainSync async loop *must* run onto the Engine RPC server unique execution context
     // This is *strictly* required by the current design assumptions in PoSSync
     auto& ioc = engine_rpc_server_->context_pool().next_ioc();
-    return boost::asio::co_spawn(ioc, chain_sync_->async_run(), boost::asio::use_awaitable);
+    co_await boost::asio::co_spawn(ioc, chain_sync_->async_run(), boost::asio::use_awaitable);
 }
 
 Task<void> Sync::start_engine_rpc_server() {

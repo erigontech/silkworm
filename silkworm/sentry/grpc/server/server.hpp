@@ -25,6 +25,7 @@ class Server final {
     Server& operator=(const Server&) = delete;
 
     Task<void> async_run();
+    void shutdown();
 
   private:
     std::unique_ptr<ServerImpl> p_impl_;

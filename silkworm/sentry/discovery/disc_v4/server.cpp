@@ -132,6 +132,14 @@ class ServerImpl {
         }
     }
 
+    void stop() {
+        boost::asio::dispatch(socket_.get_executor(), [this] {
+            boost::system::error_code error;
+            socket_.cancel(error);
+            socket_.close(error);
+        });
+    }
+
     template <class TMessage>
     Task<void> send_message(const TMessage& message, ip::udp::endpoint recipient) {
         return send_message(Message{TMessage::kId, message.rlp_encode()}, std::move(recipient));
@@ -189,6 +197,10 @@ void Server::setup() {
 
 Task<void> Server::run() {
     return p_impl_->run();
+}
+
+void Server::stop() {
+    p_impl_->stop();
 }
 
 Task<void> Server::send_ping(ping::PingMessage message, ip::udp::endpoint recipient) {

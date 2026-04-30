@@ -70,6 +70,12 @@ class DiscoveryImpl : private MessageHandler {
         discover_more_needed_notifier_.notify();
     }
 
+    void stop() {
+        server_.stop();
+        discover_more_needed_notifier_.notify();
+        discovered_event_notifier_.notify();
+    }
+
   private:
     uint64_t local_enr_seq_num() const {
         return this->node_record_().seq_num;
@@ -248,6 +254,10 @@ Task<void> Discovery::run() {
 
 void Discovery::discover_more_needed() {
     p_impl_->discover_more_needed();
+}
+
+void Discovery::stop() {
+    p_impl_->stop();
 }
 
 }  // namespace silkworm::sentry::discovery::disc_v4

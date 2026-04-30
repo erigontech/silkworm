@@ -65,6 +65,11 @@ Task<void> Server::run(
         try {
             co_await acceptor.async_accept(stream.socket(), use_awaitable);
         } catch (const boost::system::system_error& ex) {
+            if (ex.code() == error::operation_aborted ||
+                ex.code() == boost::system::errc::operation_canceled) {
+                SILK_DEBUG_M("sentry") << "Sentry RLPx server accept cancelled";
+                throw;
+            }
             if (ex.code() == boost::system::errc::invalid_argument) {
                 SILK_ERROR_M("sentry") << "Sentry RLPx server got invalid_argument on accept port=" << port_;
                 continue;

@@ -48,6 +48,7 @@ class NodeImpl final {
     Task<void> run();
     Task<void> run_tasks();
     Task<void> wait_for_setup();
+    void request_stop();
 
     BlockNum last_pre_validated_block() const { return chain_sync_.last_pre_validated_block(); }
 
@@ -212,7 +213,7 @@ NodeImpl::NodeImpl(
           /* use_preverified_hashes = */ true,
           make_sync_engine_rpc_settings(settings.rpcdaemon_settings, settings.log_settings.log_verbosity),
       },
-      resource_usage_log_{*settings_.node_settings.data_directory} {
+      resource_usage_log_{context_pool.any_executor(), *settings_.node_settings.data_directory} {
     backend_ = std::make_unique<EthereumBackEnd>(settings_.node_settings, data_store_.chaindata().access_ro(), std::get<0>(sentry_));
     backend_->set_node_name(settings_.node_settings.build_info.node_name);
     backend_kv_rpc_server_ = std::make_unique<BackEndKvServer>(settings_.server_settings, *backend_);
@@ -241,6 +242,21 @@ Task<void> NodeImpl::run() {
     }
 }
 
+void NodeImpl::request_stop() {
+    snapshot_sync_.request_stop();
+    chain_sync_.request_stop();
+    resource_usage_log_.stop();
+    execution_service_->stop();
+    execution_engine_.stop();
+    execution_server_.shutdown();
+    if (backend_kv_rpc_server_) {
+        backend_kv_rpc_server_->shutdown();
+    }
+    if (auto& sentry_server = std::get<1>(sentry_)) {
+        sentry_server->request_stop();
+    }
+}
+
 Task<void> NodeImpl::run_tasks() {
     using namespace concurrency::awaitable_wait_for_all;
 
@@ -256,7 +272,7 @@ Task<void> NodeImpl::run_tasks() {
 
 Task<void> NodeImpl::run_execution_service() {
     // Thread running block execution requires custom stack size because of deep EVM call stacks
-    return execution_service_->async_run("exec-engine", /* stack_size = */ kExecutionThreadStackSize);
+    co_await execution_service_->async_run("exec-engine", /* stack_size = */ kExecutionThreadStackSize);
 }
 
 Task<void> NodeImpl::run_execution_server() {
@@ -306,6 +322,10 @@ Task<void> Node::run() {
 
 Task<void> Node::wait_for_setup() {
     return p_impl_->wait_for_setup();
+}
+
+void Node::request_stop() {
+    p_impl_->request_stop();
 }
 
 }  // namespace silkworm::node

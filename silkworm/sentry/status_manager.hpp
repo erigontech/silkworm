@@ -23,6 +23,7 @@ class StatusManager {
     Task<void> wait_for_status();
 
     Task<void> run();
+    void stop() { status_channel_.close(); }
 
     concurrency::Channel<eth::StatusData>& status_channel() {
         return status_channel_;

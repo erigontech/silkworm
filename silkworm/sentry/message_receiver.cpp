@@ -40,6 +40,13 @@ Task<void> MessageReceiver::run(std::shared_ptr<MessageReceiver> self, PeerManag
     }
 }
 
+void MessageReceiver::stop() {
+    message_calls_channel_.close();
+    for (auto& subscription : subscriptions_) {
+        subscription.messages_channel->close();
+    }
+}
+
 Task<void> MessageReceiver::handle_calls() {
     auto executor = co_await this_coro::executor;
 

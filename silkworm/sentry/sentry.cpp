@@ -49,6 +49,7 @@ class SentryImpl final {
     SentryImpl& operator=(const SentryImpl&) = delete;
 
     Task<void> run();
+    void request_stop();
 
     std::shared_ptr<api::Service> service() { return direct_service_; }
 
@@ -172,6 +173,18 @@ Task<void> SentryImpl::run() {
     }
 }
 
+void SentryImpl::request_stop() {
+    status_manager_.stop();
+    rlpx_server_.stop();
+    discovery_.stop();
+    peer_manager_.stop();
+    message_sender_.stop();
+    message_receiver_->stop();
+    peer_manager_api_->stop();
+    peer_discovery_feedback_->stop();
+    grpc_server_.shutdown();
+}
+
 void SentryImpl::setup_node_key() {
     DataDirectory data_dir{settings_.data_dir_path, true};
     NodeKey node_key = node_key_get_or_generate(settings_.node_key, data_dir);
@@ -214,11 +227,11 @@ std::function<std::unique_ptr<rlpx::Protocol>()> SentryImpl::protocol_factory() 
 }
 
 Task<void> SentryImpl::run_status_manager() {
-    return status_manager_.run();
+    co_await status_manager_.run();
 }
 
 Task<void> SentryImpl::run_server() {
-    return rlpx_server_.run(executor_pool_, node_key_.value(), client_id(), protocol_factory());
+    co_await rlpx_server_.run(executor_pool_, node_key_.value(), client_id(), protocol_factory());
 }
 
 std::unique_ptr<rlpx::Client> SentryImpl::make_client() {
@@ -235,12 +248,12 @@ std::function<std::unique_ptr<rlpx::Client>()> SentryImpl::client_factory() {
 }
 
 Task<void> SentryImpl::run_discovery() {
-    return discovery_.run();
+    co_await discovery_.run();
 }
 
 Task<void> SentryImpl::run_peer_manager() {
     try {
-        return peer_manager_.run(rlpx_server_, discovery_, make_protocol(), client_factory());
+        co_await peer_manager_.run(rlpx_server_, discovery_, make_protocol(), client_factory());
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
             SILK_DEBUG_M("sentry") << "run_peer_manager unexpected end [operation_canceled]";
@@ -253,7 +266,7 @@ Task<void> SentryImpl::run_peer_manager() {
 
 Task<void> SentryImpl::run_message_sender() {
     try {
-        return message_sender_.run(peer_manager_);
+        co_await message_sender_.run(peer_manager_);
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
             SILK_DEBUG_M("sentry") << "run_message_sender unexpected end [operation_canceled]";
@@ -266,7 +279,7 @@ Task<void> SentryImpl::run_message_sender() {
 
 Task<void> SentryImpl::run_message_receiver() {
     try {
-        return MessageReceiver::run(message_receiver_, peer_manager_);
+        co_await MessageReceiver::run(message_receiver_, peer_manager_);
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
             SILK_DEBUG_M("sentry") << "run_message_receiver unexpected end [operation_canceled]";
@@ -279,7 +292,7 @@ Task<void> SentryImpl::run_message_receiver() {
 
 Task<void> SentryImpl::run_peer_manager_api() {
     try {
-        return PeerManagerApi::run(peer_manager_api_);
+        co_await PeerManagerApi::run(peer_manager_api_);
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
             SILK_DEBUG_M("sentry") << "run_peer_manager_api unexpected end [operation_canceled]";
@@ -292,7 +305,7 @@ Task<void> SentryImpl::run_peer_manager_api() {
 
 Task<void> SentryImpl::run_peer_discovery_feedback() {
     try {
-        return PeerDiscoveryFeedback::run(peer_discovery_feedback_, peer_manager_, discovery_);
+        co_await PeerDiscoveryFeedback::run(peer_discovery_feedback_, peer_manager_, discovery_);
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::system::errc::operation_canceled) {
             SILK_DEBUG_M("sentry") << "run_peer_discovery_feedback unexpected end [operation_canceled]";
@@ -386,6 +399,10 @@ Sentry::~Sentry() {
 
 Task<void> Sentry::run() {
     return p_impl_->run();
+}
+
+void Sentry::request_stop() {
+    p_impl_->request_stop();
 }
 
 Task<std::shared_ptr<api::Service>> Sentry::service() {

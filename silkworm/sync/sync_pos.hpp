@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <atomic>
+
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/infra/common/log.hpp>
@@ -22,6 +24,7 @@ class PoSSync : public ChainSync, public rpc::engine::ExecutionEngine {
     PoSSync(IBlockExchange&, execution::api::Client&);
 
     Task<void> async_run() override;
+    void request_stop() override;
 
     // public interface to download blocks
     Task<void> download_blocks(); /*[[long_running]]*/
@@ -38,6 +41,7 @@ class PoSSync : public ChainSync, public rpc::engine::ExecutionEngine {
     std::tuple<bool, Hash> has_valid_ancestor(const Hash& block_hash);
 
     size_t active_chain_validations_{0};
+    std::atomic_bool stop_requested_{false};
 };
 
 }  // namespace silkworm::chainsync

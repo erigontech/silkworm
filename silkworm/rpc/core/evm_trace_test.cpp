@@ -9,6 +9,7 @@
 #include <boost/asio/thread_pool.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <evmc/instructions.h>
+#include <evmone/instructions_opcodes.hpp>
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/bytes_to_string.hpp>
@@ -3313,7 +3314,7 @@ TEST_CASE("copy_stack") {
     evmone::uint256* top_stack = &stack[stack_size - 1];
 
     SECTION("PUSHX") {
-        for (std::uint8_t op_code = evmc_opcode::OP_PUSH1; op_code < evmc_opcode::OP_PUSH32 + 1; ++op_code) {
+        for (std::uint8_t op_code = evmc_opcode::OP_PUSH0; op_code < evmc_opcode::OP_PUSH32 + 1; ++op_code) {
             std::vector<std::string> trace_stack;
             copy_stack(op_code, top_stack, trace_stack);
 
@@ -3352,6 +3353,7 @@ TEST_CASE("copy_stack") {
         for (std::uint8_t op_code = evmc_opcode::OP_STOP; op_code < evmc_opcode::OP_SELFDESTRUCT; ++op_code) {
             std::vector<std::string> trace_stack;
             switch (op_code) {
+                case evmc_opcode::OP_PUSH0:
                 case evmc_opcode::OP_PUSH1:
                 case evmc_opcode::OP_PUSH2:
                 case evmc_opcode::OP_PUSH3:
@@ -3418,6 +3420,9 @@ TEST_CASE("copy_stack") {
                 case evmc_opcode::OP_DUP16:
                     break;
                 case evmc_opcode::OP_CALLDATALOAD:
+                case evmone::OP_TLOAD:
+                case evmone::OP_BLOBHASH:
+                case evmone::OP_BLOBBASEFEE:
                 case evmc_opcode::OP_SLOAD:
                 case evmc_opcode::OP_MLOAD:
                 case evmc_opcode::OP_CALLDATASIZE:
@@ -3572,12 +3577,19 @@ TEST_CASE("copy_memory_offset_len") {
                 break;
             case evmc_opcode::OP_RETURNDATACOPY:
             case evmc_opcode::OP_CALLDATACOPY:
+            case evmone::OP_MCOPY:
             case evmc_opcode::OP_CODECOPY:
-                CHECK(trace_memory.has_value() == true);
+                REQUIRE(trace_memory.has_value());
+                CHECK(trace_memory->len == 29);
                 CHECK(nlohmann::json(trace_memory.value()) == R"({
                     "data":"",
                     "off": 31
                 })"_json);
+                break;
+            case evmc_opcode::OP_EXTCODECOPY:
+                REQUIRE(trace_memory.has_value());
+                CHECK(trace_memory->offset == 30);
+                CHECK(trace_memory->len == 28);
                 break;
             case evmc_opcode::OP_STATICCALL:
             case evmc_opcode::OP_DELEGATECALL:

@@ -347,6 +347,7 @@ void to_json(nlohmann::json& json, const InternalOperation& trace_operation) {
 int get_stack_count(std::uint8_t op_code) {
     int count{0};
     switch (op_code) {
+        case evmc_opcode::OP_PUSH0:
         case evmc_opcode::OP_PUSH1:
         case evmc_opcode::OP_PUSH2:
         case evmc_opcode::OP_PUSH3:
@@ -418,6 +419,9 @@ int get_stack_count(std::uint8_t op_code) {
             count = op_code - evmc_opcode::OP_DUP1 + 2;
             break;
         case evmc_opcode::OP_CALLDATALOAD:
+        case evmone::OP_TLOAD:
+        case evmone::OP_BLOBHASH:
+        case evmone::OP_BLOBBASEFEE:
         case evmc_opcode::OP_SLOAD:
         case evmc_opcode::OP_MLOAD:
         case evmc_opcode::OP_CALLDATASIZE:
@@ -540,8 +544,12 @@ void copy_memory_offset_len(std::uint8_t op_code, const evmone::uint256* stack, 
             break;
         case evmc_opcode::OP_RETURNDATACOPY:
         case evmc_opcode::OP_CALLDATACOPY:
+        case evmone::OP_MCOPY:
         case evmc_opcode::OP_CODECOPY:
             trace_memory = TraceMemory{stack[0][0], stack[-2][0]};
+            break;
+        case evmc_opcode::OP_EXTCODECOPY:
+            trace_memory = TraceMemory{stack[-1][0], stack[-3][0]};
             break;
         case evmc_opcode::OP_STATICCALL:
         case evmc_opcode::OP_DELEGATECALL:
